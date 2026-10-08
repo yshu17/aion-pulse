@@ -497,3 +497,38 @@ def test_reaction_time_has_no_off_option_and_old_zero_becomes_30(tmp_path):
         assert app.cfg.react_sec == 30 and app.tracker.react_sec == 30
     finally:
         root.destroy()
+
+
+def test_search_mode_selector_saved_and_applied(tmp_path):
+    import json
+
+    from watcher.app import SEARCH_MODES
+
+    assert list(SEARCH_MODES) == ["Слово ИЛИ предмет", "Только слова", "Только предметы", "Слово И предмет"]
+    root, app, calls, say = _nag_app(tmp_path, alert_mode="standard", watch_items=["100000893"])
+    try:
+        assert app.search_mode_var.get() == "Слово ИЛИ предмет"
+        app.search_mode_var.set("Только предметы")
+        app._on_search_mode_selected()
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["search_mode"] == "items"
+        assert app.matcher.mode == "items"
+        app.start()
+        say("A")  # «WTB ММК»: keyword only, no item link
+        assert calls == []
+        app.search_mode_var.set("Слово И предмет")
+        app._on_search_mode_selected()
+        assert "Слово И предмет" in app.status_var.get() or app.matcher.mode == "and"
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_status_hints_when_search_mode_lacks_input(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path, keywords=[], watch_items=[], search_mode="and")
+    try:
+        app.start()
+        assert "нет ключевых слов" in app.status_var.get()
+        assert "не отмечены предметы" in app.status_var.get()
+        app.stop()
+    finally:
+        root.destroy()

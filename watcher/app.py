@@ -29,6 +29,12 @@ CUSTOM_SOUND = "Свой файл…"
 ALERT_MODES = {"Стандартный": "standard", "Назойливый": "nag"}
 REACT_CHOICES = {"15 с": 15, "30 с": 30, "60 с": 60, "2 мин": 120}
 DEFAULT_REACT_SEC = 30
+SEARCH_MODES = {
+    "Слово ИЛИ предмет": "or",
+    "Только слова": "words",
+    "Только предметы": "items",
+    "Слово И предмет": "and",
+}
 UI_TICK_MS = 500
 
 
@@ -47,7 +53,10 @@ class App:
         self.icons_dir = data_dir / "icons"
         self.specs = load_specs(data_dir / "item_specs.json")
         self.matcher = Matcher(
-            self.cfg.keywords, self.cfg.cooldown_sec, watch_items=self._checked_items()
+            self.cfg.keywords,
+            self.cfg.cooldown_sec,
+            watch_items=self._checked_items(),
+            mode=self.cfg.search_mode,
         )
         self.notifier = Notifier(self.cfg.sound_path)
         if self.cfg.react_sec not in REACT_CHOICES.values():
@@ -92,7 +101,15 @@ class App:
         ttk.Label(top, text="Ключевые слова", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
         kw_entry = ttk.Entry(top, textvariable=self.kw_var)
-        kw_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=(12, 0), pady=4)
+        kw_entry.grid(row=1, column=1, sticky="ew", padx=(12, 6), pady=4)
+        self.search_mode_var = tk.StringVar(
+            value=next((k for k, v in SEARCH_MODES.items() if v == self.cfg.search_mode), "Слово ИЛИ предмет")
+        )
+        search_mode = ttk.Combobox(
+            top, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=18
+        )
+        search_mode.grid(row=1, column=2, sticky="e", pady=4)
+        search_mode.bind("<<ComboboxSelected>>", lambda _e: self._on_search_mode_selected())
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
         ttk.Label(top, text="Оповещение", style="Muted.TLabel").grid(row=2, column=0, sticky="w")
@@ -226,6 +243,21 @@ class App:
         else:
             self.counters_bar.pack_forget()
         save_config(self.config_path, self.cfg)
+
+    def _on_search_mode_selected(self) -> None:
+        self.cfg.search_mode = SEARCH_MODES.get(self.search_mode_var.get(), "or")
+        self.matcher.set_mode(self.cfg.search_mode)
+        save_config(self.config_path, self.cfg)
+
+    def _search_hint(self) -> str:
+        """What the chosen search mode is missing, e.g. «нет ключевых слов»."""
+        mode = self.cfg.search_mode
+        no_words = not self.cfg.keywords and mode in ("words", "and", "or")
+        no_items = not self.cfg.watch_items and mode in ("items", "and", "or")
+        if mode == "or" and not (no_words and no_items):
+            return ""
+        missing = [text for flag, text in ((no_words, "нет ключевых слов"), (no_items, "не отмечены предметы")) if flag]
+        return ", ".join(missing)
 
     def _on_react_selected(self) -> None:
         self.cfg.react_sec = REACT_CHOICES.get(self.react_var.get(), DEFAULT_REACT_SEC)
@@ -577,7 +609,8 @@ class App:
         except Exception as exc:
             self._set_status(f"Ошибка: {exc}")
         else:
-            self._set_status(f"Слежу за {path}")
+            hint = self._search_hint()
+            self._set_status(f"Слежу за {path}" + (f"  ·  {hint}" if hint else ""))
         self._schedule(self.cfg.poll_interval_ms)
 
     def _show_history(self, lines: list[str]) -> None:

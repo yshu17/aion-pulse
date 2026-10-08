@@ -3,6 +3,8 @@
 from watcher.parser import ChatMessage
 
 _PURGE_THRESHOLD = 1000
+# How keyword hits and watched-item hits combine.
+MODES = ("or", "words", "items", "and")
 
 
 def normalize(text: str) -> str:
@@ -16,13 +18,20 @@ class Matcher:
         keywords: list[str],
         cooldown_sec: float = 60.0,
         watch_items: dict[str, str] | None = None,
+        mode: str = "or",
     ) -> None:
         self.cooldown_sec = cooldown_sec
+        self.mode = "or"
+        self.set_mode(mode)
         self._keywords: list[tuple[str, str]] = []
         self._watch_items: dict[str, str] = {}
         self._seen: dict[tuple[str, str], float] = {}
         self.set_keywords(keywords)
         self.set_watch_items(watch_items or {})
+
+    def set_mode(self, mode: str) -> None:
+        """«or» word or item, «words» only words, «items» only items, «and» word and item."""
+        self.mode = mode if mode in MODES else "or"
 
     def set_watch_items(self, watch_items: dict[str, str]) -> None:
         """Item id -> display name. A message linking any of these ids matches."""
@@ -44,16 +53,25 @@ class Matcher:
         self._keywords = result
 
     def check(self, msg: ChatMessage, now: float) -> list[str]:
-        """Return matched keywords and watched item names.
+        """Return matched keywords and watched item names, combined according to the mode.
 
         [] if nothing matched or the message is a recent repeat.
         """
         text = normalize(msg.text)
-        hits = [original for original, norm in self._keywords if norm in text]
+        words = [original for original, norm in self._keywords if norm in text]
+        items = []
         for item_id in dict.fromkeys(msg.item_ids):
             name = self._watch_items.get(item_id)
-            if name is not None and name not in hits:
-                hits.append(name)
+            if name is not None and name not in items:
+                items.append(name)
+        if self.mode == "words":
+            hits = words
+        elif self.mode == "items":
+            hits = items
+        elif self.mode == "and":
+            hits = words + items if words and items else []
+        else:
+            hits = words + [name for name in items if name not in words]
         if not hits:
             return []
         key = (msg.nick, text)

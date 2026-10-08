@@ -114,3 +114,46 @@ def test_item_hit_respects_cooldown():
     msg = item_msg("[Клинок Рудры]", ("100000893",))
     assert m.check(msg, 0) == ["Клинок Рудры"]
     assert m.check(msg, 10) == []
+
+
+ITEMS = {"100000893": "Клинок Рудры"}
+WORD_ONLY = ("wts ммк", ())
+ITEM_ONLY = ("[Клинок Рудры]", ("100000893",))
+BOTH = ("wts [Клинок Рудры]", ("100000893",))
+
+
+def run(mode, case, nick="N"):
+    text, ids = case
+    return Matcher(["wts"], watch_items=ITEMS, mode=mode).check(item_msg(text, ids, nick), 0)
+
+
+def test_mode_words_ignores_items():
+    assert run("words", WORD_ONLY) == ["wts"]
+    assert run("words", ITEM_ONLY) == []
+    assert run("words", BOTH) == ["wts"]
+
+
+def test_mode_items_ignores_words():
+    assert run("items", WORD_ONLY) == []
+    assert run("items", ITEM_ONLY) == ["Клинок Рудры"]
+    assert run("items", BOTH) == ["Клинок Рудры"]
+
+
+def test_mode_and_needs_both():
+    assert run("and", WORD_ONLY) == []
+    assert run("and", ITEM_ONLY) == []
+    assert run("and", BOTH) == ["wts", "Клинок Рудры"]
+
+
+def test_mode_or_is_default_and_takes_either():
+    assert Matcher([]).mode == "or"
+    assert run("or", WORD_ONLY) == ["wts"]
+    assert run("or", ITEM_ONLY) == ["Клинок Рудры"]
+    assert run("or", BOTH) == ["wts", "Клинок Рудры"]
+
+
+def test_set_mode_live_and_unknown_mode_falls_back_to_or():
+    m = Matcher(["wts"], watch_items=ITEMS, mode="bogus")
+    assert m.mode == "or"
+    m.set_mode("and")
+    assert m.check(item_msg(*WORD_ONLY), 0) == []

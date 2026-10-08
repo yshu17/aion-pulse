@@ -26,6 +26,7 @@ class Config:
     cooldown_sec: float = 60
     sound_path: str = ""
     alert_mode: str = "standard"  # "standard" | "nag"
+    search_mode: str = "or"  # "or" word or item, "words", "items", "and" word and item
     react_sec: int = 30  # nag mode: unaccepted alerts become «missed» after this; 0 = never
     nag_popup: bool = False  # nag mode: also show the always-on-top popup
     show_counters: bool = True
