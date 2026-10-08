@@ -2,6 +2,7 @@
 
 import ctypes
 import tkinter as tk
+from pathlib import Path
 from tkinter import font as tkfont
 from tkinter import ttk
 
@@ -25,12 +26,17 @@ HIT_BG = "#ff8c1a"
 HIT_FG = "#1b1206"
 NICK = "#9cc4ff"
 CHECK_SIZE = 24
+RADIUS = 9  # buttons, fields, tabs, counters (images drawn by tools/build_ui.py)
+CARD_RADIUS = 12  # cards (feed, item list)
 
 _images: list[tk.PhotoImage] = []  # keep references, Tk does not
 
 
-def apply_dark_theme(root: tk.Tk) -> None:
-    """Configure fonts and ttk styles for the whole app."""
+def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
+    """Configure fonts and ttk styles for the whole app.
+
+    With ui_dir (data/ui) the controls get rounded corners from its images; without it they are flat.
+    """
     for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):
         tkfont.nametofont(name).configure(family=FONT_FAMILY, size=FONT_SIZE)
     root.configure(background=BG)
@@ -53,6 +59,7 @@ def apply_dark_theme(root: tk.Tk) -> None:
     )
     style.configure("TFrame", background=BG)
     style.configure("Card.TFrame", background=SURFACE)
+    style.configure("Surface.TFrame", background=SURFACE)  # flat, for frames inside a card
     style.configure("TLabel", background=BG, foreground=TEXT)
     style.configure("Muted.TLabel", background=BG, foreground=MUTED)
     style.configure("Status.TLabel", background=BG, foreground=MUTED)
@@ -255,11 +262,113 @@ def apply_dark_theme(root: tk.Tk) -> None:
         font=(FONT_FAMILY, FONT_SIZE, "bold"),
         padding=(4, 2),
     )
+    if ui_dir is not None and (Path(ui_dir) / "btn.png").is_file():
+        _apply_rounded(style, root, Path(ui_dir))
     style.configure("Item.TCheckbutton", background=SURFACE, foreground=TEXT, padding=(8, 4))
     style.map(
         "Item.TCheckbutton",
         background=[("disabled", SURFACE), ("active", SURFACE_2)],
         foreground=[("disabled", DISABLED), ("selected", ACCENT)],
+    )
+
+
+def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
+    """Swap the flat clam borders for 9-slice rounded images."""
+
+    def img(name: str) -> tk.PhotoImage:
+        image = tk.PhotoImage(master=root, file=str(ui_dir / f"{name}.png"))
+        _images.append(image)
+        return image
+
+    def element(name: str, base: str, states: list[tuple], border: int, padding=None) -> None:
+        specs = [(*state, img(file)) for *state, file in states]
+        options = {"border": border, "sticky": "nswe"}
+        if padding is not None:
+            options["padding"] = padding
+        style.element_create(name, "image", img(base), *specs, **options)
+
+    edge = RADIUS + 1
+    inner = (RADIUS // 2 + 3, 3)  # keeps text clear of the corners without growing the widget
+    # buttons: on the window background, and on cards («Card.» prefix)
+    for prefix, file_prefix in (("", ""), ("Card.", "card_")):
+        name = f"{prefix}Rounded.Button.border"
+        element(
+            name,
+            f"{file_prefix}btn",
+            [("disabled", f"{file_prefix}btn_disabled"), ("pressed", f"{file_prefix}btn_active"),
+             ("active", f"{file_prefix}btn_active")],
+            edge,
+            inner,
+        )
+        style.layout(
+            f"{prefix}TButton",
+            [(name, {"sticky": "nswe", "children": [
+                ("Button.padding", {"sticky": "nswe", "children": [("Button.label", {"sticky": "nswe"})]})
+            ]})],
+        )
+    style.configure("Card.TButton", background=SURFACE, foreground=TEXT, padding=(14, 6))
+    style.map("Card.TButton", foreground=[("disabled", DISABLED)])
+    for name, base, hover in (("Accent", "accent", "accent_active"), ("Danger", "danger", "danger_active")):
+        element(f"{name}.Rounded.border", base, [("pressed", base), ("active", hover)], edge, inner)
+        style.layout(
+            f"{name}.TButton",
+            [(f"{name}.Rounded.border", {"sticky": "nswe", "children": [
+                ("Button.padding", {"sticky": "nswe", "children": [("Button.label", {"sticky": "nswe"})]})
+            ]})],
+        )
+
+    # entry and combobox fields
+    element(
+        "Rounded.field",
+        "field",
+        [("disabled", "field_disabled"), ("focus", "field_focus")],
+        edge,
+        (3, 2),
+    )
+    style.layout(
+        "TEntry",
+        [("Rounded.field", {"sticky": "nswe", "children": [
+            ("Entry.padding", {"sticky": "nswe", "children": [("Entry.textarea", {"sticky": "nswe"})]})
+        ]})],
+    )
+    style.layout(
+        "TCombobox",
+        [("Rounded.field", {"sticky": "nswe", "children": [
+            ("Combobox.downarrow", {"side": "right", "sticky": "ns"}),
+            ("Combobox.padding", {"expand": "1", "sticky": "nswe", "children": [
+                ("Combobox.textarea", {"sticky": "nswe"})
+            ]}),
+        ]})],
+    )
+    style.configure("TEntry", padding=(6, 4))
+    style.configure("TCombobox", padding=(6, 3), arrowsize=14)
+    style.map("TCombobox", background=[("active", SURFACE_2), ("readonly", SURFACE_2)])
+
+    # cards, group headers, counters
+    element("Card.border", "card", [], CARD_RADIUS + 1)
+    style.layout("Card.TFrame", [("Card.border", {"sticky": "nswe"})])
+    element("Group.border", "group", [], edge)
+    style.layout("Group.TFrame", [("Group.border", {"sticky": "nswe"})])
+    element("Pill.border", "pill", [], edge, inner)
+    for name in ("Found", "Reacted", "Missed"):
+        style.layout(
+            f"{name}.Counter.TLabel",
+            [("Pill.border", {"sticky": "nswe", "children": [
+                ("Label.padding", {"sticky": "nswe", "children": [("Label.label", {"sticky": "nswe"})]})
+            ]})],
+        )
+
+    # notebook tabs: rounded top corners
+    element("Rounded.tab", "tab", [("selected", "tab_selected"), ("active", "tab_active")], edge, inner)
+    style.configure("TNotebook", bordercolor=BG, lightcolor=BG, darkcolor=BG)
+    style.map("TNotebook.Tab", expand=[])
+    style.layout(
+        "TNotebook.Tab",
+        [("Rounded.tab", {"sticky": "nswe", "children": [
+            ("Notebook.padding", {"side": "top", "sticky": "nswe", "children": [
+                ("Notebook.label", {"side": "top", "sticky": ""})
+            ]})
+        ]})],
     )
 
 

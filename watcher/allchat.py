@@ -109,7 +109,7 @@ class AllChatView(ttk.Frame):
         self.status_var = tk.StringVar()
         ttk.Label(bar, textvariable=self.status_var, style="Status.TLabel").pack(side="left", padx=12)
 
-        card = ttk.Frame(self, style="Card.TFrame", padding=2)
+        card = ttk.Frame(self, style="Card.TFrame", padding=6)
         card.pack(fill="both", expand=True)
         self.text = tk.Text(card, wrap="word", state="disabled")
         theme.style_text(self.text)

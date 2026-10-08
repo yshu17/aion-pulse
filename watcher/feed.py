@@ -34,7 +34,7 @@ class MatchFeed(ttk.Frame):
         on_item_enter: Callable[[str], None] | None = None,
         on_item_leave: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__(parent, style="Card.TFrame", padding=2)
+        super().__init__(parent, style="Card.TFrame", padding=6)
         self.on_accept = on_accept
         self.max_rows = max_rows
         self.boxes: dict[int, ttk.Checkbutton] = {}

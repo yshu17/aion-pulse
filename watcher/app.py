@@ -93,7 +93,7 @@ class App:
         root.title("Aion Chat Watcher")
         root.geometry("1400x860")
         root.minsize(1000, 600)
-        theme.apply_dark_theme(root)
+        theme.apply_dark_theme(root, resource_root() / "data" / "ui")
         theme.dark_title_bar(root)
 
         header = ttk.Frame(root, padding=(16, 12, 16, 4))
@@ -360,17 +360,17 @@ class App:
         """Right-hand list: checkbox + icon + name for each watchable item."""
         panel = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10, 4, 10))
         panel.pack(side="right", fill="y", padx=(12, 0))
-        head = ttk.Frame(panel, style="Card.TFrame")
+        head = ttk.Frame(panel, style="Surface.TFrame")
         head.pack(fill="x", padx=(0, 8))
         self.items_title = ttk.Label(head, text="Что искать", style="Title.TLabel")
         self.items_title.pack(side="left")
-        clear = ttk.Button(head, text="Снять", command=lambda: self._select_all_items(False))
+        clear = ttk.Button(head, text="Снять", style="Card.TButton", command=lambda: self._select_all_items(False))
         clear.pack(side="right")
-        select_all = ttk.Button(head, text="Все", command=lambda: self._select_all_items(True))
+        select_all = ttk.Button(head, text="Все", style="Card.TButton", command=lambda: self._select_all_items(True))
         select_all.pack(side="right", padx=6)
         self.item_controls: list[ttk.Widget] = [clear, select_all]
 
-        holder = ttk.Frame(panel, style="Card.TFrame")
+        holder = ttk.Frame(panel, style="Surface.TFrame")
         holder.pack(fill="both", expand=True, pady=(10, 0))
         canvas = tk.Canvas(
             holder, width=520, highlightthickness=0, borderwidth=0, background=theme.SURFACE
@@ -379,7 +379,7 @@ class App:
         canvas.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
-        inner = ttk.Frame(canvas, style="Card.TFrame")
+        inner = ttk.Frame(canvas, style="Surface.TFrame")
         window = canvas.create_window((0, 0), window=inner, anchor="nw")
         inner.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
@@ -424,7 +424,7 @@ class App:
         )
         group_box.pack(side="right")
         self.item_controls.append(group_box)
-        body = ttk.Frame(parent, style="Card.TFrame")
+        body = ttk.Frame(parent, style="Surface.TFrame")
         self._group_heads[category] = head
         self.group_bodies[category] = body
         if category not in self.cfg.collapsed_groups:
