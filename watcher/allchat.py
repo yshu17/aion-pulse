@@ -29,6 +29,8 @@ _NAME_COLORS = {
     "0.6118 0.9059 0.8627": "Легион",
 }
 _WHISPER_VERBS = {"шепчет", "шепчете"}
+_ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
+HIGHLIGHT_NAMES = re.compile(r"рудр", re.IGNORECASE)  # item links worth spotting in the chat
 _NOTICE = re.compile(
     r"^(Получено|Получен[аы]?|Вы получили|Использовано|Невозможно|Нельзя|Недостаточно|Вы не можете|"
     r"Цель находится|Кто-то уже|Не удалось|Задание|Вы вошли|Вы покинули)"
@@ -60,6 +62,7 @@ def is_notice(line: ChatLine) -> bool:
 
 
 class AllChatView(ttk.Frame):
+    ITEM_COLOR = theme.ACCENT  # «рыжий», like epic item links in the game
     def __init__(
         self,
         parent: tk.Misc,
@@ -69,12 +72,18 @@ class AllChatView(ttk.Frame):
         show_system: bool,
         on_settings: Callable[..., None],
         toolbar_parent: tk.Misc | None = None,
+        spec_items: Mapping[str, str] | None = None,
+        on_item_enter: Callable[[str], None] | None = None,
+        on_item_leave: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.get_path = get_path
         self.get_minutes = get_minutes  # history period, shared with the search tab («История»)
         self.names = names
         self.on_settings = on_settings
+        self.spec_items = dict(spec_items or {})  # item name -> id, for items with a tooltip
+        self.on_item_enter = on_item_enter
+        self.on_item_leave = on_item_leave
         self.tailer: LogTailer | None = None
         self.paused = False
         self.active = False
@@ -112,6 +121,45 @@ class AllChatView(ttk.Frame):
         scroll.pack(side="right", fill="y")
         self.text.pack(side="left", fill="both", expand=True)
         self._color_tags: dict[str, str] = {}
+        self.text.tag_configure("item", foreground=self.ITEM_COLOR)
+        self._item_tags: set[str] = set()
+
+    def _text_parts(self, text: str) -> list:
+        """Message text with Rudra / watched item links shown game-style: orange «<Name>»."""
+        parts: list = []
+        pos = 0
+        for match in _ITEM_LINK.finditer(text):
+            name = match.group(1)
+            item_id = self.spec_items.get(name)
+            if item_id is None and not HIGHLIGHT_NAMES.search(name):
+                continue
+            parts += [text[pos : match.start()], ()]
+            tags: tuple = ("item",)
+            if item_id is not None:
+                tags += (self._item_tag(item_id),)
+            parts += [f"<{name}>", tags]
+            pos = match.end()
+        parts += [text[pos:], ()]
+        return parts
+
+    def _item_tag(self, item_id: str) -> str:
+        """Per-item tag: hovering it shows the item's spec tooltip."""
+        tag = f"item_{item_id}"
+        if tag not in self._item_tags:
+            self._item_tags.add(tag)
+            self.text.tag_bind(tag, "<Enter>", lambda _e: self._item_enter(item_id))
+            self.text.tag_bind(tag, "<Leave>", lambda _e: self._item_leave())
+        return tag
+
+    def _item_enter(self, item_id: str) -> None:
+        self.text.configure(cursor="hand2")
+        if self.on_item_enter is not None:
+            self.on_item_enter(item_id)
+
+    def _item_leave(self) -> None:
+        self.text.configure(cursor="")
+        if self.on_item_leave is not None:
+            self.on_item_leave()
 
     def _tag_for(self, color: str) -> str:
         tag = self._color_tags.get(color)
@@ -236,7 +284,7 @@ class AllChatView(ttk.Frame):
                 parts += [f"[{line.channel}] ", (self._tag_for(theme.MUTED),)]
             if line.nick:
                 parts += [f"{line.nick}: ", ("nick",)]
-                parts += [line.text, ()]
+                parts += self._text_parts(line.text)
             else:
                 parts += [line.text, (self._tag_for(theme.MUTED),)]
             parts += ["\n", ()]

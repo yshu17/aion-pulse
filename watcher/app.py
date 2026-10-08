@@ -225,6 +225,9 @@ class App:
             show_system=self.cfg.chat_system,
             on_settings=self._on_chat_settings,
             toolbar_parent=root,
+            spec_items={item.name: item.id for item in self.watch_items if item.id in self.specs},
+            on_item_enter=self._schedule_tooltip,
+            on_item_leave=self._hide_tooltip,
         )
         self.all_chat.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.all_chat, text="Весь чат")

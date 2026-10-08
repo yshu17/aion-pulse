@@ -190,3 +190,40 @@ def test_toolbar_can_live_outside_the_view(root, tmp_path):
     )
     assert view.toolbar.master is holder
     assert view.system_var.get() is False
+
+
+def test_rudra_item_links_are_highlighted_and_hover_shows_spec(root, tmp_path):
+    log = tmp_path / "Chat.log"
+    log.write_bytes(b"")
+    hovered = []
+    view = AllChatView(
+        root,
+        get_path=lambda: str(log),
+        names={"110600968": "Кираса Рудры", "186020252": "Эссенция Рудры", "1": "Бож. камень"},
+        get_minutes=lambda: 0,
+        show_system=False,
+        on_settings=lambda **kw: None,
+        spec_items={"Кираса Рудры": "110600968"},
+        on_item_enter=hovered.append,
+        on_item_leave=lambda: hovered.append("leave"),
+    )
+    view.pack()
+    view.activate()
+    write(log, [
+        f"{stamp(0)} : [3.Поиск группы] [charname:A;1 1 1]: wts [item:110600968;ver2;;;] 5кк",
+        f"{stamp(0)} : [3.Поиск группы] [charname:B;1 1 1]: [item:186020252;ver2;;;] и [item:1;ver2;;;]",
+    ])
+    view._poll()
+    t = text(view)
+    assert "A: wts <Кираса Рудры> 5кк" in t
+    assert "B: <Эссенция Рудры> и [Бож. камень]" in t  # any Rudra item is highlighted, others are not
+    start, end = view.text.tag_ranges("item_110600968")
+    assert view.text.get(start, end) == "<Кираса Рудры>"
+    assert view.text.tag_cget("item", "foreground") == view.ITEM_COLOR
+    assert len(view.text.tag_ranges("item")) == 4  # two highlighted links
+    assert view.text.tk.call(view.text._w, "tag", "bind", "item_110600968", "<Enter>")  # hover is wired
+    assert not view.text.tag_ranges("item_186020252")  # no spec -> no tooltip tag
+    view._item_enter("110600968")
+    view._item_leave()
+    assert hovered == ["110600968", "leave"]
+    view.deactivate()
