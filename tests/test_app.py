@@ -382,7 +382,7 @@ def test_unaccepted_rows_expire_to_missed(tmp_path):
         alert_id = app.tracker.pending_ids[0]
         app._ui_tick(now=app.tracker._pending[alert_id].created + 31)
         assert counters(app) == (1, 0, 1)
-        assert app.feed.boxes[alert_id].cget("text") == "пропущено"
+        assert app.feed.countdowns[alert_id].cget("text") == "пропущено"
         assert app.missed_var.get() == "Пропущено: 1"
         assert calls[-1] == ("close",)
         app.stop()

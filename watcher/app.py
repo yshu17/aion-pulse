@@ -263,12 +263,14 @@ class App:
     def _ui_tick(self, now: float | None = None) -> None:
         """Blink pending rows and move overdue ones to «missed»."""
         self._ui_after = None
-        expired = self.tracker.expire(time.monotonic() if now is None else now)
+        current = time.monotonic() if now is None else now
+        expired = self.tracker.expire(current)
         for alert_id in expired:
             self.feed.mark(alert_id, "missed")
         if expired:
             self._after_alert_change()
         if self.tracker.pending_ids:
+            self.feed.set_countdown(self.tracker.remaining(current))
             self.feed.blink()
         if now is None:
             self._ui_after = self.root.after(UI_TICK_MS, self._ui_tick)
@@ -591,6 +593,8 @@ class App:
         for msg, hits in matched:
             alert_id = self.tracker.add(msg, hits, now, nag=nag)
             self.feed.add(msg, hits, alert_id if nag else None)
+            if nag:
+                self.feed.set_countdown(self.tracker.remaining(now))
         if nag:
             self.alarm.trigger(matched, popup=self.cfg.nag_popup)
         else:

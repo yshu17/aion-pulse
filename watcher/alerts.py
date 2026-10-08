@@ -57,6 +57,12 @@ class AlertTracker:
             self.missed += 1
         return overdue
 
+    def remaining(self, now: float) -> dict[int, float]:
+        """Seconds left before each pending alert expires ({} when there is no timeout)."""
+        if self.react_sec <= 0:
+            return {}
+        return {a.id: self.react_sec - (now - a.created) for a in self._pending.values()}
+
     def reset(self) -> None:
         """Zero the counters. Pending alerts stay pending."""
         self.found = self.reacted = self.missed = 0

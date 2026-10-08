@@ -42,6 +42,15 @@ def test_no_timeout_when_react_sec_is_zero():
     assert t.pending_ids == [a]
 
 
+def test_remaining_seconds_per_pending_alert():
+    t = AlertTracker(react_sec=30)
+    a = t.add(msg("A"), ["wts"], now=0, nag=True)
+    b = t.add(msg("B"), ["wts"], now=10, nag=True)
+    assert t.remaining(now=12) == {a: 18, b: 28}
+    t.react_sec = 0
+    assert t.remaining(now=12) == {}
+
+
 def test_accept_all_and_reset():
     t = AlertTracker(react_sec=30)
     t.add(msg("A"), ["wts"], now=0, nag=True)

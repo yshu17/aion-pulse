@@ -166,6 +166,27 @@ def apply_dark_theme(root: tk.Tk) -> None:
     style.layout("Missed.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Missed.TCheckbutton", background=SURFACE, foreground=MUTED, padding=(2, 0))
 
+    # right-edge checkbox of a pending alert: tight images, blinks between two styles
+    cold, hot, done = _pending_images(root)
+    style.element_create("Pend.indicator", "image", cold, ("selected", done), border=0, sticky="")
+    style.element_create("PendHot.indicator", "image", hot, ("selected", done), border=0, sticky="")
+    for name, element, background in (
+        ("Pend.TCheckbutton", "Pend.indicator", SURFACE),
+        ("PendHot.TCheckbutton", "PendHot.indicator", "#5a3610"),
+    ):
+        style.layout(name, [("Checkbutton.padding", {"sticky": "nswe", "children": [(element, {"sticky": ""})]})])
+        style.configure(name, background=background, padding=(0, 0))
+        style.map(name, background=[("active", background)])
+    accepted, missed = _result_images(root)
+    for name, element, image, background in (
+        ("Accept.TCheckbutton", "Accept.indicator", accepted, "#173a24"),
+        ("Missed.TCheckbutton", "Missed.indicator", missed, "#3d1a1d"),
+    ):
+        style.element_create(element, "image", image, border=0, sticky="")
+        style.layout(name, [("Checkbutton.padding", {"sticky": "nswe", "children": [(element, {"sticky": ""})]})])
+        style.configure(name, background=background, padding=(0, 0))
+        style.map(name, background=[("disabled", background), ("active", background)])
+
     style.configure("TNotebook", background=BG, borderwidth=0, tabmargins=(0, 0, 0, 0))
     style.configure(
         "TNotebook.Tab",
@@ -225,6 +246,40 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
         _dot(on, x, 15 - (x - 10), ACCENT_TEXT)
     _images.extend((off, on))
     return off, on
+
+
+def _pending_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage, tk.PhotoImage]:
+    """24px boxes without side padding: normal, highlighted (blink) and checked."""
+    size = CHECK_SIZE
+    cold, hot, done = (tk.PhotoImage(master=root, width=size, height=size) for _ in range(3))
+    cold.put(ACCENT, to=(1, 1, size - 1, size - 1))
+    cold.put(SURFACE_2, to=(3, 3, size - 3, size - 3))
+    hot.put(ACCENT_HOVER, to=(0, 0, size, size))
+    hot.put("#7a4a14", to=(4, 4, size - 4, size - 4))
+    done.put(ACCENT, to=(1, 1, size - 1, size - 1))
+    for x in range(6, 11):
+        _dot(done, x, 11 + (x - 6), ACCENT_TEXT)
+    for x in range(10, 19):
+        _dot(done, x, 15 - (x - 10), ACCENT_TEXT)
+    _images.extend((cold, hot, done))
+    return cold, hot, done
+
+
+def _result_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
+    """24px boxes for finished alerts: green check (accepted) and red cross (missed)."""
+    size = CHECK_SIZE
+    accepted, missed = (tk.PhotoImage(master=root, width=size, height=size) for _ in range(2))
+    accepted.put("#3fbf6f", to=(1, 1, size - 1, size - 1))
+    for x in range(6, 11):
+        _dot(accepted, x, 11 + (x - 6), "#0c2414")
+    for x in range(10, 19):
+        _dot(accepted, x, 15 - (x - 10), "#0c2414")
+    missed.put(DANGER, to=(1, 1, size - 1, size - 1))
+    for i in range(6, 17):
+        missed.put("#ffffff", to=(i, i, i + 2, i + 2))
+        missed.put("#ffffff", to=(i, size - i - 2, i + 2, size - i))
+    _images.extend((accepted, missed))
+    return accepted, missed
 
 
 def placeholder_icon(root: tk.Misc, size: int = 56) -> tk.PhotoImage:
