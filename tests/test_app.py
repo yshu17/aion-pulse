@@ -415,22 +415,107 @@ def test_popup_ack_accepts_all_and_settings_saved(tmp_path):
         root.destroy()
 
 
-def test_counters_toggle_and_reset(tmp_path):
-    import json
-
-    root, app, _calls, say = _nag_app(tmp_path, alert_mode="standard")
+def test_counters_always_shown_and_reset(tmp_path):
+    root, app, _calls, say = _nag_app(tmp_path, alert_mode="standard", show_counters=False)
     try:
+        assert not hasattr(app, "counters_var")  # no on/off checkbox any more
+        assert app.counters_bar.winfo_manager() == "pack"  # even with an old «show_counters: false»
         app.start()
         say("A")
         assert counters(app) == (1, 0, 0)
-        assert app.counters_bar.winfo_manager() == "pack"
-        app.counters_var.set(False)
-        app._on_counters_toggled()
-        assert not app.counters_bar.winfo_manager()
-        assert json.loads(app.config_path.read_text(encoding="utf-8"))["show_counters"] is False
         app._reset_counters()
         assert app.found_var.get() == "Найдено: 0"
         app.stop()
+    finally:
+        root.destroy()
+
+
+def test_short_status_indicator_in_folder_row(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        assert app.status_short_var.get() == "○ Не слежу"
+        app.start()
+        assert app.status_short_var.get().startswith("● Слежу")
+        app.stop()
+        assert app.status_short_var.get() == "○ Не слежу"
+        app.cfg.chat_log = str(tmp_path / "missing.log")
+        app.start()
+        assert app.status_short_var.get() == "⚠ Chat.log не найден"
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_folder_field_shows_full_chat_log_path(tmp_path):
+    import json
+    from pathlib import Path
+
+    root, app, _calls, _say = _nag_app(tmp_path, chat_log="")
+    try:
+        game = tmp_path / "Aion Empire"
+        app.game_dir_var.set(str(game))
+        app._apply_game_dir()
+        assert app.cfg.game_dir == str(game) and app.cfg.chat_log == ""
+        assert app.game_dir_var.get() == str(game / "classic" / "Chat.log")
+
+        app.game_dir_var.set(str(game / "classic" / "Chat.log"))  # pasting the full path also works
+        app._apply_game_dir()
+        assert app.cfg.game_dir == str(game) and app.cfg.chat_log == ""
+
+        other = tmp_path / "logs" / "Chat.log"
+        app.game_dir_var.set(str(other))
+        app._apply_game_dir()
+        assert Path(app.cfg.chat_log) == other
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["chat_log"] == str(other)
+    finally:
+        root.destroy()
+
+
+def test_volume_slider_sets_and_saves_volume(tmp_path):
+    import json
+
+    root, app, _calls, _say = _nag_app(tmp_path, sound_volume=40)
+    try:
+        assert app.volume_var.get() == 40 and app.notifier.volume == 40
+        app.volume_var.set(75)
+        app._on_volume_changed()
+        assert app.notifier.volume == 75
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["sound_volume"] == 75
+    finally:
+        root.destroy()
+
+
+def test_one_history_choice_drives_search_and_all_chat(tmp_path):
+    import json
+
+    root, app, _calls, _say = _nag_app(tmp_path, history_min=30)
+    try:
+        assert app.history_var.get() == "30 мин"
+        assert app.all_chat.get_minutes() == 30
+        reloads = []
+        app.all_chat.reload = lambda: reloads.append(1)
+        app.history_var.set("5 мин")
+        app._on_history_changed()
+        assert app.all_chat.get_minutes() == 5 and reloads == [1]
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["history_min"] == 5
+    finally:
+        root.destroy()
+
+
+def test_all_chat_toolbar_sits_in_tab_row_only_on_its_tab(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        app.all_chat.activate = lambda: None
+        app.all_chat.deactivate = lambda: None
+        toolbar = app.all_chat.toolbar
+        assert toolbar.master is not app.all_chat
+        assert not toolbar.winfo_manager()
+        app.tabs.select(app.all_chat)
+        app._on_tab_changed()
+        assert toolbar.winfo_manager() == "place"
+        app.tabs.select(app.search_tab)
+        app._on_tab_changed()
+        assert not toolbar.winfo_manager()
     finally:
         root.destroy()
 

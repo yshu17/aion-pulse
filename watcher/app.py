@@ -38,6 +38,18 @@ SEARCH_MODES = {
 UI_TICK_MS = 500
 
 
+def short_status(text: str) -> tuple[str, str]:
+    """Compact status for the folder row and its label style."""
+    if text.startswith("Слежу"):
+        hint = text.split("  ·  ", 1)[1] if "  ·  " in text else ""
+        return ("● Слежу" + (f"  ·  {hint}" if hint else ""), "Live.TLabel")
+    if text.startswith("Chat.log не найден"):
+        return "⚠ Chat.log не найден", "Warn.TLabel"
+    if text.startswith("Ошибка"):
+        return "⚠ " + (text if len(text) <= 40 else text[:39] + "…"), "Warn.TLabel"
+    return "○ Не слежу", "Status.TLabel"
+
+
 def split_keywords(text: str) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
 
@@ -58,7 +70,7 @@ class App:
             watch_items=self._checked_items(),
             mode=self.cfg.search_mode,
         )
-        self.notifier = Notifier(self.cfg.sound_path)
+        self.notifier = Notifier(self.cfg.sound_path, volume=self.cfg.sound_volume)
         if self.cfg.react_sec not in REACT_CHOICES.values():
             self.cfg.react_sec = DEFAULT_REACT_SEC  # e.g. the removed «выкл» (0) from an older config
         self.tracker = AlertTracker(self.cfg.react_sec)
@@ -92,31 +104,34 @@ class App:
         top = ttk.Frame(root, padding=(16, 8))
         top.pack(fill="x")
         ttk.Label(top, text="Папка игры", style="Muted.TLabel").grid(row=0, column=0, sticky="w")
-        self.game_dir_var = tk.StringVar(value=self.cfg.game_dir)
+        self.game_dir_var = tk.StringVar(value=str(self.cfg.chat_log_path()))
         dir_entry = ttk.Entry(top, textvariable=self.game_dir_var)
-        dir_entry.grid(row=0, column=1, sticky="ew", padx=(12, 6), pady=4)
+        dir_entry.grid(row=0, column=1, sticky="ew", padx=(12, 12), pady=4)
         dir_entry.bind("<Return>", lambda _e: self._apply_game_dir())
         dir_entry.bind("<FocusOut>", lambda _e: self._apply_game_dir())
-        ttk.Button(top, text="Обзор…", command=self._pick_dir).grid(row=0, column=2, pady=4)
+        self.status_short_var = tk.StringVar()
+        self.status_label = ttk.Label(top, textvariable=self.status_short_var, style="Status.TLabel")
+        self.status_label.grid(row=0, column=2, sticky="w", padx=(0, 12))
+        ttk.Button(top, text="Обзор…", command=self._pick_dir).grid(row=0, column=3, pady=4)
 
         ttk.Label(top, text="Ключевые слова", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
         kw_entry = ttk.Entry(top, textvariable=self.kw_var)
         self.kw_entry = kw_entry
-        kw_entry.grid(row=1, column=1, sticky="ew", padx=(12, 6), pady=4)
+        kw_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=(12, 12), pady=4)
         self.search_mode_var = tk.StringVar(
             value=next((k for k, v in SEARCH_MODES.items() if v == self.cfg.search_mode), "Слово ИЛИ предмет")
         )
         search_mode = ttk.Combobox(
             top, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=18
         )
-        search_mode.grid(row=1, column=2, sticky="e", pady=4)
+        search_mode.grid(row=1, column=3, sticky="ew", pady=4)
         search_mode.bind("<<ComboboxSelected>>", lambda _e: self._on_search_mode_selected())
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
         ttk.Label(top, text="Оповещение", style="Muted.TLabel").grid(row=2, column=0, sticky="w")
         alert = ttk.Frame(top)
-        alert.grid(row=2, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=4)
+        alert.grid(row=2, column=1, columnspan=3, sticky="w", padx=(12, 0), pady=4)
         self.mode_var = tk.StringVar(
             value=next((k for k, v in ALERT_MODES.items() if v == self.cfg.alert_mode), "Стандартный")
         )
@@ -133,7 +148,7 @@ class App:
             textvariable=self.sound_var,
             values=[*self.sound_choices, CUSTOM_SOUND],
             state="readonly",
-            width=28,
+            width=22,
         )
         self.sound_box.pack(side="left")
         self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
@@ -155,14 +170,20 @@ class App:
             style="Plain.TCheckbutton",
             command=self._on_popup_toggled,
         ).pack(side="left", padx=(18, 0))
-        self.counters_var = tk.BooleanVar(value=self.cfg.show_counters)
-        ttk.Checkbutton(
+        ttk.Label(alert, text="Громкость", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        self.volume_var = tk.IntVar(value=self.notifier.volume)
+        ttk.Scale(
             alert,
-            text="Счётчики",
-            variable=self.counters_var,
-            style="Plain.TCheckbutton",
-            command=self._on_counters_toggled,
-        ).pack(side="left", padx=(18, 0))
+            from_=0,
+            to=100,
+            orient="horizontal",
+            length=120,
+            variable=self.volume_var,
+            command=lambda _v: self._on_volume_changed(save=False),
+        ).pack(side="left")
+        alert.winfo_children()[-1].bind("<ButtonRelease-1>", lambda _e: self._on_volume_changed())
+        self.volume_label = ttk.Label(alert, text=f"{self.notifier.volume}%", style="Muted.TLabel", width=5)
+        self.volume_label.pack(side="left", padx=(8, 0))
         top.columnconfigure(1, weight=1)
 
         bar = ttk.Frame(root, padding=(16, 6, 16, 10))
@@ -181,9 +202,8 @@ class App:
         )
         history.pack(side="left")
         history.bind("<<ComboboxSelected>>", lambda _e: self._on_history_changed())
-        self.status_var = tk.StringVar()
-        self.status_label = ttk.Label(bar, textvariable=self.status_var, style="Status.TLabel")
-        self.status_label.pack(side="left", padx=12)
+        ttk.Label(bar, text="поиск при Start и «Весь чат»", style="Muted.TLabel").pack(side="left", padx=10)
+        self.status_var = tk.StringVar()  # full status text; the folder row shows a short form
 
         self.tabs = ttk.Notebook(root)
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 16))
@@ -201,9 +221,10 @@ class App:
             self.tabs,
             get_path=lambda: str(self.cfg.chat_log_path()),
             names=self.item_names,
-            minutes=self.cfg.chat_minutes,
+            get_minutes=lambda: self.cfg.history_min,
             show_system=self.cfg.chat_system,
             on_settings=self._on_chat_settings,
+            toolbar_parent=root,
         )
         self.all_chat.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.all_chat, text="Весь чат")
@@ -226,8 +247,7 @@ class App:
         ):
             ttk.Label(self.counters_bar, textvariable=var, style=style).pack(side="left", padx=(0, 8))
         ttk.Button(self.counters_bar, text="Сбросить", command=self._reset_counters).pack(side="left")
-        if self.cfg.show_counters:
-            self.counters_bar.pack(fill="x", pady=(0, 10), after=self._counters_anchor)
+        self.counters_bar.pack(fill="x", pady=(0, 10), after=self._counters_anchor)
 
     def _update_counters(self) -> None:
         self.found_var.set(f"Найдено: {self.tracker.found}")
@@ -237,14 +257,6 @@ class App:
     def _reset_counters(self) -> None:
         self.tracker.reset()
         self._update_counters()
-
-    def _on_counters_toggled(self) -> None:
-        self.cfg.show_counters = self.counters_var.get()
-        if self.cfg.show_counters:
-            self.counters_bar.pack(fill="x", pady=(0, 10), after=self._counters_anchor)
-        else:
-            self.counters_bar.pack_forget()
-        save_config(self.config_path, self.cfg)
 
     def _on_search_mode_selected(self) -> None:
         self.cfg.search_mode = SEARCH_MODES.get(self.search_mode_var.get(), "or")
@@ -280,15 +292,25 @@ class App:
         self.cfg.nag_popup = self.popup_var.get()
         save_config(self.config_path, self.cfg)
 
-    def _on_chat_settings(self, minutes: int, show_system: bool) -> None:
-        self.cfg.chat_minutes = minutes
+    def _on_chat_settings(self, show_system: bool) -> None:
         self.cfg.chat_system = show_system
         save_config(self.config_path, self.cfg)
 
+    def _on_volume_changed(self, save: bool = True) -> None:
+        self.notifier.set_volume(self.volume_var.get())
+        self.volume_label.configure(text=f"{self.notifier.volume}%")
+        if save:
+            self.cfg.sound_volume = self.notifier.volume
+            save_config(self.config_path, self.cfg)
+
     def _on_tab_changed(self) -> None:
         if self.tabs.select() == str(self.all_chat):
+            # the tab's own controls sit in the free space of the tab row, right side
+            self.all_chat.toolbar.place(in_=self.tabs, relx=1.0, x=-2, y=2, anchor="ne")
+            self.all_chat.toolbar.lift()
             self.all_chat.activate()
         else:
+            self.all_chat.toolbar.place_forget()
             self.all_chat.deactivate()
 
     # --- alerts --------------------------------------------------------------------
@@ -530,6 +552,7 @@ class App:
     def _on_history_changed(self) -> None:
         self.cfg.history_min = HISTORY_CHOICES.get(self.history_var.get(), 0)
         save_config(self.config_path, self.cfg)
+        self.all_chat.reload()
 
     def _checked_items(self) -> dict[str, str]:
         names = {item.id: item.name for item in self.watch_items}
@@ -549,20 +572,33 @@ class App:
 
     def _set_status(self, text: str) -> None:
         self.status_var.set(text)
-        live = text.startswith("Слежу")
-        self.status_label.configure(style="Live.TLabel" if live else "Status.TLabel")
+        short, style = short_status(text)
+        self.status_short_var.set(short)
+        self.status_label.configure(style=style)
 
     def _pick_dir(self) -> None:
-        chosen = filedialog.askdirectory(initialdir=self.game_dir_var.get() or None)
+        chosen = filedialog.askdirectory(initialdir=self.cfg.game_dir or None)
         if chosen:
             self.game_dir_var.set(str(Path(chosen)))
             self._apply_game_dir()
 
     def _apply_game_dir(self) -> None:
-        new_dir = self.game_dir_var.get().strip()
-        if new_dir == self.cfg.game_dir:
+        """Accept a game folder or a full path to Chat.log; show the resulting Chat.log path."""
+        text = self.game_dir_var.get().strip().strip('"')
+        game_dir, chat_log = self.cfg.game_dir, self.cfg.chat_log
+        if text:
+            path = Path(text)
+            if path.name.lower() == "chat.log":
+                if path.parent.name.lower() == "classic":
+                    game_dir, chat_log = str(path.parent.parent), ""
+                else:
+                    chat_log = str(path)
+            else:
+                game_dir, chat_log = str(path), ""
+        self.game_dir_var.set(str(Path(game_dir) / "classic" / "Chat.log") if not chat_log else chat_log)
+        if (game_dir, chat_log) == (self.cfg.game_dir, self.cfg.chat_log):
             return
-        self.cfg.game_dir = new_dir
+        self.cfg.game_dir, self.cfg.chat_log = game_dir, chat_log
         save_config(self.config_path, self.cfg)
         if self.running:
             self.stop()

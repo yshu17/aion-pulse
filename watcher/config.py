@@ -25,12 +25,13 @@ class Config:
     poll_interval_ms: int = 500
     cooldown_sec: float = 60
     sound_path: str = ""
+    sound_volume: int = 80  # 0..100 %, volume of this program's alert sounds
     alert_mode: str = "standard"  # "standard" | "nag"
     search_mode: str = "or"  # "or" word or item, "words", "items", "and" word and item
     react_sec: int = 30  # nag mode: unaccepted alerts become «missed» after this; 0 = never
     nag_popup: bool = False  # nag mode: also show the always-on-top popup
-    show_counters: bool = True
-    chat_minutes: int = 15  # «Весь чат» tab: history shown on open
+    show_counters: bool = True  # unused: counters are always shown (kept so old configs load)
+    chat_minutes: int = 15  # unused: «Весь чат» uses history_min (kept so old configs load)
     chat_system: bool = False  # «Весь чат» tab: include system messages
 
     def chat_log_path(self) -> Path:

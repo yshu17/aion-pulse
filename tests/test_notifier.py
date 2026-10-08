@@ -5,6 +5,7 @@ from watcher.notifier import Notifier
 
 
 def record_calls(monkeypatch):
+    monkeypatch.setattr(notifier, "default_beep_path", lambda: None)
     calls = []
     monkeypatch.setattr(notifier.winsound, "MessageBeep", lambda kind: calls.append(("beep", kind)))
     monkeypatch.setattr(
@@ -80,3 +81,35 @@ def test_system_sounds_lists_wav_files_sorted(tmp_path):
         (tmp_path / name).write_bytes(b"RIFF")
     assert [p.name for p in system_sounds(tmp_path)] == ["Alarm01.wav", "Ring01.wav"]
     assert system_sounds(tmp_path / "missing") == []
+
+
+def test_system_beep_plays_windows_wav_so_volume_applies(tmp_path, monkeypatch):
+    calls = record_calls(monkeypatch)
+    wav = tmp_path / "Windows Exclamation.wav"
+    wav.write_bytes(b"RIFF")
+    monkeypatch.setattr(notifier, "default_beep_path", lambda: str(wav))
+    Notifier("").play()
+    assert calls == [("play", str(wav), winsound.SND_FILENAME | winsound.SND_ASYNC)]
+
+
+def test_default_beep_path_prefers_exclamation(tmp_path):
+    from watcher.notifier import default_beep_path
+
+    (tmp_path / "Windows Background.wav").write_bytes(b"RIFF")
+    assert default_beep_path(tmp_path).endswith("Windows Background.wav")
+    (tmp_path / "Windows Exclamation.wav").write_bytes(b"RIFF")
+    assert default_beep_path(tmp_path).endswith("Windows Exclamation.wav")
+    assert default_beep_path(tmp_path / "missing") is None
+
+
+def test_set_volume_scales_both_channels(monkeypatch):
+    sent = []
+    monkeypatch.setattr(notifier, "_wave_out_set_volume", lambda value: sent.append(value))
+    n = Notifier("")
+    sent.clear()
+    n.set_volume(100)
+    n.set_volume(50)
+    n.set_volume(0)
+    n.set_volume(250)  # clamped
+    assert sent == [0xFFFFFFFF, 0x7FFF7FFF, 0, 0xFFFFFFFF]
+    assert n.volume == 100

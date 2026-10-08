@@ -24,6 +24,7 @@ def write(path, lines, mode="ab"):
 
 
 def make(root, tmp_path, minutes=15, system=False):
+    period = {"minutes": minutes}
     log = tmp_path / "Chat.log"
     write(
         log,
@@ -40,11 +41,12 @@ def make(root, tmp_path, minutes=15, system=False):
         root,
         get_path=lambda: str(log),
         names={},
-        minutes=minutes,
+        get_minutes=lambda: period["minutes"],
         show_system=system,
         on_settings=lambda **kw: saved.update(kw),
     )
     view.pack()
+    view.period = period
     return view, log, saved
 
 
@@ -63,23 +65,16 @@ def test_activate_shows_last_minutes_oldest_first_without_system(root, tmp_path)
     view.deactivate()
 
 
-def test_periods_offered():
-    from watcher.allchat import PERIODS
-
-    assert list(PERIODS.values()) == [5, 15, 30, 45, 60]
-
-
 def test_system_messages_toggle_and_period_change_reload(root, tmp_path):
     view, _log, saved = make(root, tmp_path)
     view.activate()
     view.system_var.set(True)
     view._on_settings_changed()
     assert "Получено кинаров: 1 000." in text(view)
-    assert saved == {"minutes": 15, "show_system": True}
-    view.minutes_var.set("30 мин")  # «Old» is 20 min back
-    view._on_settings_changed()
+    assert saved == {"show_system": True}
+    view.period["minutes"] = 30  # «Old» is 20 min back; the app calls reload() when «История» changes
+    view.reload()
     assert "Old: давно" in text(view)
-    assert saved["minutes"] == 30
     view.deactivate()
 
 
@@ -104,7 +99,7 @@ def test_missing_log_shows_status_and_deactivate_stops_polling(root, tmp_path):
         root,
         get_path=lambda: str(tmp_path / "none.log"),
         names={},
-        minutes=15,
+        get_minutes=lambda: 15,
         show_system=False,
         on_settings=lambda **kw: None,
     )
@@ -162,7 +157,7 @@ def test_view_shows_only_wanted_channels(root, tmp_path):
         ],
         "wb",
     )
-    view = AllChatView(root, get_path=lambda: str(log), names={}, minutes=15, show_system=True,
+    view = AllChatView(root, get_path=lambda: str(log), names={}, get_minutes=lambda: 15, show_system=True,
                        on_settings=lambda **kw: None)
     view.activate()
     t = text(view)
@@ -170,3 +165,28 @@ def test_view_shows_only_wanted_channels(root, tmp_path):
     assert "[Группа] Grp: в группе" in t
     assert "Получено: [item]" in t
     view.deactivate()
+
+
+def test_zero_minutes_shows_only_new_lines(root, tmp_path):
+    view, log, _ = make(root, tmp_path, minutes=0)
+    view.activate()
+    assert "Lfg:" not in text(view) and "Whisp:" not in text(view)
+    write(log, [f"{stamp(0)} : [3.Поиск группы] [charname:Fresh;1 1 1]: новое"])
+    view._poll()
+    assert "Fresh: новое" in text(view)
+    view.deactivate()
+
+
+def test_toolbar_can_live_outside_the_view(root, tmp_path):
+    holder = tk.Frame(root)
+    view = AllChatView(
+        root,
+        get_path=lambda: str(tmp_path / "none.log"),
+        names={},
+        get_minutes=lambda: 15,
+        show_system=False,
+        on_settings=lambda **kw: None,
+        toolbar_parent=holder,
+    )
+    assert view.toolbar.master is holder
+    assert view.system_var.get() is False

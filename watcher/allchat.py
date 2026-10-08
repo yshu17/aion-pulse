@@ -13,8 +13,6 @@ from watcher.tailer import LogTailer
 POLL_MS = 500
 RETRY_MS = 2000
 MAX_ROWS = 2000
-PERIODS = {f"{m} мин": m for m in (5, 15, 30, 45, 60)}
-
 # Shown categories and their colours. Channel-less player lines are told apart by the name colour
 # the game writes into [charname:Name;r g b] (Aion's default chat colours).
 CATEGORY_COLORS = {
@@ -67,12 +65,14 @@ class AllChatView(ttk.Frame):
         parent: tk.Misc,
         get_path: Callable[[], str],
         names: Mapping[str, str],
-        minutes: int,
+        get_minutes: Callable[[], int],
         show_system: bool,
         on_settings: Callable[..., None],
+        toolbar_parent: tk.Misc | None = None,
     ) -> None:
         super().__init__(parent)
         self.get_path = get_path
+        self.get_minutes = get_minutes  # history period, shared with the search tab («История»)
         self.names = names
         self.on_settings = on_settings
         self.tailer: LogTailer | None = None
@@ -81,20 +81,15 @@ class AllChatView(ttk.Frame):
         self._after_id: str | None = None
         self._held: list[str] = []
         self._rows = 0
-        self._build(minutes, show_system)
+        self._build(show_system, toolbar_parent)
 
     # --- UI -----------------------------------------------------------------------
-    def _build(self, minutes: int, show_system: bool) -> None:
-        bar = ttk.Frame(self, padding=(0, 0, 0, 8))
-        bar.pack(fill="x")
-        ttk.Label(bar, text="Показать за", style="Muted.TLabel").pack(side="left", padx=(0, 6))
-        label = next((k for k, v in PERIODS.items() if v == minutes), "15 мин")
-        self.minutes_var = tk.StringVar(value=label)
-        period = ttk.Combobox(
-            bar, textvariable=self.minutes_var, values=list(PERIODS), state="readonly", width=7
-        )
-        period.pack(side="left")
-        period.bind("<<ComboboxSelected>>", lambda _e: self._on_settings_changed())
+    def _build(self, show_system: bool, toolbar_parent: tk.Misc | None) -> None:
+        """Toolbar (system checkbox, pause, status) goes into toolbar_parent if given, else on top."""
+        bar = ttk.Frame(toolbar_parent if toolbar_parent is not None else self)
+        if toolbar_parent is None:
+            bar.pack(fill="x", pady=(0, 8))
+        self.toolbar = bar
         self.system_var = tk.BooleanVar(value=show_system)
         ttk.Checkbutton(
             bar,
@@ -102,7 +97,7 @@ class AllChatView(ttk.Frame):
             variable=self.system_var,
             style="Plain.TCheckbutton",
             command=self._on_settings_changed,
-        ).pack(side="left", padx=16)
+        ).pack(side="left", padx=(0, 16))
         self.pause_btn = ttk.Button(bar, text="Пауза", command=self.toggle_pause)
         self.pause_btn.pack(side="left")
         self.status_var = tk.StringVar()
@@ -150,8 +145,11 @@ class AllChatView(ttk.Frame):
             self._show(held)
 
     def _on_settings_changed(self) -> None:
-        minutes = PERIODS.get(self.minutes_var.get(), 15)
-        self.on_settings(minutes=minutes, show_system=self.system_var.get())
+        self.on_settings(show_system=self.system_var.get())
+        self.reload()
+
+    def reload(self) -> None:
+        """Re-read the history period (e.g. after «История» changed) if the view is open."""
         if self.active:
             self.activate()
 
@@ -163,8 +161,9 @@ class AllChatView(ttk.Frame):
             tailer.start_at_end()
             lines = []
             if with_history:
-                since = datetime.now() - timedelta(minutes=PERIODS.get(self.minutes_var.get(), 15))
-                lines = tailer.read_backlog(since)
+                minutes = self.get_minutes()
+                if minutes > 0:
+                    lines = tailer.read_backlog(datetime.now() - timedelta(minutes=minutes))
         except FileNotFoundError:
             self.status_var.set(f"Chat.log не найден: {path}")
             self._schedule(RETRY_MS, retry=True)

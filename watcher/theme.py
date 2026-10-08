@@ -57,6 +57,17 @@ def apply_dark_theme(root: tk.Tk) -> None:
     style.configure("Muted.TLabel", background=BG, foreground=MUTED)
     style.configure("Status.TLabel", background=BG, foreground=MUTED)
     style.configure("Live.TLabel", background=BG, foreground="#5fd38d")
+    style.configure("Warn.TLabel", background=BG, foreground=DANGER)
+    style.configure(
+        "Horizontal.TScale",
+        background=ACCENT,
+        troughcolor=SURFACE_2,
+        bordercolor=SURFACE_2,
+        lightcolor=ACCENT,
+        darkcolor=ACCENT,
+        sliderthickness=16,
+    )
+    style.map("Horizontal.TScale", background=[("active", ACCENT_HOVER)])
     style.configure(
         "Title.TLabel",
         background=SURFACE,
