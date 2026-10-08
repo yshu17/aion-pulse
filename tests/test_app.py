@@ -31,3 +31,41 @@ def test_tick_keeps_polling_when_processing_fails(tmp_path):
         app.stop()
     finally:
         root.destroy()
+
+
+def test_missing_log_then_reappear_starts_at_end(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "late_chat.log"
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(log), "keywords": ["ммк"]}), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        beeps = []
+        app.notifier.play = lambda *a, **k: beeps.append(1)
+        app.start()
+        assert app.status_var.get().startswith("Chat.log не найден")
+        assert app._after_id is not None
+        assert len(beeps) == 0
+
+        fmt = "2026.10.08 18:43:17 : [3.Поиск группы] [charname:{};1.0000 0.6941 0.6941]: WTB ММК\r\n"
+        log.write_bytes(fmt.format("Old").encode("cp1251"))
+        app._tick()
+        assert app.status_var.get().startswith("Слежу за")
+        assert len(beeps) == 0
+
+        with open(log, "ab") as f:
+            f.write(fmt.format("New").encode("cp1251"))
+        app._tick()
+        assert len(beeps) == 1
+        content = app.text.get("1.0", "end")
+        assert "New: WTB ММК" in content
+        assert "Old:" not in content
+        app.stop()
+    finally:
+        root.destroy()
