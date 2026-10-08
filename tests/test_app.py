@@ -141,3 +141,73 @@ def test_mouse_wheel_scrolls_item_list_from_any_row(tmp_path):
         assert canvas.yview()[0] == 0
     finally:
         root.destroy()
+
+
+def test_tooltip_shows_item_spec_and_hides(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(tmp_path / "none.log")}), encoding="utf-8")
+    root = tk.Tk()
+    try:
+        app = App(root, cfg_path)
+        root.update()
+        app._show_tooltip("110600968")
+        win = app.tooltip.window
+        assert win is not None and win.winfo_exists()
+        texts = [w.cget("text") for w in _descendants(win) if isinstance(w, tk.Label)]
+        assert "Кираса Рудры" in texts
+        assert "Можно использовать с 55-го уровня." in texts
+        assert "•  Латные сапоги Рудры" in texts
+        app._hide_tooltip()
+        assert app.tooltip.window is None
+    finally:
+        root.destroy()
+
+
+def _descendants(widget):
+    for child in widget.winfo_children():
+        yield child
+        yield from _descendants(child)
+
+
+def test_start_scans_history_minutes_back(tmp_path):
+    import json
+    import tkinter as tk
+    from datetime import datetime, timedelta
+
+    from watcher.app import App
+
+    now = datetime.now()
+
+    def line(ago, nick):
+        stamp = (now - timedelta(seconds=ago)).strftime("%Y.%m.%d %H:%M:%S")
+        return f"{stamp} : [3.Поиск группы] [charname:{nick};1 1 1]: WTS ммк\r\n"
+
+    log = tmp_path / "Chat.log"
+    log.write_bytes((line(300, "Old") + line(90, "Mid") + line(20, "New")).encode("cp1251"))
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(
+        json.dumps({"chat_log": str(log), "keywords": ["ммк"], "history_min": 2}), encoding="utf-8"
+    )
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        assert app.history_var.get() == "2 мин"
+        beeps = []
+        app.notifier.play = lambda: beeps.append(1)
+        app.start()
+        text = app.text.get("1.0", "end")
+        assert "Mid:" in text and "New:" in text and "Old:" not in text
+        assert beeps == [1]
+        app.stop()
+
+        app.history_var.set("нет")
+        app._on_history_changed()
+        assert json.loads(cfg_path.read_text(encoding="utf-8"))["history_min"] == 0
+    finally:
+        root.destroy()

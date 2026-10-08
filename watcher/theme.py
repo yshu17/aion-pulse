@@ -102,6 +102,32 @@ def apply_dark_theme(root: tk.Tk) -> None:
     style.map("TEntry", bordercolor=[("focus", ACCENT)], lightcolor=[("focus", ACCENT)])
 
     style.configure(
+        "TCombobox",
+        fieldbackground=SURFACE_2,
+        background=SURFACE_2,
+        foreground=TEXT,
+        arrowcolor=ACCENT,
+        bordercolor=BORDER,
+        lightcolor=SURFACE_2,
+        darkcolor=SURFACE_2,
+        padding=5,
+    )
+    style.map(
+        "TCombobox",
+        fieldbackground=[("readonly", SURFACE_2)],
+        foreground=[("readonly", TEXT)],
+        selectbackground=[("readonly", SURFACE_2)],
+        selectforeground=[("readonly", TEXT)],
+        bordercolor=[("focus", ACCENT), ("hover", SURFACE_3)],
+        background=[("active", SURFACE_3)],
+    )
+    root.option_add("*TCombobox*Listbox.background", SURFACE_2)
+    root.option_add("*TCombobox*Listbox.foreground", TEXT)
+    root.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
+    root.option_add("*TCombobox*Listbox.selectForeground", ACCENT_TEXT)
+    root.option_add("*TCombobox*Listbox.font", (FONT_FAMILY, FONT_SIZE))
+
+    style.configure(
         "Vertical.TScrollbar",
         background=SURFACE_3,
         troughcolor=SURFACE,
