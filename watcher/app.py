@@ -69,6 +69,7 @@ class App:
         self._scan_history = False
         self._tooltip_after: str | None = None
         self._build_ui()
+        self._apply_search_mode_state()
         self.tooltip = SpecTooltip(root)
         self.alarm = NagAlarm(root, self.notifier, on_ack=self._on_popup_ack)
         self._set_status("Остановлен")
@@ -101,6 +102,7 @@ class App:
         ttk.Label(top, text="Ключевые слова", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
         kw_entry = ttk.Entry(top, textvariable=self.kw_var)
+        self.kw_entry = kw_entry
         kw_entry.grid(row=1, column=1, sticky="ew", padx=(12, 6), pady=4)
         self.search_mode_var = tk.StringVar(
             value=next((k for k, v in SEARCH_MODES.items() if v == self.cfg.search_mode), "Слово ИЛИ предмет")
@@ -247,7 +249,17 @@ class App:
     def _on_search_mode_selected(self) -> None:
         self.cfg.search_mode = SEARCH_MODES.get(self.search_mode_var.get(), "or")
         self.matcher.set_mode(self.cfg.search_mode)
+        self._apply_search_mode_state()
         save_config(self.config_path, self.cfg)
+
+    def _apply_search_mode_state(self) -> None:
+        """Grey out what the search mode ignores: items for «Только слова», keywords for «Только предметы»."""
+        mode = self.cfg.search_mode
+        items_off = mode == "words"
+        for widget in self.item_controls:
+            widget.state(["disabled"] if items_off else ["!disabled"])
+        self.items_title.configure(text="Что искать  ·  не используется" if items_off else "Что искать")
+        self.kw_entry.state(["disabled"] if mode == "items" else ["!disabled"])
 
     def _search_hint(self) -> str:
         """What the chosen search mode is missing, e.g. «нет ключевых слов»."""
@@ -316,13 +328,13 @@ class App:
         panel.pack(side="right", fill="y", padx=(12, 0))
         head = ttk.Frame(panel, style="Card.TFrame")
         head.pack(fill="x", padx=(0, 8))
-        ttk.Label(head, text="Что искать", style="Title.TLabel").pack(side="left")
-        ttk.Button(head, text="Снять", command=lambda: self._select_all_items(False)).pack(
-            side="right"
-        )
-        ttk.Button(head, text="Все", command=lambda: self._select_all_items(True)).pack(
-            side="right", padx=6
-        )
+        self.items_title = ttk.Label(head, text="Что искать", style="Title.TLabel")
+        self.items_title.pack(side="left")
+        clear = ttk.Button(head, text="Снять", command=lambda: self._select_all_items(False))
+        clear.pack(side="right")
+        select_all = ttk.Button(head, text="Все", command=lambda: self._select_all_items(True))
+        select_all.pack(side="right", padx=6)
+        self.item_controls: list[ttk.Widget] = [clear, select_all]
 
         holder = ttk.Frame(panel, style="Card.TFrame")
         holder.pack(fill="both", expand=True, pady=(10, 0))
@@ -369,13 +381,15 @@ class App:
         self._group_titles[category] = title
         var = tk.BooleanVar(value=False)
         self.group_vars[category] = var
-        ttk.Checkbutton(
+        group_box = ttk.Checkbutton(
             head,
             text="все",
             variable=var,
             style="Group.TCheckbutton",
             command=lambda: self._on_group_toggled(category),
-        ).pack(side="right")
+        )
+        group_box.pack(side="right")
+        self.item_controls.append(group_box)
         body = ttk.Frame(parent, style="Card.TFrame")
         self._group_heads[category] = head
         self.group_bodies[category] = body
@@ -393,16 +407,18 @@ class App:
         var = tk.BooleanVar(value=is_checked)
         self.item_vars[item.id] = var
         icon = self._load_icon(item.id)
+        dim = self._load_dim_icon(item.id)
         box = ttk.Checkbutton(
             parent,
             text=f"  {item.name}",
-            image=icon or "",
+            image=(icon, "disabled", dim) if dim is not None else icon,
             compound="left",
             variable=var,
             style="Item.TCheckbutton",
             command=self._on_items_changed,
         )
         box.pack(fill="x", pady=1, padx=(8, 0))
+        self.item_controls.append(box)
         box.bind("<Enter>", lambda _e, item_id=item.id: self._schedule_tooltip(item_id))
         box.bind("<Leave>", lambda _e: self._hide_tooltip())
 
@@ -442,6 +458,15 @@ class App:
             icon = theme.placeholder_icon(self.root)
         self._icons[item_id] = icon
         return icon
+
+    def _load_dim_icon(self, item_id: str) -> tk.PhotoImage | None:
+        """Greyed icon for the disabled list (data/icons/<id>_off.png); None if there is none."""
+        try:
+            dim = tk.PhotoImage(master=self.root, file=str(self.icons_dir / f"{item_id}_off.png"))
+        except tk.TclError:
+            return None
+        self._icons[f"{item_id}_off"] = dim
+        return dim
 
     def _schedule_tooltip(self, item_id: str) -> None:
         self._hide_tooltip()

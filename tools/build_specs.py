@@ -59,6 +59,14 @@ def save_icon(page: str, path: Path) -> None:
     image.save(path, optimize=True)
 
 
+def save_dim_icon(icon: Path) -> None:
+    """Greyed, darkened copy shown while the item list is disabled (search mode «Только слова»)."""
+    from PIL import Image, ImageEnhance
+
+    image = Image.open(icon).convert("L").convert("RGB")
+    ImageEnhance.Brightness(image).enhance(0.45).save(icon.with_name(f"{icon.stem}_off.png"), optimize=True)
+
+
 def main() -> int:
     data = ROOT / "data"
     specs, rows = {}, []
@@ -71,6 +79,8 @@ def main() -> int:
         icon = data / "icons" / f"{item.id}.png"
         if not icon.exists():
             save_icon(page, icon)
+        if icon.exists():
+            save_dim_icon(icon)
         print(item.id, item.name, category, len(spec["blocks"]), "blocks")
         time.sleep(0.2)
     (data / "item_specs.json").write_text(json.dumps(specs, ensure_ascii=False, indent=1), encoding="utf-8")

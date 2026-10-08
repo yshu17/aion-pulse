@@ -18,6 +18,7 @@ MUTED = "#8c919c"
 ACCENT = "#ff8c1a"
 ACCENT_HOVER = "#ffa54a"
 ACCENT_TEXT = "#1b1206"
+DISABLED = "#5c606a"
 DANGER = "#e5484d"
 DANGER_HOVER = "#f06a6e"
 HIT_BG = "#ff8c1a"
@@ -81,7 +82,8 @@ def apply_dark_theme(root: tk.Tk) -> None:
     style.configure("TButton", **button)
     style.map(
         "TButton",
-        background=[("pressed", SURFACE_3), ("active", SURFACE_3)],
+        foreground=[("disabled", DISABLED)],
+        background=[("disabled", SURFACE), ("pressed", SURFACE_3), ("active", SURFACE_3)],
         lightcolor=[("active", SURFACE_3)],
         darkcolor=[("active", SURFACE_3)],
         bordercolor=[("focus", ACCENT)],
@@ -99,7 +101,13 @@ def apply_dark_theme(root: tk.Tk) -> None:
         insertcolor=TEXT,
         padding=6,
     )
-    style.map("TEntry", bordercolor=[("focus", ACCENT)], lightcolor=[("focus", ACCENT)])
+    style.map(
+        "TEntry",
+        fieldbackground=[("disabled", SURFACE)],
+        foreground=[("disabled", DISABLED)],
+        bordercolor=[("disabled", SURFACE), ("focus", ACCENT)],
+        lightcolor=[("disabled", SURFACE), ("focus", ACCENT)],
+    )
 
     style.configure(
         "TCombobox",
@@ -140,8 +148,17 @@ def apply_dark_theme(root: tk.Tk) -> None:
     )
     style.map("Vertical.TScrollbar", background=[("active", BORDER)])
 
-    off, on = _check_images(root)
-    style.element_create("Item.indicator", "image", off, ("selected", on), border=0, sticky="")
+    off, on, off_dim, on_dim = _check_images(root)
+    style.element_create(
+        "Item.indicator",
+        "image",
+        off,
+        ("disabled", "selected", on_dim),
+        ("disabled", off_dim),
+        ("selected", on),
+        border=0,
+        sticky="",
+    )
     style.layout(
         "Item.TCheckbutton",
         [
@@ -159,7 +176,11 @@ def apply_dark_theme(root: tk.Tk) -> None:
     )
     style.layout("Group.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Group.TCheckbutton", background=SURFACE_2, foreground=MUTED, padding=(4, 0))
-    style.map("Group.TCheckbutton", background=[("active", SURFACE_3)], foreground=[("selected", ACCENT)])
+    style.map(
+        "Group.TCheckbutton",
+        background=[("disabled", SURFACE_2), ("active", SURFACE_3)],
+        foreground=[("disabled", DISABLED), ("selected", ACCENT)],
+    )
     style.layout("Accept.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Accept.TCheckbutton", background=SURFACE, foreground=ACCENT, padding=(2, 0))
     style.map("Accept.TCheckbutton", background=[("active", SURFACE_2)])
@@ -226,26 +247,32 @@ def apply_dark_theme(root: tk.Tk) -> None:
     style.configure("Item.TCheckbutton", background=SURFACE, foreground=TEXT, padding=(8, 4))
     style.map(
         "Item.TCheckbutton",
-        background=[("active", SURFACE_2)],
-        foreground=[("selected", ACCENT)],
+        background=[("disabled", SURFACE), ("active", SURFACE_2)],
+        foreground=[("disabled", DISABLED), ("selected", ACCENT)],
     )
 
 
-def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
-    """Draw 24px unchecked / checked boxes (no external image files needed)."""
+def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
+    """Draw 24px boxes: unchecked, checked, and their dimmed (disabled) variants."""
     size = CHECK_SIZE
-    off = tk.PhotoImage(master=root, width=size + 12, height=size)
-    on = tk.PhotoImage(master=root, width=size + 12, height=size)
-    for image, fill, border in ((off, SURFACE_2, BORDER), (on, ACCENT, ACCENT)):
+    images = [tk.PhotoImage(master=root, width=size + 12, height=size) for _ in range(4)]
+    off, on, off_dim, on_dim = images
+    for image, fill, border in (
+        (off, SURFACE_2, BORDER),
+        (on, ACCENT, ACCENT),
+        (off_dim, SURFACE, SURFACE_2),
+        (on_dim, "#6b4a26", "#6b4a26"),
+    ):
         image.put(border, to=(1, 1, size - 1, size - 1))
         image.put(fill, to=(3, 3, size - 3, size - 3))
     # checkmark: short stroke down-right, long stroke up-right
-    for x in range(6, 11):
-        _dot(on, x, 11 + (x - 6), ACCENT_TEXT)
-    for x in range(10, 19):
-        _dot(on, x, 15 - (x - 10), ACCENT_TEXT)
-    _images.extend((off, on))
-    return off, on
+    for image, color in ((on, ACCENT_TEXT), (on_dim, "#2a1d0e")):
+        for x in range(6, 11):
+            _dot(image, x, 11 + (x - 6), color)
+        for x in range(10, 19):
+            _dot(image, x, 15 - (x - 10), color)
+    _images.extend(images)
+    return off, on, off_dim, on_dim
 
 
 def _pending_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage, tk.PhotoImage]:

@@ -532,3 +532,40 @@ def test_status_hints_when_search_mode_lacks_input(tmp_path):
         app.stop()
     finally:
         root.destroy()
+
+
+def test_search_mode_disables_unused_inputs(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path, alert_mode="standard")
+    try:
+        item_widgets = app.item_controls
+        assert item_widgets and len(item_widgets) > 49  # rows + group boxes + «Все»/«Снять»
+
+        def disabled(widget):
+            return widget.instate(["disabled"])
+
+        def select(mode):
+            app.search_mode_var.set(mode)
+            app._on_search_mode_selected()
+
+        select("Только слова")
+        assert all(disabled(w) for w in item_widgets)
+        assert not disabled(app.kw_entry)
+
+        select("Только предметы")
+        assert disabled(app.kw_entry)
+        assert not any(disabled(w) for w in item_widgets)
+
+        for mode in ("Слово И предмет", "Слово ИЛИ предмет"):
+            select(mode)
+            assert not disabled(app.kw_entry)
+            assert not any(disabled(w) for w in item_widgets)
+    finally:
+        root.destroy()
+
+
+def test_saved_mode_disables_inputs_on_startup(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path, search_mode="items")
+    try:
+        assert app.kw_entry.instate(["disabled"])
+    finally:
+        root.destroy()
