@@ -44,3 +44,11 @@ def test_unknown_keys_ignored_missing_keys_default(tmp_path):
 def test_chat_log_path_default_and_override():
     assert Config(game_dir=r"D:\Aion").chat_log_path() == Path(r"D:\Aion") / "classic" / "Chat.log"
     assert Config(chat_log=r"E:\x\Chat.log").chat_log_path() == Path(r"E:\x\Chat.log")
+
+
+def test_watch_items_default_and_roundtrip(tmp_path):
+    path = tmp_path / "config.json"
+    assert Config().watch_items == []
+    cfg = Config(watch_items=["100000893", "100001081"])
+    save_config(path, cfg)
+    assert load_config(path).watch_items == ["100000893", "100001081"]

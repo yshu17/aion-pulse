@@ -63,3 +63,27 @@ def test_ignores_garbage():
 
 def test_clean_text():
     assert clean_text("  [cmd:X;abc=]Хил [item:1;ver2;;;] ") == "Хил [item]"
+
+
+def test_collects_item_ids_in_order():
+    msg = parse_line(ITEM_LINE)
+    assert msg is not None
+    assert msg.item_ids == ("168000066", "168000067")
+
+
+def test_no_item_ids_for_plain_message():
+    msg = parse_line(PLAIN_LINE)
+    assert msg is not None
+    assert msg.item_ids == ()
+
+
+def test_known_item_links_show_names():
+    names = {"168000066": "Клинок Рудры"}
+    msg = parse_line(ITEM_LINE, names)
+    assert msg is not None
+    assert msg.text == "wts [Клинок Рудры][item] вставка"
+    assert msg.item_ids == ("168000066", "168000067")
+
+
+def test_clean_text_with_names():
+    assert clean_text("[item:1;ver2;;;] и [item:2;ver2;;;]", {"2": "Меч Фланаса"}) == "[item] и [Меч Фланаса]"

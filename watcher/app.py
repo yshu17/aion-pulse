@@ -5,6 +5,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
 
+from watcher.catalog import load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
 from watcher.notifier import Notifier
@@ -24,7 +25,13 @@ class App:
         self.root = root
         self.config_path = config_path
         self.cfg = load_config(config_path)
-        self.matcher = Matcher(self.cfg.keywords, self.cfg.cooldown_sec)
+        data_dir = resource_root() / "data"
+        self.item_names = load_item_names(data_dir / "item_names.tsv")
+        self.watch_items = load_watch_items(data_dir / "watch_items.csv")
+        self.icons_dir = data_dir / "icons"
+        self.matcher = Matcher(
+            self.cfg.keywords, self.cfg.cooldown_sec, watch_items=self._checked_items()
+        )
         self.notifier = Notifier(self.cfg.sound_path)
         self.tailer: LogTailer | None = None
         self.running = False
@@ -36,7 +43,7 @@ class App:
     def _build_ui(self) -> None:
         root = self.root
         root.title("Aion Chat Watcher")
-        root.geometry("760x480")
+        root.geometry("1040x560")
 
         top = ttk.Frame(root, padding=8)
         top.pack(fill="x")
@@ -64,8 +71,11 @@ class App:
         self.status_var = tk.StringVar()
         ttk.Label(bar, textvariable=self.status_var).pack(side="left", padx=10)
 
-        frame = ttk.Frame(root, padding=8)
-        frame.pack(fill="both", expand=True)
+        body = ttk.Frame(root, padding=8)
+        body.pack(fill="both", expand=True)
+        self._build_items_panel(body)
+        frame = ttk.Frame(body)
+        frame.pack(side="left", fill="both", expand=True)
         self.text = tk.Text(frame, wrap="word", state="disabled", font=("Segoe UI", 10))
         scroll = ttk.Scrollbar(frame, command=self.text.yview)
         self.text.configure(yscrollcommand=scroll.set)
@@ -76,6 +86,73 @@ class App:
         self.text.tag_configure("hit", background="#ffe066", foreground="#000000")
 
         root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build_items_panel(self, parent: ttk.Frame) -> None:
+        """Right-hand list: checkbox + icon + name for each watchable item."""
+        panel = ttk.Frame(parent, padding=(8, 0, 0, 0))
+        panel.pack(side="right", fill="y")
+        head = ttk.Frame(panel)
+        head.pack(fill="x")
+        ttk.Label(head, text="Что искать:").pack(side="left")
+        ttk.Button(head, text="Снять", width=7, command=lambda: self._select_all_items(False)).pack(
+            side="right"
+        )
+        ttk.Button(head, text="Все", width=5, command=lambda: self._select_all_items(True)).pack(
+            side="right", padx=4
+        )
+
+        holder = ttk.Frame(panel)
+        holder.pack(fill="both", expand=True, pady=(4, 0))
+        canvas = tk.Canvas(holder, width=280, highlightthickness=0)
+        scroll = ttk.Scrollbar(holder, command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        inner = ttk.Frame(canvas)
+        canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(-e.delta // 120, "units"))
+
+        checked = set(self.cfg.watch_items)
+        self.item_vars: dict[str, tk.BooleanVar] = {}
+        self._icons: list[tk.PhotoImage] = []
+        for item in self.watch_items:
+            var = tk.BooleanVar(value=item.id in checked)
+            self.item_vars[item.id] = var
+            icon = self._load_icon(item.id)
+            box = ttk.Checkbutton(
+                inner,
+                text=f" {item.name}",
+                image=icon or "",
+                compound="left",
+                variable=var,
+                command=self._on_items_changed,
+            )
+            box.pack(anchor="w", pady=1)
+            box.bind("<MouseWheel>", lambda e: canvas.yview_scroll(-e.delta // 120, "units"))
+
+    def _load_icon(self, item_id: str) -> tk.PhotoImage | None:
+        path = self.icons_dir / f"{item_id}.png"
+        try:
+            icon = tk.PhotoImage(master=self.root, file=str(path)).subsample(2)
+        except tk.TclError:
+            return None
+        self._icons.append(icon)
+        return icon
+
+    def _checked_items(self) -> dict[str, str]:
+        names = {item.id: item.name for item in self.watch_items}
+        return {item_id: names[item_id] for item_id in self.cfg.watch_items if item_id in names}
+
+    def _on_items_changed(self) -> None:
+        self.cfg.watch_items = [item_id for item_id, var in self.item_vars.items() if var.get()]
+        self.matcher.set_watch_items(self._checked_items())
+        save_config(self.config_path, self.cfg)
+
+    def _select_all_items(self, value: bool) -> None:
+        for var in self.item_vars.values():
+            var.set(value)
+        self._on_items_changed()
 
     def _set_status(self, text: str) -> None:
         self.status_var.set(text)
@@ -161,18 +238,19 @@ class App:
         now = time.monotonic()
         matched = False
         for line in lines:
-            msg = parse_line(line)
+            msg = parse_line(line, self.item_names)
             if msg is None:
                 continue
-            if self.matcher.check(msg, now):
-                self._add_row(msg)
+            hits = self.matcher.check(msg, now)
+            if hits:
+                self._add_row(msg, hits)
                 matched = True
         if matched:
             self.notifier.play()
 
-    def _add_row(self, msg: ChatMessage) -> None:
+    def _add_row(self, msg: ChatMessage, hits: list[str]) -> None:
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
-        for chunk, is_hit in highlight_segments(msg.text, self.matcher.keywords):
+        for chunk, is_hit in highlight_segments(msg.text, hits):
             parts += [chunk, ("hit",) if is_hit else ()]
         parts += ["\n", ()]
         self.text.configure(state="normal")

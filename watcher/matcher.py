@@ -11,11 +11,22 @@ def normalize(text: str) -> str:
 
 
 class Matcher:
-    def __init__(self, keywords: list[str], cooldown_sec: float = 60.0) -> None:
+    def __init__(
+        self,
+        keywords: list[str],
+        cooldown_sec: float = 60.0,
+        watch_items: dict[str, str] | None = None,
+    ) -> None:
         self.cooldown_sec = cooldown_sec
         self._keywords: list[tuple[str, str]] = []
+        self._watch_items: dict[str, str] = {}
         self._seen: dict[tuple[str, str], float] = {}
         self.set_keywords(keywords)
+        self.set_watch_items(watch_items or {})
+
+    def set_watch_items(self, watch_items: dict[str, str]) -> None:
+        """Item id -> display name. A message linking any of these ids matches."""
+        self._watch_items = dict(watch_items)
 
     @property
     def keywords(self) -> list[str]:
@@ -33,9 +44,16 @@ class Matcher:
         self._keywords = result
 
     def check(self, msg: ChatMessage, now: float) -> list[str]:
-        """Return matched keywords, or [] if none matched or the message is a recent repeat."""
+        """Return matched keywords and watched item names.
+
+        [] if nothing matched or the message is a recent repeat.
+        """
         text = normalize(msg.text)
         hits = [original for original, norm in self._keywords if norm in text]
+        for item_id in dict.fromkeys(msg.item_ids):
+            name = self._watch_items.get(item_id)
+            if name is not None and name not in hits:
+                hits.append(name)
         if not hits:
             return []
         key = (msg.nick, text)

@@ -75,3 +75,42 @@ def test_highlight_overlap_and_repeats():
 def test_highlight_empty():
     assert highlight_segments("", ["x"]) == []
     assert highlight_segments("текст", []) == [("текст", False)]
+
+
+def item_msg(text, item_ids, nick="Nick"):
+    return ChatMessage(time="2026.10.08 18:00:00", nick=nick, text=text, raw="", item_ids=item_ids)
+
+
+def test_watched_item_id_matches_and_returns_name():
+    m = Matcher([], watch_items={"100000893": "Клинок Рудры"})
+    assert m.check(item_msg("wts [Клинок Рудры]", ("100000893",)), 0) == ["Клинок Рудры"]
+
+
+def test_unwatched_item_id_does_not_match():
+    m = Matcher([], watch_items={"100000893": "Клинок Рудры"})
+    assert m.check(item_msg("wts [item]", ("168000066",)), 0) == []
+
+
+def test_item_and_keyword_hits_combined():
+    m = Matcher(["wts"], watch_items={"100000893": "Клинок Рудры"})
+    assert m.check(item_msg("WTS [Клинок Рудры]", ("100000893",)), 0) == ["wts", "Клинок Рудры"]
+
+
+def test_no_watched_items_falls_back_to_keywords():
+    m = Matcher(["рудры"])
+    assert m.check(item_msg("wts [Клинок Рудры]", ("100000893",)), 0) == ["рудры"]
+
+
+def test_set_watch_items_live():
+    m = Matcher([])
+    m.set_watch_items({"100001081": "Меч Фланаса"})
+    assert m.check(item_msg("[Меч Фланаса]", ("100001081",)), 0) == ["Меч Фланаса"]
+    m.set_watch_items({})
+    assert m.check(item_msg("[Меч Фланаса]", ("100001081",), nick="B"), 0) == []
+
+
+def test_item_hit_respects_cooldown():
+    m = Matcher([], cooldown_sec=60, watch_items={"100000893": "Клинок Рудры"})
+    msg = item_msg("[Клинок Рудры]", ("100000893",))
+    assert m.check(msg, 0) == ["Клинок Рудры"]
+    assert m.check(msg, 10) == []

@@ -4,6 +4,7 @@ cd /d "%~dp0"
 python -m pip install -r requirements.txt || goto :error
 python -m PyInstaller --noconfirm --clean --onefile --windowed --name AionChatWatcher ^
   --distpath . --workpath build --specpath build ^
+  --add-data "%~dp0data;data" ^
   main.py || goto :error
 echo.
 echo Done: %~dp0AionChatWatcher.exe

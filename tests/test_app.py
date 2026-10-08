@@ -69,3 +69,46 @@ def test_missing_log_then_reappear_starts_at_end(tmp_path):
         app.stop()
     finally:
         root.destroy()
+
+
+def test_watched_item_link_alerts_and_shows_name(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "fake_chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(
+        json.dumps({"chat_log": str(log), "keywords": [], "watch_items": ["100000893"]}),
+        encoding="utf-8",
+    )
+    line = (
+        "2026.10.08 18:43:17 : [3.Поиск группы] [charname:Seller;1.0000 0.6941 0.6941]: "
+        "wts [item:100000893;ver2;;;] 5кк\r\n"
+    )
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        assert len(app.item_vars) == 48
+        assert app.item_vars["100000893"].get() is True
+        beeps = []
+        app.notifier.play = lambda: beeps.append(1)
+        app.start()
+        with open(log, "ab") as f:
+            f.write(line.encode("cp1251"))
+        app._tick()
+        assert beeps == [1]
+        assert "Seller: wts [Клинок Рудры] 5кк" in app.text.get("1.0", "end")
+
+        app.item_vars["100000893"].set(False)
+        app._on_items_changed()
+        assert json.loads(cfg_path.read_text(encoding="utf-8"))["watch_items"] == []
+
+        app._select_all_items(True)
+        assert len(app.cfg.watch_items) == 48
+        app.stop()
+    finally:
+        root.destroy()
