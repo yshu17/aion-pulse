@@ -404,12 +404,12 @@ def test_popup_ack_accepts_all_and_settings_saved(tmp_path):
         assert calls[0] == ("ring", True, 2)
         app._on_popup_ack()
         assert counters(app) == (2, 2, 0)
-        app.react_var.set("выкл")
+        app.react_var.set("60 с")
         app._on_react_selected()
         app.popup_var.set(False)
         app._on_popup_toggled()
         saved = json.loads(app.config_path.read_text(encoding="utf-8"))
-        assert (saved["react_sec"], saved["nag_popup"]) == (0, False)
+        assert (saved["react_sec"], saved["nag_popup"]) == (60, False)
         app.stop()
     finally:
         root.destroy()
@@ -483,5 +483,17 @@ def test_history_matches_are_shown_without_alert(tmp_path):
         app._tick()
         assert rings == [1] and app.tracker.found == 1
         app.stop()
+    finally:
+        root.destroy()
+
+
+def test_reaction_time_has_no_off_option_and_old_zero_becomes_30(tmp_path):
+    from watcher.app import REACT_CHOICES
+
+    assert "выкл" not in REACT_CHOICES and 0 not in REACT_CHOICES.values()
+    root, app, _calls, _say = _nag_app(tmp_path, react_sec=0)
+    try:
+        assert app.react_var.get() == "30 с"
+        assert app.cfg.react_sec == 30 and app.tracker.react_sec == 30
     finally:
         root.destroy()

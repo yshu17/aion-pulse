@@ -27,7 +27,8 @@ HISTORY_CHOICES = {"нет": 0, **{f"{m} мин": m for m in (5, 15, 30, 45, 60)
 SYSTEM_BEEP = "Системный сигнал"
 CUSTOM_SOUND = "Свой файл…"
 ALERT_MODES = {"Стандартный": "standard", "Назойливый": "nag"}
-REACT_CHOICES = {"выкл": 0, "15 с": 15, "30 с": 30, "60 с": 60, "2 мин": 120}
+REACT_CHOICES = {"15 с": 15, "30 с": 30, "60 с": 60, "2 мин": 120}
+DEFAULT_REACT_SEC = 30
 UI_TICK_MS = 500
 
 
@@ -49,6 +50,8 @@ class App:
             self.cfg.keywords, self.cfg.cooldown_sec, watch_items=self._checked_items()
         )
         self.notifier = Notifier(self.cfg.sound_path)
+        if self.cfg.react_sec not in REACT_CHOICES.values():
+            self.cfg.react_sec = DEFAULT_REACT_SEC  # e.g. the removed «выкл» (0) from an older config
         self.tracker = AlertTracker(self.cfg.react_sec)
         self.tailer: LogTailer | None = None
         self.running = False
@@ -225,7 +228,7 @@ class App:
         save_config(self.config_path, self.cfg)
 
     def _on_react_selected(self) -> None:
-        self.cfg.react_sec = REACT_CHOICES.get(self.react_var.get(), 30)
+        self.cfg.react_sec = REACT_CHOICES.get(self.react_var.get(), DEFAULT_REACT_SEC)
         self.tracker.react_sec = self.cfg.react_sec
         save_config(self.config_path, self.cfg)
 
