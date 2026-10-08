@@ -13,11 +13,36 @@ def resource_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+CATEGORY_ORDER = ["Лата", "Кольчуга", "Кожа", "Ткань", "Оружие", "Щиты", "Крылья", "Прочее"]
+_ARMOR = {
+    "Латная броня": "Лата",
+    "Кольчужная броня": "Кольчуга",
+    "Кожаная броня": "Кожа",
+    "Тканая броня": "Ткань",
+}
+_WEAPONS = {"Меч", "Булава", "Кинжал", "Орб", "Гримуар", "Двуручный меч", "Копье", "Посох", "Лук"}
+
+
+def category_for(item_type: str, name: str) -> str:
+    """Group for the item list, from the site's «Тип» field (shields and wings have none)."""
+    if item_type in _ARMOR:
+        return _ARMOR[item_type]
+    if item_type in _WEAPONS:
+        return "Оружие"
+    lowered = name.lower()
+    if "щит" in lowered:
+        return "Щиты"
+    if "крыль" in lowered:
+        return "Крылья"
+    return "Прочее"
+
+
 @dataclass(frozen=True)
 class WatchItem:
     id: str
     name: str
     level: int
+    category: str = "Прочее"
 
 
 def load_item_names(path: Path) -> dict[str, str]:
@@ -35,11 +60,16 @@ def load_item_names(path: Path) -> dict[str, str]:
 
 
 def load_watch_items(path: Path) -> list[WatchItem]:
-    """Read watch_items.csv (id,name,level). A missing file gives an empty list."""
+    """Read watch_items.csv (id,name,level[,category]). A missing file gives an empty list."""
     try:
         with open(path, encoding="utf-8", newline="") as f:
             return [
-                WatchItem(id=row["id"], name=row["name"], level=int(row["level"]))
+                WatchItem(
+                    id=row["id"],
+                    name=row["name"],
+                    level=int(row["level"]),
+                    category=row.get("category") or "Прочее",
+                )
                 for row in csv.DictReader(f)
             ]
     except OSError:

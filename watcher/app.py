@@ -7,7 +7,7 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from watcher import theme
-from watcher.catalog import load_item_names, load_watch_items, resource_root
+from watcher.catalog import CATEGORY_ORDER, WatchItem, load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
 from watcher.notifier import Notifier
@@ -150,22 +150,89 @@ class App:
         checked = set(self.cfg.watch_items)
         self.item_vars: dict[str, tk.BooleanVar] = {}
         self._icons: dict[str, tk.PhotoImage] = {}
-        for item in self.watch_items:
-            var = tk.BooleanVar(value=item.id in checked)
-            self.item_vars[item.id] = var
-            icon = self._load_icon(item.id)
-            box = ttk.Checkbutton(
-                inner,
-                text=f"  {item.name}",
-                image=icon or "",
-                compound="left",
-                variable=var,
-                style="Item.TCheckbutton",
-                command=self._on_items_changed,
-            )
-            box.pack(fill="x", pady=1)
-            box.bind("<Enter>", lambda _e, item_id=item.id: self._schedule_tooltip(item_id))
-            box.bind("<Leave>", lambda _e: self._hide_tooltip())
+        self.groups: dict[str, list[str]] = {}
+        for category in CATEGORY_ORDER:
+            ids = [item.id for item in self.watch_items if item.category == category]
+            if ids:
+                self.groups[category] = ids
+        self.group_vars: dict[str, tk.BooleanVar] = {}
+        self.group_bodies: dict[str, ttk.Frame] = {}
+        self._group_titles: dict[str, ttk.Label] = {}
+        self._group_heads: dict[str, ttk.Frame] = {}
+        by_id = {item.id: item for item in self.watch_items}
+        for category, ids in self.groups.items():
+            body = self._build_group(inner, category, len(ids))
+            for item_id in ids:
+                self._build_item_row(body, by_id[item_id], item_id in checked)
+            self._sync_group(category)
+
+    def _build_group(self, parent: ttk.Frame, category: str, count: int) -> ttk.Frame:
+        """Section header (click to fold, checkbox for the whole group) and its body frame."""
+        head = ttk.Frame(parent, style="Group.TFrame", padding=(6, 4))
+        head.pack(fill="x", pady=(8, 2))
+        title = ttk.Label(head, style="Group.TLabel", cursor="hand2")
+        title.pack(side="left", fill="x", expand=True)
+        title.bind("<Button-1>", lambda _e: self._toggle_collapsed(category))
+        self._group_titles[category] = title
+        var = tk.BooleanVar(value=False)
+        self.group_vars[category] = var
+        ttk.Checkbutton(
+            head,
+            text="все",
+            variable=var,
+            style="Group.TCheckbutton",
+            command=lambda: self._on_group_toggled(category),
+        ).pack(side="right")
+        body = ttk.Frame(parent, style="Card.TFrame")
+        self._group_heads[category] = head
+        self.group_bodies[category] = body
+        if category not in self.cfg.collapsed_groups:
+            body.pack(fill="x", after=head)
+        self._update_group_title(category, count)
+        return body
+
+    def _update_group_title(self, category: str, count: int | None = None) -> None:
+        count = len(self.groups.get(category, [])) if count is None else count
+        arrow = "▸" if category in self.cfg.collapsed_groups else "▾"
+        self._group_titles[category].configure(text=f"{arrow}  {category}  ·  {count}")
+
+    def _build_item_row(self, parent: ttk.Frame, item: WatchItem, is_checked: bool) -> None:
+        var = tk.BooleanVar(value=is_checked)
+        self.item_vars[item.id] = var
+        icon = self._load_icon(item.id)
+        box = ttk.Checkbutton(
+            parent,
+            text=f"  {item.name}",
+            image=icon or "",
+            compound="left",
+            variable=var,
+            style="Item.TCheckbutton",
+            command=self._on_items_changed,
+        )
+        box.pack(fill="x", pady=1, padx=(8, 0))
+        box.bind("<Enter>", lambda _e, item_id=item.id: self._schedule_tooltip(item_id))
+        box.bind("<Leave>", lambda _e: self._hide_tooltip())
+
+    def _toggle_collapsed(self, category: str) -> None:
+        body = self.group_bodies[category]
+        if category in self.cfg.collapsed_groups:
+            self.cfg.collapsed_groups.remove(category)
+            body.pack(fill="x", after=self._group_heads[category])
+        else:
+            self.cfg.collapsed_groups.append(category)
+            body.pack_forget()
+        self._update_group_title(category)
+        save_config(self.config_path, self.cfg)
+
+    def _on_group_toggled(self, category: str) -> None:
+        value = self.group_vars[category].get()
+        for item_id in self.groups[category]:
+            self.item_vars[item_id].set(value)
+        self._on_items_changed()
+
+    def _sync_group(self, category: str) -> None:
+        ids = self.groups[category]
+        self.group_vars[category].set(all(self.item_vars[i].get() for i in ids))
 
     def _on_mouse_wheel(self, event: tk.Event) -> None:
         """Scroll the item list whenever the pointer is anywhere over it."""
@@ -179,7 +246,7 @@ class App:
         try:
             icon = tk.PhotoImage(master=self.root, file=str(path))
         except tk.TclError:
-            return None
+            icon = theme.placeholder_icon(self.root)
         self._icons[item_id] = icon
         return icon
 
@@ -212,6 +279,8 @@ class App:
     def _on_items_changed(self) -> None:
         self.cfg.watch_items = [item_id for item_id, var in self.item_vars.items() if var.get()]
         self.matcher.set_watch_items(self._checked_items())
+        for category in self.groups:
+            self._sync_group(category)
         save_config(self.config_path, self.cfg)
 
     def _select_all_items(self, value: bool) -> None:

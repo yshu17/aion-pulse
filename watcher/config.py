@@ -21,6 +21,7 @@ class Config:
     keywords: list[str] = field(default_factory=list)
     watch_items: list[str] = field(default_factory=list)
     history_min: int = 0
+    collapsed_groups: list[str] = field(default_factory=list)
     poll_interval_ms: int = 500
     cooldown_sec: float = 60
     sound_path: str = ""

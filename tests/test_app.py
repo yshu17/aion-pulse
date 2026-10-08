@@ -92,7 +92,7 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
     root.withdraw()
     try:
         app = App(root, cfg_path)
-        assert len(app.item_vars) == 48
+        assert len(app.item_vars) == 49
         assert app.item_vars["100000893"].get() is True
         beeps = []
         app.notifier.play = lambda: beeps.append(1)
@@ -108,7 +108,7 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
         assert json.loads(cfg_path.read_text(encoding="utf-8"))["watch_items"] == []
 
         app._select_all_items(True)
-        assert len(app.cfg.watch_items) == 48
+        assert len(app.cfg.watch_items) == 49
         app.stop()
     finally:
         root.destroy()
@@ -211,5 +211,40 @@ def test_start_scans_history_minutes_back(tmp_path):
         app.history_var.set("нет")
         app._on_history_changed()
         assert json.loads(cfg_path.read_text(encoding="utf-8"))["history_min"] == 0
+    finally:
+        root.destroy()
+
+
+def test_item_list_grouped_by_category(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(tmp_path / "none.log")}), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        assert list(app.groups)[:4] == ["Лата", "Кольчуга", "Кожа", "Ткань"]
+        assert "Крылья" in app.groups
+
+        app.group_vars["Лата"].set(True)
+        app._on_group_toggled("Лата")
+        lata = set(app.groups["Лата"])
+        assert len(lata) == 5 and lata <= set(app.cfg.watch_items)
+        assert json.loads(cfg_path.read_text(encoding="utf-8"))["watch_items"] == app.cfg.watch_items
+
+        app._toggle_collapsed("Оружие")
+        assert app.cfg.collapsed_groups == ["Оружие"]
+        assert not app.group_bodies["Оружие"].winfo_manager()
+        app._toggle_collapsed("Оружие")
+        assert app.cfg.collapsed_groups == []
+        assert app.group_bodies["Оружие"].winfo_manager() == "pack"
+
+        app.item_vars[app.groups["Лата"][0]].set(False)
+        app._on_items_changed()
+        assert app.group_vars["Лата"].get() is False
     finally:
         root.destroy()

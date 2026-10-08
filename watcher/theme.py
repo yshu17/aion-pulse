@@ -157,6 +157,17 @@ def apply_dark_theme(root: tk.Tk) -> None:
             )
         ],
     )
+    style.layout("Group.TCheckbutton", style.layout("Item.TCheckbutton"))
+    style.configure("Group.TCheckbutton", background=SURFACE_2, foreground=MUTED, padding=(4, 0))
+    style.map("Group.TCheckbutton", background=[("active", SURFACE_3)], foreground=[("selected", ACCENT)])
+    style.configure("Group.TFrame", background=SURFACE_2)
+    style.configure(
+        "Group.TLabel",
+        background=SURFACE_2,
+        foreground=TEXT,
+        font=(FONT_FAMILY, FONT_SIZE, "bold"),
+        padding=(4, 2),
+    )
     style.configure("Item.TCheckbutton", background=SURFACE, foreground=TEXT, padding=(8, 4))
     style.map(
         "Item.TCheckbutton",
@@ -171,7 +182,6 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
     off = tk.PhotoImage(master=root, width=size + 12, height=size)
     on = tk.PhotoImage(master=root, width=size + 12, height=size)
     for image, fill, border in ((off, SURFACE_2, BORDER), (on, ACCENT, ACCENT)):
-        image.put(SURFACE, to=(0, 0, size + 12, size))
         image.put(border, to=(1, 1, size - 1, size - 1))
         image.put(fill, to=(3, 3, size - 3, size - 3))
     # checkmark: short stroke down-right, long stroke up-right
@@ -181,6 +191,19 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
         _dot(on, x, 15 - (x - 10), ACCENT_TEXT)
     _images.extend((off, on))
     return off, on
+
+
+def placeholder_icon(root: tk.Misc, size: int = 56) -> tk.PhotoImage:
+    """Framed dark square for items whose icon is unavailable."""
+    image = tk.PhotoImage(master=root, width=size, height=size)
+    image.put(BORDER, to=(0, 0, size, size))
+    image.put(SURFACE_2, to=(2, 2, size - 2, size - 2))
+    middle = size // 2
+    for offset in range(0, 12):
+        image.put(ACCENT, to=(middle - offset, middle - 12 + offset, middle - offset + 2, middle - 10 + offset))
+        image.put(ACCENT, to=(middle + offset - 2, middle - 12 + offset, middle + offset, middle - 10 + offset))
+    _images.append(image)
+    return image
 
 
 def _dot(image: tk.PhotoImage, x: int, y: int, color: str) -> None:
