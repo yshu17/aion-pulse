@@ -128,16 +128,18 @@ def test_mouse_wheel_scrolls_item_list_from_any_row(tmp_path):
         app = App(root, cfg_path)
         root.update()
         canvas = app.items_canvas
-        for target in (canvas, app.items_holder):
+        row = _descendants(canvas).__next__()  # inner frame
+        first_item = row.winfo_children()[0]
+        wheel = SimpleNamespace(x_root=0, y_root=0, delta=-120)
+        # Pretend the pointer is over each widget; no dependence on real screen layout.
+        for target in (first_item, row, canvas, app.items_holder):
             canvas.yview_moveto(0)
-            x = target.winfo_rootx() + 40
-            y = target.winfo_rooty() + 40
-            app._on_mouse_wheel(SimpleNamespace(x_root=x, y_root=y, delta=-120))
+            root.winfo_containing = lambda _x, _y, target=target: target
+            app._on_mouse_wheel(wheel)
             assert canvas.yview()[0] > 0, target
         canvas.yview_moveto(0)
-        text_x = app.text.winfo_rootx() + 20
-        text_y = app.text.winfo_rooty() + 20
-        app._on_mouse_wheel(SimpleNamespace(x_root=text_x, y_root=text_y, delta=-120))
+        root.winfo_containing = lambda _x, _y: app.text
+        app._on_mouse_wheel(wheel)
         assert canvas.yview()[0] == 0
     finally:
         root.destroy()
