@@ -149,8 +149,12 @@ class App:
             self._set_status(f"Ошибка чтения: {exc}")
             self._schedule(self.cfg.poll_interval_ms)
             return
-        self._set_status(f"Слежу за {path}")
-        self._process(lines)
+        try:
+            self._process(lines)
+        except Exception as exc:
+            self._set_status(f"Ошибка: {exc}")
+        else:
+            self._set_status(f"Слежу за {path}")
         self._schedule(self.cfg.poll_interval_ms)
 
     def _process(self, lines: list[str]) -> None:
@@ -180,7 +184,9 @@ class App:
         self.text.configure(state="disabled")
 
     def _on_close(self) -> None:
-        self._apply_keywords()
-        self._apply_game_dir()
-        self.stop()
-        self.root.destroy()
+        try:
+            self._apply_keywords()
+            self._apply_game_dir()
+        finally:
+            self.stop()
+            self.root.destroy()
