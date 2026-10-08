@@ -52,7 +52,9 @@ aion_chat_watcher/
     test_parser.py
     test_matcher.py
   main.py
-  config.json
+  tools/
+    fake_chat.py   # дописать тестовую строку «Поиск группы» в лог (ручная проверка)
+  config.json      # создаётся при первом запуске, в git не хранится
   requirements.txt  # pytest, pyinstaller (только для разработки)
   build_exe.bat
   README.md
@@ -88,7 +90,10 @@ aion_chat_watcher/
 
 - `Matcher(keywords: list[str], cooldown_sec: float = 60)`.
 - `set_keywords(keywords)` — замена слов на лету. Пустые строки и пробелы отбрасываются.
-- Нормализация текста и слов: `casefold()` и замена `ё` на `е`.
+- Нормализация текста и слов: `lower()` и замена `ё` на `е` (длина строки сохраняется — нужно для
+  подсветки).
+- `highlight_segments(text, keywords) -> list[tuple[str, bool]]` — текст, разбитый на куски
+  «совпало / не совпало» для подсветки в окне.
 - `check(msg, now: float) -> list[str]` — список совпавших слов (подстрока, исходное написание
   слова). Пусто — совпадения нет.
 - Анти-спам: ключ `(ник, нормализованный текст)`. Если тот же ключ уже совпадал меньше
