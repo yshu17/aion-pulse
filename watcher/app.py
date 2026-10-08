@@ -4,8 +4,8 @@ import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
-from tkinter import font as tkfont
 
+from watcher import theme
 from watcher.catalog import load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
@@ -14,7 +14,6 @@ from watcher.parser import ChatMessage, parse_line
 from watcher.tailer import LogTailer
 
 MAX_ROWS = 500
-FONT_SIZE = 13
 RETRY_MS = 2000
 
 
@@ -46,77 +45,86 @@ class App:
         root = self.root
         root.title("Aion Chat Watcher")
         root.geometry("1400x860")
-        for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):
-            tkfont.nametofont(name).configure(size=FONT_SIZE)
-        ttk.Style(root).configure("TButton", padding=(10, 4))
+        root.minsize(1000, 600)
+        theme.apply_dark_theme(root)
+        theme.dark_title_bar(root)
 
-        top = ttk.Frame(root, padding=8)
+        header = ttk.Frame(root, padding=(16, 12, 16, 4))
+        header.pack(fill="x")
+        ttk.Label(header, text="Aion Chat Watcher", style="AppTitle.TLabel").pack(side="left")
+        ttk.Label(header, text="  ·  Поиск группы", style="Muted.TLabel").pack(side="left", pady=(6, 0))
+
+        top = ttk.Frame(root, padding=(16, 8))
         top.pack(fill="x")
-        ttk.Label(top, text="Папка игры:").grid(row=0, column=0, sticky="w")
+        ttk.Label(top, text="Папка игры", style="Muted.TLabel").grid(row=0, column=0, sticky="w")
         self.game_dir_var = tk.StringVar(value=self.cfg.game_dir)
         dir_entry = ttk.Entry(top, textvariable=self.game_dir_var)
-        dir_entry.grid(row=0, column=1, sticky="ew", padx=4)
+        dir_entry.grid(row=0, column=1, sticky="ew", padx=(12, 6), pady=4)
         dir_entry.bind("<Return>", lambda _e: self._apply_game_dir())
         dir_entry.bind("<FocusOut>", lambda _e: self._apply_game_dir())
-        ttk.Button(top, text="…", width=3, command=self._pick_dir).grid(row=0, column=2)
+        ttk.Button(top, text="Обзор…", command=self._pick_dir).grid(row=0, column=2, pady=4)
 
-        ttk.Label(top, text="Ключевые слова:").grid(row=1, column=0, sticky="w", pady=(6, 0))
+        ttk.Label(top, text="Ключевые слова", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
         kw_entry = ttk.Entry(top, textvariable=self.kw_var)
-        kw_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=4, pady=(6, 0))
+        kw_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=(12, 0), pady=4)
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
         top.columnconfigure(1, weight=1)
 
-        bar = ttk.Frame(root, padding=(8, 0))
+        bar = ttk.Frame(root, padding=(16, 6, 16, 10))
         bar.pack(fill="x")
-        self.start_btn = ttk.Button(bar, text="Start", command=self.toggle)
+        self.start_btn = ttk.Button(bar, text="Start", style="Accent.TButton", command=self.toggle)
         self.start_btn.pack(side="left")
-        ttk.Button(bar, text="Тест звука", command=self.notifier.play).pack(side="left", padx=6)
+        ttk.Button(bar, text="Тест звука", command=self.notifier.play).pack(side="left", padx=8)
         self.status_var = tk.StringVar()
-        ttk.Label(bar, textvariable=self.status_var).pack(side="left", padx=10)
+        self.status_label = ttk.Label(bar, textvariable=self.status_var, style="Status.TLabel")
+        self.status_label.pack(side="left", padx=12)
 
-        body = ttk.Frame(root, padding=8)
+        body = ttk.Frame(root, padding=(16, 0, 16, 16))
         body.pack(fill="both", expand=True)
         self._build_items_panel(body)
-        frame = ttk.Frame(body)
-        frame.pack(side="left", fill="both", expand=True)
-        self.text = tk.Text(frame, wrap="word", state="disabled", font=("Segoe UI", FONT_SIZE))
-        scroll = ttk.Scrollbar(frame, command=self.text.yview)
+        card = ttk.Frame(body, style="Card.TFrame", padding=2)
+        card.pack(side="left", fill="both", expand=True)
+        self.text = tk.Text(card, wrap="word", state="disabled")
+        theme.style_text(self.text)
+        scroll = ttk.Scrollbar(card, command=self.text.yview)
         self.text.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         self.text.pack(side="left", fill="both", expand=True)
-        self.text.tag_configure("meta", foreground="#888888")
-        self.text.tag_configure("nick", font=("Segoe UI", FONT_SIZE, "bold"))
-        self.text.tag_configure("hit", background="#ffe066", foreground="#000000")
 
+        root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")
         root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_items_panel(self, parent: ttk.Frame) -> None:
         """Right-hand list: checkbox + icon + name for each watchable item."""
-        panel = ttk.Frame(parent, padding=(8, 0, 0, 0))
-        panel.pack(side="right", fill="y")
-        head = ttk.Frame(panel)
-        head.pack(fill="x")
-        ttk.Label(head, text="Что искать:").pack(side="left")
-        ttk.Button(head, text="Снять", width=7, command=lambda: self._select_all_items(False)).pack(
+        panel = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10, 4, 10))
+        panel.pack(side="right", fill="y", padx=(12, 0))
+        head = ttk.Frame(panel, style="Card.TFrame")
+        head.pack(fill="x", padx=(0, 8))
+        ttk.Label(head, text="Что искать", style="Title.TLabel").pack(side="left")
+        ttk.Button(head, text="Снять", command=lambda: self._select_all_items(False)).pack(
             side="right"
         )
-        ttk.Button(head, text="Все", width=5, command=lambda: self._select_all_items(True)).pack(
-            side="right", padx=4
+        ttk.Button(head, text="Все", command=lambda: self._select_all_items(True)).pack(
+            side="right", padx=6
         )
 
-        holder = ttk.Frame(panel)
-        holder.pack(fill="both", expand=True, pady=(4, 0))
-        canvas = tk.Canvas(holder, width=520, highlightthickness=0)
+        holder = ttk.Frame(panel, style="Card.TFrame")
+        holder.pack(fill="both", expand=True, pady=(10, 0))
+        canvas = tk.Canvas(
+            holder, width=520, highlightthickness=0, borderwidth=0, background=theme.SURFACE
+        )
         scroll = ttk.Scrollbar(holder, command=canvas.yview)
         canvas.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
-        inner = ttk.Frame(canvas)
-        canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner = ttk.Frame(canvas, style="Card.TFrame")
+        window = canvas.create_window((0, 0), window=inner, anchor="nw")
         inner.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(-e.delta // 120, "units"))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
+        self.items_holder = holder
+        self.items_canvas = canvas
 
         checked = set(self.cfg.watch_items)
         self.item_vars: dict[str, tk.BooleanVar] = {}
@@ -125,16 +133,22 @@ class App:
             var = tk.BooleanVar(value=item.id in checked)
             self.item_vars[item.id] = var
             icon = self._load_icon(item.id)
-            box = ttk.Checkbutton(
+            ttk.Checkbutton(
                 inner,
-                text=f" {item.name}",
+                text=f"  {item.name}",
                 image=icon or "",
                 compound="left",
                 variable=var,
+                style="Item.TCheckbutton",
                 command=self._on_items_changed,
-            )
-            box.pack(anchor="w", pady=3)
-            box.bind("<MouseWheel>", lambda e: canvas.yview_scroll(-e.delta // 120, "units"))
+            ).pack(fill="x", pady=1)
+
+    def _on_mouse_wheel(self, event: tk.Event) -> None:
+        """Scroll the item list whenever the pointer is anywhere over it."""
+        widget = self.root.winfo_containing(event.x_root, event.y_root)
+        if widget is not None and str(widget).startswith(str(self.items_holder)):
+            steps = -event.delta // 120 or (-1 if event.delta > 0 else 1)
+            self.items_canvas.yview_scroll(steps, "units")
 
     def _load_icon(self, item_id: str) -> tk.PhotoImage | None:
         path = self.icons_dir / f"{item_id}.png"
@@ -161,6 +175,8 @@ class App:
 
     def _set_status(self, text: str) -> None:
         self.status_var.set(text)
+        live = text.startswith("Слежу")
+        self.status_label.configure(style="Live.TLabel" if live else "Status.TLabel")
 
     def _pick_dir(self) -> None:
         chosen = filedialog.askdirectory(initialdir=self.game_dir_var.get() or None)
@@ -196,7 +212,7 @@ class App:
         self._apply_keywords()
         self.running = True
         self.tailer = None
-        self.start_btn.configure(text="Stop")
+        self.start_btn.configure(text="Stop", style="Danger.TButton")
         self._tick()
 
     def stop(self) -> None:
@@ -205,7 +221,7 @@ class App:
             self.root.after_cancel(self._after_id)
             self._after_id = None
         self.tailer = None
-        self.start_btn.configure(text="Start")
+        self.start_btn.configure(text="Start", style="Accent.TButton")
         self._set_status("Остановлен")
 
     def _schedule(self, delay_ms: int) -> None:

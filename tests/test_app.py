@@ -112,3 +112,32 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
         app.stop()
     finally:
         root.destroy()
+
+
+def test_mouse_wheel_scrolls_item_list_from_any_row(tmp_path):
+    import json
+    import tkinter as tk
+    from types import SimpleNamespace
+
+    from watcher.app import App
+
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(tmp_path / "none.log")}), encoding="utf-8")
+    root = tk.Tk()
+    try:
+        app = App(root, cfg_path)
+        root.update()
+        canvas = app.items_canvas
+        for target in (canvas, app.items_holder):
+            canvas.yview_moveto(0)
+            x = target.winfo_rootx() + 40
+            y = target.winfo_rooty() + 40
+            app._on_mouse_wheel(SimpleNamespace(x_root=x, y_root=y, delta=-120))
+            assert canvas.yview()[0] > 0, target
+        canvas.yview_moveto(0)
+        text_x = app.text.winfo_rootx() + 20
+        text_y = app.text.winfo_rooty() + 20
+        app._on_mouse_wheel(SimpleNamespace(x_root=text_x, y_root=text_y, delta=-120))
+        assert canvas.yview()[0] == 0
+    finally:
+        root.destroy()
