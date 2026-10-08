@@ -87,3 +87,57 @@ def test_known_item_links_show_names():
 
 def test_clean_text_with_names():
     assert clean_text("[item:1;ver2;;;] и [item:2;ver2;;;]", {"2": "Меч Фланаса"}) == "[item] и [Меч Фланаса]"
+
+
+# --- any channel (for «Весь чат») -------------------------------------------------
+from watcher.parser import parse_any_line  # noqa: E402
+
+
+def test_any_line_player_in_channel():
+    line = parse_any_line(CMD_LINE)
+    assert (line.channel, line.nick, line.text) == ("3.Поиск группы", "Tiyamate", "WTB MMK 2.2KK SM++++++++++++++")
+    assert line.time == "2026.10.08 18:43:17"
+    assert line.is_player
+
+
+def test_any_line_system_message():
+    line = parse_any_line(SYSTEM_LINE)
+    assert (line.channel, line.nick, line.is_player) == (None, None, False)
+    assert line.text == "Бешеный ветер I: Скор. движ. цели Mockoco увеличивается."
+
+
+def test_any_line_bracket_system_channel():
+    line = parse_any_line("2026.10.08 16:00:00 : [Event] PvP Team Arena 1x1 registration is open! ")
+    assert (line.channel, line.nick, line.is_player) == ("Event", None, False)
+    assert line.text == "PvP Team Arena 1x1 registration is open!"
+
+
+def test_any_line_player_without_channel_and_whisper_verb():
+    line = parse_any_line("2026.10.08 14:49:06 : [charname:Flama;0.0196 0.7843 0.8431]: 2 глада, чант? ")
+    assert (line.channel, line.nick, line.text) == (None, "Flama", "2 глада, чант?")
+    line = parse_any_line("2026.10.08 00:19:59 : [charname:Pyro;0.6275 1.0000 0.6275] шепчет: DP S? ")
+    assert (line.nick, line.text) == ("Pyro", "DP S?")
+
+
+def test_any_line_channel_with_plain_nick():
+    line = parse_any_line("2026.10.08 14:50:49 : [3.Поиск группы] Sexbomb: [cmd:S;KU9=]ищу +1 SUP ")
+    assert (line.channel, line.nick, line.text) == ("3.Поиск группы", "Sexbomb", "ищу +1 SUP")
+
+
+def test_any_line_names_items_and_rejects_garbage():
+    line = parse_any_line(
+        "2026.10.08 14:40:27 : [charname:Dobrota;1 1 1]: [item:101700722;ver2;xx] за 5кк",
+        {"101700722": "Длинный лук Рудры"},
+    )
+    assert line.text == "[Длинный лук Рудры] за 5кк"
+    assert line.item_ids == ("101700722",)
+    assert parse_any_line("[where:https://discord.gg/x]") is None
+
+
+def test_search_also_catches_garbled_lfg_channel_and_plain_nick_format():
+    garbled = "2026.10.08 00:18:15 : [3.????? ??????] [charname:Pyromancer;1 1 1]: [cmd:P;j=]DP S pls"
+    msg = parse_line(garbled)
+    assert msg is not None and (msg.nick, msg.text) == ("Pyromancer", "DP S pls")
+    plain = "2026.10.08 14:50:49 : [3.Поиск группы] Sexbomb: ищу SUP"
+    assert parse_line(plain).nick == "Sexbomb"
+    assert parse_line("2026.10.08 14:49:06 : [charname:Flama;0 0 0]: whisper") is None
