@@ -52,7 +52,8 @@ def test_pending_row_has_right_aligned_checkbox_without_label_and_countdown(root
     box = feed.boxes[7]
     assert box.cget("text") == ""
     root.update()
-    assert box.winfo_rootx() + box.winfo_width() > feed.text.winfo_rootx() + feed.text.winfo_width() - 80
+    text_right = feed.text.winfo_rootx() + feed.text.winfo_width()
+    assert text_right - 80 < box.winfo_rootx() + box.winfo_width() <= text_right  # fully visible
     feed.set_countdown({7: 27.2})
     assert feed.countdowns[7].cget("text") == "28 с"
     styles = {str(box.cget("style"))}
@@ -71,7 +72,7 @@ def test_long_row_keeps_checkbox_on_its_first_line_at_right_edge(root):
     _x, line_y, _w, line_h, _b = feed.text.dlineinfo("a1.first")
     assert abs(holder.winfo_y() - line_y) < line_h
     right_edge = holder.winfo_x() + holder.winfo_width()
-    assert right_edge > feed.text.winfo_width() - 40
+    assert feed.text.winfo_width() - 40 < right_edge <= feed.text.winfo_width()
 
 
 def test_row_colors_pending_accepted_missed(root):

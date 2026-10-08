@@ -63,6 +63,12 @@ def test_activate_shows_last_minutes_oldest_first_without_system(root, tmp_path)
     view.deactivate()
 
 
+def test_periods_are_multiples_of_five_up_to_an_hour():
+    from watcher.allchat import PERIODS
+
+    assert list(PERIODS.values()) == list(range(5, 61, 5))
+
+
 def test_system_messages_toggle_and_period_change_reload(root, tmp_path):
     view, _log, saved = make(root, tmp_path)
     view.activate()

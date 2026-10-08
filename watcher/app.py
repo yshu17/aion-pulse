@@ -23,7 +23,7 @@ from watcher.tooltip import SpecTooltip
 MAX_ROWS = 500
 RETRY_MS = 2000
 TOOLTIP_DELAY_MS = 300
-HISTORY_CHOICES = {"нет": 0, "1 мин": 1, "2 мин": 2, "3 мин": 3}
+HISTORY_CHOICES = {"нет": 0, **{f"{m} мин": m for m in range(5, 61, 5)}}
 SYSTEM_BEEP = "Системный сигнал"
 CUSTOM_SOUND = "Свой файл…"
 ALERT_MODES = {"Стандартный": "standard", "Назойливый": "nag"}

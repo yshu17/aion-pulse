@@ -12,7 +12,7 @@ from watcher.tailer import LogTailer
 POLL_MS = 500
 RETRY_MS = 2000
 MAX_ROWS = 2000
-PERIODS = {"5 мин": 5, "10 мин": 10, "15 мин": 15, "20 мин": 20, "30 мин": 30, "45 мин": 45, "60 мин": 60}
+PERIODS = {f"{m} мин": m for m in range(5, 61, 5)}
 CHANNEL_COLORS = [
     ("3.", "#ffb45e"),  # «Поиск группы»
     ("2.", "#7fd48a"),  # «Торговля»

@@ -165,9 +165,10 @@ class MatchFeed(ttk.Frame):
     def _place_holders(self) -> None:
         """Pin each countdown + checkbox to the right edge of its row's first line."""
         self.text.update_idletasks()
-        right = self.text.winfo_width() - RIGHT_MARGIN
         # dlineinfo counts the text's inner padding, place() coordinates start inside it
+        padx = int(str(self.text.cget("padx")))
         pady = int(str(self.text.cget("pady")))
+        right = self.text.winfo_width() - 2 * padx - RIGHT_MARGIN
         for alert_id, holder in self._holders.items():
             info = self.text.dlineinfo(f"a{alert_id}.first") if self.text.tag_ranges(f"a{alert_id}") else None
             if info is None:

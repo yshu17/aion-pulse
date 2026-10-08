@@ -190,16 +190,19 @@ def test_start_scans_history_minutes_back(tmp_path):
         return f"{stamp} : [3.Поиск группы] [charname:{nick};1 1 1]: WTS ммк\r\n"
 
     log = tmp_path / "Chat.log"
-    log.write_bytes((line(300, "Old") + line(90, "Mid") + line(20, "New")).encode("cp1251"))
+    log.write_bytes((line(900, "Old") + line(240, "Mid") + line(20, "New")).encode("cp1251"))
     cfg_path = tmp_path / "config.json"
     cfg_path.write_text(
-        json.dumps({"chat_log": str(log), "keywords": ["ммк"], "history_min": 2}), encoding="utf-8"
+        json.dumps({"chat_log": str(log), "keywords": ["ммк"], "history_min": 5}), encoding="utf-8"
     )
     root = tk.Tk()
     root.withdraw()
     try:
         app = App(root, cfg_path)
-        assert app.history_var.get() == "2 мин"
+        assert app.history_var.get() == "5 мин"
+        from watcher.app import HISTORY_CHOICES
+
+        assert list(HISTORY_CHOICES.values()) == [0, *range(5, 61, 5)]
         beeps = []
         app.notifier.play = lambda: beeps.append(1)
         app.start()
