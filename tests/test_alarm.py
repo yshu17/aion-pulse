@@ -109,3 +109,26 @@ def test_without_wav_repeats_beep(root):
     alarm.close()
     alarm._repeat_beep()  # a late timer after close must not ring
     assert notifier.calls[-1] == "stop"
+
+
+def test_without_popup_only_rings(root):
+    alarm, notifier, flashes = make(root)
+    alarm.trigger([(msg("A", "wts"), ["wts"])], popup=False)
+    assert alarm.window is None
+    assert alarm.sounding is True and flashes == [True]
+    alarm.silence()
+    assert notifier.calls == ["loop", "stop"]
+
+
+def test_popup_reactions_notify_app(root):
+    acks = []
+    alarm = NagAlarm(root, FakeNotifier(True), flash=lambda on: None, on_ack=lambda: acks.append(1))
+    alarm.trigger([(msg("A", "wts"), ["wts"])])
+    alarm.text.event_generate("<Enter>")
+    assert acks == [1]
+    alarm.text.event_generate("<Enter>")  # already silent: hovering again is not a new reaction
+    assert acks == [1]
+    alarm.trigger([(msg("B", "wts"), ["wts"])])
+    alarm._on_ok()
+    assert acks == [1, 1]
+    assert alarm.window is None

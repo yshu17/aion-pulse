@@ -40,10 +40,17 @@ def taskbar_flasher(root: tk.Misc) -> Callable[[bool], None]:
 
 
 class NagAlarm:
-    def __init__(self, root: tk.Misc, notifier, flash: Callable[[bool], None] | None = None) -> None:
+    def __init__(
+        self,
+        root: tk.Misc,
+        notifier,
+        flash: Callable[[bool], None] | None = None,
+        on_ack: Callable[[], None] | None = None,
+    ) -> None:
         self.root = root
         self.notifier = notifier
         self.flash = flash or taskbar_flasher(root)
+        self.on_ack = on_ack  # the user reacted in the popup (hover, click or OK)
         self.window: tk.Toplevel | None = None
         self.text: tk.Text | None = None
         self.sounding = False
@@ -53,14 +60,15 @@ class NagAlarm:
         self._blink_on = False
 
     # --- public ---------------------------------------------------------------
-    def trigger(self, entries: list[tuple[ChatMessage, list[str]]]) -> None:
-        """Show the matches and ring until silence() / close()."""
-        if self.window is None:
-            self._open()
-        for msg, hits in entries:
-            self._add_row(msg, hits)
-        self.window.deiconify()
-        self.window.lift()
+    def trigger(self, entries: list[tuple[ChatMessage, list[str]]], popup: bool = True) -> None:
+        """Ring until silence() / close(); with popup, also list the matches in a blinking window."""
+        if popup:
+            if self.window is None:
+                self._open()
+            for msg, hits in entries:
+                self._add_row(msg, hits)
+            self.window.deiconify()
+            self.window.lift()
         if not self.sounding:
             self._start()
 
@@ -78,6 +86,20 @@ class NagAlarm:
 
     def silence_on_click(self, _event) -> None:
         self.silence()
+        self._acknowledged()
+
+    def _on_hover(self) -> None:
+        if self.sounding:
+            self.silence()
+            self._acknowledged()
+
+    def _on_ok(self) -> None:
+        self.close()
+        self._acknowledged()
+
+    def _acknowledged(self) -> None:
+        if self.on_ack is not None:
+            self.on_ack()
 
     def close(self) -> None:
         self.silence()
@@ -119,7 +141,7 @@ class NagAlarm:
         win = tk.Toplevel(self.root, background=theme.ACCENT, padx=6, pady=6)
         win.title("Найдено в чате")
         win.attributes("-topmost", True)
-        win.protocol("WM_DELETE_WINDOW", self.close)
+        win.protocol("WM_DELETE_WINDOW", self._on_ok)
         body = tk.Frame(win, background=theme.BG, padx=16, pady=14)
         body.pack(fill="both", expand=True)
         self._title = tk.Label(
@@ -142,9 +164,9 @@ class NagAlarm:
         self.text = tk.Text(body, wrap="word", height=8, width=70, state="disabled", cursor="hand2")
         theme.style_text(self.text)
         self.text.pack(fill="both", expand=True)
-        self.text.bind("<Enter>", lambda _e: self.silence())
+        self.text.bind("<Enter>", lambda _e: self._on_hover())
         self.text.bind("<Button-1>", self.silence_on_click)
-        ttk.Button(body, text="ОК", style="Accent.TButton", command=self.close).pack(
+        ttk.Button(body, text="ОК", style="Accent.TButton", command=self._on_ok).pack(
             anchor="e", pady=(12, 0)
         )
         win.update_idletasks()

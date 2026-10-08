@@ -302,7 +302,7 @@ def test_nag_mode_raises_alarm_instead_of_single_beep(tmp_path):
         app = App(root, cfg_path)
         beeps, alarms = [], []
         app.notifier.play = lambda: beeps.append(1)
-        app.alarm.trigger = lambda entries: alarms.append([m.nick for m, _hits in entries])
+        app.alarm.trigger = lambda entries, popup=True: alarms.append([m.nick for m, _hits in entries])
         app.start()
         line = "2026.10.08 18:43:17 : [3.Поиск группы] [charname:A;1 1 1]: WTB ММК\r\n"
         line += "2026.10.08 18:43:18 : [3.Поиск группы] [charname:B;1 1 1]: продам ммк\r\n"
@@ -312,5 +312,136 @@ def test_nag_mode_raises_alarm_instead_of_single_beep(tmp_path):
         assert alarms == [["A", "B"]]
         assert beeps == []
         app.stop()
+    finally:
+        root.destroy()
+
+
+def _nag_app(tmp_path, **cfg):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "Chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    data = {"chat_log": str(log), "keywords": ["ммк"], "alert_mode": "nag"}
+    data.update(cfg)
+    cfg_path.write_text(json.dumps(data), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    app = App(root, cfg_path)
+    calls = []
+    app.alarm.trigger = lambda entries, popup=True: calls.append(("ring", popup, len(entries)))
+    app.alarm.close = lambda: calls.append(("close",))
+    app.alarm.sounding = False
+    app.notifier.play = lambda: calls.append(("beep",))
+
+    def say(*nicks):
+        text = "".join(
+            f"2026.10.08 18:43:1{i} : [3.Поиск группы] [charname:{n};1 1 1]: WTB ММК" + "\r\n"
+            for i, n in enumerate(nicks)
+        )
+        with open(log, "ab") as f:
+            f.write(text.encode("cp1251"))
+        app._tick()
+
+    return root, app, calls, say
+
+
+def counters(app):
+    return (app.tracker.found, app.tracker.reacted, app.tracker.missed)
+
+
+def test_nag_rows_accept_counts_reacted_and_silences(tmp_path):
+    root, app, calls, say = _nag_app(tmp_path)
+    try:
+        app.start()
+        say("A", "B")
+        assert calls == [("ring", False, 2)]  # popup is off by default
+        assert counters(app) == (2, 0, 0)
+        assert app.found_var.get() == "Найдено: 2"
+        first, second = app.tracker.pending_ids
+        app.feed.boxes[first].invoke()
+        assert counters(app) == (2, 1, 0)
+        assert ("close",) not in calls  # still one pending
+        app.feed.boxes[second].invoke()
+        assert counters(app) == (2, 2, 0)
+        assert calls[-1] == ("close",)
+        assert app.reacted_var.get() == "Отреагировал: 2"
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_unaccepted_rows_expire_to_missed(tmp_path):
+    root, app, calls, say = _nag_app(tmp_path, react_sec=30)
+    try:
+        app.start()
+        say("A")
+        alert_id = app.tracker.pending_ids[0]
+        app._ui_tick(now=app.tracker._pending[alert_id].created + 31)
+        assert counters(app) == (1, 0, 1)
+        assert app.feed.boxes[alert_id].cget("text") == "пропущено"
+        assert app.missed_var.get() == "Пропущено: 1"
+        assert calls[-1] == ("close",)
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_popup_ack_accepts_all_and_settings_saved(tmp_path):
+    import json
+
+    root, app, calls, say = _nag_app(tmp_path, nag_popup=True)
+    try:
+        assert app.react_var.get() == "30 с"
+        app.start()
+        say("A", "B")
+        assert calls[0] == ("ring", True, 2)
+        app._on_popup_ack()
+        assert counters(app) == (2, 2, 0)
+        app.react_var.set("выкл")
+        app._on_react_selected()
+        app.popup_var.set(False)
+        app._on_popup_toggled()
+        saved = json.loads(app.config_path.read_text(encoding="utf-8"))
+        assert (saved["react_sec"], saved["nag_popup"]) == (0, False)
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_counters_toggle_and_reset(tmp_path):
+    import json
+
+    root, app, _calls, say = _nag_app(tmp_path, alert_mode="standard")
+    try:
+        app.start()
+        say("A")
+        assert counters(app) == (1, 0, 0)
+        assert app.counters_bar.winfo_manager() == "pack"
+        app.counters_var.set(False)
+        app._on_counters_toggled()
+        assert not app.counters_bar.winfo_manager()
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["show_counters"] is False
+        app._reset_counters()
+        assert app.found_var.get() == "Найдено: 0"
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_all_chat_tab_activates_on_select(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        activated = []
+        app.all_chat.activate = lambda: activated.append("on")
+        app.all_chat.deactivate = lambda: activated.append("off")
+        app.tabs.select(app.all_chat)
+        app._on_tab_changed()
+        app.tabs.select(app.search_tab)
+        app._on_tab_changed()
+        assert activated == ["on", "off"]
     finally:
         root.destroy()

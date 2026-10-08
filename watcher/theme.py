@@ -160,6 +160,40 @@ def apply_dark_theme(root: tk.Tk) -> None:
     style.layout("Group.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Group.TCheckbutton", background=SURFACE_2, foreground=MUTED, padding=(4, 0))
     style.map("Group.TCheckbutton", background=[("active", SURFACE_3)], foreground=[("selected", ACCENT)])
+    style.layout("Accept.TCheckbutton", style.layout("Item.TCheckbutton"))
+    style.configure("Accept.TCheckbutton", background=SURFACE, foreground=ACCENT, padding=(2, 0))
+    style.map("Accept.TCheckbutton", background=[("active", SURFACE_2)])
+    style.layout("Missed.TCheckbutton", style.layout("Item.TCheckbutton"))
+    style.configure("Missed.TCheckbutton", background=SURFACE, foreground=MUTED, padding=(2, 0))
+
+    style.configure("TNotebook", background=BG, borderwidth=0, tabmargins=(0, 0, 0, 0))
+    style.configure(
+        "TNotebook.Tab",
+        background=SURFACE_2,
+        foreground=MUTED,
+        padding=(22, 8),
+        borderwidth=0,
+        font=(FONT_FAMILY, FONT_SIZE, "bold"),
+    )
+    style.map(
+        "TNotebook.Tab",
+        background=[("selected", SURFACE), ("active", SURFACE_3)],
+        foreground=[("selected", ACCENT)],
+        lightcolor=[("selected", SURFACE)],
+        expand=[("selected", (0, 0, 0, 0))],
+    )
+
+    for name, color in (("Found", TEXT), ("Reacted", "#5fd38d"), ("Missed", DANGER)):
+        style.configure(
+            f"{name}.Counter.TLabel",
+            background=SURFACE_2,
+            foreground=color,
+            font=(FONT_FAMILY, FONT_SIZE, "bold"),
+            padding=(14, 6),
+        )
+    style.layout("Plain.TCheckbutton", style.layout("Item.TCheckbutton"))
+    style.configure("Plain.TCheckbutton", background=BG, foreground=TEXT, padding=(0, 0))
+    style.map("Plain.TCheckbutton", background=[("active", BG)], foreground=[("selected", ACCENT)])
     style.configure("Group.TFrame", background=SURFACE_2)
     style.configure(
         "Group.TLabel",

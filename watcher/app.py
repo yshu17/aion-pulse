@@ -7,10 +7,13 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from watcher import theme
+from watcher.alerts import AlertTracker
+from watcher.allchat import AllChatView
 from watcher.catalog import CATEGORY_ORDER, WatchItem, load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
+from watcher.feed import MatchFeed
 from watcher.notifier import Notifier, system_sounds
 from watcher.parser import ChatMessage, parse_line
 from watcher.specs import load_specs
@@ -24,6 +27,8 @@ HISTORY_CHOICES = {"нет": 0, "1 мин": 1, "2 мин": 2, "3 мин": 3}
 SYSTEM_BEEP = "Системный сигнал"
 CUSTOM_SOUND = "Свой файл…"
 ALERT_MODES = {"Стандартный": "standard", "Назойливый": "nag"}
+REACT_CHOICES = {"выкл": 0, "15 с": 15, "30 с": 30, "60 с": 60, "2 мин": 120}
+UI_TICK_MS = 500
 
 
 def split_keywords(text: str) -> list[str]:
@@ -44,6 +49,7 @@ class App:
             self.cfg.keywords, self.cfg.cooldown_sec, watch_items=self._checked_items()
         )
         self.notifier = Notifier(self.cfg.sound_path)
+        self.tracker = AlertTracker(self.cfg.react_sec)
         self.tailer: LogTailer | None = None
         self.running = False
         self._after_id: str | None = None
@@ -52,8 +58,10 @@ class App:
         self._tooltip_after: str | None = None
         self._build_ui()
         self.tooltip = SpecTooltip(root)
-        self.alarm = NagAlarm(root, self.notifier)
+        self.alarm = NagAlarm(root, self.notifier, on_ack=self._on_popup_ack)
         self._set_status("Остановлен")
+        self._update_counters()
+        self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
 
     def _build_ui(self) -> None:
         root = self.root
@@ -108,6 +116,31 @@ class App:
         self.sound_box.pack(side="left")
         self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
         ttk.Button(alert, text="▶", width=3, command=self.notifier.play).pack(side="left", padx=8)
+        ttk.Label(alert, text="Реакция", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        self.react_var = tk.StringVar(
+            value=next((k for k, v in REACT_CHOICES.items() if v == self.cfg.react_sec), "30 с")
+        )
+        react = ttk.Combobox(
+            alert, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7
+        )
+        react.pack(side="left")
+        react.bind("<<ComboboxSelected>>", lambda _e: self._on_react_selected())
+        self.popup_var = tk.BooleanVar(value=self.cfg.nag_popup)
+        ttk.Checkbutton(
+            alert,
+            text="Окно поверх игры",
+            variable=self.popup_var,
+            style="Plain.TCheckbutton",
+            command=self._on_popup_toggled,
+        ).pack(side="left", padx=(18, 0))
+        self.counters_var = tk.BooleanVar(value=self.cfg.show_counters)
+        ttk.Checkbutton(
+            alert,
+            text="Счётчики",
+            variable=self.counters_var,
+            style="Plain.TCheckbutton",
+            command=self._on_counters_toggled,
+        ).pack(side="left", padx=(18, 0))
         top.columnconfigure(1, weight=1)
 
         bar = ttk.Frame(root, padding=(16, 6, 16, 10))
@@ -130,20 +163,115 @@ class App:
         self.status_label = ttk.Label(bar, textvariable=self.status_var, style="Status.TLabel")
         self.status_label.pack(side="left", padx=12)
 
-        body = ttk.Frame(root, padding=(16, 0, 16, 16))
-        body.pack(fill="both", expand=True)
-        self._build_items_panel(body)
-        card = ttk.Frame(body, style="Card.TFrame", padding=2)
-        card.pack(side="left", fill="both", expand=True)
-        self.text = tk.Text(card, wrap="word", state="disabled")
-        theme.style_text(self.text)
-        scroll = ttk.Scrollbar(card, command=self.text.yview)
-        self.text.configure(yscrollcommand=scroll.set)
-        scroll.pack(side="right", fill="y")
-        self.text.pack(side="left", fill="both", expand=True)
+        self.tabs = ttk.Notebook(root)
+        self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 16))
+        self.search_tab = ttk.Frame(self.tabs, padding=(0, 12, 0, 0))
+        self.tabs.add(self.search_tab, text="Поиск")
+        self._build_items_panel(self.search_tab)
+        column = ttk.Frame(self.search_tab)
+        column.pack(side="left", fill="both", expand=True)
+        self._build_counters(column)
+        self.feed = MatchFeed(column, on_accept=self._on_feed_accept, max_rows=MAX_ROWS)
+        self.feed.pack(fill="both", expand=True)
+        self.text = self.feed.text
+
+        self.all_chat = AllChatView(
+            self.tabs,
+            get_path=lambda: str(self.cfg.chat_log_path()),
+            names=self.item_names,
+            minutes=self.cfg.chat_minutes,
+            show_system=self.cfg.chat_system,
+            on_settings=self._on_chat_settings,
+        )
+        self.all_chat.configure(padding=(0, 12, 0, 0))
+        self.tabs.add(self.all_chat, text="Весь чат")
+        self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
         root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")
         root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build_counters(self, parent: ttk.Frame) -> None:
+        self._counters_anchor = ttk.Frame(parent, height=1)
+        self._counters_anchor.pack(fill="x")
+        self.counters_bar = ttk.Frame(parent)
+        self.found_var = tk.StringVar()
+        self.reacted_var = tk.StringVar()
+        self.missed_var = tk.StringVar()
+        for var, style in (
+            (self.found_var, "Found.Counter.TLabel"),
+            (self.reacted_var, "Reacted.Counter.TLabel"),
+            (self.missed_var, "Missed.Counter.TLabel"),
+        ):
+            ttk.Label(self.counters_bar, textvariable=var, style=style).pack(side="left", padx=(0, 8))
+        ttk.Button(self.counters_bar, text="Сбросить", command=self._reset_counters).pack(side="left")
+        if self.cfg.show_counters:
+            self.counters_bar.pack(fill="x", pady=(0, 10), after=self._counters_anchor)
+
+    def _update_counters(self) -> None:
+        self.found_var.set(f"Найдено: {self.tracker.found}")
+        self.reacted_var.set(f"Отреагировал: {self.tracker.reacted}")
+        self.missed_var.set(f"Пропущено: {self.tracker.missed}")
+
+    def _reset_counters(self) -> None:
+        self.tracker.reset()
+        self._update_counters()
+
+    def _on_counters_toggled(self) -> None:
+        self.cfg.show_counters = self.counters_var.get()
+        if self.cfg.show_counters:
+            self.counters_bar.pack(fill="x", pady=(0, 10), after=self._counters_anchor)
+        else:
+            self.counters_bar.pack_forget()
+        save_config(self.config_path, self.cfg)
+
+    def _on_react_selected(self) -> None:
+        self.cfg.react_sec = REACT_CHOICES.get(self.react_var.get(), 30)
+        self.tracker.react_sec = self.cfg.react_sec
+        save_config(self.config_path, self.cfg)
+
+    def _on_popup_toggled(self) -> None:
+        self.cfg.nag_popup = self.popup_var.get()
+        save_config(self.config_path, self.cfg)
+
+    def _on_chat_settings(self, minutes: int, show_system: bool) -> None:
+        self.cfg.chat_minutes = minutes
+        self.cfg.chat_system = show_system
+        save_config(self.config_path, self.cfg)
+
+    def _on_tab_changed(self) -> None:
+        if self.tabs.select() == str(self.all_chat):
+            self.all_chat.activate()
+        else:
+            self.all_chat.deactivate()
+
+    # --- alerts --------------------------------------------------------------------
+    def _on_feed_accept(self, alert_id: int) -> None:
+        if self.tracker.accept(alert_id):
+            self.feed.mark(alert_id, "accepted")
+        self._after_alert_change()
+
+    def _on_popup_ack(self) -> None:
+        for alert_id in self.tracker.accept_all():
+            self.feed.mark(alert_id, "accepted")
+        self._after_alert_change()
+
+    def _after_alert_change(self) -> None:
+        if not self.tracker.pending_ids:
+            self.alarm.close()
+        self._update_counters()
+
+    def _ui_tick(self, now: float | None = None) -> None:
+        """Blink pending rows and move overdue ones to «missed»."""
+        self._ui_after = None
+        expired = self.tracker.expire(time.monotonic() if now is None else now)
+        for alert_id in expired:
+            self.feed.mark(alert_id, "missed")
+        if expired:
+            self._after_alert_change()
+        if self.tracker.pending_ids:
+            self.feed.blink()
+        if now is None:
+            self._ui_after = self.root.after(UI_TICK_MS, self._ui_tick)
 
     def _build_items_panel(self, parent: ttk.Frame) -> None:
         """Right-hand list: checkbox + icon + name for each watchable item."""
@@ -456,27 +584,18 @@ class App:
                 continue
             hits = self.matcher.check(msg, now)
             if hits:
-                self._add_row(msg, hits)
                 matched.append((msg, hits))
         if not matched:
             return
-        if self.cfg.alert_mode == "nag":
-            self.alarm.trigger(matched)
+        nag = self.cfg.alert_mode == "nag"
+        for msg, hits in matched:
+            alert_id = self.tracker.add(msg, hits, now, nag=nag)
+            self.feed.add(msg, hits, alert_id if nag else None)
+        if nag:
+            self.alarm.trigger(matched, popup=self.cfg.nag_popup)
         else:
             self.notifier.play()
-
-    def _add_row(self, msg: ChatMessage, hits: list[str]) -> None:
-        parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
-        for chunk, is_hit in highlight_segments(msg.text, hits):
-            parts += [chunk, ("hit",) if is_hit else ()]
-        parts += ["\n", ()]
-        self.text.configure(state="normal")
-        self.text.insert("1.0", *parts)
-        self._rows += 1
-        if self._rows > MAX_ROWS:
-            self.text.delete(f"{MAX_ROWS + 1}.0", "end")
-            self._rows = MAX_ROWS
-        self.text.configure(state="disabled")
+        self._update_counters()
 
     def _on_close(self) -> None:
         try:
@@ -485,4 +604,7 @@ class App:
         finally:
             self.stop()
             self.alarm.close()
+            self.all_chat.deactivate()
+            if self._ui_after is not None:
+                self.root.after_cancel(self._ui_after)
             self.root.destroy()
