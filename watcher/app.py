@@ -10,7 +10,8 @@ from watcher import theme
 from watcher.catalog import CATEGORY_ORDER, WatchItem, load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
-from watcher.notifier import Notifier
+from watcher.alarm import NagAlarm
+from watcher.notifier import Notifier, system_sounds
 from watcher.parser import ChatMessage, parse_line
 from watcher.specs import load_specs
 from watcher.tailer import LogTailer
@@ -20,6 +21,9 @@ MAX_ROWS = 500
 RETRY_MS = 2000
 TOOLTIP_DELAY_MS = 300
 HISTORY_CHOICES = {"нет": 0, "1 мин": 1, "2 мин": 2, "3 мин": 3}
+SYSTEM_BEEP = "Системный сигнал"
+CUSTOM_SOUND = "Свой файл…"
+ALERT_MODES = {"Стандартный": "standard", "Назойливый": "nag"}
 
 
 def split_keywords(text: str) -> list[str]:
@@ -48,6 +52,7 @@ class App:
         self._tooltip_after: str | None = None
         self._build_ui()
         self.tooltip = SpecTooltip(root)
+        self.alarm = NagAlarm(root, self.notifier)
         self._set_status("Остановлен")
 
     def _build_ui(self) -> None:
@@ -79,13 +84,36 @@ class App:
         kw_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=(12, 0), pady=4)
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
+        ttk.Label(top, text="Оповещение", style="Muted.TLabel").grid(row=2, column=0, sticky="w")
+        alert = ttk.Frame(top)
+        alert.grid(row=2, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=4)
+        self.mode_var = tk.StringVar(
+            value=next((k for k, v in ALERT_MODES.items() if v == self.cfg.alert_mode), "Стандартный")
+        )
+        mode = ttk.Combobox(
+            alert, textvariable=self.mode_var, values=list(ALERT_MODES), state="readonly", width=12
+        )
+        mode.pack(side="left")
+        mode.bind("<<ComboboxSelected>>", lambda _e: self._on_mode_selected())
+        ttk.Label(alert, text="Звук", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        self.sound_choices = self._sound_choices()
+        self.sound_var = tk.StringVar(value=self._sound_label(self.cfg.sound_path))
+        self.sound_box = ttk.Combobox(
+            alert,
+            textvariable=self.sound_var,
+            values=[*self.sound_choices, CUSTOM_SOUND],
+            state="readonly",
+            width=28,
+        )
+        self.sound_box.pack(side="left")
+        self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
+        ttk.Button(alert, text="▶", width=3, command=self.notifier.play).pack(side="left", padx=8)
         top.columnconfigure(1, weight=1)
 
         bar = ttk.Frame(root, padding=(16, 6, 16, 10))
         bar.pack(fill="x")
         self.start_btn = ttk.Button(bar, text="Start", style="Accent.TButton", command=self.toggle)
         self.start_btn.pack(side="left")
-        ttk.Button(bar, text="Тест звука", command=self.notifier.play).pack(side="left", padx=8)
         ttk.Label(bar, text="История", style="Muted.TLabel").pack(side="left", padx=(16, 6))
         minutes_to_choice = {m: c for c, m in HISTORY_CHOICES.items()}
         self.history_var = tk.StringVar(value=minutes_to_choice.get(self.cfg.history_min, "нет"))
@@ -268,6 +296,47 @@ class App:
             self._tooltip_after = None
         self.tooltip.hide()
 
+    def _sound_choices(self) -> dict[str, str]:
+        """Display name -> WAV path ("" = system beep). The configured custom file is kept."""
+        choices = {SYSTEM_BEEP: ""}
+        for path in system_sounds():
+            choices[path.stem] = str(path)
+        if self.cfg.sound_path and self.cfg.sound_path not in choices.values():
+            choices[Path(self.cfg.sound_path).stem] = self.cfg.sound_path
+        return choices
+
+    def _sound_label(self, sound_path: str) -> str:
+        return next((name for name, path in self.sound_choices.items() if path == sound_path), SYSTEM_BEEP)
+
+    def _on_sound_selected(self) -> None:
+        choice = self.sound_var.get()
+        if choice == CUSTOM_SOUND:
+            path = filedialog.askopenfilename(
+                title="Звук оповещения", filetypes=[("WAV", "*.wav"), ("Все файлы", "*.*")]
+            )
+            if path:
+                self._set_custom_sound(str(Path(path)))
+            else:
+                self.sound_var.set(self._sound_label(self.cfg.sound_path))
+            return
+        self._apply_sound(self.sound_choices.get(choice, ""))
+        self.notifier.play()
+
+    def _set_custom_sound(self, path: str) -> None:
+        self.sound_choices[Path(path).stem] = path
+        self.sound_box.configure(values=[*self.sound_choices, CUSTOM_SOUND])
+        self.sound_var.set(Path(path).stem)
+        self._apply_sound(path)
+
+    def _apply_sound(self, path: str) -> None:
+        self.cfg.sound_path = path
+        self.notifier.sound_path = path
+        save_config(self.config_path, self.cfg)
+
+    def _on_mode_selected(self) -> None:
+        self.cfg.alert_mode = ALERT_MODES.get(self.mode_var.get(), "standard")
+        save_config(self.config_path, self.cfg)
+
     def _on_history_changed(self) -> None:
         self.cfg.history_min = HISTORY_CHOICES.get(self.history_var.get(), 0)
         save_config(self.config_path, self.cfg)
@@ -380,7 +449,7 @@ class App:
 
     def _process(self, lines: list[str]) -> None:
         now = time.monotonic()
-        matched = False
+        matched: list[tuple[ChatMessage, list[str]]] = []
         for line in lines:
             msg = parse_line(line, self.item_names)
             if msg is None:
@@ -388,8 +457,12 @@ class App:
             hits = self.matcher.check(msg, now)
             if hits:
                 self._add_row(msg, hits)
-                matched = True
-        if matched:
+                matched.append((msg, hits))
+        if not matched:
+            return
+        if self.cfg.alert_mode == "nag":
+            self.alarm.trigger(matched)
+        else:
             self.notifier.play()
 
     def _add_row(self, msg: ChatMessage, hits: list[str]) -> None:
@@ -411,4 +484,5 @@ class App:
             self._apply_game_dir()
         finally:
             self.stop()
+            self.alarm.close()
             self.root.destroy()

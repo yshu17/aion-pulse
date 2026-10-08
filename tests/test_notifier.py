@@ -40,3 +40,43 @@ def test_falls_back_to_beep_when_play_fails(tmp_path, monkeypatch):
     monkeypatch.setattr(notifier.winsound, "PlaySound", failing_play)
     Notifier(str(wav)).play()
     assert calls == [("beep", winsound.MB_ICONEXCLAMATION)]
+
+
+def test_start_loop_plays_file_in_loop_and_stop_silences(tmp_path, monkeypatch):
+    calls = record_calls(monkeypatch)
+    wav = tmp_path / "alarm.wav"
+    wav.write_bytes(b"RIFF")
+    n = Notifier(str(wav))
+    assert n.start_loop() is True
+    n.stop()
+    assert calls == [
+        ("play", str(wav), winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP),
+        ("play", None, 0),
+    ]
+
+
+def test_start_loop_without_file_reports_no_native_loop(monkeypatch):
+    calls = record_calls(monkeypatch)
+    assert Notifier("").start_loop() is False
+    assert calls == []
+
+
+def test_start_loop_failure_reports_no_native_loop(tmp_path, monkeypatch):
+    record_calls(monkeypatch)
+    wav = tmp_path / "broken.wav"
+    wav.write_bytes(b"x")
+
+    def failing_play(path, flags):
+        raise RuntimeError("Failed to play sound")
+
+    monkeypatch.setattr(notifier.winsound, "PlaySound", failing_play)
+    assert Notifier(str(wav)).start_loop() is False
+
+
+def test_system_sounds_lists_wav_files_sorted(tmp_path):
+    from watcher.notifier import system_sounds
+
+    for name in ("Ring01.wav", "Alarm01.wav", "readme.txt"):
+        (tmp_path / name).write_bytes(b"RIFF")
+    assert [p.name for p in system_sounds(tmp_path)] == ["Alarm01.wav", "Ring01.wav"]
+    assert system_sounds(tmp_path / "missing") == []

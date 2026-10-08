@@ -248,3 +248,69 @@ def test_item_list_grouped_by_category(tmp_path):
         assert app.group_vars["Лата"].get() is False
     finally:
         root.destroy()
+
+
+def test_sound_choice_and_alert_mode_saved(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App, SYSTEM_BEEP
+
+    wav = tmp_path / "my alarm.wav"
+    wav.write_bytes(b"RIFF")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(tmp_path / "none.log")}), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        app.notifier.play = lambda: None  # selecting a sound previews it; keep tests quiet
+        assert app.sound_var.get() == SYSTEM_BEEP
+        assert "Alarm01" in app.sound_choices  # Windows media sounds are offered
+        app.sound_var.set("Alarm01")
+        app._on_sound_selected()
+        assert app.cfg.sound_path.lower().endswith("alarm01.wav")
+        assert app.notifier.sound_path == app.cfg.sound_path
+
+        app._set_custom_sound(str(wav))
+        assert app.sound_var.get() == "my alarm"
+        assert json.loads(cfg_path.read_text(encoding="utf-8"))["sound_path"] == str(wav)
+
+        assert app.mode_var.get() == "Стандартный"
+        app.mode_var.set("Назойливый")
+        app._on_mode_selected()
+        assert json.loads(cfg_path.read_text(encoding="utf-8"))["alert_mode"] == "nag"
+    finally:
+        root.destroy()
+
+
+def test_nag_mode_raises_alarm_instead_of_single_beep(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "Chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(
+        json.dumps({"chat_log": str(log), "keywords": ["ммк"], "alert_mode": "nag"}), encoding="utf-8"
+    )
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        beeps, alarms = [], []
+        app.notifier.play = lambda: beeps.append(1)
+        app.alarm.trigger = lambda entries: alarms.append([m.nick for m, _hits in entries])
+        app.start()
+        line = "2026.10.08 18:43:17 : [3.Поиск группы] [charname:A;1 1 1]: WTB ММК\r\n"
+        line += "2026.10.08 18:43:18 : [3.Поиск группы] [charname:B;1 1 1]: продам ммк\r\n"
+        with open(log, "ab") as f:
+            f.write(line.encode("cp1251"))
+        app._tick()
+        assert alarms == [["A", "B"]]
+        assert beeps == []
+        app.stop()
+    finally:
+        root.destroy()

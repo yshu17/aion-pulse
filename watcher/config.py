@@ -25,6 +25,7 @@ class Config:
     poll_interval_ms: int = 500
     cooldown_sec: float = 60
     sound_path: str = ""
+    alert_mode: str = "standard"  # "standard" | "nag"
 
     def chat_log_path(self) -> Path:
         if self.chat_log:
