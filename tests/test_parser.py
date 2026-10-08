@@ -141,3 +141,11 @@ def test_search_also_catches_garbled_lfg_channel_and_plain_nick_format():
     plain = "2026.10.08 14:50:49 : [3.Поиск группы] Sexbomb: ищу SUP"
     assert parse_line(plain).nick == "Sexbomb"
     assert parse_line("2026.10.08 14:49:06 : [charname:Flama;0 0 0]: whisper") is None
+
+
+def test_any_line_keeps_name_color_and_verb():
+    line = parse_any_line("2026.10.08 00:19:59 : [charname:Pyro;0.6275 1.0000 0.6275] шепчет: DP S? ")
+    assert (line.color, line.verb) == ("0.6275 1.0000 0.6275", "шепчет")
+    line = parse_any_line(CMD_LINE)
+    assert (line.color, line.verb) == ("1.0000 0.6941 0.6941", "")
+    assert parse_any_line(SYSTEM_LINE).color is None

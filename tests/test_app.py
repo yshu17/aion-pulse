@@ -202,13 +202,13 @@ def test_start_scans_history_minutes_back(tmp_path):
         assert app.history_var.get() == "5 мин"
         from watcher.app import HISTORY_CHOICES
 
-        assert list(HISTORY_CHOICES.values()) == [0, *range(5, 61, 5)]
+        assert list(HISTORY_CHOICES.values()) == [0, 5, 15, 30, 45, 60]
         beeps = []
         app.notifier.play = lambda: beeps.append(1)
         app.start()
         text = app.text.get("1.0", "end")
         assert "Mid:" in text and "New:" in text and "Old:" not in text
-        assert beeps == [1]
+        assert beeps == []  # history is shown, but never alerts
         app.stop()
 
         app.history_var.set("нет")
@@ -446,5 +446,42 @@ def test_all_chat_tab_activates_on_select(tmp_path):
         app.tabs.select(app.search_tab)
         app._on_tab_changed()
         assert activated == ["on", "off"]
+    finally:
+        root.destroy()
+
+
+def test_history_matches_are_shown_without_alert(tmp_path):
+    import json
+    import tkinter as tk
+    from datetime import datetime, timedelta
+
+    from watcher.app import App
+
+    CRLF = chr(13) + chr(10)
+    stamp = (datetime.now() - timedelta(seconds=60)).strftime("%Y.%m.%d %H:%M:%S")
+    log = tmp_path / "Chat.log"
+    log.write_bytes((f"{stamp} : [3.Поиск группы] [charname:Past;1 1 1]: WTS ммк" + CRLF).encode("cp1251"))
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(
+        json.dumps({"chat_log": str(log), "keywords": ["ммк"], "history_min": 5, "alert_mode": "nag"}),
+        encoding="utf-8",
+    )
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        rings = []
+        app.alarm.trigger = lambda entries, popup=True: rings.append(len(entries))
+        app.notifier.play = lambda: rings.append("beep")
+        app.start()
+        text = app.text.get("1.0", "end")
+        assert "Past: WTS ммк" in text
+        assert "история за 5 мин" in text
+        assert rings == [] and app.tracker.pending_ids == [] and app.tracker.found == 0
+        with open(log, "ab") as f:
+            f.write((f"{stamp[:11]}23:59:59 : [3.Поиск группы] [charname:Now;1 1 1]: ммк" + CRLF).encode("cp1251"))
+        app._tick()
+        assert rings == [1] and app.tracker.found == 1
+        app.stop()
     finally:
         root.destroy()

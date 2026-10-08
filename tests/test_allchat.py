@@ -28,10 +28,10 @@ def make(root, tmp_path, minutes=15, system=False):
     write(
         log,
         [
-            f"{stamp(20 * 60)} : [2.Торговля] [charname:Old;1 1 1]: давно",
+            f"{stamp(20 * 60)} : [3.Поиск группы] [charname:Old;1 1 1]: давно",
             f"{stamp(10 * 60)} : [3.Поиск группы] [charname:Lfg;1 1 1]: ищу хила",
-            f"{stamp(5 * 60)} : Бешеный ветер I: Скор. движ. цели увеличивается.",
-            f"{stamp(60)} : [charname:Whisp;0 0 0]: привет",
+            f"{stamp(5 * 60)} : Получено кинаров: 1 000.",
+            f"{stamp(60)} : [charname:Whisp;0.6275 1.0000 0.6275] шепчет: привет",
         ],
         "wb",
     )
@@ -57,16 +57,16 @@ def test_activate_shows_last_minutes_oldest_first_without_system(root, tmp_path)
     view.activate()
     t = text(view)
     assert "Old:" not in t
-    assert "Бешеный ветер" not in t
+    assert "Получено кинаров" not in t
     assert t.index("Lfg: ищу хила") < t.index("Whisp: привет")
     assert "[3.Поиск группы]" in t
     view.deactivate()
 
 
-def test_periods_are_multiples_of_five_up_to_an_hour():
+def test_periods_offered():
     from watcher.allchat import PERIODS
 
-    assert list(PERIODS.values()) == list(range(5, 61, 5))
+    assert list(PERIODS.values()) == [5, 15, 30, 45, 60]
 
 
 def test_system_messages_toggle_and_period_change_reload(root, tmp_path):
@@ -74,9 +74,9 @@ def test_system_messages_toggle_and_period_change_reload(root, tmp_path):
     view.activate()
     view.system_var.set(True)
     view._on_settings_changed()
-    assert "Бешеный ветер" in text(view)
+    assert "Получено кинаров: 1 000." in text(view)
     assert saved == {"minutes": 15, "show_system": True}
-    view.minutes_var.set("30 мин")
+    view.minutes_var.set("30 мин")  # «Old» is 20 min back
     view._on_settings_changed()
     assert "Old: давно" in text(view)
     assert saved["minutes"] == 30
@@ -86,11 +86,11 @@ def test_system_messages_toggle_and_period_change_reload(root, tmp_path):
 def test_live_lines_append_and_pause(root, tmp_path):
     view, log, _ = make(root, tmp_path)
     view.activate()
-    write(log, [f"{stamp(0)} : [2.Торговля] [charname:Live;1 1 1]: продам"])
+    write(log, [f"{stamp(0)} : [3.Поиск группы] [charname:Live;1 1 1]: продам"])
     view._poll()
     assert text(view).rstrip().endswith("Live: продам")
     view.toggle_pause()
-    write(log, [f"{stamp(0)} : [2.Торговля] [charname:Late;1 1 1]: ещё"])
+    write(log, [f"{stamp(0)} : [3.Поиск группы] [charname:Late;1 1 1]: ещё"])
     view._poll()
     assert "Late:" not in text(view)
     view.toggle_pause()
@@ -112,3 +112,61 @@ def test_missing_log_shows_status_and_deactivate_stops_polling(root, tmp_path):
     assert "не найден" in view.status_var.get()
     view.deactivate()
     assert view._after_id is None
+
+
+def test_category_of_player_lines():
+    from watcher.allchat import category
+    from watcher.parser import parse_any_line
+
+    def cat(rest):
+        return category(parse_any_line(f"2026.10.08 12:00:00 : {rest}"))
+
+    assert cat("[3.Поиск группы] [charname:A;1.0000 0.6941 0.6941]: хил") == "Поиск группы"
+    assert cat("[3.????? ??????] [charname:A;1.0000 0.6941 0.6941]: dps") == "Поиск группы"
+    assert cat("[1.???????] [charname:A;1.0000 0.6941 0.6941]: hi") == "Общий"
+    assert cat("[charname:A;1.0000 1.0000 1.0000]: + алик") == "Общий"
+    assert cat("[charname:A;0.6275 1.0000 0.6275] шепчет: привет") == "Личное"
+    assert cat("[charname:A;0.0196 0.7843 0.8431]: 2 глада") == "Группа"
+    assert cat("[charname:A;0.6118 0.9059 0.8627]: ресните") == "Легион"
+    assert cat("[2.Торговля] [charname:A;1.0000 0.6941 0.6941]: wts") is None
+    assert cat("[charname:A;0.9490 0.3961 0.1333] кричит: prepare") is None
+
+
+def test_system_toggle_shows_only_info_and_errors():
+    from watcher.allchat import is_notice
+    from watcher.parser import parse_any_line
+
+    def notice(rest):
+        return is_notice(parse_any_line(f"2026.10.08 12:00:00 : {rest}"))
+
+    assert notice("Получено: [item]")
+    assert notice("Получено кинаров: 10 000.")
+    assert notice("Цель находится слишком далеко.")
+    assert notice("Невозможно использовать на данную цель.")
+    assert notice("Twistedsister получает: [item].")
+    assert notice("[Event] PvP Team Arena registration is open!")
+    assert not notice("Бешеный ветер I: Скор. движ. цели Mockoco увеличивается.")
+    assert not notice("Разгневанная Гера получает 1 234 ед. урона.")
+    assert not notice("Hator ??????? 5 ??. ????? ????.")
+
+
+def test_view_shows_only_wanted_channels(root, tmp_path):
+    log = tmp_path / "Chat.log"
+    write(
+        log,
+        [
+            f"{stamp(60)} : [2.Торговля] [charname:Trader;1.0000 0.6941 0.6941]: wts",
+            f"{stamp(50)} : [charname:Grp;0.0196 0.7843 0.8431]: в группе",
+            f"{stamp(40)} : Получено: [item:1;ver2;;;]",
+            f"{stamp(30)} : Разгневанная Гера получает 1 ед. урона.",
+        ],
+        "wb",
+    )
+    view = AllChatView(root, get_path=lambda: str(log), names={}, minutes=15, show_system=True,
+                       on_settings=lambda **kw: None)
+    view.activate()
+    t = text(view)
+    assert "Trader" not in t and "урона" not in t
+    assert "[Группа] Grp: в группе" in t
+    assert "Получено: [item]" in t
+    view.deactivate()

@@ -55,6 +55,7 @@ class MatchFeed(ttk.Frame):
         self.text.tag_configure("accepted", background=ACCEPTED_BG)
         self.text.tag_configure("missed", background=MISSED_BG)
         self.text.tag_raise("hit")
+        self.text.tag_configure("note", foreground=theme.MUTED, justify="center")
         # line 1 stays empty: its top spacing pushes the rows down to the bottom edge
         self.text.configure(state="normal")
         self.text.insert("1.0", "\n", ("spacer",))
@@ -84,6 +85,18 @@ class MatchFeed(ttk.Frame):
         if at_bottom:
             self.text.see("end")
         self._place_holders()
+
+    def add_note(self, note: str) -> None:
+        """A muted centred separator line (e.g. between history and live messages)."""
+        at_bottom = self.text.yview()[1] >= 0.999
+        self.text.configure(state="normal")
+        self.text.insert("end-1c", note + "\n", ("note",))
+        self._rows += 1
+        self._trim()
+        self.text.configure(state="disabled")
+        self._relayout()
+        if at_bottom:
+            self.text.see("end")
 
     def set_countdown(self, remaining: dict[int, float]) -> None:
         """Seconds left before auto-accept, per pending alert."""

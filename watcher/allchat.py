@@ -1,5 +1,6 @@
 """«Весь чат» tab: plain live view of the whole chat log, starting N minutes back."""
 
+import re
 import tkinter as tk
 from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
@@ -12,24 +13,52 @@ from watcher.tailer import LogTailer
 POLL_MS = 500
 RETRY_MS = 2000
 MAX_ROWS = 2000
-PERIODS = {f"{m} мин": m for m in range(5, 61, 5)}
-CHANNEL_COLORS = [
-    ("3.", "#ffb45e"),  # «Поиск группы»
-    ("2.", "#7fd48a"),  # «Торговля»
-    ("1.", "#9cc4ff"),
-    ("Группа", "#6fc7ff"),
-    ("Легион", "#c39bff"),
-]
-WHISPER = "#ff8fd0"
+PERIODS = {f"{m} мин": m for m in (5, 15, 30, 45, 60)}
+
+# Shown categories and their colours. Channel-less player lines are told apart by the name colour
+# the game writes into [charname:Name;r g b] (Aion's default chat colours).
+CATEGORY_COLORS = {
+    "Поиск группы": "#ffb45e",
+    "Общий": "#e9e7e4",
+    "Личное": "#a0ffa0",
+    "Группа": "#05c8d7",
+    "Легион": "#9ce7dc",
+}
+_NAME_COLORS = {
+    "1.0000 1.0000 1.0000": "Общий",
+    "0.6275 1.0000 0.6275": "Личное",
+    "0.0196 0.7843 0.8431": "Группа",
+    "0.6118 0.9059 0.8627": "Легион",
+}
+_WHISPER_VERBS = {"шепчет", "шепчете"}
+_NOTICE = re.compile(
+    r"^(Получено|Получен[аы]?|Вы получили|Использовано|Невозможно|Нельзя|Недостаточно|Вы не можете|"
+    r"Цель находится|Кто-то уже|Не удалось|Задание|Вы вошли|Вы покинули)"
+    r"|получает: \[|присоединил|покинул[аи]? (группу|легион)|кинар",
+)
 
 
-def channel_color(line: ChatLine) -> str:
-    if line.channel is None:
-        return WHISPER if line.is_player else theme.MUTED
-    for prefix, color in CHANNEL_COLORS:
-        if line.channel.startswith(prefix):
-            return color
-    return theme.MUTED
+def category(line: ChatLine) -> str | None:
+    """Which «Весь чат» category a player line belongs to; None = not shown."""
+    channel = line.channel or ""
+    if channel.startswith("3."):
+        return "Поиск группы"
+    if channel.startswith("1."):
+        return "Общий"
+    if channel:
+        return None  # trade and other numbered channels
+    if line.verb in _WHISPER_VERBS:
+        return "Личное"
+    return _NAME_COLORS.get(line.color or "")
+
+
+def is_notice(line: ChatLine) -> bool:
+    """System «information» and «errors/notifications» (loot, kinah, can't-do-that…), not combat."""
+    if line.is_player:
+        return False
+    if line.channel is not None:
+        return not line.channel.startswith("?")  # [Event], [Ежедневно] …; unreadable ones are skipped
+    return "??" not in line.text and bool(_NOTICE.search(line.text))
 
 
 class AllChatView(ttk.Frame):
@@ -69,7 +98,7 @@ class AllChatView(ttk.Frame):
         self.system_var = tk.BooleanVar(value=show_system)
         ttk.Checkbutton(
             bar,
-            text="Системные сообщения",
+            text="Информация и уведомления",
             variable=self.system_var,
             style="Plain.TCheckbutton",
             command=self._on_settings_changed,
@@ -184,16 +213,28 @@ class AllChatView(ttk.Frame):
 
     def _show(self, raw_lines: list[str]) -> None:
         show_system = self.system_var.get()
-        parsed = [parse_any_line(raw, self.names) for raw in raw_lines]
-        rows = [p for p in parsed if p is not None and (p.is_player or show_system)]
+        rows = []
+        for raw in raw_lines:
+            line = parse_any_line(raw, self.names)
+            if line is None:
+                continue
+            if line.is_player:
+                kind = category(line)
+                if kind is not None:
+                    rows.append((line, kind))
+            elif show_system and is_notice(line):
+                rows.append((line, None))
         if not rows:
             return
         at_bottom = self.text.yview()[1] >= 0.999
         self.text.configure(state="normal")
-        for line in rows:
+        for line, kind in rows:
             parts: list = [f"{line.time[11:]}  ", ("meta",)]
-            if line.channel:
-                parts += [f"[{line.channel}] ", (self._tag_for(channel_color(line)),)]
+            if kind is not None:
+                label = line.channel if kind == "Поиск группы" and "?" not in (line.channel or "?") else kind
+                parts += [f"[{label}] ", (self._tag_for(CATEGORY_COLORS[kind]),)]
+            elif line.channel:
+                parts += [f"[{line.channel}] ", (self._tag_for(theme.MUTED),)]
             if line.nick:
                 parts += [f"{line.nick}: ", ("nick",)]
                 parts += [line.text, ()]

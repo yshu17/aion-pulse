@@ -9,7 +9,7 @@ LFG_PREFIX = "3."  # channel 3 is «Поиск группы»; some lines carry 
 
 _TIME_RE = re.compile(r"^(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}) : (.*)$")
 _CHANNEL_RE = re.compile(r"^\[(?!charname:|item|cmd:|where:)([^\]]+)\] ?(.*)$")
-_CHARNAME_RE = re.compile(r"^\[charname:([^;\]]+);[^\]]*\](?: [^:\[]{1,20})?: ?(.*)$")
+_CHARNAME_RE = re.compile(r"^\[charname:([^;\]]+);([^\]]*)\](?: ([^:\[]{1,20}))?: ?(.*)$")
 _PLAIN_NICK_RE = re.compile(r"^([^\s:\[\]]{2,24}): (.*)$")
 _CMD_RE = re.compile(r"\[cmd:[^\]]*\]")
 _ITEM_RE = re.compile(r"\[item:(\d*)[^\]]*\]")
@@ -32,6 +32,8 @@ class ChatLine:
     text: str
     raw: str
     item_ids: tuple[str, ...] = ()
+    color: str | None = None  # name colour «r g b» from [charname:…]; tells group/legion/whisper apart
+    verb: str = ""  # «шепчет», «кричит» … between the name and the colon
 
     @property
     def is_player(self) -> bool:
@@ -57,10 +59,12 @@ def parse_any_line(line: str, names: Mapping[str, str] | None = None) -> ChatLin
     channel_match = _CHANNEL_RE.match(rest)
     if channel_match is not None:
         channel, rest = channel_match.groups()
-    nick = None
+    nick = color = None
+    verb = ""
     nick_match = _CHARNAME_RE.match(rest)
     if nick_match is not None:
-        nick, rest = nick_match.groups()
+        nick, color, verb, rest = nick_match.groups()
+        verb = (verb or "").strip()
     elif channel is not None and channel.startswith(LFG_PREFIX):
         plain = _PLAIN_NICK_RE.match(rest)
         if plain is not None:
@@ -73,6 +77,8 @@ def parse_any_line(line: str, names: Mapping[str, str] | None = None) -> ChatLin
         text=clean_text(rest, names),
         raw=line,
         item_ids=item_ids,
+        color=color,
+        verb=verb,
     )
 
 

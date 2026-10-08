@@ -23,7 +23,7 @@ from watcher.tooltip import SpecTooltip
 MAX_ROWS = 500
 RETRY_MS = 2000
 TOOLTIP_DELAY_MS = 300
-HISTORY_CHOICES = {"нет": 0, **{f"{m} мин": m for m in range(5, 61, 5)}}
+HISTORY_CHOICES = {"нет": 0, **{f"{m} мин": m for m in (5, 15, 30, 45, 60)}}
 SYSTEM_BEEP = "Системный сигнал"
 CUSTOM_SOUND = "Свой файл…"
 ALERT_MODES = {"Стандартный": "standard", "Назойливый": "nag"}
@@ -547,19 +547,17 @@ class App:
         if not self.running:
             return
         path = self.cfg.chat_log_path()
+        history: list[str] | None = None
         try:
             if self.tailer is None:
                 tailer = LogTailer(str(path))
                 tailer.start_at_end()
                 self.tailer = tailer
-                backlog = []
                 if self._scan_history:
                     since = datetime.now() - timedelta(minutes=self.cfg.history_min)
-                    backlog = tailer.read_backlog(since)
+                    history = tailer.read_backlog(since)
                     self._scan_history = False
-                lines = backlog + tailer.read_new_lines()
-            else:
-                lines = self.tailer.read_new_lines()
+            lines = self.tailer.read_new_lines()
         except FileNotFoundError:
             self.tailer = None
             self._set_status(f"Chat.log не найден: {path}")
@@ -570,12 +568,25 @@ class App:
             self._schedule(self.cfg.poll_interval_ms)
             return
         try:
+            if history is not None:
+                self._show_history(history)
             self._process(lines)
         except Exception as exc:
             self._set_status(f"Ошибка: {exc}")
         else:
             self._set_status(f"Слежу за {path}")
         self._schedule(self.cfg.poll_interval_ms)
+
+    def _show_history(self, lines: list[str]) -> None:
+        """Matches from before Start: listed in the feed, but no sound, no alert, not counted."""
+        now = time.monotonic()
+        for line in lines:
+            msg = parse_line(line, self.item_names)
+            if msg is not None:
+                hits = self.matcher.check(msg, now)
+                if hits:
+                    self.feed.add(msg, hits)
+        self.feed.add_note(f"— выше история за {self.cfg.history_min} мин, ниже новые сообщения —")
 
     def _process(self, lines: list[str]) -> None:
         now = time.monotonic()
