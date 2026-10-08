@@ -101,7 +101,7 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
             f.write(line.encode("cp1251"))
         app._tick()
         assert beeps == [1]
-        assert "Seller: wts [Клинок Рудры] 5кк" in app.text.get("1.0", "end")
+        assert "Seller: wts <Клинок Рудры> 5кк" in app.text.get("1.0", "end")
 
         app.item_vars["100000893"].set(False)
         app._on_items_changed()
@@ -652,5 +652,39 @@ def test_saved_mode_disables_inputs_on_startup(tmp_path):
     root, app, _calls, _say = _nag_app(tmp_path, search_mode="items")
     try:
         assert app.kw_entry.instate(["disabled"])
+    finally:
+        root.destroy()
+
+
+def test_counters_live_in_header_and_browse_sits_before_status(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        assert app.counters_bar.master is app.header
+        browse_col = app.browse_btn.grid_info()["column"]
+        status_col = app.status_label.grid_info()["column"]
+        assert browse_col < status_col
+    finally:
+        root.destroy()
+
+
+def test_search_feed_highlights_item_links_with_tooltip(tmp_path):
+    root, app, calls, say = _nag_app(tmp_path, alert_mode="standard", search_mode="items",
+                                     watch_items=["110600968"])
+    try:
+        hovered = []
+        app.feed.linker.on_enter = hovered.append
+        app.start()
+        line = "2026.10.08 18:43:17 : [3.Поиск группы] [charname:S;1 1 1]: wts [item:110600968;ver2;;;]" + chr(13) + chr(10)
+        with open(app.cfg.chat_log_path(), "ab") as f:
+            f.write(line.encode("cp1251"))
+        app._tick()
+        text = app.feed.text
+        assert "S: wts <Кираса Рудры>" in text.get("1.0", "end")
+        start, end = text.tag_ranges("item_110600968")
+        assert text.get(start, end) == "<Кираса Рудры>"
+        assert "hit" in text.tag_names(start)  # the watched item is also the match
+        app.feed.linker.enter("110600968")
+        assert hovered == ["110600968"]
+        app.stop()
     finally:
         root.destroy()

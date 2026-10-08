@@ -98,6 +98,7 @@ class App:
 
         header = ttk.Frame(root, padding=(16, 12, 16, 4))
         header.pack(fill="x")
+        self.header = header
         ttk.Label(header, text="Aion Chat Watcher", style="AppTitle.TLabel").pack(side="left")
         ttk.Label(header, text="  ·  Поиск группы", style="Muted.TLabel").pack(side="left", pady=(6, 0))
 
@@ -111,8 +112,9 @@ class App:
         dir_entry.bind("<FocusOut>", lambda _e: self._apply_game_dir())
         self.status_short_var = tk.StringVar()
         self.status_label = ttk.Label(top, textvariable=self.status_short_var, style="Status.TLabel")
-        self.status_label.grid(row=0, column=2, sticky="w", padx=(0, 12))
-        ttk.Button(top, text="Обзор…", command=self._pick_dir).grid(row=0, column=3, pady=4)
+        self.browse_btn = ttk.Button(top, text="Обзор…", command=self._pick_dir)
+        self.browse_btn.grid(row=0, column=2, pady=4, padx=(0, 12))
+        self.status_label.grid(row=0, column=3, sticky="w")
 
         ttk.Label(top, text="Ключевые слова", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
@@ -212,8 +214,16 @@ class App:
         self._build_items_panel(self.search_tab)
         column = ttk.Frame(self.search_tab)
         column.pack(side="left", fill="both", expand=True)
-        self._build_counters(column)
-        self.feed = MatchFeed(column, on_accept=self._on_feed_accept, max_rows=MAX_ROWS)
+        self._build_counters(header)
+        spec_items = {item.name: item.id for item in self.watch_items if item.id in self.specs}
+        self.feed = MatchFeed(
+            column,
+            on_accept=self._on_feed_accept,
+            max_rows=MAX_ROWS,
+            spec_items=spec_items,
+            on_item_enter=self._schedule_tooltip,
+            on_item_leave=self._hide_tooltip,
+        )
         self.feed.pack(fill="both", expand=True)
         self.text = self.feed.text
 
@@ -225,7 +235,7 @@ class App:
             show_system=self.cfg.chat_system,
             on_settings=self._on_chat_settings,
             toolbar_parent=root,
-            spec_items={item.name: item.id for item in self.watch_items if item.id in self.specs},
+            spec_items=spec_items,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
         )
@@ -237,8 +247,7 @@ class App:
         root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_counters(self, parent: ttk.Frame) -> None:
-        self._counters_anchor = ttk.Frame(parent, height=1)
-        self._counters_anchor.pack(fill="x")
+        """Found / reacted / missed, in the header so they are visible on every tab."""
         self.counters_bar = ttk.Frame(parent)
         self.found_var = tk.StringVar()
         self.reacted_var = tk.StringVar()
@@ -250,7 +259,7 @@ class App:
         ):
             ttk.Label(self.counters_bar, textvariable=var, style=style).pack(side="left", padx=(0, 8))
         ttk.Button(self.counters_bar, text="Сбросить", command=self._reset_counters).pack(side="left")
-        self.counters_bar.pack(fill="x", pady=(0, 10), after=self._counters_anchor)
+        self.counters_bar.pack(side="right")
 
     def _update_counters(self) -> None:
         self.found_var.set(f"Найдено: {self.tracker.found}")

@@ -223,7 +223,21 @@ def test_rudra_item_links_are_highlighted_and_hover_shows_spec(root, tmp_path):
     assert len(view.text.tag_ranges("item")) == 4  # two highlighted links
     assert view.text.tk.call(view.text._w, "tag", "bind", "item_110600968", "<Enter>")  # hover is wired
     assert not view.text.tag_ranges("item_186020252")  # no spec -> no tooltip tag
-    view._item_enter("110600968")
-    view._item_leave()
+    view.linker.enter("110600968")
+    view.linker.leave()
     assert hovered == ["110600968", "leave"]
+    view.deactivate()
+
+
+def test_few_lines_sit_at_the_bottom(root, tmp_path):
+    root.deiconify()  # rows are only laid out in a visible window
+    root.geometry("900x500")
+    view, log, _ = make(root, tmp_path, minutes=0)
+    view.pack(fill="both", expand=True)
+    view.activate()
+    write(log, [f"{stamp(0)} : [3.Поиск группы] [charname:One;1 1 1]: единственная"])
+    view._poll()
+    root.update()
+    _x, y, _w, h, _b = view.text.dlineinfo(view.text.search("единственная", "1.0"))
+    assert y + h > view.text.winfo_height() * 0.8
     view.deactivate()

@@ -10,8 +10,8 @@ from collections.abc import Callable
 from tkinter import ttk
 
 from watcher import theme
-from watcher.matcher import highlight_segments
 from watcher.parser import ChatMessage
+from watcher.textview import BottomAnchor, ItemLinker
 
 PENDING_BRIGHT = "#7a5410"
 PENDING_DIM = "#3a2a0c"
@@ -24,16 +24,16 @@ RIGHT_MARGIN = 8
 URGENT_SEC = 10
 
 
-def text_height(text: tk.Text, start: str, end: str) -> int:
-    """Pixel height of a text range (Text.count returns a tuple on older Pythons)."""
-    value = text.count(start, end, "ypixels")
-    if isinstance(value, tuple):
-        value = value[0]
-    return int(value or 0)
-
-
 class MatchFeed(ttk.Frame):
-    def __init__(self, parent: tk.Misc, on_accept: Callable[[int], None], max_rows: int = 500) -> None:
+    def __init__(
+        self,
+        parent: tk.Misc,
+        on_accept: Callable[[int], None],
+        max_rows: int = 500,
+        spec_items: dict[str, str] | None = None,
+        on_item_enter: Callable[[str], None] | None = None,
+        on_item_leave: Callable[[], None] | None = None,
+    ) -> None:
         super().__init__(parent, style="Card.TFrame", padding=2)
         self.on_accept = on_accept
         self.max_rows = max_rows
@@ -56,10 +56,8 @@ class MatchFeed(ttk.Frame):
         self.text.tag_configure("missed", background=MISSED_BG)
         self.text.tag_raise("hit")
         self.text.tag_configure("note", foreground=theme.MUTED, justify="center")
-        # line 1 stays empty: its top spacing pushes the rows down to the bottom edge
-        self.text.configure(state="normal")
-        self.text.insert("1.0", "\n", ("spacer",))
-        self.text.configure(state="disabled")
+        self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave)
+        self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.text.bind("<Configure>", lambda _e: self._relayout())
 
     # --- public -----------------------------------------------------------------------
@@ -69,8 +67,7 @@ class MatchFeed(ttk.Frame):
         self.text.configure(state="normal")
         start = self.text.index("end-1c")
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
-        for chunk, is_hit in highlight_segments(msg.text, hits):
-            parts += [chunk, ("hit",) if is_hit else ()]
+        parts += self.linker.parts(msg.text, hits)
         self.text.insert("end-1c", *parts, "\n", ())
         if alert_id is not None:
             # the range includes the newline, so the stripe spans the full width
@@ -192,10 +189,7 @@ class MatchFeed(ttk.Frame):
 
     def _relayout(self) -> None:
         """Keep the rows pushed to the bottom and the checkboxes at the right edge."""
-        height = self.text.winfo_height()
-        content = text_height(self.text, "2.0", "end")
-        spare = height - content - 2 * int(str(self.text.cget("pady"))) - 4
-        self.text.tag_configure("spacer", spacing1=max(0, spare))
+        self.anchor.update()
         self._place_holders()
 
     def _trim(self) -> None:
