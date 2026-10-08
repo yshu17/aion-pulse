@@ -4,6 +4,7 @@ import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
+from tkinter import font as tkfont
 
 from watcher.catalog import load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
@@ -13,6 +14,7 @@ from watcher.parser import ChatMessage, parse_line
 from watcher.tailer import LogTailer
 
 MAX_ROWS = 500
+FONT_SIZE = 13
 RETRY_MS = 2000
 
 
@@ -43,7 +45,10 @@ class App:
     def _build_ui(self) -> None:
         root = self.root
         root.title("Aion Chat Watcher")
-        root.geometry("1040x560")
+        root.geometry("1400x860")
+        for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):
+            tkfont.nametofont(name).configure(size=FONT_SIZE)
+        ttk.Style(root).configure("TButton", padding=(10, 4))
 
         top = ttk.Frame(root, padding=8)
         top.pack(fill="x")
@@ -76,13 +81,13 @@ class App:
         self._build_items_panel(body)
         frame = ttk.Frame(body)
         frame.pack(side="left", fill="both", expand=True)
-        self.text = tk.Text(frame, wrap="word", state="disabled", font=("Segoe UI", 10))
+        self.text = tk.Text(frame, wrap="word", state="disabled", font=("Segoe UI", FONT_SIZE))
         scroll = ttk.Scrollbar(frame, command=self.text.yview)
         self.text.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         self.text.pack(side="left", fill="both", expand=True)
         self.text.tag_configure("meta", foreground="#888888")
-        self.text.tag_configure("nick", font=("Segoe UI", 10, "bold"))
+        self.text.tag_configure("nick", font=("Segoe UI", FONT_SIZE, "bold"))
         self.text.tag_configure("hit", background="#ffe066", foreground="#000000")
 
         root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -103,7 +108,7 @@ class App:
 
         holder = ttk.Frame(panel)
         holder.pack(fill="both", expand=True, pady=(4, 0))
-        canvas = tk.Canvas(holder, width=280, highlightthickness=0)
+        canvas = tk.Canvas(holder, width=520, highlightthickness=0)
         scroll = ttk.Scrollbar(holder, command=canvas.yview)
         canvas.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
@@ -128,13 +133,13 @@ class App:
                 variable=var,
                 command=self._on_items_changed,
             )
-            box.pack(anchor="w", pady=1)
+            box.pack(anchor="w", pady=3)
             box.bind("<MouseWheel>", lambda e: canvas.yview_scroll(-e.delta // 120, "units"))
 
     def _load_icon(self, item_id: str) -> tk.PhotoImage | None:
         path = self.icons_dir / f"{item_id}.png"
         try:
-            icon = tk.PhotoImage(master=self.root, file=str(path)).subsample(2)
+            icon = tk.PhotoImage(master=self.root, file=str(path))
         except tk.TclError:
             return None
         self._icons.append(icon)
