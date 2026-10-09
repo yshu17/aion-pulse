@@ -84,18 +84,27 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
     <tr><td>Источник данных</td><td>Клиент игры (точнее всего для твоего клиента); aiondb — только добор пробелов, позже и по желанию</td></tr>
     <tr><td>Иконки</td><td>Только готовые, ничего не рисуем: сначала родные из клиента, недостающие (значки NPC, если их нет в ui.pak) — готовые игровые иконки с aiondb</td></tr>
     <tr><td>Слои</td><td>Функциональные NPC (по типам) · порталы · крепости и артефакты · входы · сбор (по виду ресурса) · задания · места из чата</td></tr>
-    <tr><td>Размер</td><td>Сырые 79 МБ Кодекса → <code>client_extract/</code> (не в exe и не в git); в программе 9 карт + один <code>poi.json</code> ≈1 МБ; exe ≈60 МБ</td></tr>
+    <tr><td>Размер</td><td>Сырые 79 МБ Кодекса → <code>client_extract/</code> (не в exe и не в git); в программе 9 карт + один <code>poi.json</code> ≈1 МБ; exe 53,5 МБ</td></tr>
     <tr><td>Оформление</td><td>Навыки ui-ux-pro-max, design-theme-guide, high-end-visual-design; проверка скриншотами через ui-visual-validator</td></tr>
     <tr><td>Улучшения</td><td>Поиск по карте · «Рядом» с расстоянием · группировка точек · наборы фильтров и запоминание</td></tr>
     <tr><td>Зоны</td><td>Келькмарос, Ингисон, Тоннель Силентера, Пандемониум*, Исхальген, Альтгард, Морхейм, Брустхонин, Белуслан</td></tr>
     <tr><td>Файлы</td><td><code>tools/build_poi.py</code> → <code>data/maps/poi.json</code> + <code>data/maps/icons/</code> · <code>watcher/poi.py</code> (данные, тесты) · <code>watcher/mapview.py</code> (рисование)</td></tr>
   </table></div>
 
-  <h2>Риски</h2>
-  <div class="risk">Расстановка в файлах клиента — редакторская: сервер может ставить NPC иначе и добавлять своих (пробелы — шаг 7).</div>
-  <div class="risk">В клиенте есть контент новее 2.0 (Тиамаранта и др.) — на 9 зонах почти не сказывается, лишнее скрывается фильтром.</div>
-  <div class="risk">Сбор — 11 тысяч точек: группировка в кружки с числом обязательна.</div>
-  <div class="risk">В Пандемониуме нет подписей районов (с aiondb не совпали) — можно попробовать названия из строк клиента.</div>
+  <h2>Риски <span class="tag">· обновлено 09.10.2026</span></h2>
+  <div class="risk"><b>Открыт.</b> Расстановка в файлах клиента — редакторская: сервер может ставить NPC иначе и добавлять своих. Пример: в Келькмаросе 2 привратника в клиенте против 7 на aiondb. Закрывает шаг 7 — после проверки в игре.</div>
+  <div class="risk"><b>Открыт.</b> Карты Бездны нет: у неё нет нижнего слоя, привязку координат не на чем проверить.</div>
+  <div class="risk"><b>Открыт.</b> В Пандемониуме нет подписей районов (на aiondb другая версия города) — можно взять названия из строк клиента.</div>
+  <div class="risk" style="border-color:var(--muted)"><b>Низкий.</b> В клиенте есть контент новее 2.0 (Тиамаранта и др.) — на 9 зонах почти не сказывается, лишнее скрывается фильтром.</div>
+  <div class="risk" style="border-color:var(--ok)"><b>Закрыт.</b> Сбор — 11 тысяч точек: сделана группировка в кружки с числом, на всю карту Келькмароса меньше 400 значков.</div>
+  <div class="risk" style="border-color:var(--ok)"><b>Закрыт.</b> Привязка координат: проверена по «Местам» из чата и координатам NPC с aioncodex.</div>
+  <div class="risk" style="border-color:var(--ok)"><b>Закрыт.</b> Вес exe: сырые данные вынесены в <code>client_extract/</code>, numpy исключён — exe 53,5 МБ.</div>
+
+  <h2>Дальнейшая работа</h2>
+  <div class="card">
+    <div class="tag" style="margin-bottom:6px">Ничего из этого не начинаю без твоего «делаем». Статус обновляю я.</div>
+    <div class="steps" id="next"></div>
+  </div>
 </div>
 
 <script>
@@ -186,7 +195,21 @@ function steps(){const box=document.getElementById("steps");box.innerHTML="";
     box.appendChild(r);});
   const done=STEPS.filter(x=>x.s==="done").length, p=Math.round(done/STEPS.length*100);
   document.getElementById("pct").textContent=`${done} из ${STEPS.length} шагов`;document.getElementById("barfill").style.width=p+"%";}
-steps();render();
+// Further work after steps 1-8. s: "done" | "doing" | "todo"; who = what is needed to start.
+const NEXT=[
+ {t:"Проверка карты в игре",who:"ты",d:"открыть вкладку «Карта» в 2–3 зонах и сравнить привратников, кибелисков, склады с игрой; написать, чего не хватает",s:"todo"},
+ {t:"Шаг 7 — добор NPC с aiondb",who:"после проверки",d:"недостающие привратники и кибелиски из aiondb, помечаются в карточке как «с aiondb»; только там, где в клиенте пробел",s:"todo"},
+ {t:"Подписи районов Пандемониума",who:"по желанию",d:"названия районов из строк клиента вместо aiondb; если не сойдутся по расположению — оставить без подписей",s:"todo"},
+ {t:"Карта Бездны",who:"по желанию",d:"найти верхний/нижний слой в client_extract, привязать по «Местам» из чата; без проверки не включать",s:"todo"},
+ {t:"Телеграм-бот",who:"твоё «делаем»",d:"по плану docs/telegram-bridge-plan.md: «3.Поиск группы» в группу (2 строки, при нагрузке 4, не больше 20 сообщений в минуту), совпадения поиска — в личку",s:"todo"},
+ {t:"Ветка и слияние",who:"твоё решение",d:"вся работа в коммитах текущей ветки; решить — сливать в основную или оставить как есть",s:"todo"},
+ {t:"Неизвестные предметы",who:"по мере появления",d:"9 номеров не найдены нигде (серверные), показываются как «[Предмет id]»; новые докачивает tools/fill_missing_items.py",s:"done"}
+];
+function next(){const box=document.getElementById("next");box.innerHTML="";
+  NEXT.forEach((st,i)=>{const m=MARK[st.s]||MARK.todo;const r=document.createElement("div");r.className="step"+(st.s==="done"?" done":"");
+    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span> <span class="chip" style="cursor:default;margin:0 0 0 6px">${st.who}</span></div><div class="tag">${st.d}</div></div>`;
+    box.appendChild(r);});}
+steps();next();render();
 </script>
 </body>
 </html>
