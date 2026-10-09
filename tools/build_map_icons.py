@@ -2,7 +2,7 @@
 
 Sources (nothing is drawn here):
   * the client's own map icons — client_extract/icons/*.png (extracted by Codex);
-  * aiondb.ru map icons — client_extract/aiondb_icons/aiondb_map_icons.json: the site's
+  * aiondb.ru map icons — downloads/aiondb_icons/aiondb_map_icons.json: the site's
     <pattern id="map_icon_..."> markup (vector icons) and links to its PNG icons.
 Vector icons are rasterised with the local Chrome in headless mode.
 Dev tool (needs Pillow and Chrome). Usage: python tools/build_map_icons.py
@@ -95,7 +95,7 @@ def fetch_png(pattern: str, out: Path) -> None:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    patterns = json.loads((EXTRACT / "aiondb_icons" / "aiondb_map_icons.json").read_text(encoding="utf-8"))
+    patterns = json.loads((ROOT / "downloads" / "aiondb_icons" / "aiondb_map_icons.json").read_text(encoding="utf-8"))
     for type_, (source, key) in ICONS.items():
         out = OUT / f"{type_}.png"
         if source == "client":

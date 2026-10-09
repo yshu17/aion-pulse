@@ -1,6 +1,6 @@
 """Download item pages from kb.aionempire.com and keep the parsed spec and icon name.
 
-Input: a TSV `id<TAB>grade<TAB>level<TAB>name` (the full site list, see aion_kb_items/kb_crawl.py),
+Input: a TSV `id<TAB>grade<TAB>level<TAB>name` (the full site list, see tools/kb_crawl.py),
 filtered by PREFIXES; or `...<TAB>type` from tools/list_by_type.py, taken as is.
 Output: a JSON-lines cache, one {"id", "grade", "level", "name", "type", "icon", "spec"} per item.
 Items already in the cache are skipped, so the crawl can be resumed.

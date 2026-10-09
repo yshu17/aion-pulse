@@ -1,3 +1,5 @@
+> **Выполнено 09.10.2026** — отчёт: `client_extract/raw/REPORT.md`. Дальше общение через `PAIR.md`.
+
 # Задача для Кодекса: распаковка данных клиента для карты (v3)
 
 Проект: `C:\Users\Євгеній\Desktop\ClaudeWorkspace\aion_chat_watcher`.

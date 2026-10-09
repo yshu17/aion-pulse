@@ -151,8 +151,8 @@
 Обновить каталог с сайта (нужен Pillow):
 
 ```
-python ../aion_kb_items/kb_crawl.py ../aion_kb_items/all_items_ru.tsv     # список всех предметов
-python tools/crawl_items.py ../aion_kb_items/all_items_ru.tsv cache.jsonl 45   # страницы предметов
+python tools/kb_crawl.py downloads/kb_items/all_items_ru.tsv     # список всех предметов
+python tools/crawl_items.py downloads/kb_items/all_items_ru.tsv downloads/kb_items/cache/items45.jsonl 45   # страницы предметов
 python tools/build_catalog.py cache.jsonl                                  # csv, характеристики, иконки
 ```
 
