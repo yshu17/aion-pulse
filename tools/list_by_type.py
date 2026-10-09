@@ -2,7 +2,8 @@
 
 Output TSV: id, grade, level, name, type — the input format of tools/crawl_items.py.
 Dev tool. Usage: python tools/list_by_type.py <out.tsv> <type> [<type> ...]
-Types: earrings necklaces rings belts heads production supplies other (see the site's menu).
+Types: earrings necklaces rings belts heads production recipes supplies food potions magic-items
+magic-stones ench-stones god-stones dyes titles skillbooks other (see the site's menu).
 """
 
 import concurrent.futures as cf

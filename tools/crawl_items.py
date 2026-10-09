@@ -24,7 +24,11 @@ SITE = "https://kb.aionempire.com"
 HEADERS = {"User-Agent": "Mozilla/5.0", "Cookie": "PLAY_LANG=ru"}
 # 100/101 weapons, 110-114 body armour, 115 shields, 187 wings
 PREFIXES = ("100", "101", "110", "111", "112", "113", "114", "115", "187")
-ALL_LEVEL_TYPES = {"production", "supplies", "other"}  # min_level does not apply to these
+# min_level does not apply to these (not in the search list, only chat links and tooltips)
+ALL_LEVEL_TYPES = {
+    "production", "recipes", "supplies", "food", "potions", "magic-items", "magic-stones",
+    "ench-stones", "god-stones", "dyes", "titles", "skillbooks", "other",
+}
 ICON_RE = re.compile(r'og:image" content="[^"]*?/assets/images/icons/([^"]+)"')
 
 
