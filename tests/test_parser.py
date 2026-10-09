@@ -160,7 +160,7 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
         "кв [quest:2058] лег [where:sweet bunny] [recipe:155007142;0] [item_ex:186000163;Tw] го? ??"
     )
     assert clean_text(text, names) == (
-        "✦ Форт ⟪Место · Келькмарос⟫ ⟪Место⟫ кв ⟪Задание 2058⟫ лег ⟪sweet bunny⟫ "
+        "✦ Форт ⟪Место · Келькмарос⟫ ⟪Место⟫ кв ⟪Задание: Уничтожение повстанцев Ривара⟫ лег ⟪sweet bunny⟫ "
         "[Рецепт: клик] [Монета] го? ??"
     )
 
@@ -178,3 +178,9 @@ def test_message_cut_inside_a_link():
     text = "[where:Вступай в легион][where:Окунись в PVE!!!] [where:Любой лвл!!!Г "
     assert clean_text(text) == "⟪Вступай в легион⟫⟪Окунись в PVE!!!⟫ ⟪Любой лвл!!!Г…⟫"
     assert clean_text("wts [item:100000893;ver2") == "wts …"
+
+
+def test_unknown_quest_keeps_number():
+    from watcher.parser import clean_text
+
+    assert clean_text("кв [quest:99999999]") == "кв ⟪Задание 99999999⟫"

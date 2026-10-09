@@ -35,6 +35,21 @@ def _load_map_names() -> dict[str, str]:
 MAP_NAMES = _load_map_names()
 
 
+def _load_quest_names() -> dict[str, str]:
+    """Quest id -> name (data/quest_names.tsv, from kb.aionempire.com/quests)."""
+    from watcher.catalog import load_item_names, resource_root
+
+    return load_item_names(resource_root() / "data" / "quest_names.tsv")
+
+
+QUEST_NAMES = _load_quest_names()
+
+
+def _quest(match: re.Match) -> str:
+    name = QUEST_NAMES.get(match.group(1))
+    return f"{LINK_OPEN}Задание: {name}{LINK_CLOSE}" if name else f"{LINK_OPEN}Задание {match.group(1)}{LINK_CLOSE}"
+
+
 @dataclass(frozen=True)
 class ChatMessage:
     time: str
@@ -84,7 +99,7 @@ def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     text = _CMD_RE.sub("", text)
     text = _ITEM_RE.sub(lambda m: f"[{names.get(m.group(1), 'item')}]", text)
     text = _POS_RE.sub(_place, text)
-    text = _QUEST_RE.sub(lambda m: f"{LINK_OPEN}Задание {m.group(1)}{LINK_CLOSE}", text)
+    text = _QUEST_RE.sub(_quest, text)
     text = _WHERE_RE.sub(lambda m: f"{LINK_OPEN}{m.group(1).strip()}{LINK_CLOSE}", text)
     text = _EMOTES_RE.sub(EMOTE, text)
     return text.strip()
