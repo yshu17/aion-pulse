@@ -25,7 +25,7 @@ svg text{font:12px "Segoe UI",sans-serif}
 .steps .step{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:flex-start}
 .steps .step:last-child{border-bottom:0}
 .steps input{width:20px;height:20px;accent-color:var(--accent);margin-top:2px;flex:none}
-.step.done .t{color:var(--muted);text-decoration:line-through}
+.step.done .t{color:var(--muted)}
 .bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:8px 0 4px}
 .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
 .tag{font-size:12px;color:var(--muted)}
@@ -74,7 +74,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
 
   <h2>Порядок работ</h2>
   <div class="card">
-    <div><b id="pct">0%</b> <span class="tag">готово — отмечай шаги, состояние сохраняется в этом браузере</span></div>
+    <div><b id="pct">0%</b> <span class="tag">— статус обновляю я после каждого шага (и коммичу)</span></div>
     <div class="bar"><i id="barfill"></i></div>
     <div class="steps" id="steps"></div>
   </div>
@@ -168,21 +168,24 @@ for(const [n,ts] of Object.entries(PRESETS)){const c=document.createElement("spa
   c.onclick=()=>{on=new Set(ts);sel=null;[...pr.children].forEach(x=>x.classList.toggle("on",x===c));render();};pr.appendChild(c);}
 document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase().replace(/ё/g,"е");sel=null;render();});
 
+// Step status is set by Claude after each step and committed: "done" | "doing" | "todo".
+// note = what was done (shown under the step).
 const STEPS=[
- ["Порядок в данных","сырые данные Кодекса → client_extract/ (не в exe, не в git); коммит его работы; exe остаётся лёгким"],
- ["Сборка poi.json из клиента","tools/build_poi.py: NPC с ролями и русскими именами, порталы, входы, крепости и артефакты, сбор по видам, задания + родные иконки; проверка скриншотами"],
- ["Модуль данных poi.py","загрузка, фильтр, поиск, «ближайшее» с расстоянием, группировка — с тестами"],
- ["Панель фильтров и значки на карте","слои с галочками и счётчиками, наборы «Город / ПвП / Сбор / Задания», запоминание в config.json"],
- ["Карточка точки и «Рядом»","клик по точке; для «Места» из чата — ближайший привратник, кибелиск, склад, вход в данж"],
- ["Сбор ресурсов и задания","слои сбора по видам ресурса и точки заданий, группировка плотных слоёв"],
- ["Добор пробелов с aiondb (по желанию)","недостающие привратники и кибелиски — если по факту их не хватит"],
- ["Поиск, полировка, сборка","поиск по карте, оформление с навыками дизайна и проверкой скриншотами, README, пересборка exe"]];
-let done=[];try{done=JSON.parse(localStorage.getItem("mapPlanStepsV2")||"[]")}catch(e){}
+ {t:"Порядок в данных",d:"сырые данные Кодекса → client_extract/ (не в exe, не в git); коммит его работы; exe остаётся лёгким",s:"done",note:"Сырые 53 МБ (карты подземелий, атласы, таблицы, 3 зоны без привязки) → client_extract/, в .gitignore. В data/maps осталось 27 МБ: 9 карт зон. Работа Кодекса закоммичена (02f5fb6), навыки дизайна — отдельно (e1bfdea). Тесты 200/200, карты всех 9 зон открываются."},
+ {t:"Сборка poi.json из клиента",d:"tools/build_poi.py: NPC с ролями и русскими именами, порталы, входы, артефакты, сбор по видам, задания + готовые иконки (клиент, иначе aiondb); проверка скриншотами",s:"doing",note:""},
+ {t:"Модуль данных poi.py",d:"загрузка, фильтр, поиск, «ближайшее» с расстоянием, группировка — с тестами",s:"todo",note:""},
+ {t:"Панель фильтров и значки на карте",d:"слои с галочками и счётчиками, наборы «Город / ПвП / Сбор / Задания», запоминание в config.json",s:"todo",note:""},
+ {t:"Карточка точки и «Рядом»",d:"клик по точке; для «Места» из чата — ближайший привратник, склад, портал, артефакт",s:"todo",note:""},
+ {t:"Сбор ресурсов и задания",d:"слои сбора по видам ресурса и точки заданий, группировка плотных слоёв",s:"todo",note:""},
+ {t:"Добор пробелов с aiondb (по желанию)",d:"недостающие привратники и кибелиски — если по факту их не хватит",s:"todo",note:""},
+ {t:"Поиск, полировка, сборка",d:"поиск по карте, оформление с навыками дизайна и проверкой скриншотами, README, пересборка exe",s:"todo",note:""}];
+const MARK={done:["✓","#5fd38d","сделано"],doing:["▶","#ff8c1a","в работе"],todo:["○","#8c919c","ждёт"]};
 function steps(){const box=document.getElementById("steps");box.innerHTML="";
-  STEPS.forEach(([t,d],i)=>{const r=document.createElement("label");r.className="step"+(done.includes(i)?" done":"");
-    r.innerHTML=`<input type="checkbox" ${done.includes(i)?"checked":""}><div><div class="t"><b>${i+1}.</b> ${t}</div><div class="tag">${d}</div></div>`;
-    r.querySelector("input").onchange=e=>{done=e.target.checked?[...done,i]:done.filter(x=>x!==i);try{localStorage.setItem("mapPlanStepsV2",JSON.stringify(done))}catch(_){};steps();};box.appendChild(r);});
-  const p=Math.round(done.length/STEPS.length*100);document.getElementById("pct").textContent=p+"%";document.getElementById("barfill").style.width=p+"%";}
+  STEPS.forEach((st,i)=>{const m=MARK[st.s]||MARK.todo;const r=document.createElement("div");r.className="step"+(st.s==="done"?" done":"");
+    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span></div><div class="tag">${st.d}</div>${st.note?`<div style="margin-top:6px;font-size:13px;color:#cfd3da">${st.note}</div>`:""}</div>`;
+    box.appendChild(r);});
+  const done=STEPS.filter(x=>x.s==="done").length, p=Math.round(done/STEPS.length*100);
+  document.getElementById("pct").textContent=`${done} из ${STEPS.length} шагов`;document.getElementById("barfill").style.width=p+"%";}
 steps();render();
 </script>
 </body>
