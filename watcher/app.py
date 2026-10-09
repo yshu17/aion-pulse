@@ -15,6 +15,7 @@ from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
+from watcher.gamecheck import game_running
 from watcher.itemlist import ItemFilter, ItemList
 from watcher.notifier import Notifier, system_sounds
 from watcher.mapview import MapView, Place, load_zones
@@ -42,6 +43,8 @@ SEARCH_MODES = {
     "Слово И предмет": "and",
 }
 UI_TICK_MS = 500
+GAME_CHECK_SEC = 5  # while watching: how often to look for the game process
+GAME_OFF = "Игра не запущена — слежение остановлено"
 
 
 def short_status(text: str) -> tuple[str, str]:
@@ -49,6 +52,8 @@ def short_status(text: str) -> tuple[str, str]:
     if text.startswith("Слежу"):
         hint = text.split("  ·  ", 1)[1] if "  ·  " in text else ""
         return ("● Слежу" + (f"  ·  {hint}" if hint else ""), "Live.TLabel")
+    if text.startswith("Игра не запущена"):
+        return "⚠ Игра не запущена", "Warn.TLabel"
     if text.startswith("Chat.log не найден"):
         return "⚠ Chat.log не найден", "Warn.TLabel"
     if text.startswith("Ошибка"):
@@ -89,6 +94,7 @@ class App:
         self._after_id: str | None = None
         self._rows = 0
         self._scan_history = False
+        self._last_game_check = 0.0
         self._tooltip_after: str | None = None
         self._build_ui()
         self._apply_search_mode_state()
@@ -621,6 +627,8 @@ class App:
 
     def start(self) -> None:
         self._apply_keywords()
+        if self._game_closed():
+            return
         self.running = True
         self.tailer = None
         self._scan_history = self.cfg.history_min > 0
@@ -637,12 +645,29 @@ class App:
         self.start_btn.configure(text="Start", style="Accent.TButton")
         self._set_status("Остановлен")
 
+    def _game_closed(self) -> bool:
+        """Game check (config «game_check»): no aion.bin process -> stop watching and say so.
+
+        An unreadable process list counts as «running», so a failed check never stops the watching.
+        """
+        self._last_game_check = time.monotonic()
+        if not self.cfg.game_check or game_running() is not False:
+            return False
+        if self.running:
+            self.stop()
+        self._set_status(GAME_OFF)
+        self.feed.add_note(f"— {datetime.now():%H:%M} {GAME_OFF}: запусти игру и нажми Start —")
+        self.notifier.play()
+        return True
+
     def _schedule(self, delay_ms: int) -> None:
         self._after_id = self.root.after(delay_ms, self._tick)
 
     def _tick(self) -> None:
         self._after_id = None
         if not self.running:
+            return
+        if time.monotonic() - self._last_game_check >= GAME_CHECK_SEC and self._game_closed():
             return
         path = self.cfg.chat_log_path()
         history: list[str] | None = None

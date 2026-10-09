@@ -797,3 +797,38 @@ def test_place_link_opens_map_tab(tmp_path):
         assert app.map_view.title.cget("text") == "Место · Келькмарос"
     finally:
         root.destroy()
+
+
+def test_start_refused_and_watching_stopped_when_game_not_running(tmp_path, monkeypatch):
+    import watcher.app as app_module
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    beeps = []
+    app.notifier.play = lambda *a, **k: beeps.append(1)
+    try:
+        monkeypatch.setattr(app_module, "game_running", lambda: False)
+        app.start()  # game closed: no watching, a warning instead
+        assert not app.running
+        assert app.status_short_var.get() == "⚠ Игра не запущена"
+        assert "Игра не запущена" in app.text.get("1.0", "end") and beeps == [1]
+
+        monkeypatch.setattr(app_module, "game_running", lambda: True)
+        app.start()
+        assert app.running and app.status_short_var.get().startswith("● Слежу")
+        monkeypatch.setattr(app_module, "game_running", lambda: False)  # the game is closed while watching
+        app._last_game_check = -1e9
+        app._tick()
+        assert not app.running and app._after_id is None
+        assert app.status_short_var.get() == "⚠ Игра не запущена" and beeps == [1, 1]
+
+        monkeypatch.setattr(app_module, "game_running", lambda: None)  # process list unavailable: keep going
+        app.start()
+        assert app.running
+        app.stop()
+        app.cfg.game_check = False  # check switched off in config.json
+        monkeypatch.setattr(app_module, "game_running", lambda: False)
+        app.start()
+        assert app.running
+        app.stop()
+    finally:
+        root.destroy()

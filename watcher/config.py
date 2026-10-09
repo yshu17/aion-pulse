@@ -37,6 +37,7 @@ class Config:
     filter_level_min: int = 0  # item list: lowest level shown, 0 = any
     filter_level_max: int = 0  # item list: highest level shown, 0 = any
     items_width: int = 0  # «Поиск» tab: width of the item list (divider position), 0 = natural
+    game_check: bool = True  # stop watching (and warn) when the game process aion.bin is not running
     filter_type: str = ""  # item list: category («Лата») or «Оружие: Меч», "" = all
 
     def chat_log_path(self) -> Path:
