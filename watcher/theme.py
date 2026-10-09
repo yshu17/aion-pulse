@@ -48,6 +48,9 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
 
     With ui_dir (data/ui) the controls get rounded corners from its images; without it they are flat.
     """
+    # images made for an earlier (destroyed) root are useless; dropping them frees Tk's resources
+    _images.clear()
+    CHECKS.clear()
     for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):
         tkfont.nametofont(name).configure(family=FONT_FAMILY, size=FONT_SIZE)
     root.configure(background=BG)
@@ -288,7 +291,7 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     """Swap the flat clam borders for 9-slice rounded images."""
 
     def img(name: str) -> tk.PhotoImage:
-        image = tk.PhotoImage(master=root, file=str(ui_dir / f"{name}.png"))
+        image = load_png(root, ui_dir / f"{name}.png")
         _images.append(image)
         return image
 
@@ -463,6 +466,16 @@ def _result_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
         missed.put("#ffffff", to=(i, size - i - 2, i + 2, size - i))
     _images.extend((accepted, missed))
     return accepted, missed
+
+
+def load_png(root: tk.Misc, path: Path) -> tk.PhotoImage:
+    """PNG file -> PhotoImage. The bytes are read by Python: Tk's own file loading now and then
+    fails on paths with Cyrillic letters (e.g. the user's profile folder)."""
+    try:
+        data = Path(path).read_bytes()
+    except OSError as exc:
+        raise tk.TclError(f"cannot read {path}: {exc}") from exc
+    return tk.PhotoImage(master=root, data=data, format="png")
 
 
 def placeholder_icon(root: tk.Misc, size: int = 56) -> tk.PhotoImage:

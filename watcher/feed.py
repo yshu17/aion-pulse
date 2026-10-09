@@ -57,19 +57,27 @@ class MatchFeed(ttk.Frame):
         self.text.tag_configure("missed", background=MISSED_BG)
         self.text.tag_raise("hit")
         self.text.tag_configure("note", foreground=theme.MUTED, justify="center")
+        self.text.tag_configure("quiet_note", foreground="#7fd69b")
         self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades)
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.text.bind("<Configure>", lambda _e: self._relayout())
 
     # --- public -----------------------------------------------------------------------
-    def add(self, msg: ChatMessage, hits: list[str], alert_id: int | None = None) -> None:
-        """Append a matched message. With alert_id the row blinks until mark() is called."""
+    def add(self, msg: ChatMessage, hits: list[str], alert_id: int | None = None, quiet: bool = False) -> None:
+        """Append a matched message. With alert_id the row blinks until mark() is called.
+
+        quiet: a repeat of an already accepted series — a green row marked «уже принято», no alert.
+        """
         at_bottom = self.text.yview()[1] >= 0.999
         self.text.configure(state="normal")
         start = self.text.index("end-1c")
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
         parts += self.linker.parts(msg.text, hits)
+        if quiet:
+            parts += ["   ✓ уже принято", ("quiet_note",)]
         self.text.insert("end-1c", *parts, "\n", ())
+        if quiet:
+            self.text.tag_add("accepted", start, "end-1c")
         if alert_id is not None:
             # the range includes the newline, so the stripe spans the full width
             for tag in (f"a{alert_id}", "alert", "blink"):

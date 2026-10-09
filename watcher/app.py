@@ -17,6 +17,7 @@ from watcher.feed import MatchFeed
 from watcher.itemlist import ItemFilter, ItemList
 from watcher.notifier import Notifier, system_sounds
 from watcher.parser import ChatMessage, parse_line
+from watcher.series import SeriesTracker
 from watcher.specs import load_specs
 from watcher.tailer import LogTailer
 from watcher.tooltip import SpecTooltip
@@ -76,6 +77,7 @@ class App:
         if self.cfg.react_sec not in REACT_CHOICES.values():
             self.cfg.react_sec = DEFAULT_REACT_SEC  # e.g. the removed «выкл» (0) from an older config
         self.tracker = AlertTracker(self.cfg.react_sec)
+        self.series = SeriesTracker()
         self.tailer: LogTailer | None = None
         self.running = False
         self._after_id: str | None = None
@@ -273,6 +275,7 @@ class App:
 
     def _reset_counters(self) -> None:
         self.tracker.reset()
+        self.series.reset()
         self._update_counters()
 
     def _on_search_mode_selected(self) -> None:
@@ -333,12 +336,18 @@ class App:
 
     # --- alerts --------------------------------------------------------------------
     def _on_feed_accept(self, alert_id: int) -> None:
-        if self.tracker.accept(alert_id):
-            self.feed.mark(alert_id, "accepted")
+        self._accept(alert_id)
         self._after_alert_change()
+
+    def _accept(self, alert_id: int) -> None:
+        """Accept an alert and every other waiting alert of the same series (same player and match)."""
+        for accepted in (alert_id, *sorted(self.series.accept(alert_id))):
+            if self.tracker.accept(accepted):
+                self.feed.mark(accepted, "accepted")
 
     def _on_popup_ack(self) -> None:
         for alert_id in self.tracker.accept_all():
+            self.series.accept(alert_id)
             self.feed.mark(alert_id, "accepted")
         self._after_alert_change()
 
@@ -421,7 +430,7 @@ class App:
         icon = self._icons.get(key)
         if icon is None:
             try:
-                icon = tk.PhotoImage(master=self.root, file=str(self.icons_dir / f"{key}.png"))
+                icon = theme.load_png(self.root, self.icons_dir / f"{key}.png")
             except tk.TclError:
                 icon = self._icons.get("") or theme.placeholder_icon(self.root)
                 self._icons[""] = icon
@@ -562,6 +571,7 @@ class App:
 
     def stop(self) -> None:
         self.running = False
+        self.series.reset()
         if self._after_id is not None:
             self.root.after_cancel(self._after_id)
             self._after_id = None
@@ -632,14 +642,26 @@ class App:
         if not matched:
             return
         nag = self.cfg.alert_mode == "nag"
+        loud: list[tuple[ChatMessage, list[str]]] = []
         for msg, hits in matched:
-            alert_id = self.tracker.add(msg, hits, now, nag=nag)
-            self.feed.add(msg, hits, alert_id if nag else None)
-            if nag:
+            if not nag:
+                self.tracker.add(msg, hits, now, nag=False)
+                self.feed.add(msg, hits)
+                loud.append((msg, hits))
+            elif self.series.is_silent(msg, hits, now):
+                # a repeat of a series the user already accepted: show it, no alarm
+                self.tracker.add(msg, hits, now, nag=False)
+                self.series.record(msg, hits, now)
+                self.feed.add(msg, hits, quiet=True)
+            else:
+                alert_id = self.tracker.add(msg, hits, now, nag=True)
+                self.series.record(msg, hits, now, alert_id)
+                self.feed.add(msg, hits, alert_id)
                 self.feed.set_countdown(self.tracker.remaining(now))
-        if nag:
-            self.alarm.trigger(matched, popup=self.cfg.nag_popup)
-        else:
+                loud.append((msg, hits))
+        if loud and nag:
+            self.alarm.trigger(loud, popup=self.cfg.nag_popup)
+        elif loud:
             self.notifier.play()
         self._update_counters()
 

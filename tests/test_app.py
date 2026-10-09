@@ -691,3 +691,73 @@ def test_search_feed_highlights_item_links_with_tooltip(tmp_path):
         app.stop()
     finally:
         root.destroy()
+
+
+def _post(app, nick, text):
+    line = f"2026.10.09 18:00:00 : [3.Поиск группы] [charname:{nick};1 1 1]: {text}" + chr(13) + chr(10)
+    with open(app.cfg.chat_log_path(), "ab") as f:
+        f.write(line.encode("cp1251"))
+    app._tick()
+
+
+def _rings(calls):
+    return sum(1 for c in calls if c[0] == "ring")
+
+
+def test_series_rings_until_accepted_then_repeats_are_silent(tmp_path):
+    root, app, calls, _say = _nag_app(tmp_path)
+    try:
+        app.start()
+        _post(app, "Leader", "ммк 1/12")
+        first = app.tracker.pending_ids[0]
+        app._ui_tick(now=app.tracker._pending[first].created + 31)  # first one missed
+        _post(app, "Leader", "ммк 2/12")
+        assert _rings(calls) == 2  # missed first: the repeat rings as usual
+        second = app.tracker.pending_ids[0]
+        app._on_feed_accept(second)
+        _post(app, "Leader", "ммк 3/12")
+        _post(app, "Leader", "ммк 4/12")
+        assert _rings(calls) == 2  # accepted: the rest of the series is silent
+        assert app.tracker.pending_ids == []
+        assert "уже принято" in app.feed.text.get("1.0", "end")
+        assert counters(app) == (4, 1, 1)  # silent repeats are found, not reacted / missed
+        _post(app, "Other", "ммк 1/6")
+        assert _rings(calls) == 3  # another player rings
+    finally:
+        root.destroy()
+
+
+def test_accepting_one_accepts_waiting_alerts_of_same_series(tmp_path):
+    root, app, calls, _say = _nag_app(tmp_path)
+    try:
+        app.start()
+        _post(app, "Leader", "ммк 1/12")
+        _post(app, "Leader", "ммк 2/12")
+        _post(app, "Other", "ммк 1/6")
+        assert len(app.tracker.pending_ids) == 3
+        first = app.tracker.pending_ids[0]
+        app._on_feed_accept(first)
+        remaining = app.tracker.pending_ids
+        assert len(remaining) == 1  # only the other player's alert still waits
+        assert app.tracker._pending[remaining[0]].msg.nick == "Other"
+    finally:
+        root.destroy()
+
+
+def test_series_logic_only_in_nag_mode_and_reset_by_stop(tmp_path):
+    root, app, calls, _say = _nag_app(tmp_path)
+    try:
+        app.start()
+        _post(app, "Leader", "ммк 1/12")
+        app._on_feed_accept(app.tracker.pending_ids[0])
+        app.stop()
+        app.start()
+        _post(app, "Leader", "ммк 2/12")
+        assert _rings(calls) == 2  # Stop forgot the accepted series
+        app._on_feed_accept(app.tracker.pending_ids[0])
+        app.mode_var.set("Стандартный")
+        app._on_mode_selected()
+        _post(app, "Leader", "ммк 3/12")
+        assert ("beep",) in calls  # standard mode beeps as before
+    finally:
+        root.destroy()
