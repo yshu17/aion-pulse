@@ -19,15 +19,18 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.mapcard import NEARBY_TYPES, PointCard
-from watcher.maplayers import LayerPanel, default_layers, load_icon
 from watcher.matcher import normalize
 from watcher.poi import Poi, PoiStore, cluster
 
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
-DENSE_GROUPS = {"gather", "quest"}
-DENSE_SPLIT_ZOOM = 1.0  # below this zoom, gathering / quest points of all kinds merge into one cluster
+# The fixed set of points on the map (no layer panel). Gathering, quest points and portals are not shown:
+# the client's Portal objects are editor triggers, not the portals a player sees (map plan v3).
+SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
+               "fortress", "artifact", "dungeon")
+BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
+SEARCH_PLACEHOLDER = "Найти: NPC, район"
 LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
 PIN = theme.ACCENT
 OTHER_PIN = "#4fd1c5"
@@ -55,6 +58,19 @@ class Zone:
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
+
+
+def load_icon(path: Path, size: int, master: tk.Misc):
+    """A ready-made icon scaled to size px (keeps its aspect ratio), None if the file is missing."""
+    from PIL import Image, ImageTk
+
+    try:
+        with Image.open(path) as image:
+            image = image.convert("RGBA")
+            image.thumbnail((size, size), Image.LANCZOS)
+            return ImageTk.PhotoImage(image, master=master)
+    except OSError:
+        return None
 
 
 def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
@@ -109,14 +125,12 @@ class MapView(ttk.Frame):
         get_places: Callable[[], Iterable[Place]] = list,
         poi: PoiStore | None = None,
         icons_dir: Path | None = None,
-        layers: Iterable[str] | None = None,
-        on_layers: Callable[[set[str]], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.zones = zones
         self.poi = poi or PoiStore({}, {})
         self.icons_dir = icons_dir or Path(".")
-        self.on_layers = on_layers or (lambda _l: None)
+        self.layers: set[str] = {t for t in SHOWN_TYPES if t in self.poi.types}
         self._poi_icons: dict[tuple[str, int], object] = {}
         self._drawn: list[tuple[float, float, list[Poi]]] = []
         self.get_places = get_places  # place links seen in the chat (pins)
@@ -139,6 +153,18 @@ class MapView(ttk.Frame):
                                      width=20)
         self.zone_box.pack(side="left")
         self.zone_box.bind("<<ComboboxSelected>>", lambda _e: self.open_zone(self._by_name[self.zone_var.get()]))
+        self.search_var = tk.StringVar()
+        self.search_entry = ttk.Entry(bar, textvariable=self.search_var, style="Card.TEntry", width=26)
+        self.search_entry.pack(side="left", padx=(10, 0))
+        self.search_count = ttk.Label(bar, text="", style="Muted.TLabel", width=6, anchor="w")
+        self.search_count.pack(side="left", padx=(6, 0))
+        self._show_placeholder()
+        self.search_entry.bind("<FocusIn>", lambda _e: self._hide_placeholder())
+        self.search_entry.bind("<FocusOut>", lambda _e: self._show_placeholder())
+        self.search_entry.bind("<Return>", lambda _e: self._search(1))
+        self.search_entry.bind("<Shift-Return>", lambda _e: self._search(-1))
+        self.search_entry.bind("<Escape>", lambda _e: self.search_var.set(""))
+        self.search_entry.bind("<KeyRelease>", self._on_search_key)
         self.title = ttk.Label(bar, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
         for text, command in (
@@ -152,14 +178,9 @@ class MapView(ttk.Frame):
         self.hint.pack(side="right", padx=12)
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
-        start = default_layers(self.poi) if layers is None else set(layers)
-        self.panel = LayerPanel(body, self.poi, self.icons_dir, start, self._on_layers, self.search)
         self._matches: list = []
         self._match_index = -1
         self._match_query = ""
-        if self.poi.types:
-            self.panel.pack(side="left", fill="y", padx=(0, 10))
-        self.layers: set[str] = set(self.panel.layers)
         self.selected: Poi | None = None
         self.point_card = PointCard(body, get_icon=lambda t: self._poi_icon(t, 20))
         self.point_card.pack(side="right", fill="y", padx=(10, 0))
@@ -256,7 +277,6 @@ class MapView(ttk.Frame):
         from PIL import Image
 
         self.zone = zone
-        self.panel.set_zone(zone.map_id)
         with Image.open(zone.path) as image:
             self._image = image.convert("RGB")
         self.zone_var.set(zone.name)
@@ -418,7 +438,7 @@ class MapView(ttk.Frame):
             return ""
         if step == 0 or query != self._match_query:
             words = normalize(query).split()
-            points = self.poi.search(self.zone.map_id, query, set(self.poi.types))
+            points = self.poi.search(self.zone.map_id, query, self.layers)
             areas = [(x, y, text) for x, y, text in self.zone.labels if all(w in normalize(text) for w in words)]
             self._matches = list(points) + areas
             self._match_query = query
@@ -439,11 +459,31 @@ class MapView(ttk.Frame):
             self.center_on(x, y)
         return f"{self._match_index + 1} / {len(self._matches)}"
 
-    def _on_layers(self, layers: set[str]) -> None:
-        self.layers = layers
-        self.on_layers(layers)
-        self.canvas.delete("bubble")
-        self._schedule_render()
+    def _search(self, step: int) -> str:
+        """Search box: next (1) / previous (-1) / first (0) match; shows «2 / 7» or «нет»."""
+        query = self.search_var.get().strip()
+        query = "" if query == SEARCH_PLACEHOLDER else query
+        self.search_count.configure(text=self.search(query, step) if query else "")
+        return "break"
+
+    def _on_search_key(self, event: tk.Event) -> None:
+        if event.keysym not in ("Return", "Escape", "Shift_L", "Shift_R"):
+            self._search(0)
+
+    def _show_placeholder(self) -> None:
+        if not self.search_var.get():
+            self.search_var.set(SEARCH_PLACEHOLDER)
+            self.search_entry.configure(foreground=theme.MUTED)
+
+    def _hide_placeholder(self) -> None:
+        if self.search_var.get() == SEARCH_PLACEHOLDER:
+            self.search_var.set("")
+        self.search_entry.configure(foreground=theme.TEXT)
+
+    def _icon_size(self, type_: str) -> int:
+        """Icon px for the current zoom: big enough to read on the whole map, teleporters bigger."""
+        size = max(24, min(36, round(20 + 6 * self.zoom)))
+        return size + 8 if type_ in BIG_TYPES else size
 
     def _poi_icon(self, type_: str, size: int):
         key = (type_, size)
@@ -453,29 +493,22 @@ class MapView(ttk.Frame):
         return self._poi_icons[key]
 
     def _draw_poi(self, width: int, height: int) -> None:
-        """Layer points as their icons; close points of one type merge into an icon with a count."""
+        """Points as their icons; close points of one type merge into an icon with a count."""
         self._drawn = []
         if self.zone is None or not self.layers:
             return
-        size = max(18, min(30, round(14 + 6 * self.zoom)))
         points = self.poi.in_zone(self.zone.map_id, self.layers)
-        # dense layers (gathering, quests) merge across their kinds until the map is zoomed in
-        dense = self.zoom < DENSE_SPLIT_ZOOM
-        group_of = {t: info.get("group", "") for t, info in self.poi.types.items()}
-
-        def key(p: Poi) -> str:
-            group = group_of.get(p.type, "")
-            return group if dense and group in DENSE_GROUPS else p.type
-
-        groups = cluster(points, self.to_screen, radius_px=size * (2.2 if dense else 1.3), key=key)
+        groups = cluster(points, self.to_screen, radius_px=self._icon_size("") * 1.1, key=lambda p: p.type)
+        # teleporters and kisks on top of the rest
+        groups.sort(key=lambda g: g[2][0].type in BIG_TYPES)
         canvas = self.canvas
-        for index, (sx, sy, members) in enumerate(groups):
+        for sx, sy, members in groups:
+            size = self._icon_size(members[0].type)
             if not (-size < sx < width + size and -size < sy < height + size):
                 continue
             tags = ("poi", f"poi_{len(self._drawn)}")
             self._drawn.append((sx, sy, members))
-            kinds = {m.type for m in members}
-            icon = self._poi_icon(max(kinds, key=lambda t: sum(m.type == t for m in members)), size)
+            icon = self._poi_icon(members[0].type, size)
             if icon is not None:
                 canvas.create_image(sx, sy, image=icon, tags=tags)
             else:

@@ -277,8 +277,6 @@ class App:
             get_places=lambda: list(self.places),
             poi=PoiStore.load(maps_dir / "poi.json"),
             icons_dir=maps_dir / "icons",
-            layers=self.cfg.map_layers,
-            on_layers=self._on_map_layers,
         )
         self.map_view.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.map_view, text="Карта")
@@ -689,10 +687,6 @@ class App:
                 if hits:
                     self.feed.add(msg, hits)
         self.feed.add_note(f"— выше история за {self.cfg.history_min} мин, ниже новые сообщения —")
-
-    def _on_map_layers(self, layers: set[str]) -> None:
-        self.cfg.map_layers = sorted(layers)
-        save_config(self.config_path, self.cfg)
 
     def _remember_places(self, msg: ChatMessage) -> None:
         note = f"{msg.time[11:16]}  {msg.nick}: {display_text(msg.text)}"

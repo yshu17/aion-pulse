@@ -37,7 +37,6 @@ class Config:
     filter_level_min: int = 0  # item list: lowest level shown, 0 = any
     filter_level_max: int = 0  # item list: highest level shown, 0 = any
     items_width: int = 0  # «Поиск» tab: width of the item list (divider position), 0 = natural
-    map_layers: list[str] | None = None  # «Карта»: shown point layers; None = default (NPCs and landmarks)
     filter_type: str = ""  # item list: category («Лата») or «Оружие: Меч», "" = all
 
     def chat_log_path(self) -> Path:

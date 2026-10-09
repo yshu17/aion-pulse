@@ -110,33 +110,25 @@ def test_browse_zone_from_picker_with_chat_pins(root):
     assert "Келькмарос" in view.zone_box.cget("values")
 
 
-def test_layers_draw_points_and_presets(root, tmp_path):
+def test_fixed_point_set_without_gathering_quests_or_portals(root):
     from watcher.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
-    saved = []
-    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons",
-                   layers=None, on_layers=saved.append)
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
     view.pack(fill="both", expand=True)
     root.geometry("1300x900")
     root.update()
     view.open_zone("220070000")
     root.update()
     view.render()
-    assert view.layers >= {"teleport", "warehouse", "portal"}  # default: NPCs and landmarks
-    assert not any(t.startswith("gather_") for t in view.layers)
-    assert view.canvas.find_withtag("poi")
+    assert not hasattr(view, "panel")  # no layer panel any more
+    assert {"teleport", "warehouse", "merchant", "artifact"} <= view.layers
+    hidden = {"portal", "direct_portal", "quest_point"} | {t for t in store.types if t.startswith("gather_")}
+    assert not view.layers & hidden
     shown = {m.type for _x, _y, members in view._drawn for m in members}
-    assert "teleport" in shown
-    view.panel.apply_preset("Сбор")
-    root.update()
-    view.render()
-    assert saved[-1] and all(t.startswith("gather_") for t in saved[-1])
-    assert {m.type for _x, _y, ms in view._drawn for m in ms} <= saved[-1]
-    view.panel.apply_preset("Ничего")
-    view.render()
-    assert not view.canvas.find_withtag("poi")
-    assert view.panel.count_labels["teleport"].cget("text") == "2"  # Kelkmaros has 2 teleporters in the client
+    assert "teleport" in shown and not shown & hidden
+    # icons are big, teleporters bigger still
+    assert view._icon_size("teleport") > view._icon_size("merchant") >= 24
 
 
 def test_point_card_and_nearby(root):
@@ -175,7 +167,7 @@ def test_point_card_and_nearby(root):
     assert view.selected == members[0]
 
 
-def test_dense_layers_merge_when_zoomed_out_and_split_when_zoomed_in(root):
+def test_map_search_points_and_areas(root):
     from watcher.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
@@ -184,29 +176,7 @@ def test_dense_layers_merge_when_zoomed_out_and_split_when_zoomed_in(root):
     root.geometry("1400x900")
     root.update()
     view.open_zone("220070000")
-    view.panel.apply_preset("Сбор")
-    view.render()
-    assert any(len({m.type for m in ms}) > 1 for _x, _y, ms in view._drawn)  # kinds merged
-    zoomed_out = len(view._drawn)
-    view.zoom = 1.5
-    view.center_on(1500, 1500)
-    assert all(len({m.type for m in ms}) == 1 for _x, _y, ms in view._drawn)  # one kind per marker
-    assert zoomed_out < 400  # readable at full-map scale
-    view.panel.apply_preset("Задания")
-    view.render()
-    assert {m.type for _x, _y, ms in view._drawn for m in ms} <= {"quest_point", "teleport"}
-
-
-def test_map_search_points_and_areas(root):
-    from watcher.poi import PoiStore
-
-    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
-    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons", layers=[])
-    view.pack(fill="both", expand=True)
-    root.geometry("1400x900")
-    root.update()
-    view.open_zone("220070000")
-    assert view.search("привратник", 0) == "1 / 2"  # hidden layers are found too
+    assert view.search("привратник", 0) == "1 / 2"
     first = view.selected
     assert first.type == "teleport"
     assert view.search("привратник", 1) == "2 / 2" and view.selected != first
@@ -214,9 +184,10 @@ def test_map_search_points_and_areas(root):
     assert view.search("митраканд", 0).endswith("/ 2")  # area names: «Митраканд», «Сигнальный маяк Митраканда»
     assert view.point_card.kind.cget("text") == "Район"
     assert view.search("абвгд", 0) == "нет"
-    view.panel.search_var.set("склад")
-    view.panel.search(0)
-    assert view.panel.search_count.cget("text").startswith("1 /")
+    assert view.search("портал", 0) == "нет"  # hidden kinds are not found either
+    view.search_var.set("склад")
+    view._search(0)
+    assert view.search_count.cget("text").startswith("1 /")
 
 
 def test_game_coordinates_under_cursor_round_trip(root):

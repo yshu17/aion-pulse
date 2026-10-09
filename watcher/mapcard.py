@@ -7,7 +7,7 @@ from tkinter import ttk
 from watcher import theme
 
 EMPTY = "Кликни по значку на карте или найди точку поиском — здесь появится карточка и что рядом"
-NEARBY_TYPES = ["teleport", "warehouse", "merchant", "stigma", "portal", "artifact"]
+NEARBY_TYPES = ["teleport", "bindstone", "warehouse", "merchant", "stigma", "artifact"]
 
 
 def metres_text(metres: float) -> str:
