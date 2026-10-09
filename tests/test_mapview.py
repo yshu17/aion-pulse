@@ -108,3 +108,32 @@ def test_browse_zone_from_picker_with_chat_pins(root):
     assert view.others == [places[0]]
     assert view.zoom == pytest.approx(view._fit_zoom())  # whole map
     assert "Келькмарос" in view.zone_box.cget("values")
+
+
+def test_layers_draw_points_and_presets(root, tmp_path):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    saved = []
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons",
+                   layers=None, on_layers=saved.append)
+    view.pack(fill="both", expand=True)
+    root.geometry("1300x900")
+    root.update()
+    view.open_zone("220070000")
+    root.update()
+    view.render()
+    assert view.layers >= {"teleport", "warehouse", "portal"}  # default: NPCs and landmarks
+    assert not any(t.startswith("gather_") for t in view.layers)
+    assert view.canvas.find_withtag("poi")
+    shown = {m.type for _x, _y, members in view._drawn for m in members}
+    assert "teleport" in shown
+    view.panel.apply_preset("Сбор")
+    root.update()
+    view.render()
+    assert saved[-1] and all(t.startswith("gather_") for t in saved[-1])
+    assert {m.type for _x, _y, ms in view._drawn for m in ms} <= saved[-1]
+    view.panel.apply_preset("Ничего")
+    view.render()
+    assert not view.canvas.find_withtag("poi")
+    assert view.panel.count_labels["teleport"].cget("text") == "2"  # Kelkmaros has 2 teleporters in the client

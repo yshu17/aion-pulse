@@ -84,17 +84,21 @@ class PoiStore:
 
 
 def cluster(
-    points: Iterable[Poi], to_screen: Callable[[float, float], tuple[float, float]], radius_px: float
+    points: Iterable[Poi],
+    to_screen: Callable[[float, float], tuple[float, float]],
+    radius_px: float,
+    key: Callable[[Poi], str] | None = None,
 ) -> list[tuple[float, float, list[Poi]]]:
-    """Group points of the same type that fall into the same screen cell of radius_px.
+    """Group points with the same key (default: the type) that fall into one screen cell of radius_px.
 
     Returns (screen x, screen y, members); the position is the members' mean on screen.
     """
+    key = key or (lambda p: p.type)
     cells: dict[tuple[str, int, int], list[tuple[float, float, Poi]]] = {}
     for p in points:
         sx, sy = to_screen(p.x, p.y)
-        key = (p.type, math.floor(sx / radius_px), math.floor(sy / radius_px))
-        cells.setdefault(key, []).append((sx, sy, p))
+        cell = (key(p), math.floor(sx / radius_px), math.floor(sy / radius_px))
+        cells.setdefault(cell, []).append((sx, sy, p))
     out = []
     for members in cells.values():
         cx = sum(m[0] for m in members) / len(members)

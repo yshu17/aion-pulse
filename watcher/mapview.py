@@ -17,10 +17,14 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
+from watcher.maplayers import LayerPanel, default_layers, load_icon
+from watcher.poi import Poi, PoiStore, cluster
 
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
+DENSE_GROUPS = {"gather", "quest"}
+DENSE_SPLIT_ZOOM = 1.0  # below this zoom, gathering / quest points of all kinds merge into one cluster
 LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
 PIN = theme.ACCENT
 OTHER_PIN = "#4fd1c5"
@@ -95,9 +99,23 @@ def load_labels(path: Path) -> dict[str, tuple[float, list[tuple[float, float, s
 class MapView(ttk.Frame):
     """The «Карта» tab: a zone picker and the map. show() opens a zone centred on a place."""
 
-    def __init__(self, parent: tk.Misc, zones: dict[str, Zone], get_places: Callable[[], Iterable[Place]] = list) -> None:
+    def __init__(
+        self,
+        parent: tk.Misc,
+        zones: dict[str, Zone],
+        get_places: Callable[[], Iterable[Place]] = list,
+        poi: PoiStore | None = None,
+        icons_dir: Path | None = None,
+        layers: Iterable[str] | None = None,
+        on_layers: Callable[[set[str]], None] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.zones = zones
+        self.poi = poi or PoiStore({}, {})
+        self.icons_dir = icons_dir or Path(".")
+        self.on_layers = on_layers or (lambda _l: None)
+        self._poi_icons: dict[tuple[str, int], object] = {}
+        self._drawn: list[tuple[float, float, list[Poi]]] = []
         self.get_places = get_places  # place links seen in the chat (pins)
         self.zone: Zone | None = None
         self.place: Place | None = None
@@ -130,8 +148,15 @@ class MapView(ttk.Frame):
         self.hint = ttk.Label(bar, text="колесо — масштаб, перетаскивание — сдвиг, точки — места из чата",
                               style="Muted.TLabel")
         self.hint.pack(side="right", padx=12)
-        card = ttk.Frame(self, style="Card.TFrame", padding=6)
-        card.pack(fill="both", expand=True)
+        body = ttk.Frame(self)
+        body.pack(fill="both", expand=True)
+        start = default_layers(self.poi) if layers is None else set(layers)
+        self.panel = LayerPanel(body, self.poi, self.icons_dir, start, self._on_layers)
+        if self.poi.types:
+            self.panel.pack(side="left", fill="y", padx=(0, 10))
+        self.layers: set[str] = set(self.panel.layers)
+        card = ttk.Frame(body, style="Card.TFrame", padding=6)
+        card.pack(side="left", fill="both", expand=True)
         self.canvas = tk.Canvas(card, background=theme.SURFACE, highlightthickness=0, borderwidth=0, cursor="fleur")
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda _e: self._on_resize())
@@ -142,6 +167,8 @@ class MapView(ttk.Frame):
         self.canvas.bind("<Double-Button-1>", lambda e: self.zoom_at(2.0, e.x, e.y))
         self.canvas.tag_bind("other", "<Enter>", self._on_pin_enter)
         self.canvas.tag_bind("other", "<Leave>", lambda _e: self.canvas.delete("bubble"))
+        self.canvas.tag_bind("poi", "<Enter>", self._on_poi_enter)
+        self.canvas.tag_bind("poi", "<Leave>", lambda _e: self.canvas.delete("bubble"))
 
     def has_map(self, map_id: str) -> bool:
         return map_id in self.zones
@@ -211,6 +238,7 @@ class MapView(ttk.Frame):
         from PIL import Image
 
         self.zone = zone
+        self.panel.set_zone(zone.map_id)
         with Image.open(zone.path) as image:
             self._image = image.convert("RGB")
         self.zone_var.set(zone.name)
@@ -269,6 +297,7 @@ class MapView(ttk.Frame):
         canvas.delete("all")
         canvas.create_image(0, 0, image=self._photo, anchor="nw")
         self._draw_labels(width, height)
+        self._draw_poi(width, height)
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
             canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline="#0b2b28", width=2,
@@ -296,6 +325,80 @@ class MapView(ttk.Frame):
                     self.canvas.create_text(sx + dx, sy + dy, text=text, fill="#0d0e11", font=font,
                                             justify="center", tags="label")
                 self.canvas.create_text(sx, sy, text=text, fill="#f2e6c9", font=font, justify="center", tags="label")
+
+    def _on_layers(self, layers: set[str]) -> None:
+        self.layers = layers
+        self.on_layers(layers)
+        self.canvas.delete("bubble")
+        self._schedule_render()
+
+    def _poi_icon(self, type_: str, size: int):
+        key = (type_, size)
+        if key not in self._poi_icons:
+            icon = self.poi.types.get(type_, {}).get("icon")
+            self._poi_icons[key] = load_icon(self.icons_dir / icon, size, self.canvas) if icon else None
+        return self._poi_icons[key]
+
+    def _draw_poi(self, width: int, height: int) -> None:
+        """Layer points as their icons; close points of one type merge into an icon with a count."""
+        self._drawn = []
+        if self.zone is None or not self.layers:
+            return
+        size = max(18, min(30, round(14 + 6 * self.zoom)))
+        points = self.poi.in_zone(self.zone.map_id, self.layers)
+        # dense layers (gathering, quests) merge across their kinds until the map is zoomed in
+        dense = self.zoom < DENSE_SPLIT_ZOOM
+        group_of = {t: info.get("group", "") for t, info in self.poi.types.items()}
+
+        def key(p: Poi) -> str:
+            group = group_of.get(p.type, "")
+            return group if dense and group in DENSE_GROUPS else p.type
+
+        groups = cluster(points, self.to_screen, radius_px=size * (2.2 if dense else 1.3), key=key)
+        canvas = self.canvas
+        for index, (sx, sy, members) in enumerate(groups):
+            if not (-size < sx < width + size and -size < sy < height + size):
+                continue
+            tags = ("poi", f"poi_{len(self._drawn)}")
+            self._drawn.append((sx, sy, members))
+            kinds = {m.type for m in members}
+            icon = self._poi_icon(max(kinds, key=lambda t: sum(m.type == t for m in members)), size)
+            if icon is not None:
+                canvas.create_image(sx, sy, image=icon, tags=tags)
+            else:
+                canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=theme.ACCENT, outline="#0d0e11", tags=tags)
+            if len(members) > 1:
+                bx, by = sx + size * 0.45, sy - size * 0.45
+                canvas.create_oval(bx - 9, by - 9, bx + 9, by + 9, fill="#0d0e11", outline=theme.ACCENT, tags=tags)
+                canvas.create_text(bx, by, text=str(len(members)) if len(members) < 100 else "99+",
+                                   fill="#ffffff", font=(theme.FONT_FAMILY, 8, "bold"), tags=tags)
+
+    def _on_poi_enter(self, event: tk.Event) -> None:
+        current = self.canvas.find_withtag("current")
+        tags = self.canvas.gettags(current[0]) if current else ()
+        index = next((int(t[4:]) for t in tags if t.startswith("poi_")), None)
+        if index is None or index >= len(self._drawn):
+            return
+        _sx, _sy, members = self._drawn[index]
+        first = members[0]
+        kind = self.poi.type_name(first.type)
+        if len(members) > 1:
+            by_type: dict[str, int] = {}
+            for m in members:
+                by_type[m.type] = by_type.get(m.type, 0) + 1
+            text = "\n".join(f"{self.poi.type_name(t)}: {n}" for t, n in sorted(by_type.items(), key=lambda kv: -kv[1]))
+        else:
+            text = f"{first.name} · {kind}" if first.name else kind
+        self._bubble(event.x + 14, event.y - 10, text)
+
+    def _bubble(self, x: float, y: float, text: str) -> None:
+        self.canvas.delete("bubble")
+        item = self.canvas.create_text(x + 8, y, text=text, anchor="w", fill=theme.TEXT, width=420,
+                                       font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1), tags="bubble")
+        x0, y0, x1, y1 = self.canvas.bbox(item)
+        self.canvas.create_rectangle(x0 - 8, y0 - 5, x1 + 8, y1 + 5, fill=theme.SURFACE_2, outline=theme.BORDER,
+                                     tags="bubble")
+        self.canvas.tag_raise(item)
 
     def _on_pin_enter(self, event: tk.Event) -> None:
         current = self.canvas.find_withtag("current")

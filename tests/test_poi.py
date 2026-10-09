@@ -83,3 +83,9 @@ def test_cluster_merges_close_points_and_splits_when_zoomed():
     assert centre == pytest.approx((5, 0))
     split = cluster(pts, lambda x, y: (x * 10, y * 10), 40)  # zoomed in ×10
     assert sorted(len(m) for _x, _y, m in split) == [1, 1, 1, 1]
+
+
+def test_cluster_key_merges_across_types():
+    pts = [Poi(Z, "gather_herb", 0, 0, 0, 0, ""), Poi(Z, "gather_metal", 5, 0, 0, 0, "")]
+    assert len(cluster(pts, lambda x, y: (x, y), 40)) == 2  # default: per type
+    assert len(cluster(pts, lambda x, y: (x, y), 40, key=lambda p: "gather")) == 1
