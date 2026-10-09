@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "design-theme-guide": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/design-theme-guide/SKILL.md",
+      "computedHash": "be8fe9c190105d55cfc51bcd085b56fc4f50de0a730575462659237f002213f8"
+    },
+    "high-end-visual-design": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/high-end-visual-design/SKILL.md",
+      "computedHash": "63350d8aba552da3cb73401968a646aa6bf304a6ac1d13f740e30ef2321dde87"
+    },
+    "ui-ux-pro-max": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "803c1291484ab52b91dd53c1a87a423cf2b57a1a4e828ccc0fb910667bf9bccc"
+    },
+    "ui-visual-validator": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-visual-validator/SKILL.md",
+      "computedHash": "1a2e56266d58e0b62b90cdde3c21e23c139cfbf0f28b9ad9d9ffa9bddb2b24d9"
+    }
+  }
+}
