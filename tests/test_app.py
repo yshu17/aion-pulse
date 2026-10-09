@@ -782,3 +782,18 @@ def test_divider_resizes_item_list_with_minimum_widths(tmp_path):
         assert app.cfg.items_width == app.items_panel.winfo_width()
     finally:
         root.destroy()
+
+
+def test_place_link_opens_map_tab(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.geometry("1500x950")
+        root.update()
+        app._open_place("220070000", 1173.0, 1227.4, "Место · Келькмарос")
+        root.update()
+        assert app.tabs.select() == str(app.map_view)
+        assert app.map_view.zone.name == "Келькмарос"
+        assert app.map_view.title.cget("text") == "Место · Келькмарос"
+    finally:
+        root.destroy()

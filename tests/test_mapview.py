@@ -4,7 +4,7 @@ import pytest
 
 from watcher import theme
 from watcher.catalog import resource_root
-from watcher.mapview import MapWindow, Place, load_zones
+from watcher.mapview import MapView, Place, load_zones
 from watcher.parser import MAP_NAMES
 
 
@@ -36,7 +36,10 @@ def test_missing_maps_dir_gives_no_zones(tmp_path):
 
 
 def test_show_centres_on_place_and_zoom_keeps_point_under_cursor(root):
-    window = MapWindow(root, zones())
+    window = MapView(root, zones())
+    window.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
     place = Place("220070000", 978.8, 1265.0, "Место · Келькмарос")
     others = [Place("220070000", 1500, 1500, "Место", "12:00 Nick: го"), Place("210050000", 1, 1, "x")]
     window.show(place, others)
@@ -55,14 +58,12 @@ def test_show_centres_on_place_and_zoom_keeps_point_under_cursor(root):
     for _ in range(40):
         window.zoom_at(0.5, 10, 10)
     assert window.zoom == pytest.approx(window._fit_zoom())  # never smaller than the whole map
-    window.close()
 
 
 def test_zone_without_map_says_so(root):
-    window = MapWindow(root, {})
+    window = MapView(root, {})
     window.show(Place("400010000", 1, 2, "Место · Арэшурат"))
     assert "карты этой зоны нет" in window.title.cget("text")
-    window.close()
 
 
 def test_area_names_on_maps(root):
@@ -72,13 +73,15 @@ def test_area_names_on_maps(root):
     assert {"Митраканд", "Крепость Келькмарос", "Вход в тоннель Силентера в Келькмаросе"} <= names
     assert all(0 <= x <= kelk.size and 0 <= y <= kelk.size for x, y, _t in kelk.labels)
     assert "Коридор\nмучений" in {t for _x, _y, t in found["600010000"].labels}  # «|» is a line break
-    window = MapWindow(root, found)
+    window = MapView(root, found)
+    window.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
     window.show(Place("220070000", 1173.0, 1227.4, "Место"))
     root.update()
     window.render()
     shown = {window.canvas.itemcget(i, "text") for i in window.canvas.find_withtag("label")}
     assert "Запечатанная башня" in shown
-    window.close()
 
 
 def test_labels_file_errors_are_ignored(tmp_path):
@@ -88,3 +91,20 @@ def test_labels_file_errors_are_ignored(tmp_path):
     path.write_text("# c\n@df4\t3072\ndf4\t1\t2\tA|B\ndf4\tx\t2\tbad\nzz\t1\t1\tno zone\n", encoding="utf-8")
     assert load_labels(path) == {"df4": (3072.0, [(1.0, 2.0, "A\nB")])}
     assert load_labels(tmp_path / "missing.tsv") == {}
+
+
+def test_browse_zone_from_picker_with_chat_pins(root):
+    places = [Place("220070000", 1500, 1500, "Место", "12:00 Nick: го"), Place("210050000", 9, 9, "x")]
+    view = MapView(root, zones(), get_places=lambda: places)
+    view.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
+    view.activate()  # first open: the zone of the last linked place
+    assert view.zone.map_id == "210050000"
+    view.zone_var.set("Келькмарос")
+    view.zone_box.event_generate("<<ComboboxSelected>>")
+    root.update()
+    assert view.zone.map_id == "220070000" and view.place is None
+    assert view.others == [places[0]]
+    assert view.zoom == pytest.approx(view._fit_zoom())  # whole map
+    assert "Келькмарос" in view.zone_box.cget("values")

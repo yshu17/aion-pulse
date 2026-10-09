@@ -1,4 +1,4 @@
-"""Zone map window: opens on a click at a place link (<Место · Келькмарос>) in the chat.
+"""The «Карта» tab: browse zone maps; a click at a place link (<Место · Келькмарос>) opens it there.
 
 Like the game map: the mouse wheel zooms to the point under the cursor, dragging moves the map,
 a double click zooms in. The clicked place is a big orange pin; other places linked in the chat
@@ -10,7 +10,7 @@ Maps and the game -> image transform come from data/maps (tools/fetch_maps.py):
 
 import json
 import tkinter as tk
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from tkinter import ttk
@@ -20,9 +20,10 @@ from watcher import theme
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
+LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
 PIN = theme.ACCENT
 OTHER_PIN = "#4fd1c5"
-BG_RGB = tuple(int(theme.BG[i : i + 2], 16) for i in (1, 3, 5))
+BG_RGB = tuple(int(theme.SURFACE[i : i + 2], 16) for i in (1, 3, 5))
 
 
 @dataclass(frozen=True)
@@ -90,13 +91,13 @@ def load_labels(path: Path) -> dict[str, tuple[float, list[tuple[float, float, s
     return zones
 
 
-class MapWindow:
-    """One reusable window; show() switches zone and centres on a place."""
+class MapView(ttk.Frame):
+    """The «Карта» tab: a zone picker and the map. show() opens a zone centred on a place."""
 
-    def __init__(self, root: tk.Misc, zones: dict[str, Zone]) -> None:
-        self.root = root
+    def __init__(self, parent: tk.Misc, zones: dict[str, Zone], get_places: Callable[[], Iterable[Place]] = list) -> None:
+        super().__init__(parent)
         self.zones = zones
-        self.window: tk.Toplevel | None = None
+        self.get_places = get_places  # place links seen in the chat (pins)
         self.zone: Zone | None = None
         self.place: Place | None = None
         self.others: list[Place] = []
@@ -107,25 +108,77 @@ class MapWindow:
         self._photo = None
         self._render_after: str | None = None
         self._drag: tuple[int, int, float, float] | None = None
+        self._by_name = {zone.name: map_id for map_id, zone in sorted(zones.items(), key=lambda kv: kv[1].name)}
+
+        bar = ttk.Frame(self, padding=(0, 0, 0, 8))
+        bar.pack(fill="x")
+        self.zone_var = tk.StringVar()
+        self.zone_box = ttk.Combobox(bar, textvariable=self.zone_var, values=list(self._by_name), state="readonly",
+                                     width=20)
+        self.zone_box.pack(side="left")
+        self.zone_box.bind("<<ComboboxSelected>>", lambda _e: self.open_zone(self._by_name[self.zone_var.get()]))
+        self.title = ttk.Label(bar, text="", style="Title.TLabel")
+        self.title.pack(side="left", padx=(14, 0))
+        for text, command in (
+            ("⌂", self._fit),
+            ("−", lambda: self._zoom_center(1 / ZOOM_STEP)),
+            ("+", lambda: self._zoom_center(ZOOM_STEP)),
+            ("◎", self._back_to_place),
+        ):
+            ttk.Button(bar, text=text, width=3, command=command).pack(side="right", padx=(6, 0))
+        self.hint = ttk.Label(bar, text="колесо — масштаб, перетаскивание — сдвиг, точки — места из чата",
+                              style="Muted.TLabel")
+        self.hint.pack(side="right", padx=12)
+        card = ttk.Frame(self, style="Card.TFrame", padding=6)
+        card.pack(fill="both", expand=True)
+        self.canvas = tk.Canvas(card, background=theme.SURFACE, highlightthickness=0, borderwidth=0, cursor="fleur")
+        self.canvas.pack(fill="both", expand=True)
+        self.canvas.bind("<Configure>", lambda _e: self._on_resize())
+        self.canvas.bind("<MouseWheel>", self._on_wheel)
+        self.canvas.bind("<ButtonPress-1>", self._on_press)
+        self.canvas.bind("<B1-Motion>", self._on_drag)
+        self.canvas.bind("<ButtonRelease-1>", lambda _e: setattr(self, "_drag", None))
+        self.canvas.bind("<Double-Button-1>", lambda e: self.zoom_at(2.0, e.x, e.y))
+        self.canvas.tag_bind("other", "<Enter>", self._on_pin_enter)
+        self.canvas.tag_bind("other", "<Leave>", lambda _e: self.canvas.delete("bubble"))
 
     def has_map(self, map_id: str) -> bool:
         return map_id in self.zones
 
-    def show(self, place: Place, others: Iterable[Place] = ()) -> None:
-        self._ensure_window()
+    def activate(self) -> None:
+        """Tab opened: show a zone (the last linked one, else Келькмарос) and fresh pins."""
+        if self.zone is None:
+            recent = [p.map_id for p in self.get_places() if p.map_id in self.zones]
+            default = recent[-1] if recent else ("220070000" if "220070000" in self.zones else next(iter(self.zones), None))
+            if default is not None:
+                self.open_zone(default)
+        else:
+            self._refresh_pins()
+            self.render()
+
+    def open_zone(self, map_id: str) -> None:
+        """Browse a zone: the whole map, pins of the chat's places, no selected place."""
+        zone = self.zones.get(map_id)
+        if zone is None:
+            return
+        self.place = None
+        self._set_zone(zone)
+        self.title.configure(text="")
+        self._refresh_pins()
+        self.update_idletasks()
+        self._fit()
+
+    def show(self, place: Place, others: Iterable[Place] | None = None) -> None:
         zone = self.zones.get(place.map_id)
         self.place = place
-        self.others = [p for p in others if p.map_id == place.map_id and p != place]
         if zone is None:
-            self._set_zone(None)
             self.title.configure(text=f"{place.label}  ·  карты этой зоны нет")
             return
         if zone is not self.zone:
             self._set_zone(zone)
+        self._refresh_pins(others)
         self.title.configure(text=place.label)
-        self.window.deiconify()
-        self.window.lift()
-        self.window.update_idletasks()
+        self.update_idletasks()
         if self.zoom < self._fit_zoom() * 2:
             self.zoom = min(MAX_ZOOM, self._fit_zoom() * 2)
         self.center_on(*zone.to_image(place.x, place.y))
@@ -148,58 +201,19 @@ class MapWindow:
         self._clamp()
         self._schedule_render()
 
-    def close(self) -> None:
-        if self.window is not None:
-            self.window.destroy()
-        self.window = None
-        self.zone = None
-        self._image = self._photo = None
+    def _refresh_pins(self, others: Iterable[Place] | None = None) -> None:
+        places = self.get_places() if others is None else others
+        map_id = self.zone.map_id if self.zone is not None else None
+        self.others = [p for p in places if p.map_id == map_id and p != self.place]
 
-    # --- window ----------------------------------------------------------------------
-    def _ensure_window(self) -> None:
-        if self.window is not None and self.window.winfo_exists():
-            return
-        win = tk.Toplevel(self.root, background=theme.BG)
-        win.title("Карта")
-        win.geometry("980x980")
-        win.minsize(420, 420)
-        win.protocol("WM_DELETE_WINDOW", self.close)
-        theme.dark_title_bar(win)
-        bar = ttk.Frame(win, padding=(12, 8))
-        bar.pack(fill="x")
-        self.title = ttk.Label(bar, text="", style="Title.TLabel")
-        self.title.pack(side="left")
-        for text, command in (
-            ("⌂", self._fit),
-            ("−", lambda: self._zoom_center(1 / ZOOM_STEP)),
-            ("+", lambda: self._zoom_center(ZOOM_STEP)),
-            ("◎", self._back_to_place),
-        ):
-            ttk.Button(bar, text=text, width=3, command=command).pack(side="right", padx=(6, 0))
-        self.hint = ttk.Label(bar, text="колесо — масштаб, перетаскивание — сдвиг", style="Muted.TLabel")
-        self.hint.pack(side="right", padx=12)
-        self.canvas = tk.Canvas(win, background=theme.BG, highlightthickness=0, borderwidth=0, cursor="fleur")
-        self.canvas.pack(fill="both", expand=True)
-        self.canvas.bind("<Configure>", lambda _e: self._on_resize())
-        self.canvas.bind("<MouseWheel>", self._on_wheel)
-        self.canvas.bind("<ButtonPress-1>", self._on_press)
-        self.canvas.bind("<B1-Motion>", self._on_drag)
-        self.canvas.bind("<ButtonRelease-1>", lambda _e: setattr(self, "_drag", None))
-        self.canvas.bind("<Double-Button-1>", lambda e: self.zoom_at(2.0, e.x, e.y))
-        self.canvas.tag_bind("other", "<Enter>", self._on_pin_enter)
-        self.canvas.tag_bind("other", "<Leave>", lambda _e: self.canvas.delete("bubble"))
-        self.window = win
-
-    def _set_zone(self, zone: Zone | None) -> None:
+    def _set_zone(self, zone: Zone) -> None:
         from PIL import Image
 
         self.zone = zone
-        self._image = None
-        if zone is not None:
-            with Image.open(zone.path) as image:
-                self._image = image.convert("RGB")
-            self.window.title(f"Карта · {zone.name}")
-            self.zoom = self._fit_zoom()
+        with Image.open(zone.path) as image:
+            self._image = image.convert("RGB")
+        self.zone_var.set(zone.name)
+        self.zoom = self._fit_zoom()
         self.canvas.delete("all")
 
     # --- geometry ----------------------------------------------------------------------
@@ -228,14 +242,14 @@ class MapWindow:
 
     # --- drawing -------------------------------------------------------------------------
     def _schedule_render(self) -> None:
-        if self._render_after is None and self.window is not None:
-            self._render_after = self.window.after_idle(self.render)
+        if self._render_after is None:
+            self._render_after = self.after_idle(self.render)
 
     def render(self) -> None:
         from PIL import Image, ImageTk
 
         self._render_after = None
-        if self.window is None or self.zone is None or self._image is None:
+        if self.zone is None or self._image is None:
             return
         width, height = self._canvas_size()
         # visible part of the map, cropped and scaled to the canvas
@@ -266,7 +280,12 @@ class MapWindow:
                                font=(theme.FONT_FAMILY, theme.FONT_SIZE, "bold"), tags="pin")
 
     def _draw_labels(self, width: int, height: int) -> None:
-        """Area names, like the game map: white text with a dark outline; size follows the zoom."""
+        """Area names, like the game map: white text with a dark outline; size follows the zoom.
+
+        Hidden while the whole zone is small on screen — they would cover each other.
+        """
+        if self.zoom * self.zone.size < LABELS_MIN_WIDTH:
+            return
         size = max(8, min(15, round(5 + 4 * self.zoom)))
         font = (theme.FONT_FAMILY, size, "bold")
         for image_x, image_y, text in self.zone.labels:

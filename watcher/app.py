@@ -17,7 +17,7 @@ from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
 from watcher.itemlist import ItemFilter, ItemList
 from watcher.notifier import Notifier, system_sounds
-from watcher.mapview import MapWindow, Place, load_zones
+from watcher.mapview import MapView, Place, load_zones
 from watcher.parser import MAP_NAMES, ChatMessage, display_text, parse_line, places_in
 from watcher.series import SeriesTracker
 from watcher.specs import load_specs
@@ -93,7 +93,6 @@ class App:
         self._apply_search_mode_state()
         self.tooltip = SpecTooltip(root)
         self.alarm = NagAlarm(root, self.notifier, on_ack=self._on_popup_ack)
-        self.map_window = MapWindow(root, self.zones)
         self._set_status("Остановлен")
         self._update_counters()
         self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
@@ -270,6 +269,9 @@ class App:
         )
         self.all_chat.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.all_chat, text="Весь чат")
+        self.map_view = MapView(self.tabs, self.zones, get_places=lambda: list(self.places))
+        self.map_view.configure(padding=(0, 12, 0, 0))
+        self.tabs.add(self.map_view, text="Карта")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
         root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")
@@ -355,6 +357,8 @@ class App:
         else:
             self.all_chat.toolbar.place_forget()
             self.all_chat.deactivate()
+        if self.tabs.select() == str(self.map_view):
+            self.map_view.activate()
 
     # --- alerts --------------------------------------------------------------------
     def _on_feed_accept(self, alert_id: int) -> None:
@@ -684,7 +688,8 @@ class App:
     def _open_place(self, map_id: str, x: float, y: float, label: str) -> None:
         """Click on a place link: the zone map centred on it, with the other places from the chat."""
         self._hide_tooltip()
-        self.map_window.show(Place(map_id, x, y, label), self.places)
+        self.tabs.select(self.map_view)
+        self.map_view.show(Place(map_id, x, y, label))
 
     def _process(self, lines: list[str]) -> None:
         now = time.monotonic()
