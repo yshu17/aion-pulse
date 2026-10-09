@@ -173,3 +173,25 @@ def test_point_card_and_nearby(root):
     view._on_press(SimpleNamespace(x=int(sx), y=int(sy)))
     view._on_release(SimpleNamespace(x=int(sx), y=int(sy)))
     assert view.selected == members[0]
+
+
+def test_dense_layers_merge_when_zoomed_out_and_split_when_zoomed_in(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
+    view.pack(fill="both", expand=True)
+    root.geometry("1400x900")
+    root.update()
+    view.open_zone("220070000")
+    view.panel.apply_preset("Сбор")
+    view.render()
+    assert any(len({m.type for m in ms}) > 1 for _x, _y, ms in view._drawn)  # kinds merged
+    zoomed_out = len(view._drawn)
+    view.zoom = 1.5
+    view.center_on(1500, 1500)
+    assert all(len({m.type for m in ms}) == 1 for _x, _y, ms in view._drawn)  # one kind per marker
+    assert zoomed_out < 400  # readable at full-map scale
+    view.panel.apply_preset("Задания")
+    view.render()
+    assert {m.type for _x, _y, ms in view._drawn for m in ms} <= {"quest_point", "teleport"}
