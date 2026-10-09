@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>План карты</title>
+<style>
+:root{--bg:#141519;--surface:#1c1e24;--surface2:#262931;--border:#363a45;--text:#e9e7e4;--muted:#8c919c;--accent:#ff8c1a;--ok:#5fd38d;--warn:#e5484d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 "Segoe UI",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:32px 0 12px}
+.sub{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.grid{display:grid;grid-template-columns:240px minmax(0,1fr) 230px;gap:12px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.chip{display:inline-block;padding:3px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;margin:0 4px 6px 0;font-size:13px;user-select:none}
+.chip.on{background:#3a2a12;border-color:var(--accent);color:var(--accent)}
+.layer{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer;font-size:14px}
+.layer .n{margin-left:auto;color:var(--muted);font-size:12px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.grp{color:var(--muted);font-size:12px;text-transform:none;margin:10px 0 2px}
+input[type=search]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font:inherit}
+svg text{font:12px "Segoe UI",sans-serif}
+.steps .step{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:flex-start}
+.steps .step:last-child{border-bottom:0}
+.steps input{width:20px;height:20px;accent-color:var(--accent);margin-top:2px;flex:none}
+.step.done .t{color:var(--muted);text-decoration:line-through}
+.bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.tag{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top}td:first-child{color:var(--muted);width:30%}
+.risk{border-left:3px solid var(--warn);padding:6px 12px;margin:8px 0;background:var(--surface)}
+.near div{padding:4px 0;font-size:14px}.near span{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Карта зон: точки интереса и фильтры</h1>
+  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план от 09.10.2026 · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
+
+  <h2>Попробуй макет</h2>
+  <div class="sub" style="margin-bottom:10px">Кликай по слоям и наборам, ищи по названию, выбирай точку на карте — справа появится «Рядом». Это макет, данные вымышленные.</div>
+  <div class="grid">
+    <div class="card">
+      <input type="search" id="q" placeholder="Найти: привратник, Ромбус…">
+      <div style="margin-top:10px" id="presets"></div>
+      <div id="layers"></div>
+    </div>
+    <div class="card" style="padding:6px">
+      <svg id="map" viewBox="0 0 600 460" width="100%" style="display:block;background:#2b2f26;border-radius:8px"></svg>
+    </div>
+    <div class="card near" id="card"><div class="grp" style="margin-top:0">Выбранная точка</div><div class="sub">Кликни по значку на карте</div></div>
+  </div>
+
+  <h2>Порядок работ</h2>
+  <div class="card">
+    <div><b id="pct">0%</b> <span class="tag">готово — отмечай шаги, состояние сохраняется в этом браузере</span></div>
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="steps" id="steps"></div>
+  </div>
+
+  <h2>Решения</h2>
+  <div class="card"><table>
+    <tr><td>Источник данных</td><td>aiondb.ru (Aion Classic), один раз собрать через Chrome — сайт закрыт от скриптов</td></tr>
+    <tr><td>Иконки</td><td>Игровые иконки карты, как на сайте (это иконки самой игры) + цвет на каждый тип</td></tr>
+    <tr><td>Слои</td><td>Функциональные NPC (10) · ориентиры · сбор (11) · задания (4, фильтр уровня) · места из чата</td></tr>
+    <tr><td>Улучшения</td><td>Поиск по карте · «Рядом» с расстоянием · группировка точек · наборы фильтров и запоминание</td></tr>
+    <tr><td>Зоны</td><td>Келькмарос, Ингисон, Тоннель Силентера, Пандемониум*, Исхальген, Альтгард, Морхейм, Брустхонин, Белуслан</td></tr>
+    <tr><td>Файлы</td><td><code>tools/fetch_poi.py</code> → <code>data/maps/poi.json</code> + <code>data/maps/icons/</code> · <code>watcher/poi.py</code> (данные, тесты) · <code>watcher/mapview.py</code> (рисование)</td></tr>
+  </table></div>
+
+  <h2>Риски</h2>
+  <div class="risk">aiondb — версия Classic 5.5: отдельных NPC может не быть на сервере 2.0. Любой тип скрывается фильтром, лишнюю точку можно убрать из данных.</div>
+  <div class="risk">* Пандемониум у aiondb из другой версии города — проверю отдельно; если точки лягут мимо, его слои будут выключены.</div>
+  <div class="risk">Сбор — тысячи точек: нужна группировка и, возможно, только уровни 45+.</div>
+</div>
+
+<script>
+const TYPES = {
+  fortress:{g:"Ориентиры",n:"Крепости",c:"#BA7517",s:"sq"}, artifact:{g:"Ориентиры",n:"Артефакты",c:"#EF9F27",s:"dia"},
+  indun:{g:"Ориентиры",n:"Входы в данжи",c:"#D85A30",s:"tri"},
+  teleport:{g:"Функциональные NPC",n:"Привратник",c:"#7F77DD"}, bindstone:{g:"Функциональные NPC",n:"Кибелиск",c:"#1D9E75"},
+  warehouse:{g:"Функциональные NPC",n:"Заведующий складом",c:"#378ADD"}, merchant:{g:"Функциональные NPC",n:"Торговец",c:"#D4537E"},
+  stigma:{g:"Функциональные NPC",n:"Мастер стигм",c:"#9b8cff"}, postbox:{g:"Функциональные NPC",n:"Почтовый ящик",c:"#888780"},
+  herb:{g:"Сбор",n:"Травы",c:"#639922"}, aether:{g:"Сбор",n:"Эфир",c:"#5DCAA5"},
+  quest:{g:"Задания",n:"Задания",c:"#FAC775"}, chat:{g:"Из чата",n:"Места из чата",c:"#4fd1c5"}
+};
+const PRESETS = {"Город":["teleport","bindstone","warehouse","merchant","stigma","postbox"],"ПвП":["fortress","artifact","teleport","bindstone","chat"],"Сбор":["herb","aether","bindstone"],"Задания":["quest","teleport"]};
+const P = [
+  ["fortress",470,150,"Крепость Келькмарос"],["artifact",380,120,"Артефакт Вагабатама"],["artifact",520,260,"Артефакт Антагора"],
+  ["indun",300,400,"Вход: Храм Пхасумандир"],["indun",120,380,"Вход: Подземный город"],
+  ["teleport",150,90,"Привратник Рандрис"],["teleport",470,175,"Привратник крепости"],["teleport",280,250,"Привратник Мартинес"],
+  ["bindstone",165,110,"Кибелиск Митраканда"],["bindstone",300,262,"Кибелиск лагеря"],["warehouse",135,120,"Склад Митраканда"],
+  ["merchant",125,95,"Торговец Хольта"],["merchant",290,240,"Торговец лагеря"],["stigma",175,80,"Мастер стигм"],["postbox",160,130,"Почта"],
+  ["herb",400,330],["herb",410,345],["herb",392,350],["herb",420,320],["herb",380,340],["aether",230,170],["aether",245,160],["aether",220,180],
+  ["quest",140,140,"Задание: Уничтожение повстанцев"],["quest",285,230,"Задание: Разведка Мараяса"],
+  ["chat",265,280,"Место · Leader: «ммк 2/12»"],["chat",360,200,"Место · Hiro: «го клык»"]
+].map(([t,x,y,name],i)=>({id:i,t,x,y,name:name||TYPES[t].n}));
+const svg=document.getElementById("map"), NS="http://www.w3.org/2000/svg";
+let on=new Set(["fortress","artifact","indun","teleport","bindstone","warehouse","chat"]), sel=null, q="";
+function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e}
+function drawBase(){
+  el("path",{d:"M30 300 Q150 210 280 250 T590 140",fill:"none",stroke:"#c8b88a","stroke-width":5,opacity:.55});
+  el("path",{d:"M120 40 Q200 150 280 250 Q330 360 310 450",fill:"none",stroke:"#c8b88a","stroke-width":5,opacity:.55});
+  [["Митраканд",95,60],["Поле битвы Вагабатам",300,210],["Крепость Келькмарос",420,130],["Клык земли",230,430]].forEach(([t,x,y])=>{
+    el("text",{x,y,fill:"#0d0e11",stroke:"#0d0e11","stroke-width":3}).textContent=t; el("text",{x,y,fill:"#f2e6c9"}).textContent=t;});
+}
+function shape(p,g){
+  const T=TYPES[p.t], r=p.id===sel?10:7, a={fill:T.c,stroke:p.id===sel?"#fff":"#0d0e11","stroke-width":p.id===sel?3:1.5,style:"cursor:pointer"};
+  if(T.s==="sq") return el("rect",{...a,x:p.x-r,y:p.y-r,width:2*r,height:2*r,rx:3},g);
+  if(T.s==="tri") return el("path",{...a,d:`M${p.x} ${p.y-r-2} L${p.x+r+1} ${p.y+r} L${p.x-r-1} ${p.y+r} Z`},g);
+  if(T.s==="dia") return el("path",{...a,d:`M${p.x} ${p.y-r-1} L${p.x+r+1} ${p.y} L${p.x} ${p.y+r+1} L${p.x-r-1} ${p.y} Z`},g);
+  return el("circle",{...a,cx:p.x,cy:p.y,r},g);
+}
+function visible(){return P.filter(p=>on.has(p.t)&&(!q||p.name.toLowerCase().replace(/ё/g,"е").includes(q)))}
+function render(){
+  svg.innerHTML="";drawBase();const g=el("g",{});
+  const vis=visible(), used=new Set();
+  vis.forEach(p=>{ if(used.has(p.id))return;
+    const near=vis.filter(o=>!used.has(o.id)&&o.t===p.t&&Math.hypot(o.x-p.x,o.y-p.y)<28);
+    if(near.length>2){near.forEach(o=>used.add(o.id));const cx=near.reduce((s,o)=>s+o.x,0)/near.length,cy=near.reduce((s,o)=>s+o.y,0)/near.length;
+      el("circle",{cx,cy,r:13,fill:TYPES[p.t].c,stroke:"#0d0e11","stroke-width":2},g);const t=el("text",{x:cx,y:cy+4,"text-anchor":"middle",fill:"#0d0e11","font-weight":"600"},g);t.textContent=near.length;return;}
+    used.add(p.id);const s=shape(p,g);s.addEventListener("click",()=>{sel=p.id;render();card(p)});
+    const tt=el("title",{},s);tt.textContent=p.name;});
+  if(q&&vis[0]&&sel===null){sel=vis[0].id;card(vis[0]);render();}
+  layers();
+}
+function card(p){
+  const T=TYPES[p.t], near=["teleport","bindstone","warehouse","indun"].map(t=>{
+    const c=P.filter(o=>o.t===t&&o.id!==p.id).map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y)*5.12]).sort((a,b)=>a[1]-b[1])[0];return c;}).filter(Boolean);
+  document.getElementById("card").innerHTML=`<div class="grp" style="margin-top:0">${T.n}</div><div style="font-weight:600;margin-bottom:8px">${p.name}</div><div class="grp">Рядом</div>`+
+    near.map(([o,d])=>`<div><span class="dot" style="display:inline-block;background:${TYPES[o.t].c};vertical-align:-1px"></span> ${o.name}<br><span>${d<1000?Math.round(d)+" м":(d/1000).toFixed(1)+" км"}</span></div>`).join("");
+}
+function layers(){
+  const box=document.getElementById("layers");box.innerHTML="";let grp="";
+  for(const [k,T] of Object.entries(TYPES)){
+    if(T.g!==grp){grp=T.g;const h=document.createElement("div");h.className="grp";h.textContent=grp;box.appendChild(h);}
+    const row=document.createElement("div");row.className="layer";
+    row.innerHTML=`<input type="checkbox" ${on.has(k)?"checked":""}><span class="dot" style="background:${T.c}"></span>${T.n}<span class="n">${P.filter(p=>p.t===k).length}</span>`;
+    row.onclick=e=>{on.has(k)?on.delete(k):on.add(k);sel=null;render();};box.appendChild(row);}
+}
+const pr=document.getElementById("presets");
+for(const [n,ts] of Object.entries(PRESETS)){const c=document.createElement("span");c.className="chip";c.textContent=n;
+  c.onclick=()=>{on=new Set(ts);sel=null;[...pr.children].forEach(x=>x.classList.toggle("on",x===c));render();};pr.appendChild(c);}
+document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase().replace(/ё/g,"е");sel=null;render();});
+
+const STEPS=[
+ ["Сбор данных: ориентиры и функциональные NPC","9 зон с aiondb через Chrome → poi.json + иконки; проверка, что точки на зданиях и дорогах"],
+ ["Модуль данных poi.py","загрузка, фильтр, поиск, «ближайшее» с расстоянием, группировка — с тестами"],
+ ["Панель фильтров и значки на карте","слои с галочками и счётчиками, наборы «Город / ПвП / Сбор / Задания», запоминание в config.json"],
+ ["Карточка точки и «Рядом»","клик по точке; для «Места» из чата — ближайший привратник, кибелиск, склад, вход в данж"],
+ ["Сбор ресурсов и задания","добрать данные, слои, фильтр уровня заданий, группировка плотных слоёв"],
+ ["Поиск, полировка, сборка","поиск по карте, вид значков, README, пересборка exe"]];
+let done=[];try{done=JSON.parse(localStorage.getItem("mapPlanSteps")||"[]")}catch(e){}
+function steps(){const box=document.getElementById("steps");box.innerHTML="";
+  STEPS.forEach(([t,d],i)=>{const r=document.createElement("label");r.className="step"+(done.includes(i)?" done":"");
+    r.innerHTML=`<input type="checkbox" ${done.includes(i)?"checked":""}><div><div class="t"><b>${i+1}.</b> ${t}</div><div class="tag">${d}</div></div>`;
+    r.querySelector("input").onchange=e=>{done=e.target.checked?[...done,i]:done.filter(x=>x!==i);try{localStorage.setItem("mapPlanSteps",JSON.stringify(done))}catch(_){};steps();};box.appendChild(r);});
+  const p=Math.round(done.length/STEPS.length*100);document.getElementById("pct").textContent=p+"%";document.getElementById("barfill").style.width=p+"%";}
+steps();render();
+</script>
+</body>
+</html>
