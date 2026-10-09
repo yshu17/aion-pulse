@@ -137,3 +137,39 @@ def test_layers_draw_points_and_presets(root, tmp_path):
     view.render()
     assert not view.canvas.find_withtag("poi")
     assert view.panel.count_labels["teleport"].cget("text") == "2"  # Kelkmaros has 2 teleporters in the client
+
+
+def test_point_card_and_nearby(root):
+    from types import SimpleNamespace
+
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
+    view.pack(fill="both", expand=True)
+    root.geometry("1400x900")
+    root.update()
+    # a chat place inside the Kelkmaros fortress: the card lists the nearest useful points
+    view.show(Place("220070000", 1830, 2850, "Место · Келькмарос", "12:00 Leader: сбор у склада"))
+    root.update()
+    assert view.point_card.title.cget("text") == "Место · Келькмарос"
+    assert "сбор у склада" in view.point_card.note.cget("text")
+    types = [t for t, _name, _m in view.point_card.rows]
+    assert types[:2] == ["teleport", "warehouse"]
+    assert all(m < 600 for t, _n, m in view.point_card.rows if t in ("warehouse", "merchant"))
+    # clicking a «Рядом» row selects that point and rings it
+    view.point_card.near.winfo_children()[1].event_generate("<Button-1>")
+    root.update()
+    assert view.selected is not None and view.selected.type == "warehouse"
+    view.render()
+    assert view.canvas.find_withtag("selected")
+    # a click (no drag) on a single drawn point opens its card
+    view.open_zone("220070000")
+    root.update()
+    teleport = store.in_zone("220070000", {"teleport"})[0]
+    view.zoom = 3.0
+    view.center_on(teleport.x, teleport.y)
+    sx, sy, members = next(d for d in view._drawn if d[2] == [teleport])
+    view._on_press(SimpleNamespace(x=int(sx), y=int(sy)))
+    view._on_release(SimpleNamespace(x=int(sx), y=int(sy)))
+    assert view.selected == members[0]

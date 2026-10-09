@@ -10,6 +10,7 @@ stitched from the local Aion client maps in data/maps/client:
 """
 
 import json
+import math
 import tkinter as tk
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
+from watcher.mapcard import NEARBY_TYPES, PointCard
 from watcher.maplayers import LayerPanel, default_layers, load_icon
 from watcher.poi import Poi, PoiStore, cluster
 
@@ -155,6 +157,9 @@ class MapView(ttk.Frame):
         if self.poi.types:
             self.panel.pack(side="left", fill="y", padx=(0, 10))
         self.layers: set[str] = set(self.panel.layers)
+        self.selected: Poi | None = None
+        self.point_card = PointCard(body, get_icon=lambda t: self._poi_icon(t, 20))
+        self.point_card.pack(side="right", fill="y", padx=(10, 0))
         card = ttk.Frame(body, style="Card.TFrame", padding=6)
         card.pack(side="left", fill="both", expand=True)
         self.canvas = tk.Canvas(card, background=theme.SURFACE, highlightthickness=0, borderwidth=0, cursor="fleur")
@@ -163,7 +168,7 @@ class MapView(ttk.Frame):
         self.canvas.bind("<MouseWheel>", self._on_wheel)
         self.canvas.bind("<ButtonPress-1>", self._on_press)
         self.canvas.bind("<B1-Motion>", self._on_drag)
-        self.canvas.bind("<ButtonRelease-1>", lambda _e: setattr(self, "_drag", None))
+        self.canvas.bind("<ButtonRelease-1>", self._on_release)
         self.canvas.bind("<Double-Button-1>", lambda e: self.zoom_at(2.0, e.x, e.y))
         self.canvas.tag_bind("other", "<Enter>", self._on_pin_enter)
         self.canvas.tag_bind("other", "<Leave>", lambda _e: self.canvas.delete("bubble"))
@@ -190,6 +195,8 @@ class MapView(ttk.Frame):
         if zone is None:
             return
         self.place = None
+        self.selected = None
+        self.point_card.clear()
         self._set_zone(zone)
         self.title.configure(text="")
         self._refresh_pins()
@@ -206,6 +213,10 @@ class MapView(ttk.Frame):
             self._set_zone(zone)
         self._refresh_pins(others)
         self.title.configure(text=place.label)
+        self.selected = None
+        self.point_card.show(
+            "Место из чата", place.label, place.x, place.y, place.note, self.nearby(zone.map_id, place.x, place.y)
+        )
         self.update_idletasks()
         if self.zoom < self._fit_zoom() * 2:
             self.zoom = min(MAX_ZOOM, self._fit_zoom() * 2)
@@ -298,6 +309,9 @@ class MapView(ttk.Frame):
         canvas.create_image(0, 0, image=self._photo, anchor="nw")
         self._draw_labels(width, height)
         self._draw_poi(width, height)
+        if self.selected is not None and self.selected.zone == self.zone.map_id:
+            sx, sy = self.to_screen(self.selected.x, self.selected.y)
+            canvas.create_oval(sx - 17, sy - 17, sx + 17, sy + 17, outline=PIN, width=3, tags="selected")
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
             canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline="#0b2b28", width=2,
@@ -325,6 +339,56 @@ class MapView(ttk.Frame):
                     self.canvas.create_text(sx + dx, sy + dy, text=text, fill="#0d0e11", font=font,
                                             justify="center", tags="label")
                 self.canvas.create_text(sx, sy, text=text, fill="#f2e6c9", font=font, justify="center", tags="label")
+
+    # --- selection and «Рядом» ------------------------------------------------------------
+    def nearby(self, zone: str, gx: float, gy: float, exclude: Poi | None = None):
+        """Closest teleporter, warehouse, merchant, … around a game position, for the card."""
+        out = []
+        for type_ in NEARBY_TYPES:
+            candidates = [p for p in self.poi.in_zone(zone, {type_}) if p != exclude]
+            if not candidates:
+                continue
+            best = min(candidates, key=lambda p: math.hypot(p.gx - gx, p.gy - gy))
+            metres = math.hypot(best.gx - gx, best.gy - gy)
+            out.append((type_, self.poi.type_name(type_), best.name, metres, lambda p=best: self.select(p, centre=True)))
+        return out
+
+    def select(self, poi: Poi, centre: bool = False) -> None:
+        """Show a point in the card (and ring it on the map)."""
+        self.selected = poi
+        kind = self.poi.type_name(poi.type)
+        self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, "", self.nearby(poi.zone, poi.gx, poi.gy, poi))
+        if centre:
+            self.center_on(poi.x, poi.y)
+        else:
+            self._schedule_render()
+
+    def _on_release(self, event: tk.Event) -> None:
+        start = self._drag
+        self._drag = None
+        if start is not None and abs(event.x - start[0]) < 4 and abs(event.y - start[1]) < 4:
+            self._on_click(event)
+
+    def _on_click(self, event: tk.Event) -> None:
+        """A click (not a drag): a single point opens its card, a cluster zooms in on itself."""
+        hits = self.canvas.find_overlapping(event.x - 2, event.y - 2, event.x + 2, event.y + 2)
+        for item in reversed(hits):
+            tags = self.canvas.gettags(item)
+            index = next((int(t[4:]) for t in tags if t.startswith("poi_")), None)
+            if index is not None and index < len(self._drawn):
+                _sx, _sy, members = self._drawn[index]
+                if len(members) == 1:
+                    self.select(members[0])
+                else:
+                    self.zoom_at(2.0, event.x, event.y)
+                return
+            other = next((int(t[6:]) for t in tags if t.startswith("other_")), None)
+            if other is not None and other < len(self.others) and self.zone is not None:
+                place = self.others[other]
+                self.selected = None
+                self.point_card.show("Место из чата", place.label, place.x, place.y, place.note,
+                                     self.nearby(self.zone.map_id, place.x, place.y))
+                return
 
     def _on_layers(self, layers: set[str]) -> None:
         self.layers = layers
