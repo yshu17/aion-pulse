@@ -160,7 +160,7 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
         "кв [quest:2058] лег [where:sweet bunny] [recipe:155007142;0] [item_ex:186000163;Tw] го? ??"
     )
     assert clean_text(text, names) == (
-        "✦ Форт ⟪Место · Гелькмарос⟫ ⟪Место⟫ кв ⟪Задание 2058⟫ лег ⟪sweet bunny⟫ "
+        "✦ Форт ⟪Место · Келькмарос⟫ ⟪Место⟫ кв ⟪Задание 2058⟫ лег ⟪sweet bunny⟫ "
         "[Рецепт: клик] [Монета] го? ??"
     )
 
@@ -169,4 +169,4 @@ def test_pos_link_at_line_start_is_not_a_channel():
     from watcher.parser import parse_any_line
 
     line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут")
-    assert line.channel is None and line.text == "⟪Место · Гелькмарос⟫ тут"
+    assert line.channel is None and line.text == "⟪Место · Келькмарос⟫ тут"

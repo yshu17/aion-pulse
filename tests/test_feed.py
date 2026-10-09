@@ -126,9 +126,9 @@ def test_item_links_take_grade_colour(root):
 
 def test_place_links_and_smileys_are_styled(root):
     feed = make(root)
-    feed.add(msg("S", "✦ Форт ⟪Место · Гелькмарос⟫ го"), [])
+    feed.add(msg("S", "✦ Форт ⟪Место · Келькмарос⟫ го"), [])
     text = feed.text
     start, end = text.tag_ranges("place")
-    assert text.get(start, end) == "<Место · Гелькмарос>"
+    assert text.get(start, end) == "<Место · Келькмарос>"
     start, end = text.tag_ranges("emote")
     assert text.get(start, end) == "✦"

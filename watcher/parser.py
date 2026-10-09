@@ -21,24 +21,16 @@ _EMOTES_RE = re.compile(r"\?{3,}")  # the client writes each chat smiley as «?�
 # Links that are not items are wrapped in these marks; the chat views draw them as <…> links.
 LINK_OPEN, LINK_CLOSE = "⟪", "⟫"
 EMOTE = "✦"  # stands for a run of smileys
-MAP_NAMES = {
-    "110010000": "Санктум",
-    "120010000": "Пандемониум",
-    "210010000": "Пойета",
-    "210020000": "Эльтнен",
-    "210030000": "Верторон",
-    "210040000": "Хейрон",
-    "210050000": "Ингисон",
-    "210060000": "Теобомос",
-    "220010000": "Исхальген",
-    "220020000": "Морхейм",
-    "220030000": "Альтгард",
-    "220040000": "Белуслан",
-    "220050000": "Брустхонин",
-    "220070000": "Гелькмарос",
-    "400010000": "Бездна",
-    "600010000": "Каньон Силентера",
-}
+
+
+def _load_map_names() -> dict[str, str]:
+    """Map id -> official Russian zone name (data/map_names.tsv, from aidb.ru)."""
+    from watcher.catalog import load_item_names, resource_root
+
+    return load_item_names(resource_root() / "data" / "map_names.tsv")  # same «id<TAB>name» format
+
+
+MAP_NAMES = _load_map_names()
 
 
 @dataclass(frozen=True)
@@ -76,7 +68,7 @@ def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     """Drop [cmd:...] markup and make links readable.
 
     Item / recipe links become [name] ([item] if unknown); place, quest and «where» links become
-    ⟪Место · Гелькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) become ✦.
+    ⟪Место · Келькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) become ✦.
     """
     names = names or {}
     text = _CMD_RE.sub("", text)
