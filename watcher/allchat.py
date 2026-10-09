@@ -9,7 +9,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.parser import ChatLine, parse_any_line
 from watcher.tailer import LogTailer
-from watcher.textview import ITEM_COLOR, BottomAnchor, ItemLinker
+from watcher.textview import ITEM_COLOR, BottomAnchor, CopyMenu, ItemLinker
 
 POLL_MS = 500
 RETRY_MS = 2000
@@ -121,6 +121,7 @@ class AllChatView(ttk.Frame):
         self._color_tags: dict[str, str] = {}
         self.linker = ItemLinker(self.text, *self._links)
         self.anchor = BottomAnchor(self.text)
+        self.copy = CopyMenu(self.text)
         self.text.bind("<Configure>", lambda _e: self.anchor.update())
 
     def _tag_for(self, color: str) -> str:

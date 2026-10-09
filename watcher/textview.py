@@ -11,6 +11,7 @@ from watcher.parser import EMOTE, LINK_CLOSE, LINK_OPEN
 ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
 # item link | place / quest / «where» link (see parser.clean_text) | smileys
 LINKS = re.compile(rf"\[([^\[\]]+)\]|{LINK_OPEN}([^{LINK_OPEN}{LINK_CLOSE}]+){LINK_CLOSE}|({EMOTE})")
+SELECT_BG = "#2f4a6d"  # mouse selection in the chat views
 PLACE_COLOR = "#4fd1c5"  # place links, like the game's teal «Место»
 HIGHLIGHT_NAMES = re.compile(r"рудр", re.IGNORECASE)  # item links worth spotting in the chat
 ITEM_COLOR = theme.ACCENT  # «рыжий», like epic item links in the game
@@ -131,3 +132,65 @@ class ItemLinker:
         self.text.configure(cursor="")
         if self.on_leave is not None:
             self.on_leave()
+
+
+class CopyMenu:
+    """Copy from a read-only chat Text: select with the mouse and Ctrl+C (any keyboard layout),
+    or right-click: «Копировать», «Копировать сообщение» (the whole line), «Выделить всё»."""
+
+    NOTE = "   ✓ уже принято"  # feed suffix, not part of the message
+
+    def __init__(self, text: tk.Text) -> None:
+        self.text = text
+        self._line = "end-1c"
+        self.menu = tk.Menu(
+            text, tearoff=False, background=theme.SURFACE_2, foreground=theme.TEXT,
+            activebackground=theme.ACCENT, activeforeground=theme.ACCENT_TEXT, borderwidth=0,
+            font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1),
+        )
+        self.menu.add_command(label="Копировать", command=self.copy_selection)
+        self.menu.add_command(label="Копировать сообщение", command=lambda: self.copy_line(self._line))
+        self.menu.add_separator()
+        self.menu.add_command(label="Выделить всё", command=self.select_all)
+        text.configure(exportselection=True, selectbackground=SELECT_BG, inactiveselectbackground=SELECT_BG)
+        text.tag_raise("sel")  # selection stays visible over coloured (alert, match) rows
+        text.bind("<Button-1>", lambda _e: text.focus_set(), add="+")
+        text.bind("<Button-3>", self._popup, add="+")
+        text.bind("<Control-KeyPress>", self._on_ctrl_key, add="+")
+
+    def selection(self) -> str:
+        try:
+            return self.text.get("sel.first", "sel.last")
+        except tk.TclError:
+            return ""
+
+    def copy_selection(self) -> str:
+        return self._to_clipboard(self.selection())
+
+    def copy_line(self, index: str) -> str:
+        line = self.text.get(f"{index} linestart", f"{index} lineend")
+        return self._to_clipboard(line.replace(self.NOTE, "").strip())
+
+    def select_all(self) -> None:
+        self.text.tag_add("sel", "1.0", "end-1c")
+
+    def _to_clipboard(self, value: str) -> str:
+        if value:
+            self.text.clipboard_clear()
+            self.text.clipboard_append(value)
+        return value
+
+    def _on_ctrl_key(self, event: tk.Event) -> str | None:
+        # keycode 67 is the C key whatever the layout (Ctrl+С on the Russian layout too)
+        if event.keycode == 67 or event.keysym.lower() == "c":
+            self.copy_selection()
+            return "break"
+        if event.keycode == 65 or event.keysym.lower() == "a":  # Ctrl+A / Ctrl+Ф
+            self.select_all()
+            return "break"
+        return None
+
+    def _popup(self, event: tk.Event) -> None:
+        self._line = self.text.index(f"@{event.x},{event.y}")
+        self.menu.entryconfigure("Копировать", state="normal" if self.selection() else "disabled")
+        self.menu.tk_popup(event.x_root, event.y_root)

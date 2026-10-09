@@ -11,7 +11,7 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.parser import ChatMessage
-from watcher.textview import BottomAnchor, ItemLinker
+from watcher.textview import BottomAnchor, CopyMenu, ItemLinker
 
 PENDING_BRIGHT = "#7a5410"
 PENDING_DIM = "#3a2a0c"
@@ -60,6 +60,7 @@ class MatchFeed(ttk.Frame):
         self.text.tag_configure("quiet_note", foreground="#7fd69b")
         self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades)
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
+        self.copy = CopyMenu(self.text)
         self.text.bind("<Configure>", lambda _e: self._relayout())
 
     # --- public -----------------------------------------------------------------------

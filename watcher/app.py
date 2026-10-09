@@ -215,9 +215,23 @@ class App:
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 16))
         self.search_tab = ttk.Frame(self.tabs, padding=(0, 12, 0, 0))
         self.tabs.add(self.search_tab, text="Поиск")
-        self._build_items_panel(self.search_tab)
-        column = ttk.Frame(self.search_tab)
-        column.pack(side="left", fill="both", expand=True)
+        # feed | item list, split by a draggable divider
+        self.split = tk.PanedWindow(
+            self.search_tab,
+            orient="horizontal",
+            sashwidth=12,
+            sashcursor="sb_h_double_arrow",
+            opaqueresize=True,
+            background=theme.BG,
+            borderwidth=0,
+        )
+        self.split.pack(fill="both", expand=True)
+        column = ttk.Frame(self.split)
+        self.split.add(column, stretch="always")
+        self._build_items_panel(self.split)
+        self.split.add(self.items_panel, stretch="never")
+        self.split.bind("<ButtonRelease-1>", lambda _e: self._on_split_moved(), add="+")
+        root.after_idle(self._init_split)
         self._build_counters(header)
         spec_items = {item.name: item.id for item in self.watch_items if item.id in self.specs}
         grades = {item.id: item.grade for item in self.watch_items}
@@ -374,7 +388,7 @@ class App:
     def _build_items_panel(self, parent: ttk.Frame) -> None:
         """Right-hand list: checkbox + icon + name for each watchable item, with a search box."""
         panel = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10, 4, 10))
-        panel.pack(side="right", fill="y", padx=(12, 0))
+        self.items_panel = panel
         head = ttk.Frame(panel, style="Surface.TFrame")
         head.pack(fill="x", padx=(0, 8), pady=(0, 10))
         self.items_title = ttk.Label(head, text="Что искать", style="Title.TLabel")
@@ -412,6 +426,30 @@ class App:
         self.cfg.filter_level_max = item_filter.level_max
         self.cfg.filter_type = item_filter.type
         save_config(self.config_path, self.cfg)
+
+    def _init_split(self) -> None:
+        """Both sides are at least as wide as the item list's natural width; restore the saved width."""
+        self.root.update_idletasks()
+        min_width = self.items_panel.winfo_reqwidth()
+        self.split.paneconfigure(self.items_panel, minsize=min_width)
+        self.split.paneconfigure(self.split.panes()[0], minsize=min_width)
+        self.root.minsize(2 * min_width + 12 + 32, 600)
+        if self.cfg.items_width:
+            self.set_items_width(self.cfg.items_width)
+
+    def set_items_width(self, width: int) -> None:
+        """Move the divider so the item list is `width` px wide (clamped by the minimum sizes)."""
+        self.root.update_idletasks()
+        total = self.split.winfo_width()
+        sash = self.split.cget("sashwidth")
+        self.split.sash_place(0, max(0, total - width - int(sash)), 0)
+        self.root.update_idletasks()
+
+    def _on_split_moved(self) -> None:
+        width = self.items_panel.winfo_width()
+        if width > 1 and width != self.cfg.items_width:
+            self.cfg.items_width = width
+            save_config(self.config_path, self.cfg)
 
     def _on_collapse(self, collapsed: list[str]) -> None:
         self.cfg.collapsed_groups = collapsed

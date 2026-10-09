@@ -761,3 +761,24 @@ def test_series_logic_only_in_nag_mode_and_reset_by_stop(tmp_path):
         assert ("beep",) in calls  # standard mode beeps as before
     finally:
         root.destroy()
+
+
+def test_divider_resizes_item_list_with_minimum_widths(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path, items_width=800)
+    try:
+        root.deiconify()
+        root.geometry("1800x900")
+        root.update()
+        app._init_split()
+        assert abs(app.items_panel.winfo_width() - 800) <= 2  # saved width restored
+        min_width = app.items_panel.winfo_reqwidth()
+        app.set_items_width(100)
+        assert app.items_panel.winfo_width() >= min_width - 2  # never narrower than its natural width
+        app.set_items_width(5000)
+        feed_width = app.split.panes()[0]
+        assert root.nametowidget(feed_width).winfo_width() >= min_width - 2  # nor the feed
+        app.set_items_width(700)
+        app._on_split_moved()
+        assert app.cfg.items_width == app.items_panel.winfo_width()
+    finally:
+        root.destroy()

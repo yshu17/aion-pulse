@@ -132,3 +132,29 @@ def test_place_links_and_smileys_are_styled(root):
     assert text.get(start, end) == "<Место · Келькмарос>"
     start, end = text.tag_ranges("emote")
     assert text.get(start, end) == "✦"
+
+
+def test_copy_selection_and_whole_message(root):
+    feed = make(root)
+    feed.add(msg("Seller", "wts ⟪Место · Келькмарос⟫ 5кк"), [])
+    feed.add(msg("Buyer", "wtb ммк"), [], quiet=True)
+    text = feed.text
+    line = text.search("Seller", "1.0")
+    text.tag_add("sel", line, f"{line}+6c")
+    assert feed.copy.copy_selection() == "Seller"
+    assert root.clipboard_get() == "Seller"
+    assert feed.copy.copy_line(line) == "18:43:17  Seller: wts <Место · Келькмарос> 5кк"
+    buyer = text.search("Buyer", "1.0")
+    assert feed.copy.copy_line(buyer) == "18:43:17  Buyer: wtb ммк"  # «уже принято» note dropped
+    feed.copy.select_all()
+    assert "Seller" in feed.copy.selection() and "Buyer" in feed.copy.selection()
+
+
+def test_ctrl_c_copies_on_any_layout(root):
+    feed = make(root)
+    feed.add(msg("Seller", "wts"), [])
+    text = feed.text
+    text.tag_add("sel", "2.0", "2.5")
+    event = type("E", (), {"keycode": 67, "keysym": "Cyrillic_es"})()
+    assert feed.copy._on_ctrl_key(event) == "break"
+    assert root.clipboard_get() == text.get("2.0", "2.5")
