@@ -156,3 +156,20 @@ def test_ctrl_c_copies_on_any_layout(root):
     event = type("E", (), {"keycode": 67, "keysym": "Cyrillic_es"})()
     assert feed.copy._on_ctrl_key(event) == "break"
     assert root.clipboard_get() == text.get("2.0", "2.5")
+
+
+def test_click_on_place_link_reports_coordinates(root):
+    opened = []
+    feed = make(root, on_place=lambda *args: opened.append(args))
+    feed.add(msg("S", "го ⟪Место · Келькмарос¦220070000 2010.1 1315.8⟫"), [])
+    text = feed.text
+    start, end = text.tag_ranges("place")
+    assert text.get(start, end) == "<Место · Келькмарос>"
+    root.deiconify()
+    root.update()
+    x, y, width, height = text.bbox(f"{start}+2c")
+    # Tk tags see the pointer through the «current» mark, which a motion event sets
+    text.event_generate("<Motion>", x=x + width // 2, y=y + height // 2)
+    text.event_generate("<Button-1>", x=x + width // 2, y=y + height // 2)
+    root.update()
+    assert opened == [("220070000", 2010.1, 1315.8, "Место · Келькмарос")]

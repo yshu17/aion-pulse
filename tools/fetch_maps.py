@@ -1,59 +1,64 @@
-"""Download zone maps from easyaionmaps.com (Leaflet tiles) and stitch them into one PNG per zone.
+"""Download zone maps from aioncodex.com and write data/maps/<code>.jpg + data/maps/maps.json.
 
-The map covers 48 x 48 Leaflet units; at zoom z a unit is 2**z px and tiles are 256 px,
-named {z}/{x}_{y}.png. Output: <out_dir>/<zone>.png (256-colour PNG).
-Dev tool (needs Pillow). Usage: python tools/fetch_maps.py <out_dir> [zoom] [zone ...]
+aioncodex shows each zone as a 4096 px Leaflet map (TMS tiles /zonemap/<code>/{z}/{x}/{y}.jpg) and
+places NPCs on it from their game coordinates. Fitting both for many NPCs gives, per zone,
+    map_x = a * game_y + b,    map_y = c * game_x + d      (in 4096 px units)
+— the image's horizontal axis is the game's y. The fitted values are in ZONES below.
+Dev tool. Usage: python tools/fetch_maps.py [zoom]   (zoom 3 = 2048 px, the default)
 """
 
-import concurrent.futures as cf
 import io
+import json
 import sys
-import urllib.error
 import urllib.request
 from pathlib import Path
 
-SITE = "https://easyaionmaps.com/assets/maps"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+ROOT = Path(__file__).resolve().parent.parent
+SITE = "https://aioncodex.com/zonemap"
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120", "Referer": "https://aioncodex.com/"}
+FULL = 4096
+# code, map id, (a, b, c, d) fitted from aioncodex NPC spawns (see module docstring)
 ZONES = [
-    "gelkmaros", "inggison", "silentera_canyon", "abyss_low", "abyss_top", "abyss_core",
-    "ishalgen", "altgard", "morheim", "brusthonin", "beluslan",
-    "poeta", "verteron", "eltnen", "theobomos", "heiron",
+    ("df4", "220070000", (1.3342, 0.0, 1.3342, 0.0)),  # Келькмарос
+    ("lf4", "210050000", (1.3342, 0.0, 1.3342, 0.0)),  # Ингисон
+    ("underpass", "600010000", (2.6598, 0.0, 2.6598, 0.0)),  # Тоннель Силентера
+    ("dc1", "120010000", (3.9767, -3261.0, 3.9765, -2783.5)),  # Пандемониум
+    ("df1", "220010000", (1.7809, -1335.7, 1.7809, 0.0)),  # Исхальген
+    ("df1a", "220030000", (1.4731, -95.0, 1.4724, -808.7)),  # Альтгард
+    ("df2", "220020000", (1.3342, 0.0, 1.3342, 0.0)),  # Морхейм
+    ("df2a", "220050000", (1.3342, 0.0, 1.3340, 0.0)),  # Брустхонин
+    ("df3", "220040000", (1.3342, 0.0, 1.3342, 0.0)),  # Белуслан
 ]
 
 
-def tile(zone: str, zoom: int, x: int, y: int):
+def stitch(code: str, zoom: int):
     from PIL import Image
 
-    url = f"{SITE}/{zone}/{zoom}/{x}_{y}.png"
-    try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=30) as r:
-            return x, y, Image.open(io.BytesIO(r.read())).convert("RGB")
-    except urllib.error.HTTPError:
-        return x, y, None
-
-
-def stitch(zone: str, zoom: int, out_dir: Path) -> Path:
-    from PIL import Image
-
-    count = 48 * 2**zoom // 256
-    image = Image.new("RGB", (count * 256, count * 256), (20, 21, 25))
-    jobs = [(zone, zoom, x, y) for x in range(count) for y in range(count)]
-    with cf.ThreadPoolExecutor(6) as pool:
-        for x, y, part in pool.map(lambda a: tile(*a), jobs):
-            if part is not None:
-                image.paste(part, (x * 256, y * 256))
-    path = out_dir / f"{zone}.png"
-    image.quantize(256, method=Image.Quantize.MEDIANCUT).save(path, optimize=True)
-    return path
+    count = 2**zoom
+    image = Image.new("RGB", (256 * count, 256 * count))
+    for x in range(count):
+        for y in range(count):
+            url = f"{SITE}/{code}/{zoom}/{x}/{y}.jpg"
+            with urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=30) as r:
+                tile = Image.open(io.BytesIO(r.read())).convert("RGB")
+            image.paste(tile, (x * 256, (count - 1 - y) * 256))  # TMS: y counts from the bottom
+    return image
 
 
 def main() -> int:
-    out_dir = Path(sys.argv[1])
-    out_dir.mkdir(parents=True, exist_ok=True)
-    zoom = int(sys.argv[2]) if len(sys.argv) > 2 else 5
-    for zone in sys.argv[3:] or ZONES:
-        path = stitch(zone, zoom, out_dir)
-        print(zone, path.stat().st_size // 1024, "KB", flush=True)
+    zoom = int(sys.argv[1]) if len(sys.argv) > 1 else 3
+    out = ROOT / "data" / "maps"
+    out.mkdir(parents=True, exist_ok=True)
+    index = {}
+    for code, map_id, (a, b, c, d) in ZONES:
+        image = stitch(code, zoom)
+        image.save(out / f"{code}.jpg", quality=85, optimize=True)
+        scale = image.size[0] / FULL
+        # pixel = coefficient * game + offset, already scaled to this image
+        index[map_id] = {"file": f"{code}.jpg", "size": image.size[0],
+                         "x": [a * scale, b * scale], "y": [c * scale, d * scale]}
+        print(code, map_id, (out / f"{code}.jpg").stat().st_size // 1024, "KB", flush=True)
+    (out / "maps.json").write_text(json.dumps(index, indent=1), encoding="utf-8")
     return 0
 
 

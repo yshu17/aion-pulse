@@ -75,13 +75,14 @@ class AllChatView(ttk.Frame):
         on_item_enter: Callable[[str], None] | None = None,
         on_item_leave: Callable[[], None] | None = None,
         grades: Mapping[str, str] | None = None,
+        on_place: Callable[[str, float, float, str], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.get_path = get_path
         self.get_minutes = get_minutes  # history period, shared with the search tab («История»)
         self.names = names
         self.on_settings = on_settings
-        self._links = (spec_items, on_item_enter, on_item_leave, grades)
+        self._links = (spec_items, on_item_enter, on_item_leave, grades, on_place)
         self.tailer: LogTailer | None = None
         self.paused = False
         self.active = False

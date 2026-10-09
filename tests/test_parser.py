@@ -159,8 +159,10 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
         "[cmd:x;y]??? Форт [pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Место;999 1 2 0 0] "
         "кв [quest:2058] лег [where:sweet bunny] [recipe:155007142;0] [item_ex:186000163;Tw] го? ??"
     )
-    assert clean_text(text, names) == (
-        "Форт ⟪Место · Келькмарос⟫ ⟪Место⟫ кв ⟪Задание: Уничтожение повстанцев Ривара⟫ лег ⟪sweet bunny⟫ "
+    from watcher.parser import display_text
+
+    assert display_text(clean_text(text, names)) == (
+        "Форт <Место · Келькмарос> <Место> кв <Задание: Уничтожение повстанцев Ривара> лег <sweet bunny> "
         "[Рецепт: клик] [Монета] го? ??"
     )
 
@@ -169,7 +171,7 @@ def test_pos_link_at_line_start_is_not_a_channel():
     from watcher.parser import parse_any_line
 
     line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут")
-    assert line.channel is None and line.text == "⟪Место · Келькмарос⟫ тут"
+    assert line.channel is None and line.text == "⟪Место · Келькмарос¦220070000 1 2⟫ тут"
 
 
 def test_message_cut_inside_a_link():
@@ -184,3 +186,13 @@ def test_unknown_quest_keeps_number():
     from watcher.parser import clean_text
 
     assert clean_text("кв [quest:99999999]") == "кв ⟪Задание 99999999⟫"
+
+
+def test_place_link_keeps_coordinates():
+    from watcher.parser import clean_text, split_place
+
+    text = clean_text("[pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Босс;0 210050000 978.8 1265.0 0.0 0]")
+    links = [part.split("⟫")[0] for part in text.split("⟪")[1:]]
+    assert split_place(links[0]) == ("Место · Келькмарос", ("220070000", 2010.1, 1315.8))
+    assert split_place(links[1]) == ("Босс · Ингисон", ("210050000", 978.8, 1265.0))
+    assert split_place("sweet bunny") == ("sweet bunny", None)

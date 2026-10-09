@@ -7,7 +7,7 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.matcher import highlight_segments
-from watcher.parser import ChatMessage
+from watcher.parser import ChatMessage, display_text
 
 BEEP_REPEAT_MS = 1500
 BLINK_MS = 500
@@ -178,7 +178,7 @@ class NagAlarm:
 
     def _add_row(self, msg: ChatMessage, hits: list[str]) -> None:
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
-        for chunk, is_hit in highlight_segments(msg.text, hits):
+        for chunk, is_hit in highlight_segments(display_text(msg.text), hits):
             parts += [chunk, ("hit",) if is_hit else ()]
         parts += ["\n", ()]
         self.text.configure(state="normal")

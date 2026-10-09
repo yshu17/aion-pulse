@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 
 from watcher import theme
 from watcher.matcher import highlight_segments, normalize
-from watcher.parser import LINK_CLOSE, LINK_OPEN
+from watcher.parser import LINK_CLOSE, LINK_OPEN, split_place
 
 ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
 # item link | place / quest / «where» link (see parser.clean_text)
@@ -59,8 +59,11 @@ class ItemLinker:
         on_enter: Callable[[str], None] | None = None,
         on_leave: Callable[[], None] | None = None,
         grades: Mapping[str, str] | None = None,
+        on_place: Callable[[str, float, float, str], None] | None = None,
     ) -> None:
         self.text = text
+        self.on_place = on_place  # click on a place link: (map id, game x, game y, label)
+        self._places = 0
         self.grades = grades or {}  # item id -> grade (epic, legend, …) for the link colour
         self.spec_items = dict(spec_items or {})  # item name -> id, for items with a tooltip
         self.on_enter = on_enter
@@ -81,7 +84,11 @@ class ItemLinker:
         for match in LINKS.finditer(message):
             if match.group(1) is None:  # place / quest / «where» link
                 parts += self._plain(message[pos : match.start()], hits)
-                parts += [f"<{match.group(2)}>", ("place",)]
+                shown, place = split_place(match.group(2))
+                tags: tuple = ("place",)
+                if place is not None and self.on_place is not None:
+                    tags += (self._place_tag(place, shown),)
+                parts += [f"<{shown}>", tags]
                 pos = match.end()
                 continue
             name = match.group(1)
@@ -110,6 +117,15 @@ class ItemLinker:
         for piece, is_hit in highlight_segments(chunk, hits):
             out += [piece, ("hit",) if is_hit else ()]
         return out or ["", ()]
+
+    def _place_tag(self, place: tuple[str, float, float], shown: str) -> str:
+        self._places += 1
+        tag = f"pos_{self._places}"
+        map_id, x, y = place
+        self.text.tag_bind(tag, "<Button-1>", lambda _e: self.on_place(map_id, x, y, shown))
+        self.text.tag_bind(tag, "<Enter>", lambda _e: self.text.configure(cursor="hand2"))
+        self.text.tag_bind(tag, "<Leave>", lambda _e: self.text.configure(cursor=""))
+        return tag
 
     def _tag(self, item_id: str) -> str:
         tag = f"item_{item_id}"

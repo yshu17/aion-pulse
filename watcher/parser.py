@@ -13,7 +13,7 @@ _CHARNAME_RE = re.compile(r"^\[charname:([^;\]]+);([^\]]*)\](?: ([^:\[]{1,20}))?
 _PLAIN_NICK_RE = re.compile(r"^([^\s:\[\]]{2,24}): (.*)$")
 _CMD_RE = re.compile(r"\[cmd:[^\]]*\]")
 _ITEM_RE = re.compile(r"\[(?:item|item_ex|recipe):(\d*)[^\]]*\]")
-_POS_RE = re.compile(r"\[pos:([^;\]]*);(\d+)[^\]]*\]")
+_POS_RE = re.compile(r"\[pos:([^;\]]*);(?:\d )?(\d+) ([\d.-]+) ([\d.-]+)[^\]]*\]")
 _QUEST_RE = re.compile(r"\[quest:(\d+)[^\]]*\]")
 _WHERE_RE = re.compile(r"\[where:([^\]]*)\]")
 # the game cuts long messages; a link left open at the end of the line is shown with «…»
@@ -23,6 +23,7 @@ _SPACES_RE = re.compile(r" {2,}")
 
 # Links that are not items are wrapped in these marks; the chat views draw them as <…> links.
 LINK_OPEN, LINK_CLOSE = "⟪", "⟫"
+POS_SEP = "¦"  # a place link keeps «map x y» after this mark: ⟪Место · Келькмарос¦220070000 2010.1 1315.8⟫
 
 
 def _load_map_names() -> dict[str, str]:
@@ -76,9 +77,41 @@ class ChatLine:
 
 
 def _place(match: re.Match) -> str:
-    label = match.group(1) or "Место"
-    region = MAP_NAMES.get(match.group(2))
-    return f"{LINK_OPEN}{label} · {region}{LINK_CLOSE}" if region else f"{LINK_OPEN}{label}{LINK_CLOSE}"
+    label, map_id, x, y = match.groups()
+    label = label or "Место"
+    region = MAP_NAMES.get(map_id)
+    shown = f"{label} · {region}" if region else label
+    return f"{LINK_OPEN}{shown}{POS_SEP}{map_id} {x} {y}{LINK_CLOSE}"
+
+
+def split_place(link: str) -> tuple[str, tuple[str, float, float] | None]:
+    """«Место · Келькмарос¦220070000 2010.1 1315.8» -> ("Место · Келькмарос", ("220070000", 2010.1, 1315.8))."""
+    shown, sep, pos = link.partition(POS_SEP)
+    if not sep:
+        return link, None
+    try:
+        map_id, x, y = pos.split()
+        return shown, (map_id, float(x), float(y))
+    except ValueError:
+        return shown, None
+
+
+def places_in(text: str) -> list[tuple[str, tuple[str, float, float]]]:
+    """Place links of a cleaned message: [(label, (map id, x, y)), ...]."""
+    found = []
+    for link in re.findall(rf"{LINK_OPEN}([^{LINK_OPEN}{LINK_CLOSE}]*){LINK_CLOSE}", text):
+        shown, place = split_place(link)
+        if place is not None:
+            found.append((shown, place))
+    return found
+
+
+def display_text(text: str) -> str:
+    """Message text as the user sees it: links as <…>, place coordinates hidden."""
+    def link(match: re.Match) -> str:
+        return f"<{split_place(match.group(1))[0]}>"
+
+    return re.sub(rf"{LINK_OPEN}([^{LINK_OPEN}{LINK_CLOSE}]*){LINK_CLOSE}", link, text)
 
 
 def _cut_link(match: re.Match) -> str:

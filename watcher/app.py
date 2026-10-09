@@ -2,6 +2,7 @@
 
 import time
 import tkinter as tk
+from collections import deque
 from datetime import datetime, timedelta
 from pathlib import Path
 from tkinter import filedialog, ttk
@@ -16,13 +17,15 @@ from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
 from watcher.itemlist import ItemFilter, ItemList
 from watcher.notifier import Notifier, system_sounds
-from watcher.parser import ChatMessage, parse_line
+from watcher.mapview import MapWindow, Place, load_zones
+from watcher.parser import MAP_NAMES, ChatMessage, display_text, parse_line, places_in
 from watcher.series import SeriesTracker
 from watcher.specs import load_specs
 from watcher.tailer import LogTailer
 from watcher.tooltip import SpecTooltip
 
 MAX_ROWS = 500
+MAX_PLACES = 300  # place links remembered for the map's pins
 RETRY_MS = 2000
 TOOLTIP_DELAY_MS = 300
 HISTORY_CHOICES = {"нет": 0, **{f"{m} мин": m for m in (5, 15, 30, 45, 60)}}
@@ -78,6 +81,8 @@ class App:
             self.cfg.react_sec = DEFAULT_REACT_SEC  # e.g. the removed «выкл» (0) from an older config
         self.tracker = AlertTracker(self.cfg.react_sec)
         self.series = SeriesTracker()
+        self.zones = load_zones(data_dir / "maps", MAP_NAMES)
+        self.places: deque[Place] = deque(maxlen=MAX_PLACES)  # place links seen in «Поиск группы»
         self.tailer: LogTailer | None = None
         self.running = False
         self._after_id: str | None = None
@@ -88,6 +93,7 @@ class App:
         self._apply_search_mode_state()
         self.tooltip = SpecTooltip(root)
         self.alarm = NagAlarm(root, self.notifier, on_ack=self._on_popup_ack)
+        self.map_window = MapWindow(root, self.zones)
         self._set_status("Остановлен")
         self._update_counters()
         self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
@@ -243,6 +249,7 @@ class App:
             grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
+            on_place=self._open_place,
         )
         self.feed.pack(fill="both", expand=True)
         self.text = self.feed.text
@@ -259,6 +266,7 @@ class App:
             grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
+            on_place=self._open_place,
         )
         self.all_chat.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.all_chat, text="Весь чат")
@@ -662,10 +670,21 @@ class App:
         for line in lines:
             msg = parse_line(line, self.item_names)
             if msg is not None:
+                self._remember_places(msg)
                 hits = self.matcher.check(msg, now)
                 if hits:
                     self.feed.add(msg, hits)
         self.feed.add_note(f"— выше история за {self.cfg.history_min} мин, ниже новые сообщения —")
+
+    def _remember_places(self, msg: ChatMessage) -> None:
+        note = f"{msg.time[11:16]}  {msg.nick}: {display_text(msg.text)}"
+        for label, (map_id, x, y) in places_in(msg.text):
+            self.places.append(Place(map_id, x, y, label, note))
+
+    def _open_place(self, map_id: str, x: float, y: float, label: str) -> None:
+        """Click on a place link: the zone map centred on it, with the other places from the chat."""
+        self._hide_tooltip()
+        self.map_window.show(Place(map_id, x, y, label), self.places)
 
     def _process(self, lines: list[str]) -> None:
         now = time.monotonic()
@@ -674,6 +693,7 @@ class App:
             msg = parse_line(line, self.item_names)
             if msg is None:
                 continue
+            self._remember_places(msg)
             hits = self.matcher.check(msg, now)
             if hits:
                 matched.append((msg, hits))
