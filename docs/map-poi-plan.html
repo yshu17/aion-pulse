@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>План карты v2</title>
+<title>План карты v3</title>
 <style>
 :root{--bg:#141519;--surface:#1c1e24;--surface2:#262931;--border:#363a45;--text:#e9e7e4;--muted:#8c919c;--accent:#ff8c1a;--ok:#5fd38d;--warn:#e5484d}
 *{box-sizing:border-box}
@@ -37,9 +37,33 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
 <body>
 <div class="wrap">
   <h1>Карта зон: точки интереса и фильтры</h1>
-  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план v2 от 09.10.2026 (данные из клиента игры) · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
+  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план v3 от 09.10.2026 — переделка после проверки в игре (v2 ниже как история) · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
 
-  <h2>Что изменилось в v2</h2>
+  <h2>v3: что не так после проверки в игре</h2>
+  <div class="card"><table>
+    <tr><td>Карта не как в игре</td><td>Сейчас стоят «радарные» текстуры (<code>textures/ui/zonemap</code>) — сырой снимок рельефа. Игра рисует другие карты: <code>textures/ui/newmap/&lt;зона&gt;</code> — 9 плиток 1024 px (итого 3072) + маска и туман. Их и надо брать.</td></tr>
+    <tr><td>Точки смещены</td><td>Привязку координат Кодекс не мерил, а пересчитал со старых карт aioncodex. Проверил наложением: в Пандемониуме торговцы и порталы стоят в снегу вне города, в Исхальгене точки появления мобов — в воде. Келькмарос почти совпадает (там масштаб ≈1), поэтому «более-менее».</td></tr>
+    <tr><td>Порталы где попало</td><td>Объекты <code>Portal</code> из файлов уровня — служебные триггеры редактора, а не порталы, которые видит игрок.</td></tr>
+    <tr><td>Мало привратников</td><td>В клиенте на 9 зон всего 54 привратника и 2 кибелиска — остальных ставит сервер.</td></tr>
+    <tr><td>Иконки</td><td>Значков NPC (привратник, склад, торговец…) в уже извлечённых атласах нет — часть взята с aiondb. Игровые значки лежат в <code>ui.pak</code>.</td></tr>
+    <tr><td>Блокер</td><td>Файлы <code>.pak</code> клиента зашифрованы: моя читалка открывает оглавление, но не данные. Кодекс распаковывал своим временным инструментом и удалил его. У тебя в «Загрузках» есть <code>AionPAKExtract_042.exe</code> — сам я чужие .exe не запускаю.</td></tr>
+  </table></div>
+
+  <h2>v3: порядок работ</h2>
+  <div class="card">
+    <div><b id="pct3">0%</b> <span class="tag">— статус обновляю я после каждого шага (и коммичу). Начинаю после твоего «поехали».</span></div>
+    <div class="bar"><i id="barfill3"></i></div>
+    <div class="steps" id="steps3"></div>
+  </div>
+
+  <h2>v3: нужно твоё решение</h2>
+  <div class="card"><table>
+    <tr><td>Распаковка PAK</td><td><b>А (рекомендую):</b> ты запускаешь свой AionPAKExtract на 3 места (список дам) и кладёшь результат в <code>client_extract/raw/</code>.<br><b>Б:</b> просишь Кодекса — он уже делал это.<br>Игровую папку ни один вариант не меняет.</td></tr>
+    <tr><td>Проверочные точки</td><td>В каждой зоне встань у 2–3 привратников / кибелисков и кинь в чат ссылку «Место» (<code>[pos:…]</code>) — по ним сверю привязку точно, а не на глаз.</td></tr>
+    <tr><td>Добор с aiondb</td><td>Только позиции недостающих привратников и кибелисков; значки всё равно игровые.</td></tr>
+  </table></div>
+
+  <h2>v2 (история): что изменилось</h2>
   <div class="card"><table>
     <tr><td>Точки</td><td>Не с aiondb через Chrome, а из файлов самого клиента — Кодекс уже извлёк их (69 231 объект в 12 зонах)</td></tr>
     <tr><td>Карты</td><td>Родные карты игры 3072 px вместо aioncodex 2048 px — уже подключены, привязка проверена по 712 «Местам» из твоего чата</td></tr>
@@ -72,9 +96,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
     <div class="card near" id="card"><div class="grp" style="margin-top:0">Выбранная точка</div><div class="sub">Кликни по значку на карте</div></div>
   </div>
 
-  <h2>Порядок работ</h2>
+  <h2>v2 (история): порядок работ</h2>
   <div class="card">
-    <div><b id="pct">0%</b> <span class="tag">— статус обновляю я после каждого шага (и коммичу)</span></div>
+    <div><b id="pct">0%</b> <span class="tag">— v2 выполнен, после проверки в игре переделывается в v3</span></div>
     <div class="bar"><i id="barfill"></i></div>
     <div class="steps" id="steps"></div>
   </div>
@@ -91,20 +115,21 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
     <tr><td>Файлы</td><td><code>tools/build_poi.py</code> → <code>data/maps/poi.json</code> + <code>data/maps/icons/</code> · <code>watcher/poi.py</code> (данные, тесты) · <code>watcher/mapview.py</code> (рисование)</td></tr>
   </table></div>
 
-  <h2>Риски <span class="tag">· обновлено 09.10.2026</span></h2>
-  <div class="risk"><b>Открыт.</b> Расстановка в файлах клиента — редакторская: сервер может ставить NPC иначе и добавлять своих. Пример: в Келькмаросе 2 привратника в клиенте против 7 на aiondb. Закрывает шаг 7 — после проверки в игре.</div>
-  <div class="risk"><b>Открыт.</b> Карты Бездны нет: у неё нет нижнего слоя, привязку координат не на чем проверить.</div>
-  <div class="risk"><b>Открыт.</b> В Пандемониуме нет подписей районов (на aiondb другая версия города) — можно взять названия из строк клиента.</div>
-  <div class="risk" style="border-color:var(--muted)"><b>Низкий.</b> В клиенте есть контент новее 2.0 (Тиамаранта и др.) — на 9 зонах почти не сказывается, лишнее скрывается фильтром.</div>
-  <div class="risk" style="border-color:var(--ok)"><b>Закрыт.</b> Сбор — 11 тысяч точек: сделана группировка в кружки с числом, на всю карту Келькмароса меньше 400 значков.</div>
-  <div class="risk" style="border-color:var(--ok)"><b>Закрыт.</b> Привязка координат: проверена по «Местам» из чата и координатам NPC с aioncodex.</div>
-  <div class="risk" style="border-color:var(--ok)"><b>Закрыт.</b> Вес exe: сырые данные вынесены в <code>client_extract/</code>, numpy исключён — exe 53,5 МБ.</div>
+  <h2>Риски v3 <span class="tag">· обновлено 09.10.2026</span></h2>
+  <div class="risk"><b>Блокер.</b> Без распаковки PAK нет ни игровых карт, ни игровых значков NPC, ни размера мира для привязки. Решение — выше, «нужно твоё решение».</div>
+  <div class="risk"><b>Открыт.</b> Карты newmap могут быть обрезаны иначе, чем мир (рамка, поля) — поэтому привязку проверяю по твоим ссылкам «Место», а не только расчётом.</div>
+  <div class="risk"><b>Открыт.</b> Пандемониум — город внутри большой зоны: его карта в newmap (<code>dc1</code>) может иметь другой масштаб.</div>
+  <div class="risk"><b>Открыт.</b> Привратники и кибелиски сервера есть только на aiondb — их позиции не из игры; в карточке пометка «по aiondb».</div>
+  <div class="risk"><b>Открыт.</b> Подтверждённого источника порталов пока нет — до проверки они не показываются.</div>
+  <div class="risk" style="border-color:var(--muted)"><b>Низкий.</b> В клиенте есть контент новее 2.0 — на 9 зонах почти не сказывается.</div>
+  <div class="risk" style="border-color:var(--muted)"><b>Отложено.</b> Карта Бездны и подписи районов Пандемониума — после v3.</div>
 
-  <h2>Дальнейшая работа</h2>
-  <div class="card">
-    <div class="tag" style="margin-bottom:6px">Ничего из этого не начинаю без твоего «делаем». Статус обновляю я.</div>
-    <div class="steps" id="next"></div>
-  </div>
+  <h2>Вне карты</h2>
+  <div class="card"><table>
+    <tr><td>Телеграм-бот</td><td>ждёт твоего «делаем» — план в <code>docs/telegram-bridge-plan.md</code></td></tr>
+    <tr><td>Ветка и слияние</td><td>твоё решение</td></tr>
+    <tr><td>Неизвестные предметы</td><td>9 серверных номеров показываются как «[Предмет id]»; новые докачивает <code>tools/fill_missing_items.py</code></td></tr>
+  </table></div>
 </div>
 
 <script>
@@ -189,27 +214,24 @@ const STEPS=[
  {t:"Добор пробелов с aiondb (по желанию)",d:"недостающие привратники и кибелиски — если по факту их не хватит",s:"todo",note:"По плану — только по твоему решению после того, как посмотришь карту в игре: сейчас в клиенте, например, 2 привратника в Келькмаросе против 7 на aiondb."},
  {t:"Поиск, полировка, сборка",d:"поиск по карте, оформление с навыками дизайна и проверкой скриншотами, README, пересборка exe",s:"done",note:"Поиск по карте: NPC по имени и типу (и в скрытых слоях) и районы, Enter / Shift+Enter, счётчик «2 / 7»; найденная точка ставится в центр и обводится. Полировка по скриншотам (навыки ui-visual-validator и high-end-visual-design): обводка у подписи метки, тихий текст пустой карточки, короткая подсказка, игровые координаты под курсором, карту можно сдвинуть за край, чтобы точка у края вставала в центр. README обновлён. Exe пересобирается после закрытия программы. Тесты: 217."}];
 const MARK={done:["✓","#5fd38d","сделано"],doing:["▶","#ff8c1a","в работе"],todo:["○","#8c919c","ждёт"]};
-function steps(){const box=document.getElementById("steps");box.innerHTML="";
-  STEPS.forEach((st,i)=>{const m=MARK[st.s]||MARK.todo;const r=document.createElement("div");r.className="step"+(st.s==="done"?" done":"");
-    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span></div><div class="tag">${st.d}</div>${st.note?`<div style="margin-top:6px;font-size:13px;color:#cfd3da">${st.note}</div>`:""}</div>`;
+function steps(list,boxId,pctId,barId){const box=document.getElementById(boxId);box.innerHTML="";
+  list.forEach((st,i)=>{const m=MARK[st.s]||MARK.todo;const r=document.createElement("div");r.className="step"+(st.s==="done"?" done":"");
+    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span>${st.who?` <span class="chip" style="cursor:default;margin:0 0 0 6px">${st.who}</span>`:""}</div><div class="tag">${st.d}</div>${st.note?`<div style="margin-top:6px;font-size:13px;color:#cfd3da">${st.note}</div>`:""}</div>`;
     box.appendChild(r);});
-  const done=STEPS.filter(x=>x.s==="done").length, p=Math.round(done/STEPS.length*100);
-  document.getElementById("pct").textContent=`${done} из ${STEPS.length} шагов`;document.getElementById("barfill").style.width=p+"%";}
-// Further work after steps 1-8. s: "done" | "doing" | "todo"; who = what is needed to start.
-const NEXT=[
- {t:"Проверка карты в игре",who:"ты",d:"открыть вкладку «Карта» в 2–3 зонах и сравнить привратников, кибелисков, склады с игрой; написать, чего не хватает",s:"todo"},
- {t:"Шаг 7 — добор NPC с aiondb",who:"после проверки",d:"недостающие привратники и кибелиски из aiondb, помечаются в карточке как «с aiondb»; только там, где в клиенте пробел",s:"todo"},
- {t:"Подписи районов Пандемониума",who:"по желанию",d:"названия районов из строк клиента вместо aiondb; если не сойдутся по расположению — оставить без подписей",s:"todo"},
- {t:"Карта Бездны",who:"по желанию",d:"найти верхний/нижний слой в client_extract, привязать по «Местам» из чата; без проверки не включать",s:"todo"},
- {t:"Телеграм-бот",who:"твоё «делаем»",d:"по плану docs/telegram-bridge-plan.md: «3.Поиск группы» в группу (2 строки, при нагрузке 4, не больше 20 сообщений в минуту), совпадения поиска — в личку",s:"todo"},
- {t:"Ветка и слияние",who:"твоё решение",d:"вся работа в коммитах текущей ветки; решить — сливать в основную или оставить как есть",s:"todo"},
- {t:"Неизвестные предметы",who:"по мере появления",d:"9 номеров не найдены нигде (серверные), показываются как «[Предмет id]»; новые докачивает tools/fill_missing_items.py",s:"done"}
+  const done=list.filter(x=>x.s==="done").length, p=Math.round(done/list.length*100);
+  document.getElementById(pctId).textContent=`${done} из ${list.length} шагов`;document.getElementById(barId).style.width=p+"%";}
+// v3 after the in-game check. s: "done" | "doing" | "todo"; who = what is needed to start.
+const STEPS3=[
+ {t:"Упростить вкладку «Карта»",who:"сразу",d:"убрать панель слоёв, сбор ресурсов (11 тыс. точек) и точки заданий; порталы скрыть до проверки. Остаётся постоянный набор: привратники, кибелиски, склады, торговцы, мастер стигм, крепости, артефакты, входы в данжи, места из чата. Поиск и карточка «Рядом» остаются",s:"todo"},
+ {t:"Распаковка из клиента",who:"твоё решение: А или Б",d:"newmap 9 зон (игровые карты + маска), значки карты и NPC из ui.pak, leveldata.xml зон (размер мира). Всё в client_extract/ — не в git и не в exe",s:"todo"},
+ {t:"Игровые карты вместо радарных",who:"после шага 2",d:"склеить 3×3 плитки newmap с маской, как в игре; заменить data/maps/client/*.jpg",s:"todo"},
+ {t:"Привязка координат заново",who:"после шага 3 + твои «Места»",d:"масштаб из размера мира, проверка наложением 50 тыс. точек появления (должны лечь на сушу) и по твоим ссылкам «Место» у привратников. Пандемониум отдельно. Зона без подтверждения не включается",s:"todo"},
+ {t:"Игровые значки, крупнее",who:"после шага 2",d:"значки NPC, крепостей, артефактов, входов — только из клиента; aiondb — лишь если в игре значка нет. Размер 28–32 px, при приближении растут; привратник и кибелиск заметнее остальных",s:"todo"},
+ {t:"Привратники и кибелиски",who:"после шага 4",d:"сверка с aiondb по каждой зоне, добор недостающих позиций с пометкой «по aiondb»; особое внимание — телепортам",s:"todo"},
+ {t:"Порталы",who:"после шага 4",d:"только подтверждённые: из данных порталов клиента (если найдутся при распаковке) или aiondb; служебные Portal из уровня не показывать",s:"todo"},
+ {t:"Проверка в игре и сборка",who:"ты + я",d:"ты смотришь 2–3 зоны в игре, я правлю, тесты, README, пересборка exe",s:"todo"}
 ];
-function next(){const box=document.getElementById("next");box.innerHTML="";
-  NEXT.forEach((st,i)=>{const m=MARK[st.s]||MARK.todo;const r=document.createElement("div");r.className="step"+(st.s==="done"?" done":"");
-    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span> <span class="chip" style="cursor:default;margin:0 0 0 6px">${st.who}</span></div><div class="tag">${st.d}</div></div>`;
-    box.appendChild(r);});}
-steps();next();render();
+steps(STEPS,"steps","pct","barfill");steps(STEPS3,"steps3","pct3","barfill3");render();
 </script>
 </body>
 </html>
