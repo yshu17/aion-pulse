@@ -24,14 +24,14 @@
   ]
  },
  "600010000": {
-  "file": "client/underpass.jpg",
-  "size": 1536,
+  "file": "aiondb/underpass.jpg",
+  "size": 3072,
   "x": [
-   0.997425,
+   2.0,
    0.0
   ],
   "y": [
-   0.997425,
+   2.0,
    0.0
   ]
  },

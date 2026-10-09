@@ -24,8 +24,13 @@ def test_aiondb_maps_match_npc_markers():
     found = zones()
     assert {"220070000", "210050000", "120010000", "600010000"} <= set(found)
     assert found["220070000"].name == "Келькмарос"
-    for map_id in ("220010000", "220030000", "220020000", "220050000", "220040000", "220070000", "210050000"):
+    for map_id in ("220010000", "220030000", "220020000", "220050000", "220040000", "220070000", "210050000",
+                   "600010000"):
         assert found[map_id].path.parent.name == "aiondb"
+    # Silentera: zonemap.xml gives a 1536 world with no offset, so the 3072 px map is game x 2;
+    # aiondb teleporter 804460 sits at svg (1223.5, 555.37) of 1536
+    assert found["600010000"].size == 3072
+    assert found["600010000"].to_image(555.368, 1223.5) == pytest.approx((2447.0, 1110.74), abs=0.5)
     # Altgard: aiondb puts teleporter 203678 (client game x 2681.14, y 1023.92) at svg (960.92, 2140.14) of 2790
     k = 3072 / 2790
     x, y = found["220030000"].to_image(2681.1377, 1023.9208)
