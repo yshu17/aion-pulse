@@ -19,9 +19,8 @@
 | Путь | Источник | Назначение |
 |---|---|---|
 | `downloads/kb_items/` | kb.aionempire.com, 08–09.10.2026 | список и страницы предметов → `data/watch_items.csv`, `item_specs.json.gz`, `icons/`, `item_names.tsv` |
-| `downloads/aiondb_maps/` | aiondb.ru `/local/templates/inn/images/maps/zones/<зона>.jpg` и страницы `/maps/<регион>/<зона>/npc/<тип>/`, 09.10.2026 | карты 9 зон, 258 NPC для привязки → `data/maps/aiondb/`, `data/maps/maps.json` |
+| `downloads/aiondb_maps/` | aiondb.ru `/local/templates/inn/images/maps/zones/<зона>.jpg` и страницы `/maps/<регион>/<зона>/npc/<тип>/`, 09.10.2026 | карты 9 зон (запасные — те же игровые), 258 NPC для проверки привязки |
 | `downloads/aiondb_icons/` | aiondb.ru, 09.10.2026 | значки карты (SVG) → `data/maps/icons/` |
-| `data/maps/aiondb/*.jpg` (7 зон) | копия из `downloads/aiondb_maps/` | карты зон в программе (`data/maps/maps.json`) — не удалять |
 | `client_extract/` | клиент игры (только чтение) | см. `client_extract/README.md`; полный отчёт распаковки — `client_extract/raw/REPORT.md` |
 
 ## Временные загрузки
