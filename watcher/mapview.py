@@ -20,6 +20,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.mapcard import NEARBY_TYPES, PointCard
 from watcher.maplayers import LayerPanel, default_layers, load_icon
+from watcher.matcher import normalize
 from watcher.poi import Poi, PoiStore, cluster
 
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
@@ -147,13 +148,15 @@ class MapView(ttk.Frame):
             ("◎", self._back_to_place),
         ):
             ttk.Button(bar, text=text, width=3, command=command).pack(side="right", padx=(6, 0))
-        self.hint = ttk.Label(bar, text="колесо — масштаб, перетаскивание — сдвиг, точки — места из чата",
-                              style="Muted.TLabel")
+        self.hint = ttk.Label(bar, text="колесо — масштаб · тяни — сдвиг · клик — карточка", style="Muted.TLabel")
         self.hint.pack(side="right", padx=12)
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         start = default_layers(self.poi) if layers is None else set(layers)
-        self.panel = LayerPanel(body, self.poi, self.icons_dir, start, self._on_layers)
+        self.panel = LayerPanel(body, self.poi, self.icons_dir, start, self._on_layers, self.search)
+        self._matches: list = []
+        self._match_index = -1
+        self._match_query = ""
         if self.poi.types:
             self.panel.pack(side="left", fill="y", padx=(0, 10))
         self.layers: set[str] = set(self.panel.layers)
@@ -170,6 +173,10 @@ class MapView(ttk.Frame):
         self.canvas.bind("<B1-Motion>", self._on_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
         self.canvas.bind("<Double-Button-1>", lambda e: self.zoom_at(2.0, e.x, e.y))
+        self.canvas.bind("<Motion>", self._on_motion, add="+")
+        self.coords_var = tk.StringVar()
+        tk.Label(card, textvariable=self.coords_var, background=theme.SURFACE, foreground=theme.MUTED,
+                 font=(theme.FONT_FAMILY, theme.FONT_SIZE - 3)).place(relx=0, rely=1, x=10, y=-8, anchor="sw")
         self.canvas.tag_bind("other", "<Enter>", self._on_pin_enter)
         self.canvas.tag_bind("other", "<Leave>", lambda _e: self.canvas.delete("bubble"))
         self.canvas.tag_bind("poi", "<Enter>", self._on_poi_enter)
@@ -273,9 +280,17 @@ class MapView(ttk.Frame):
         width, height = self._canvas_size()
         size = self.zone.size
         view_w, view_h = width / self.zoom, height / self.zoom
-        # keep the map on screen; centre it when it is smaller than the window
-        self.left = (size - view_w) / 2 if view_w >= size else min(max(self.left, 0), size - view_w)
-        self.top = (size - view_h) / 2 if view_h >= size else min(max(self.top, 0), size - view_h)
+        # keep the map on screen; centre it when it is smaller than the window. When zoomed in, the map may
+        # move half a view past its edge, so a point at the very edge can still be put in the centre.
+        margin_w, margin_h = view_w / 2, view_h / 2
+        if view_w >= size:
+            self.left = (size - view_w) / 2
+        else:
+            self.left = min(max(self.left, -margin_w), size - view_w + margin_w)
+        if view_h >= size:
+            self.top = (size - view_h) / 2
+        else:
+            self.top = min(max(self.top, -margin_h), size - view_h + margin_h)
 
     def to_screen(self, image_x: float, image_y: float) -> tuple[float, float]:
         return (image_x - self.left) * self.zoom, (image_y - self.top) * self.zoom
@@ -320,8 +335,12 @@ class MapView(ttk.Frame):
             sx, sy = self.to_screen(*self.zone.to_image(self.place.x, self.place.y))
             canvas.create_oval(sx - 13, sy - 13, sx + 13, sy + 13, outline=PIN, width=3, tags="pin")
             canvas.create_oval(sx - 5, sy - 5, sx + 5, sy + 5, fill=PIN, outline="", tags="pin")
-            canvas.create_text(sx + 18, sy - 2, text=self.place.label, anchor="w", fill="#ffffff",
-                               font=(theme.FONT_FAMILY, theme.FONT_SIZE, "bold"), tags="pin")
+            font = (theme.FONT_FAMILY, theme.FONT_SIZE, "bold")
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):  # dark outline, like the area names
+                canvas.create_text(sx + 18 + dx, sy - 2 + dy, text=self.place.label, anchor="w", fill="#0d0e11",
+                                   font=font, tags="pin")
+            canvas.create_text(sx + 18, sy - 2, text=self.place.label, anchor="w", fill="#ffffff", font=font,
+                               tags="pin")
 
     def _draw_labels(self, width: int, height: int) -> None:
         """Area names, like the game map: white text with a dark outline; size follows the zoom.
@@ -389,6 +408,36 @@ class MapView(ttk.Frame):
                 self.point_card.show("Место из чата", place.label, place.x, place.y, place.note,
                                      self.nearby(self.zone.map_id, place.x, place.y))
                 return
+
+    def search(self, query: str, step: int) -> str:
+        """Find points (any layer, by name or type) and area names in the shown zone.
+
+        step 0 = new query (go to the first match), 1 / -1 = next / previous. Returns «2 / 7» or «нет».
+        """
+        if self.zone is None:
+            return ""
+        if step == 0 or query != self._match_query:
+            words = normalize(query).split()
+            points = self.poi.search(self.zone.map_id, query, set(self.poi.types))
+            areas = [(x, y, text) for x, y, text in self.zone.labels if all(w in normalize(text) for w in words)]
+            self._matches = list(points) + areas
+            self._match_query = query
+            self._match_index = -1
+        if not self._matches:
+            return "нет"
+        self._match_index = (self._match_index + (step or 1)) % len(self._matches)
+        match = self._matches[self._match_index]
+        if self.zoom < 1.0:
+            self.zoom = 1.0
+        if isinstance(match, Poi):
+            self.select(match, centre=True)
+        else:
+            x, y, text = match
+            self.selected = None
+            self.point_card.show("Район", text.replace("\n", " "), 0, 0, "", [])
+            self.point_card.coords.configure(text="")
+            self.center_on(x, y)
+        return f"{self._match_index + 1} / {len(self._matches)}"
 
     def _on_layers(self, layers: set[str]) -> None:
         self.layers = layers
@@ -488,6 +537,18 @@ class MapView(ttk.Frame):
 
     def _on_wheel(self, event: tk.Event) -> None:
         self.zoom_at(ZOOM_STEP if event.delta > 0 else 1 / ZOOM_STEP, event.x, event.y)
+
+    def game_at(self, screen_x: float, screen_y: float) -> tuple[float, float] | None:
+        """Game coordinates under a canvas point (inverse of Zone.to_image)."""
+        if self.zone is None or not self.zone.kx[0] or not self.zone.ky[0]:
+            return None
+        image_x = self.left + screen_x / self.zoom
+        image_y = self.top + screen_y / self.zoom
+        return (image_y - self.zone.ky[1]) / self.zone.ky[0], (image_x - self.zone.kx[1]) / self.zone.kx[0]
+
+    def _on_motion(self, event: tk.Event) -> None:
+        game = self.game_at(event.x, event.y)
+        self.coords_var.set(f"x {game[0]:.0f} · y {game[1]:.0f}" if game else "")
 
     def _on_press(self, event: tk.Event) -> None:
         self._drag = (event.x, event.y, self.left, self.top)

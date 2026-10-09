@@ -195,3 +195,50 @@ def test_dense_layers_merge_when_zoomed_out_and_split_when_zoomed_in(root):
     view.panel.apply_preset("Задания")
     view.render()
     assert {m.type for _x, _y, ms in view._drawn for m in ms} <= {"quest_point", "teleport"}
+
+
+def test_map_search_points_and_areas(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons", layers=[])
+    view.pack(fill="both", expand=True)
+    root.geometry("1400x900")
+    root.update()
+    view.open_zone("220070000")
+    assert view.search("привратник", 0) == "1 / 2"  # hidden layers are found too
+    first = view.selected
+    assert first.type == "teleport"
+    assert view.search("привратник", 1) == "2 / 2" and view.selected != first
+    assert view.search("привратник", 1) == "1 / 2"  # wraps around
+    assert view.search("митраканд", 0).endswith("/ 2")  # area names: «Митраканд», «Сигнальный маяк Митраканда»
+    assert view.point_card.kind.cget("text") == "Район"
+    assert view.search("абвгд", 0) == "нет"
+    view.panel.search_var.set("склад")
+    view.panel.search(0)
+    assert view.panel.search_count.cget("text").startswith("1 /")
+
+
+def test_game_coordinates_under_cursor_round_trip(root):
+    view = MapView(root, zones())
+    view.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
+    view.show(Place("220070000", 1173.0, 1227.4, "Место"))
+    sx, sy = view.to_screen(*view.zone.to_image(1173.0, 1227.4))
+    gx, gy = view.game_at(sx, sy)
+    assert gx == pytest.approx(1173.0, abs=0.5) and gy == pytest.approx(1227.4, abs=0.5)
+
+
+def test_point_at_map_edge_can_be_centred(root):
+    view = MapView(root, zones())
+    view.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
+    view.open_zone("220070000")
+    view.zoom = 2.0
+    size = view.zone.size
+    view.center_on(size - 20, 30)  # near the top-right corner
+    width, height = view._canvas_size()
+    sx, sy = view.to_screen(size - 20, 30)
+    assert abs(sx - width / 2) < 2 and abs(sy - height / 2) < 2

@@ -6,6 +6,7 @@ from tkinter import ttk
 
 from watcher import theme
 
+EMPTY = "Кликни по значку на карте или найди точку поиском — здесь появится карточка и что рядом"
 NEARBY_TYPES = ["teleport", "warehouse", "merchant", "stigma", "portal", "artifact"]
 
 
@@ -19,7 +20,7 @@ class PointCard(ttk.Frame):
         self.get_icon = get_icon
         self.kind = ttk.Label(self, text="", style="CardMuted.TLabel")
         self.kind.pack(anchor="w")
-        self.title = ttk.Label(self, text="Выбери точку на карте", style="Title.TLabel", wraplength=230)
+        self.title = ttk.Label(self, text=EMPTY, style="CardMuted.TLabel", wraplength=230)
         self.title.pack(anchor="w", pady=(2, 0))
         self.coords = ttk.Label(self, text="", style="CardMuted.TLabel")
         self.coords.pack(anchor="w", pady=(2, 0))
@@ -42,7 +43,7 @@ class PointCard(ttk.Frame):
     ) -> None:
         """nearby: (type, type name, point name, metres, on_click)."""
         self.kind.configure(text=kind)
-        self.title.configure(text=title or kind)
+        self.title.configure(text=title or kind, style="Title.TLabel")
         self.coords.configure(text=f"x {gx:.0f} · y {gy:.0f}")
         self.note.configure(text=note)
         self.near_title.configure(text="Рядом" if nearby else "")
@@ -68,7 +69,7 @@ class PointCard(ttk.Frame):
 
     def clear(self) -> None:
         self.kind.configure(text="")
-        self.title.configure(text="Выбери точку на карте")
+        self.title.configure(text=EMPTY, style="CardMuted.TLabel")
         self.coords.configure(text="")
         self.note.configure(text="")
         self.near_title.configure(text="")

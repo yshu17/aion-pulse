@@ -54,16 +54,33 @@ class LayerPanel(ttk.Frame):
         icons_dir: Path,
         layers: Iterable[str],
         on_change: Callable[[set[str]], None],
+        on_search: Callable[[str, int], str] | None = None,
     ) -> None:
         super().__init__(parent, style="Card.TFrame", padding=(12, 10, 6, 10))
         self.store = store
         self.icons_dir = icons_dir
         self.on_change = on_change
+        self.on_search = on_search or (lambda _q, _step: "")
         self.layers: set[str] = {t for t in layers if t in store.types}
         self.vars: dict[str, tk.BooleanVar] = {}
         self.count_labels: dict[str, ttk.Label] = {}
         self._icons: dict[str, object] = {}
 
+        search = ttk.Frame(self, style="Surface.TFrame")
+        search.pack(fill="x", pady=(0, 10))
+        self.search_var = tk.StringVar()
+        self.search_entry = ttk.Entry(search, textvariable=self.search_var, style="Card.TEntry")
+        self.search_entry.pack(side="left", fill="x", expand=True)
+        self.search_count = ttk.Label(search, text="", style="CardMuted.TLabel", width=6, anchor="e")
+        self.search_count.pack(side="left", padx=(6, 6))
+        self._placeholder = "Найти: NPC, район, ресурс"
+        self._show_placeholder()
+        self.search_entry.bind("<FocusIn>", lambda _e: self._hide_placeholder())
+        self.search_entry.bind("<FocusOut>", lambda _e: self._show_placeholder())
+        self.search_entry.bind("<Return>", lambda _e: self.search(1))
+        self.search_entry.bind("<Shift-Return>", lambda _e: self.search(-1))
+        self.search_entry.bind("<Escape>", lambda _e: self.search_var.set(""))
+        self.search_entry.bind("<KeyRelease>", self._on_search_key)
         ttk.Label(self, text="Слои", style="Title.TLabel").pack(anchor="w")
         chips = ttk.Frame(self, style="Surface.TFrame")
         chips.pack(fill="x", pady=(8, 6))
@@ -111,6 +128,31 @@ class LayerPanel(ttk.Frame):
                 count = ttk.Label(row, text="", style="CardMuted.TLabel")
                 count.pack(side="right", padx=(0, 6))
                 self.count_labels[type_] = count
+
+    def search(self, step: int) -> str:
+        """Ask the map for the next (step 1) / previous (-1) match; shows «2 / 7» or «нет»."""
+        query = self.query()
+        text = self.on_search(query, step) if query else ""
+        self.search_count.configure(text=text)
+        return "break"
+
+    def query(self) -> str:
+        value = self.search_var.get().strip()
+        return "" if value == self._placeholder else value
+
+    def _on_search_key(self, event: tk.Event) -> None:
+        if event.keysym not in ("Return", "Escape", "Shift_L", "Shift_R"):
+            self.search(0)
+
+    def _show_placeholder(self) -> None:
+        if not self.search_var.get():
+            self.search_var.set(self._placeholder)
+            self.search_entry.configure(foreground=theme.MUTED)
+
+    def _hide_placeholder(self) -> None:
+        if self.search_var.get() == self._placeholder:
+            self.search_var.set("")
+        self.search_entry.configure(foreground=theme.TEXT)
 
     def set_zone(self, zone: str | None) -> None:
         """Point counts of the shown zone next to each layer."""
