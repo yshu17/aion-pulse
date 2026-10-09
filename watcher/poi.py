@@ -42,6 +42,17 @@ class PoiStore:
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             return cls({}, {})
 
+    def projected(self, to_image: dict[str, Callable[[float, float], tuple[float, float]]]) -> "PoiStore":
+        """Map pixels recomputed from game coordinates with each zone's transform (map id -> f(gx, gy)).
+
+        So the points follow whatever map image a zone uses; zones without a transform keep theirs.
+        """
+        zones = {}
+        for zone, points in self._zones.items():
+            f = to_image.get(zone)
+            zones[zone] = [Poi(p.zone, p.type, *f(p.gx, p.gy), p.gx, p.gy, p.name) for p in points] if f else points
+        return PoiStore(self.types, zones)
+
     def type_name(self, type_: str) -> str:
         return self.types.get(type_, {}).get("name", type_)
 

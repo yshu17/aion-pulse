@@ -128,7 +128,7 @@ class MapView(ttk.Frame):
     ) -> None:
         super().__init__(parent)
         self.zones = zones
-        self.poi = poi or PoiStore({}, {})
+        self.poi = (poi or PoiStore({}, {})).projected({map_id: z.to_image for map_id, z in zones.items()})
         self.icons_dir = icons_dir or Path(".")
         self.layers: set[str] = {t for t in SHOWN_TYPES if t in self.poi.types}
         self._poi_icons: dict[tuple[str, int], object] = {}

@@ -31,6 +31,30 @@ def test_bundled_zones_and_transform():
     assert abs(x - 1687.70 * scale) < 2 and abs(y - 1305.98 * scale) < 2
 
 
+def test_aiondb_maps_match_npc_markers():
+    found = zones()
+    for map_id in ("220010000", "220030000", "220020000", "220050000", "220040000", "220070000", "210050000"):
+        assert found[map_id].path.parent.name == "aiondb"
+    # Altgard: aiondb puts teleporter 203678 (client game x 2681.14, y 1023.92) at svg (960.92, 2140.14) of 2790
+    k = 3072 / 2790
+    x, y = found["220030000"].to_image(2681.1377, 1023.9208)
+    assert x == pytest.approx(960.92 * k, abs=1) and y == pytest.approx(2140.14 * k, abs=1)
+    # Ishalgen: merchant 203515 (618.24, 2430.12) at svg (1690.12, 618.24) of 2300
+    k = 3072 / 2300
+    x, y = found["220010000"].to_image(618.23633, 2430.1184)
+    assert x == pytest.approx(1690.12 * k, abs=1) and y == pytest.approx(618.236 * k, abs=1)
+
+
+def test_points_follow_the_zone_transform(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    view = MapView(root, zones(), poi=store)
+    altgard = view.zones["220030000"]
+    for p in view.poi.in_zone("220030000", {"teleport", "merchant"}):
+        assert (p.x, p.y) == pytest.approx(altgard.to_image(p.gx, p.gy))
+
+
 def test_missing_maps_dir_gives_no_zones(tmp_path):
     assert load_zones(tmp_path, MAP_NAMES) == {}
 
@@ -158,7 +182,7 @@ def test_point_card_and_nearby(root):
     # a click (no drag) on a single drawn point opens its card
     view.open_zone("220070000")
     root.update()
-    teleport = store.in_zone("220070000", {"teleport"})[0]
+    teleport = view.poi.in_zone("220070000", {"teleport"})[0]
     view.zoom = 3.0
     view.center_on(teleport.x, teleport.y)
     sx, sy, members = next(d for d in view._drawn if d[2] == [teleport])

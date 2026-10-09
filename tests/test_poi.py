@@ -89,3 +89,11 @@ def test_cluster_key_merges_across_types():
     pts = [Poi(Z, "gather_herb", 0, 0, 0, 0, ""), Poi(Z, "gather_metal", 5, 0, 0, 0, "")]
     assert len(cluster(pts, lambda x, y: (x, y), 40)) == 2  # default: per type
     assert len(cluster(pts, lambda x, y: (x, y), 40, key=lambda p: "gather")) == 1
+
+
+def test_projected_recomputes_map_pixels_from_game_coordinates(store):
+    moved = store.projected({Z: lambda gx, gy: (gy / 10, gx / 10)})
+    raniu = next(p for p in moved.in_zone(Z, {"teleport"}) if p.name == "Раниу")
+    assert (raniu.x, raniu.y) == (100, 100) and (raniu.gx, raniu.gy) == (1000, 1000)
+    other = moved.in_zone("210050000", {"teleport"})[0]
+    assert (other.x, other.y) == (5, 5)  # no transform for this zone: kept as stored
