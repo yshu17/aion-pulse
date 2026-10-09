@@ -149,7 +149,7 @@ def test_fixed_point_set_without_gathering_quests_or_portals(root):
     shown = {m.type for _x, _y, members in view._drawn for m in members}
     assert "teleport" in shown and not shown & hidden
     # icons are big, teleporters bigger still
-    assert view._icon_size("teleport") > view._icon_size("merchant") >= 24
+    assert view._icon_size("teleport") > view._icon_size("merchant") >= 28
 
 
 def test_point_card_and_nearby(root):
@@ -268,3 +268,13 @@ def test_last_two_zoom_levels_split_groups_into_icons_side_by_side(root):
     view.render()
     x0, y0, x1, y1 = view.canvas.coords(view.canvas.find_withtag("selected")[0])
     assert ((x0 + x1) / 2, (y0 + y1) / 2) == pytest.approx(view._spots[members[0]], abs=1)
+
+
+def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):
+    from watcher.mapview import load_icon
+
+    icons = resource_root() / "data" / "maps" / "icons"
+    for name in ("teleport", "coin_merchant", "postbox"):  # 26, 16 and 35x36 px in the client
+        icon = load_icon(icons / f"{name}.png", 36, root)
+        assert max(icon.width(), icon.height()) == 36
+    assert load_icon(icons / "missing.png", 36, root) is None

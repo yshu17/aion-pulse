@@ -2,10 +2,13 @@
 
 Sources (nothing is drawn here):
   * the client's own map icons — client_extract/icons/*.png (extracted by Codex);
+  * the client's own UI sprites — a sprite name from the client's sprite tables
+    (client_extract/raw/Data/ui/preload/preload/*.txt.xml: name, src_image="x,y,w,h", texture) cut from
+    client_extract/raw/textures/ui/ui/<texture>.png, e.g. the NPC dialog function icons v5_npc_func_*;
   * aiondb.ru map icons — downloads/aiondb_icons/aiondb_map_icons.json: the site's
     <pattern id="map_icon_..."> markup (vector icons) and links to its PNG icons.
 Vector icons are rasterised with the local Chrome in headless mode.
-Dev tool (needs Pillow and Chrome). Usage: python tools/build_map_icons.py
+Dev tool (needs Pillow and Chrome). Usage: python tools/build_map_icons.py [type ...]  (default: all)
 """
 
 import json
@@ -24,15 +27,16 @@ SIZE = 48  # px, square canvas; the app scales down
 AIONDB = "https://aiondb.ru"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120", "Referer": "https://aiondb.ru/maps/"}
 
-# layer type -> source: ("client", file) or ("aiondb", pattern id)
+# layer type -> source: ("sprite", client sprite name), ("client", file) or ("aiondb", pattern id).
+# The game's own icons first; aiondb only where the client has none (kisk, quest point, camp).
 ICONS = {
-    "teleport": ("aiondb", "map_icon_function_teleport"),
-    "warehouse": ("aiondb", "map_icon_function_warehouse"),
-    "merchant": ("aiondb", "map_icon_function_merchant"),
-    "coin_merchant": ("aiondb", "map_icon_function_coin_merchant"),
-    "vendor": ("aiondb", "map_icon_function_vendor"),
-    "stigma": ("aiondb", "map_icon_function_stigma_master"),
-    "postbox": ("aiondb", "map_icon_function_postbox"),
+    "teleport": ("sprite", "v5_npc_func_teleport"),
+    "warehouse": ("sprite", "v5_npc_func_warehouse"),
+    "merchant": ("sprite", "v5_npc_func_buy"),
+    "coin_merchant": ("sprite", "coin_merchant_marker"),
+    "vendor": ("sprite", "v5_npc_func_vendor"),
+    "stigma": ("sprite", "v5_npc_func_stigma"),
+    "postbox": ("sprite", "v4_mailicon"),
     "bindstone": ("aiondb", "map_icon_function_bindstone"),
     "quest_point": ("aiondb", "map_icon_quest_quest"),
     "artifact": ("client", "abyss_artifact.png"),
@@ -93,12 +97,41 @@ def fetch_png(pattern: str, out: Path) -> None:
         out.write_bytes(r.read())
 
 
+SPRITE_RE = re.compile(r'name="([^"]+)" src_image="(\d+),(\d+),(\d+),(\d+)" texture="([^"]+)"')
+
+
+def sprite_table(texts: list[str]) -> dict[str, tuple[str, tuple[int, int, int, int]]]:
+    """Client sprite tables -> {sprite name: (texture file stem in lower case, (x, y, w, h))}; first entry wins."""
+    out: dict[str, tuple[str, tuple[int, int, int, int]]] = {}
+    for text in texts:
+        for name, x, y, w, h, texture in SPRITE_RE.findall(text):
+            out.setdefault(name, (texture.replace("\\", "/").rsplit("/", 1)[-1].lower(), (int(x), int(y), int(w), int(h))))
+    return out
+
+
+def cut_sprite(name: str, table: dict, out: Path) -> None:
+    from PIL import Image
+
+    texture, (x, y, w, h) = table[name]
+    folder = EXTRACT / "raw" / "textures" / "ui" / "ui"
+    path = next(p for p in folder.glob("*.png") if p.stem.lower() == texture)
+    with Image.open(path) as atlas:
+        atlas.convert("RGBA").crop((x, y, x + w, y + h)).save(out)
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     patterns = json.loads((ROOT / "downloads" / "aiondb_icons" / "aiondb_map_icons.json").read_text(encoding="utf-8"))
+    tables = sorted((EXTRACT / "raw" / "Data" / "ui" / "preload" / "preload").glob("*.txt.xml"))
+    sprites = sprite_table([t.read_text(encoding="utf-8") for t in tables])
+    wanted = set(sys.argv[1:])
     for type_, (source, key) in ICONS.items():
+        if wanted and type_ not in wanted:
+            continue
         out = OUT / f"{type_}.png"
-        if source == "client":
+        if source == "sprite":
+            cut_sprite(key, sprites, out)
+        elif source == "client":
             out.write_bytes((EXTRACT / "icons" / key).read_bytes())
         elif source == "aiondb_url":
             fetch_png(f'href="{key}"', out)

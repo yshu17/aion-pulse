@@ -63,13 +63,16 @@ class Zone:
 
 
 def load_icon(path: Path, size: int, master: tk.Misc):
-    """A ready-made icon scaled to size px (keeps its aspect ratio), None if the file is missing."""
+    """A ready-made icon scaled to size px on its longer side, up or down (the game's own icons are 16-36 px);
+    keeps the aspect ratio. None if the file is missing."""
     from PIL import Image, ImageTk
 
     try:
         with Image.open(path) as image:
             image = image.convert("RGBA")
-            image.thumbnail((size, size), Image.LANCZOS)
+            ratio = size / max(image.size)
+            image = image.resize((max(1, round(image.width * ratio)), max(1, round(image.height * ratio))),
+                                 Image.LANCZOS)
             return ImageTk.PhotoImage(image, master=master)
     except OSError:
         return None
@@ -485,7 +488,7 @@ class MapView(ttk.Frame):
 
     def _icon_size(self, type_: str) -> int:
         """Icon px for the current zoom: big enough to read on the whole map, teleporters bigger."""
-        size = max(24, min(36, round(20 + 6 * self.zoom)))
+        size = max(28, min(40, round(22 + 8 * self.zoom)))
         return size + 8 if type_ in BIG_TYPES else size
 
     def _poi_icon(self, type_: str, size: int):
