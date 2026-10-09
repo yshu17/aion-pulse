@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>План карты</title>
+<title>План карты v2</title>
 <style>
 :root{--bg:#141519;--surface:#1c1e24;--surface2:#262931;--border:#363a45;--text:#e9e7e4;--muted:#8c919c;--accent:#ff8c1a;--ok:#5fd38d;--warn:#e5484d}
 *{box-sizing:border-box}
@@ -37,10 +37,29 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
 <body>
 <div class="wrap">
   <h1>Карта зон: точки интереса и фильтры</h1>
-  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план от 09.10.2026 · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
+  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план v2 от 09.10.2026 (данные из клиента игры) · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
+
+  <h2>Что изменилось в v2</h2>
+  <div class="card"><table>
+    <tr><td>Точки</td><td>Не с aiondb через Chrome, а из файлов самого клиента — Кодекс уже извлёк их (69 231 объект в 12 зонах)</td></tr>
+    <tr><td>Карты</td><td>Родные карты игры 3072 px вместо aioncodex 2048 px — уже подключены, привязка проверена по 712 «Местам» из твоего чата</td></tr>
+    <tr><td>Иконки</td><td>Родные иконки карты из клиента: крепость, артефакт, вход в данж, телепорт…</td></tr>
+    <tr><td>Пробелы</td><td>В клиенте нет части NPC, которых добавляет сервер (в Келькмаросе 2 привратника против 7 на aiondb) — добор с aiondb отдельным необязательным шагом</td></tr>
+  </table></div>
+
+  <h2>Что есть в данных (9 зон с картами)</h2>
+  <div class="card"><table>
+    <tr><td>Функциональные NPC</td><td>273: торговцы 129, товары за монеты 71, привратники 35, посредники 16, склады 16, мастера стигм 5, почта 1 — с русскими именами</td></tr>
+    <tr><td>Порталы</td><td>199</td></tr>
+    <tr><td>Входы / прямые точки (DP)</td><td>109</td></tr>
+    <tr><td>Крепости, артефакты</td><td>из сущностей уровней + родные иконки</td></tr>
+    <tr><td>Сбор</td><td>11 294 точки, вид ресурса из названия (травы, металл, ягоды, эфир…)</td></tr>
+    <tr><td>Задания</td><td>948 точек (KP 596 + MP 352)</td></tr>
+    <tr><td>Появление мобов</td><td>38 289 — по умолчанию не показываем, слишком густо</td></tr>
+  </table></div>
 
   <h2>Попробуй макет</h2>
-  <div class="sub" style="margin-bottom:10px">Кликай по слоям и наборам, ищи по названию, выбирай точку на карте — справа появится «Рядом». Это макет, данные вымышленные.</div>
+  <div class="sub" style="margin-bottom:10px">Кликай по слоям и наборам, ищи по названию, выбирай точку на карте — справа появится «Рядом». Это макет: расположение вымышленное, имена NPC — из данных клиента.</div>
   <div class="grid">
     <div class="card">
       <input type="search" id="q" placeholder="Найти: привратник, Ромбус…">
@@ -62,24 +81,28 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
 
   <h2>Решения</h2>
   <div class="card"><table>
-    <tr><td>Источник данных</td><td>aiondb.ru (Aion Classic), один раз собрать через Chrome — сайт закрыт от скриптов</td></tr>
-    <tr><td>Иконки</td><td>Игровые иконки карты, как на сайте (это иконки самой игры) + цвет на каждый тип</td></tr>
-    <tr><td>Слои</td><td>Функциональные NPC (10) · ориентиры · сбор (11) · задания (4, фильтр уровня) · места из чата</td></tr>
+    <tr><td>Источник данных</td><td>Клиент игры (точнее всего для твоего клиента); aiondb — только добор пробелов, позже и по желанию</td></tr>
+    <tr><td>Иконки</td><td>Родные иконки карты из клиента + цвет на каждый тип</td></tr>
+    <tr><td>Слои</td><td>Функциональные NPC (по типам) · порталы · крепости и артефакты · входы · сбор (по виду ресурса) · задания · места из чата</td></tr>
+    <tr><td>Размер</td><td>Сырые 79 МБ Кодекса → <code>client_extract/</code> (не в exe и не в git); в программе 9 карт + один <code>poi.json</code> ≈1 МБ; exe ≈60 МБ</td></tr>
+    <tr><td>Оформление</td><td>Навыки ui-ux-pro-max, design-theme-guide, high-end-visual-design; проверка скриншотами через ui-visual-validator</td></tr>
     <tr><td>Улучшения</td><td>Поиск по карте · «Рядом» с расстоянием · группировка точек · наборы фильтров и запоминание</td></tr>
     <tr><td>Зоны</td><td>Келькмарос, Ингисон, Тоннель Силентера, Пандемониум*, Исхальген, Альтгард, Морхейм, Брустхонин, Белуслан</td></tr>
-    <tr><td>Файлы</td><td><code>tools/fetch_poi.py</code> → <code>data/maps/poi.json</code> + <code>data/maps/icons/</code> · <code>watcher/poi.py</code> (данные, тесты) · <code>watcher/mapview.py</code> (рисование)</td></tr>
+    <tr><td>Файлы</td><td><code>tools/build_poi.py</code> → <code>data/maps/poi.json</code> + <code>data/maps/icons/</code> · <code>watcher/poi.py</code> (данные, тесты) · <code>watcher/mapview.py</code> (рисование)</td></tr>
   </table></div>
 
   <h2>Риски</h2>
-  <div class="risk">aiondb — версия Classic 5.5: отдельных NPC может не быть на сервере 2.0. Любой тип скрывается фильтром, лишнюю точку можно убрать из данных.</div>
-  <div class="risk">* Пандемониум у aiondb из другой версии города — проверю отдельно; если точки лягут мимо, его слои будут выключены.</div>
-  <div class="risk">Сбор — тысячи точек: нужна группировка и, возможно, только уровни 45+.</div>
+  <div class="risk">Расстановка в файлах клиента — редакторская: сервер может ставить NPC иначе и добавлять своих (пробелы — шаг 7).</div>
+  <div class="risk">В клиенте есть контент новее 2.0 (Тиамаранта и др.) — на 9 зонах почти не сказывается, лишнее скрывается фильтром.</div>
+  <div class="risk">Сбор — 11 тысяч точек: группировка в кружки с числом обязательна.</div>
+  <div class="risk">В Пандемониуме нет подписей районов (с aiondb не совпали) — можно попробовать названия из строк клиента.</div>
 </div>
 
 <script>
 const TYPES = {
   fortress:{g:"Ориентиры",n:"Крепости",c:"#BA7517",s:"sq"}, artifact:{g:"Ориентиры",n:"Артефакты",c:"#EF9F27",s:"dia"},
   indun:{g:"Ориентиры",n:"Входы в данжи",c:"#D85A30",s:"tri"},
+  portal:{g:"Ориентиры",n:"Порталы",c:"#5DCAA5",s:"dia"},
   teleport:{g:"Функциональные NPC",n:"Привратник",c:"#7F77DD"}, bindstone:{g:"Функциональные NPC",n:"Кибелиск",c:"#1D9E75"},
   warehouse:{g:"Функциональные NPC",n:"Заведующий складом",c:"#378ADD"}, merchant:{g:"Функциональные NPC",n:"Торговец",c:"#D4537E"},
   stigma:{g:"Функциональные NPC",n:"Мастер стигм",c:"#9b8cff"}, postbox:{g:"Функциональные NPC",n:"Почтовый ящик",c:"#888780"},
@@ -90,9 +113,9 @@ const PRESETS = {"Город":["teleport","bindstone","warehouse","merchant","st
 const P = [
   ["fortress",470,150,"Крепость Келькмарос"],["artifact",380,120,"Артефакт Вагабатама"],["artifact",520,260,"Артефакт Антагора"],
   ["indun",300,400,"Вход: Храм Пхасумандир"],["indun",120,380,"Вход: Подземный город"],
-  ["teleport",150,90,"Привратник Рандрис"],["teleport",470,175,"Привратник крепости"],["teleport",280,250,"Привратник Мартинес"],
+  ["teleport",150,90,"Раниу (привратник)"],["teleport",470,175,"Привратник крепости"],["teleport",280,250,"Привратник лагеря"],["portal",330,300,"Портал в Тоннель Силентера"],
   ["bindstone",165,110,"Кибелиск Митраканда"],["bindstone",300,262,"Кибелиск лагеря"],["warehouse",135,120,"Склад Митраканда"],
-  ["merchant",125,95,"Торговец Хольта"],["merchant",290,240,"Торговец лагеря"],["stigma",175,80,"Мастер стигм"],["postbox",160,130,"Почта"],
+  ["merchant",125,95,"Хирокин (торговец)"],["merchant",290,240,"Инауке (торговец)"],["stigma",175,80,"Мастер стигм"],["postbox",160,130,"Почта"],
   ["herb",400,330],["herb",410,345],["herb",392,350],["herb",420,320],["herb",380,340],["aether",230,170],["aether",245,160],["aether",220,180],
   ["quest",140,140,"Задание: Уничтожение повстанцев"],["quest",285,230,"Задание: Разведка Мараяса"],
   ["chat",265,280,"Место · Leader: «ммк 2/12»"],["chat",360,200,"Место · Hiro: «го клык»"]
@@ -146,17 +169,19 @@ for(const [n,ts] of Object.entries(PRESETS)){const c=document.createElement("spa
 document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase().replace(/ё/g,"е");sel=null;render();});
 
 const STEPS=[
- ["Сбор данных: ориентиры и функциональные NPC","9 зон с aiondb через Chrome → poi.json + иконки; проверка, что точки на зданиях и дорогах"],
+ ["Порядок в данных","сырые данные Кодекса → client_extract/ (не в exe, не в git); коммит его работы; exe остаётся лёгким"],
+ ["Сборка poi.json из клиента","tools/build_poi.py: NPC с ролями и русскими именами, порталы, входы, крепости и артефакты, сбор по видам, задания + родные иконки; проверка скриншотами"],
  ["Модуль данных poi.py","загрузка, фильтр, поиск, «ближайшее» с расстоянием, группировка — с тестами"],
  ["Панель фильтров и значки на карте","слои с галочками и счётчиками, наборы «Город / ПвП / Сбор / Задания», запоминание в config.json"],
  ["Карточка точки и «Рядом»","клик по точке; для «Места» из чата — ближайший привратник, кибелиск, склад, вход в данж"],
- ["Сбор ресурсов и задания","добрать данные, слои, фильтр уровня заданий, группировка плотных слоёв"],
- ["Поиск, полировка, сборка","поиск по карте, вид значков, README, пересборка exe"]];
-let done=[];try{done=JSON.parse(localStorage.getItem("mapPlanSteps")||"[]")}catch(e){}
+ ["Сбор ресурсов и задания","слои сбора по видам ресурса и точки заданий, группировка плотных слоёв"],
+ ["Добор пробелов с aiondb (по желанию)","недостающие привратники и кибелиски — если по факту их не хватит"],
+ ["Поиск, полировка, сборка","поиск по карте, оформление с навыками дизайна и проверкой скриншотами, README, пересборка exe"]];
+let done=[];try{done=JSON.parse(localStorage.getItem("mapPlanStepsV2")||"[]")}catch(e){}
 function steps(){const box=document.getElementById("steps");box.innerHTML="";
   STEPS.forEach(([t,d],i)=>{const r=document.createElement("label");r.className="step"+(done.includes(i)?" done":"");
     r.innerHTML=`<input type="checkbox" ${done.includes(i)?"checked":""}><div><div class="t"><b>${i+1}.</b> ${t}</div><div class="tag">${d}</div></div>`;
-    r.querySelector("input").onchange=e=>{done=e.target.checked?[...done,i]:done.filter(x=>x!==i);try{localStorage.setItem("mapPlanSteps",JSON.stringify(done))}catch(_){};steps();};box.appendChild(r);});
+    r.querySelector("input").onchange=e=>{done=e.target.checked?[...done,i]:done.filter(x=>x!==i);try{localStorage.setItem("mapPlanStepsV2",JSON.stringify(done))}catch(_){};steps();};box.appendChild(r);});
   const p=Math.round(done.length/STEPS.length*100);document.getElementById("pct").textContent=p+"%";document.getElementById("barfill").style.width=p+"%";}
 steps();render();
 </script>
