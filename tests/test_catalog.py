@@ -27,11 +27,15 @@ def test_load_watch_items_missing_file(tmp_path):
 def test_bundled_data_present():
     data = resource_root() / "data"
     items = load_watch_items(data / "watch_items.csv")
-    assert len(items) == 49
+    assert len(items) > 10000  # armour, weapons, shields and wings from level 45
+    assert all(item.level >= 45 for item in items)
+    by_id = {item.id: item for item in items}
+    assert by_id["100000893"].name == "Клинок Рудры"
+    assert by_id["100000893"].grade == "epic"
     names = load_item_names(data / "item_names.tsv")
     assert names["100000893"] == "Клинок Рудры"
-    missing = [item.id for item in items if not (data / "icons" / f"{item.id}.png").is_file()]
-    assert missing == ["187000018"]  # Крылья Рудры: the site has no icon (404), app draws a placeholder
+    with_icon = [item for item in items if (data / "icons" / f"{item.icon}.png").is_file()]
+    assert len(with_icon) > 0.9 * len(items)  # a few icons are missing on the site; placeholder then
 
 
 def test_category_for():

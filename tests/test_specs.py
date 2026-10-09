@@ -87,3 +87,17 @@ def test_load_specs(tmp_path):
     path.write_text(json.dumps({"1": {"name": "x", "grade": "epic", "blocks": []}}), encoding="utf-8")
     assert load_specs(path) == {"1": {"name": "x", "grade": "epic", "blocks": []}}
     assert load_specs(tmp_path / "missing.json") == {}
+
+
+def test_load_specs_gzip_with_lazy_json_values(tmp_path):
+    import gzip
+    import json
+
+    path = tmp_path / "item_specs.json.gz"
+    spec = {"name": "x", "grade": "epic", "blocks": []}
+    path.write_bytes(gzip.compress(json.dumps({"1": json.dumps(spec)}).encode("utf-8")))
+    specs = load_specs(path)
+    assert "1" in specs and "2" not in specs
+    assert specs["1"] == spec
+    assert specs.get("2") is None
+    assert len(specs) == 1

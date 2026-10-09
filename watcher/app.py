@@ -9,11 +9,12 @@ from tkinter import filedialog, ttk
 from watcher import theme
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
-from watcher.catalog import CATEGORY_ORDER, WatchItem, load_item_names, load_watch_items, resource_root
+from watcher.catalog import WatchItem, load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
+from watcher.itemlist import ItemList
 from watcher.notifier import Notifier, system_sounds
 from watcher.parser import ChatMessage, parse_line
 from watcher.specs import load_specs
@@ -62,8 +63,9 @@ class App:
         data_dir = resource_root() / "data"
         self.item_names = load_item_names(data_dir / "item_names.tsv")
         self.watch_items = load_watch_items(data_dir / "watch_items.csv")
+        self.item_by_id = {item.id: item for item in self.watch_items}
         self.icons_dir = data_dir / "icons"
-        self.specs = load_specs(data_dir / "item_specs.json")
+        self.specs = load_specs(data_dir / "item_specs.json.gz")
         self.matcher = Matcher(
             self.cfg.keywords,
             self.cfg.cooldown_sec,
@@ -216,11 +218,13 @@ class App:
         column.pack(side="left", fill="both", expand=True)
         self._build_counters(header)
         spec_items = {item.name: item.id for item in self.watch_items if item.id in self.specs}
+        grades = {item.id: item.grade for item in self.watch_items}
         self.feed = MatchFeed(
             column,
             on_accept=self._on_feed_accept,
             max_rows=MAX_ROWS,
             spec_items=spec_items,
+            grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
         )
@@ -236,6 +240,7 @@ class App:
             on_settings=self._on_chat_settings,
             toolbar_parent=root,
             spec_items=spec_items,
+            grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
         )
@@ -282,6 +287,7 @@ class App:
         items_off = mode == "words"
         for widget in self.item_controls:
             widget.state(["disabled"] if items_off else ["!disabled"])
+        self.item_list.set_enabled(not items_off)
         self.items_title.configure(text="Что искать  ·  не используется" if items_off else "Что искать")
         self.kw_entry.state(["disabled"] if mode == "items" else ["!disabled"])
 
@@ -357,11 +363,11 @@ class App:
             self._ui_after = self.root.after(UI_TICK_MS, self._ui_tick)
 
     def _build_items_panel(self, parent: ttk.Frame) -> None:
-        """Right-hand list: checkbox + icon + name for each watchable item."""
+        """Right-hand list: checkbox + icon + name for each watchable item, with a search box."""
         panel = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10, 4, 10))
         panel.pack(side="right", fill="y", padx=(12, 0))
         head = ttk.Frame(panel, style="Surface.TFrame")
-        head.pack(fill="x", padx=(0, 8))
+        head.pack(fill="x", padx=(0, 8), pady=(0, 10))
         self.items_title = ttk.Label(head, text="Что искать", style="Title.TLabel")
         self.items_title.pack(side="left")
         clear = ttk.Button(head, text="Снять", style="Card.TButton", command=lambda: self._select_all_items(False))
@@ -369,138 +375,44 @@ class App:
         select_all = ttk.Button(head, text="Все", style="Card.TButton", command=lambda: self._select_all_items(True))
         select_all.pack(side="right", padx=6)
         self.item_controls: list[ttk.Widget] = [clear, select_all]
-
-        holder = ttk.Frame(panel, style="Surface.TFrame")
-        holder.pack(fill="both", expand=True, pady=(10, 0))
-        canvas = tk.Canvas(
-            holder, width=520, highlightthickness=0, borderwidth=0, background=theme.SURFACE
-        )
-        scroll = ttk.Scrollbar(holder, command=canvas.yview)
-        canvas.configure(yscrollcommand=scroll.set)
-        scroll.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-        inner = ttk.Frame(canvas, style="Surface.TFrame")
-        window = canvas.create_window((0, 0), window=inner, anchor="nw")
-        inner.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
-        self.items_holder = holder
-        self.items_canvas = canvas
-
-        checked = set(self.cfg.watch_items)
-        self.item_vars: dict[str, tk.BooleanVar] = {}
         self._icons: dict[str, tk.PhotoImage] = {}
-        self.groups: dict[str, list[str]] = {}
-        for category in CATEGORY_ORDER:
-            ids = [item.id for item in self.watch_items if item.category == category]
-            if ids:
-                self.groups[category] = ids
-        self.group_vars: dict[str, tk.BooleanVar] = {}
-        self.group_bodies: dict[str, ttk.Frame] = {}
-        self._group_titles: dict[str, ttk.Label] = {}
-        self._group_heads: dict[str, ttk.Frame] = {}
-        by_id = {item.id: item for item in self.watch_items}
-        for category, ids in self.groups.items():
-            body = self._build_group(inner, category, len(ids))
-            for item_id in ids:
-                self._build_item_row(body, by_id[item_id], item_id in checked)
-            self._sync_group(category)
-
-    def _build_group(self, parent: ttk.Frame, category: str, count: int) -> ttk.Frame:
-        """Section header (click to fold, checkbox for the whole group) and its body frame."""
-        head = ttk.Frame(parent, style="Group.TFrame", padding=(6, 4))
-        head.pack(fill="x", pady=(8, 2))
-        title = ttk.Label(head, style="Group.TLabel", cursor="hand2")
-        title.pack(side="left", fill="x", expand=True)
-        title.bind("<Button-1>", lambda _e: self._toggle_collapsed(category))
-        self._group_titles[category] = title
-        var = tk.BooleanVar(value=False)
-        self.group_vars[category] = var
-        group_box = ttk.Checkbutton(
-            head,
-            text="все",
-            variable=var,
-            style="Group.TCheckbutton",
-            command=lambda: self._on_group_toggled(category),
+        self.item_list = ItemList(
+            panel,
+            self.watch_items,
+            checked=self.cfg.watch_items,
+            collapsed=self.cfg.collapsed_groups,
+            icon_for=self._icon_for,
+            on_change=self._on_items_changed,
+            on_collapse=self._on_collapse,
+            on_hover=self._schedule_tooltip,
+            on_leave=self._hide_tooltip,
         )
-        group_box.pack(side="right")
-        self.item_controls.append(group_box)
-        body = ttk.Frame(parent, style="Surface.TFrame")
-        self._group_heads[category] = head
-        self.group_bodies[category] = body
-        if category not in self.cfg.collapsed_groups:
-            body.pack(fill="x", after=head)
-        self._update_group_title(category, count)
-        return body
+        self.item_list.pack(fill="both", expand=True)
+        self.items_holder = self.item_list
 
-    def _update_group_title(self, category: str, count: int | None = None) -> None:
-        count = len(self.groups.get(category, [])) if count is None else count
-        arrow = "▸" if category in self.cfg.collapsed_groups else "▾"
-        self._group_titles[category].configure(text=f"{arrow}  {category}  ·  {count}")
-
-    def _build_item_row(self, parent: ttk.Frame, item: WatchItem, is_checked: bool) -> None:
-        var = tk.BooleanVar(value=is_checked)
-        self.item_vars[item.id] = var
-        icon = self._load_icon(item.id)
-        dim = self._load_dim_icon(item.id)
-        box = ttk.Checkbutton(
-            parent,
-            text=f"  {item.name}",
-            image=(icon, "disabled", dim) if dim is not None else icon,
-            compound="left",
-            variable=var,
-            style="Item.TCheckbutton",
-            command=self._on_items_changed,
-        )
-        box.pack(fill="x", pady=1, padx=(8, 0))
-        self.item_controls.append(box)
-        box.bind("<Enter>", lambda _e, item_id=item.id: self._schedule_tooltip(item_id))
-        box.bind("<Leave>", lambda _e: self._hide_tooltip())
-
-    def _toggle_collapsed(self, category: str) -> None:
-        body = self.group_bodies[category]
-        if category in self.cfg.collapsed_groups:
-            self.cfg.collapsed_groups.remove(category)
-            body.pack(fill="x", after=self._group_heads[category])
-        else:
-            self.cfg.collapsed_groups.append(category)
-            body.pack_forget()
-        self._update_group_title(category)
+    def _on_collapse(self, collapsed: list[str]) -> None:
+        self.cfg.collapsed_groups = collapsed
         save_config(self.config_path, self.cfg)
-
-    def _on_group_toggled(self, category: str) -> None:
-        value = self.group_vars[category].get()
-        for item_id in self.groups[category]:
-            self.item_vars[item_id].set(value)
-        self._on_items_changed()
-
-    def _sync_group(self, category: str) -> None:
-        ids = self.groups[category]
-        self.group_vars[category].set(all(self.item_vars[i].get() for i in ids))
 
     def _on_mouse_wheel(self, event: tk.Event) -> None:
         """Scroll the item list whenever the pointer is anywhere over it."""
         widget = self.root.winfo_containing(event.x_root, event.y_root)
         if widget is not None and str(widget).startswith(str(self.items_holder)):
             steps = -event.delta // 120 or (-1 if event.delta > 0 else 1)
-            self.items_canvas.yview_scroll(steps, "units")
+            self.item_list.scroll(steps * 2)
 
-    def _load_icon(self, item_id: str) -> tk.PhotoImage | None:
-        path = self.icons_dir / f"{item_id}.png"
-        try:
-            icon = tk.PhotoImage(master=self.root, file=str(path))
-        except tk.TclError:
-            icon = theme.placeholder_icon(self.root)
-        self._icons[item_id] = icon
+    def _icon_for(self, item: WatchItem) -> tk.PhotoImage:
+        """Icon from data/icons (shared by items with the same picture); a placeholder if missing."""
+        key = Path(item.icon).stem if item.icon else item.id
+        icon = self._icons.get(key)
+        if icon is None:
+            try:
+                icon = tk.PhotoImage(master=self.root, file=str(self.icons_dir / f"{key}.png"))
+            except tk.TclError:
+                icon = self._icons.get("") or theme.placeholder_icon(self.root)
+                self._icons[""] = icon
+            self._icons[key] = icon
         return icon
-
-    def _load_dim_icon(self, item_id: str) -> tk.PhotoImage | None:
-        """Greyed icon for the disabled list (data/icons/<id>_off.png); None if there is none."""
-        try:
-            dim = tk.PhotoImage(master=self.root, file=str(self.icons_dir / f"{item_id}_off.png"))
-        except tk.TclError:
-            return None
-        self._icons[f"{item_id}_off"] = dim
-        return dim
 
     def _schedule_tooltip(self, item_id: str) -> None:
         self._hide_tooltip()
@@ -512,7 +424,8 @@ class App:
         if spec is None:
             return
         x, y = self.root.winfo_pointerxy()
-        self.tooltip.show(spec, self._icons.get(item_id), x, y)
+        item = self.item_by_id.get(item_id)
+        self.tooltip.show(spec, self._icon_for(item) if item else None, x, y)
 
     def _hide_tooltip(self) -> None:
         if self._tooltip_after is not None:
@@ -567,20 +480,15 @@ class App:
         self.all_chat.reload()
 
     def _checked_items(self) -> dict[str, str]:
-        names = {item.id: item.name for item in self.watch_items}
-        return {item_id: names[item_id] for item_id in self.cfg.watch_items if item_id in names}
+        return {i: self.item_by_id[i].name for i in self.cfg.watch_items if i in self.item_by_id}
 
     def _on_items_changed(self) -> None:
-        self.cfg.watch_items = [item_id for item_id, var in self.item_vars.items() if var.get()]
+        self.cfg.watch_items = self.item_list.checked_ids()
         self.matcher.set_watch_items(self._checked_items())
-        for category in self.groups:
-            self._sync_group(category)
         save_config(self.config_path, self.cfg)
 
     def _select_all_items(self, value: bool) -> None:
-        for var in self.item_vars.values():
-            var.set(value)
-        self._on_items_changed()
+        self.item_list.set_all(value)
 
     def _set_status(self, text: str) -> None:
         self.status_var.set(text)

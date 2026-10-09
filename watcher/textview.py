@@ -42,7 +42,10 @@ class BottomAnchor:
 
 
 class ItemLinker:
-    """Renders item links «[Name]» as orange «<Name>» and shows a spec tooltip on hover."""
+    """Renders item links «[Name]» as «<Name>» in the grade colour and shows a spec tooltip on hover.
+
+    Links to unknown items are left as plain text, except names with «Рудр» (shown orange).
+    """
 
     def __init__(
         self,
@@ -50,15 +53,19 @@ class ItemLinker:
         spec_items: Mapping[str, str] | None = None,
         on_enter: Callable[[str], None] | None = None,
         on_leave: Callable[[], None] | None = None,
+        grades: Mapping[str, str] | None = None,
     ) -> None:
         self.text = text
+        self.grades = grades or {}  # item id -> grade (epic, legend, …) for the link colour
         self.spec_items = dict(spec_items or {})  # item name -> id, for items with a tooltip
         self.on_enter = on_enter
         self.on_leave = on_leave
         self._bound: set[str] = set()
         text.tag_configure("item", foreground=ITEM_COLOR)
+        for grade, color in theme.GRADE_COLORS.items():
+            text.tag_configure(f"grade_{grade}", foreground=color)
         if "hit" in text.tag_names():
-            text.tag_raise("hit", "item")
+            text.tag_raise("hit")
 
     def parts(self, message: str, hits: list[str] | None = None) -> list:
         """Insert-ready (chunk, tags, ...) for a message; hits are highlighted as matches."""
@@ -73,6 +80,9 @@ class ItemLinker:
             parts += self._plain(message[pos : match.start()], hits)
             tags: tuple = ("item",)
             if item_id is not None:
+                grade = self.grades.get(item_id)
+                if grade in theme.GRADE_COLORS:
+                    tags += (f"grade_{grade}",)
                 tags += (self._tag(item_id),)
             if any(normalize(h) in normalize(name) for h in hits if h.strip()):
                 tags += ("hit",)

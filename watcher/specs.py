@@ -11,8 +11,10 @@ A spec is {"name", "grade", "blocks": [...]}. Block kinds:
   set     {"items": [name, ...]}                    set pieces
 """
 
+import gzip
 import json
 import re
+from collections.abc import Iterator, Mapping
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -172,10 +174,38 @@ def parse_spec(page_html: str) -> dict:
     return {"name": _clean(parser.name), "grade": parser.grade, "blocks": parser.blocks}
 
 
-def load_specs(path: Path) -> dict[str, dict]:
-    """Item id -> spec. A missing or broken file gives {}."""
+class SpecStore(Mapping):
+    """Item id -> spec. Values may be stored as JSON text and are parsed on first access."""
+
+    def __init__(self, raw: dict) -> None:
+        self._raw = raw
+        self._parsed: dict[str, dict] = {}
+
+    def __getitem__(self, item_id: str) -> dict:
+        spec = self._parsed.get(item_id)
+        if spec is None:
+            value = self._raw[item_id]
+            spec = json.loads(value) if isinstance(value, str) else value
+            self._parsed[item_id] = spec
+        return spec
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._raw)
+
+    def __len__(self) -> int:
+        return len(self._raw)
+
+    def __contains__(self, item_id: object) -> bool:
+        return item_id in self._raw
+
+
+def load_specs(path: Path) -> SpecStore:
+    """Item id -> spec from JSON, or gzip-compressed JSON for a .gz file. Missing or broken gives {}."""
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return data if isinstance(data, dict) else {}
+        raw = Path(path).read_bytes()
+        if Path(path).suffix == ".gz":
+            raw = gzip.decompress(raw)
+        data = json.loads(raw.decode("utf-8"))
+    except (OSError, ValueError, EOFError):
+        return SpecStore({})
+    return SpecStore(data if isinstance(data, dict) else {})

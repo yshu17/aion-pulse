@@ -111,3 +111,14 @@ def test_old_rows_are_trimmed(root):
     rows = lines(feed)
     assert len(rows) == 3 and rows[0].endswith("N2: wts")
     assert set(feed.boxes) == {2, 3, 4}
+
+
+def test_item_links_take_grade_colour(root):
+    feed = make(root, spec_items={"Меч Сематы": "1", "Клинок Рудры": "2"}, grades={"1": "legend", "2": "epic"})
+    feed.add(msg("S", "wts [Меч Сематы] [Клинок Рудры] [Камень]"), [])
+    text = feed.text
+    start, _end = text.tag_ranges("item_1")
+    assert "grade_legend" in text.tag_names(start)
+    start, _end = text.tag_ranges("item_2")
+    assert "grade_epic" in text.tag_names(start)
+    assert "[Камень]" in text.get("1.0", "end")  # unknown, non-Rudra links stay plain

@@ -26,10 +26,21 @@ HIT_BG = "#ff8c1a"
 HIT_FG = "#1b1206"
 NICK = "#9cc4ff"
 CHECK_SIZE = 24
+# item name colours by grade, as in the game
+GRADE_COLORS = {
+    "common": TEXT,
+    "rare": "#6fd56f",
+    "legend": "#5fa8ff",
+    "unique": "#f0c75e",
+    "epic": ACCENT,
+    "mythic": "#c77dff",
+    "finality": "#ff6b6b",
+}
 RADIUS = 9  # buttons, fields, tabs, counters (images drawn by tools/build_ui.py)
 CARD_RADIUS = 12  # cards (feed, item list)
 
 _images: list[tk.PhotoImage] = []  # keep references, Tk does not
+CHECKS: dict[str, tk.PhotoImage] = {}  # "off", "on", "off_dim", "on_dim" (set by apply_dark_theme)
 
 
 def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
@@ -62,6 +73,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.configure("Surface.TFrame", background=SURFACE)  # flat, for frames inside a card
     style.configure("TLabel", background=BG, foreground=TEXT)
     style.configure("Muted.TLabel", background=BG, foreground=MUTED)
+    style.configure("CardMuted.TLabel", background=SURFACE, foreground=MUTED)
     style.configure("Status.TLabel", background=BG, foreground=MUTED)
     style.configure("Live.TLabel", background=BG, foreground="#5fd38d")
     style.configure("Warn.TLabel", background=BG, foreground=DANGER)
@@ -340,6 +352,20 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             ]}),
         ]})],
     )
+    element(
+        "Card.Rounded.field",
+        "card_field",
+        [("disabled", "card_field_disabled"), ("focus", "card_field_focus")],
+        edge,
+        (3, 2),
+    )
+    style.layout(
+        "Card.TEntry",
+        [("Card.Rounded.field", {"sticky": "nswe", "children": [
+            ("Entry.padding", {"sticky": "nswe", "children": [("Entry.textarea", {"sticky": "nswe"})]})
+        ]})],
+    )
+    style.configure("Card.TEntry", padding=(6, 4))
     style.configure("TEntry", padding=(6, 4))
     style.configure("TCombobox", padding=(6, 3), arrowsize=14)
     style.map("TCombobox", background=[("active", SURFACE_2), ("readonly", SURFACE_2)])
@@ -392,6 +418,7 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
         for x in range(10, 19):
             _dot(image, x, 15 - (x - 10), color)
     _images.extend(images)
+    CHECKS.update(off=off, on=on, off_dim=off_dim, on_dim=on_dim)
     return off, on, off_dim, on_dim
 
 

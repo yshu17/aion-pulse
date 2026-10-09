@@ -7,7 +7,7 @@ from watcher import theme
 BG = "#0e1014"
 FRAME = "#5a4a2e"
 LINE = "#3a3d46"
-NAME_COLORS = {"epic": theme.ACCENT, "unique": "#f0c75e", "legend": "#5fa8ff", "rare": "#6fd56f"}
+NAME_COLORS = theme.GRADE_COLORS
 PROPS = "#e8c55a"
 WARNING = "#ff5b5b"
 WIDTH = 440

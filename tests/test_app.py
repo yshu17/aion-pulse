@@ -92,8 +92,8 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
     root.withdraw()
     try:
         app = App(root, cfg_path)
-        assert len(app.item_vars) == 49
-        assert app.item_vars["100000893"].get() is True
+        assert len(app.item_list.order) == len(app.watch_items) >= 49
+        assert app.item_list.checked == {"100000893"}
         beeps = []
         app.notifier.play = lambda: beeps.append(1)
         app.start()
@@ -103,12 +103,11 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
         assert beeps == [1]
         assert "Seller: wts <Клинок Рудры> 5кк" in app.text.get("1.0", "end")
 
-        app.item_vars["100000893"].set(False)
-        app._on_items_changed()
+        app.item_list.toggle_item("100000893")
         assert json.loads(cfg_path.read_text(encoding="utf-8"))["watch_items"] == []
 
         app._select_all_items(True)
-        assert len(app.cfg.watch_items) == 49
+        assert len(app.cfg.watch_items) == len(app.watch_items)
         app.stop()
     finally:
         root.destroy()
@@ -127,12 +126,10 @@ def test_mouse_wheel_scrolls_item_list_from_any_row(tmp_path):
     try:
         app = App(root, cfg_path)
         root.update()
-        canvas = app.items_canvas
-        row = _descendants(canvas).__next__()  # inner frame
-        first_item = row.winfo_children()[0]
+        canvas = app.item_list.canvas
         wheel = SimpleNamespace(x_root=0, y_root=0, delta=-120)
         # Pretend the pointer is over each widget; no dependence on real screen layout.
-        for target in (first_item, row, canvas, app.items_holder):
+        for target in (canvas, app.item_list.search_entry, app.items_holder):
             canvas.yview_moveto(0)
             root.winfo_containing = lambda _x, _y, target=target: target
             app._on_mouse_wheel(wheel)
@@ -230,25 +227,25 @@ def test_item_list_grouped_by_category(tmp_path):
     root.withdraw()
     try:
         app = App(root, cfg_path)
-        assert list(app.groups)[:4] == ["Лата", "Кольчуга", "Кожа", "Ткань"]
-        assert "Крылья" in app.groups
+        groups = app.item_list.groups
+        assert list(groups)[:5] == ["Рудра", "Лата", "Кольчуга", "Кожа", "Ткань"]
+        assert "Крылья" in groups
 
-        app.group_vars["Лата"].set(True)
-        app._on_group_toggled("Лата")
-        lata = set(app.groups["Лата"])
-        assert len(lata) == 5 and lata <= set(app.cfg.watch_items)
+        app.item_list.set_group("Лата", True)
+        lata = {item.id for item in groups["Лата"]}
+        assert lata and lata <= set(app.cfg.watch_items)
         assert json.loads(cfg_path.read_text(encoding="utf-8"))["watch_items"] == app.cfg.watch_items
 
-        app._toggle_collapsed("Оружие")
+        weapon = groups["Оружие"][0].id
+        app.item_list.toggle_collapsed("Оружие")
         assert app.cfg.collapsed_groups == ["Оружие"]
-        assert not app.group_bodies["Оружие"].winfo_manager()
-        app._toggle_collapsed("Оружие")
+        assert app.item_list.row_top(weapon) is None
+        app.item_list.toggle_collapsed("Оружие")
         assert app.cfg.collapsed_groups == []
-        assert app.group_bodies["Оружие"].winfo_manager() == "pack"
+        assert app.item_list.row_top(weapon) is not None
 
-        app.item_vars[app.groups["Лата"][0]].set(False)
-        app._on_items_changed()
-        assert app.group_vars["Лата"].get() is False
+        app.item_list.toggle_item(groups["Лата"][0].id)
+        assert app.item_list.group_checked("Лата") is False
     finally:
         root.destroy()
 
@@ -622,8 +619,8 @@ def test_status_hints_when_search_mode_lacks_input(tmp_path):
 def test_search_mode_disables_unused_inputs(tmp_path):
     root, app, _calls, _say = _nag_app(tmp_path, alert_mode="standard")
     try:
-        item_widgets = app.item_controls
-        assert item_widgets and len(item_widgets) > 49  # rows + group boxes + «Все»/«Снять»
+        item_widgets = app.item_controls  # «Все» / «Снять»
+        assert len(item_widgets) == 2
 
         def disabled(widget):
             return widget.instate(["disabled"])
@@ -634,11 +631,13 @@ def test_search_mode_disables_unused_inputs(tmp_path):
 
         select("Только слова")
         assert all(disabled(w) for w in item_widgets)
+        assert app.item_list.enabled is False
         assert not disabled(app.kw_entry)
 
         select("Только предметы")
         assert disabled(app.kw_entry)
         assert not any(disabled(w) for w in item_widgets)
+        assert app.item_list.enabled is True
 
         for mode in ("Слово И предмет", "Слово ИЛИ предмет"):
             select(mode)

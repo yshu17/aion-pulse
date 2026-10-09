@@ -43,6 +43,8 @@ class WatchItem:
     name: str
     level: int
     category: str = "Прочее"
+    grade: str = ""
+    icon: str = ""  # file name in data/icons (shared by items with the same picture)
 
 
 def load_item_names(path: Path) -> dict[str, str]:
@@ -60,7 +62,7 @@ def load_item_names(path: Path) -> dict[str, str]:
 
 
 def load_watch_items(path: Path) -> list[WatchItem]:
-    """Read watch_items.csv (id,name,level[,category]). A missing file gives an empty list."""
+    """Read watch_items.csv (id,name,level[,category,grade,icon]). A missing file gives an empty list."""
     try:
         with open(path, encoding="utf-8", newline="") as f:
             return [
@@ -69,6 +71,8 @@ def load_watch_items(path: Path) -> list[WatchItem]:
                     name=row["name"],
                     level=int(row["level"]),
                     category=row.get("category") or "Прочее",
+                    grade=row.get("grade") or "",
+                    icon=row.get("icon") or "",
                 )
                 for row in csv.DictReader(f)
             ]

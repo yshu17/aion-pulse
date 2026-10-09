@@ -6,7 +6,7 @@ red when missed. Each has a countdown and a checkbox pinned to the right edge.
 
 import math
 import tkinter as tk
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from tkinter import ttk
 
 from watcher import theme
@@ -33,6 +33,7 @@ class MatchFeed(ttk.Frame):
         spec_items: dict[str, str] | None = None,
         on_item_enter: Callable[[str], None] | None = None,
         on_item_leave: Callable[[], None] | None = None,
+        grades: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(parent, style="Card.TFrame", padding=6)
         self.on_accept = on_accept
@@ -56,7 +57,7 @@ class MatchFeed(ttk.Frame):
         self.text.tag_configure("missed", background=MISSED_BG)
         self.text.tag_raise("hit")
         self.text.tag_configure("note", foreground=theme.MUTED, justify="center")
-        self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave)
+        self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades)
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.text.bind("<Configure>", lambda _e: self._relayout())
 
