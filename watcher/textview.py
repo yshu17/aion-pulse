@@ -6,8 +6,12 @@ from collections.abc import Callable, Mapping
 
 from watcher import theme
 from watcher.matcher import highlight_segments, normalize
+from watcher.parser import EMOTE, LINK_CLOSE, LINK_OPEN
 
 ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
+# item link | place / quest / «where» link (see parser.clean_text) | smileys
+LINKS = re.compile(rf"\[([^\[\]]+)\]|{LINK_OPEN}([^{LINK_OPEN}{LINK_CLOSE}]+){LINK_CLOSE}|({EMOTE})")
+PLACE_COLOR = "#4fd1c5"  # place links, like the game's teal «Место»
 HIGHLIGHT_NAMES = re.compile(r"рудр", re.IGNORECASE)  # item links worth spotting in the chat
 ITEM_COLOR = theme.ACCENT  # «рыжий», like epic item links in the game
 
@@ -62,6 +66,8 @@ class ItemLinker:
         self.on_leave = on_leave
         self._bound: set[str] = set()
         text.tag_configure("item", foreground=ITEM_COLOR)
+        text.tag_configure("place", foreground=PLACE_COLOR)
+        text.tag_configure("emote", foreground=theme.MUTED)
         for grade, color in theme.GRADE_COLORS.items():
             text.tag_configure(f"grade_{grade}", foreground=color)
         if "hit" in text.tag_names():
@@ -72,7 +78,15 @@ class ItemLinker:
         hits = hits or []
         parts: list = []
         pos = 0
-        for match in ITEM_LINK.finditer(message):
+        for match in LINKS.finditer(message):
+            if match.group(1) is None:  # place link or smileys
+                parts += self._plain(message[pos : match.start()], hits)
+                if match.group(2) is not None:
+                    parts += [f"<{match.group(2)}>", ("place",)]
+                else:
+                    parts += [EMOTE, ("emote",)]
+                pos = match.end()
+                continue
             name = match.group(1)
             item_id = self.spec_items.get(name)
             if item_id is None and not HIGHLIGHT_NAMES.search(name):

@@ -8,11 +8,37 @@ CHANNEL = "[3.Поиск группы]"
 LFG_PREFIX = "3."  # channel 3 is «Поиск группы»; some lines carry it with a broken encoding («3.????? ??????»)
 
 _TIME_RE = re.compile(r"^(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}) : (.*)$")
-_CHANNEL_RE = re.compile(r"^\[(?!charname:|item|cmd:|where:)([^\]]+)\] ?(.*)$")
+_CHANNEL_RE = re.compile(r"^\[(?!charname:|item|cmd:|where:|pos:|quest:|recipe:)([^\]]+)\] ?(.*)$")
 _CHARNAME_RE = re.compile(r"^\[charname:([^;\]]+);([^\]]*)\](?: ([^:\[]{1,20}))?: ?(.*)$")
 _PLAIN_NICK_RE = re.compile(r"^([^\s:\[\]]{2,24}): (.*)$")
 _CMD_RE = re.compile(r"\[cmd:[^\]]*\]")
-_ITEM_RE = re.compile(r"\[item:(\d*)[^\]]*\]")
+_ITEM_RE = re.compile(r"\[(?:item|item_ex|recipe):(\d*)[^\]]*\]")
+_POS_RE = re.compile(r"\[pos:([^;\]]*);(\d+)[^\]]*\]")
+_QUEST_RE = re.compile(r"\[quest:(\d+)[^\]]*\]")
+_WHERE_RE = re.compile(r"\[where:([^\]]*)\]")
+_EMOTES_RE = re.compile(r"\?{3,}")  # the client writes each chat smiley as «?» (no smileys in cp1251)
+
+# Links that are not items are wrapped in these marks; the chat views draw them as <…> links.
+LINK_OPEN, LINK_CLOSE = "⟪", "⟫"
+EMOTE = "✦"  # stands for a run of smileys
+MAP_NAMES = {
+    "110010000": "Санктум",
+    "120010000": "Пандемониум",
+    "210010000": "Пойета",
+    "210020000": "Эльтнен",
+    "210030000": "Верторон",
+    "210040000": "Хейрон",
+    "210050000": "Ингисон",
+    "210060000": "Теобомос",
+    "220010000": "Исхальген",
+    "220020000": "Морхейм",
+    "220030000": "Альтгард",
+    "220040000": "Белуслан",
+    "220050000": "Брустхонин",
+    "220070000": "Гелькмарос",
+    "400010000": "Бездна",
+    "600010000": "Каньон Силентера",
+}
 
 
 @dataclass(frozen=True)
@@ -40,11 +66,25 @@ class ChatLine:
         return self.nick is not None
 
 
+def _place(match: re.Match) -> str:
+    label = match.group(1) or "Место"
+    region = MAP_NAMES.get(match.group(2))
+    return f"{LINK_OPEN}{label} · {region}{LINK_CLOSE}" if region else f"{LINK_OPEN}{label}{LINK_CLOSE}"
+
+
 def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
-    """Drop [cmd:...] markup, show item links as [name] (or [item] if unknown), trim spaces."""
+    """Drop [cmd:...] markup and make links readable.
+
+    Item / recipe links become [name] ([item] if unknown); place, quest and «where» links become
+    ⟪Место · Гелькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) become ✦.
+    """
     names = names or {}
     text = _CMD_RE.sub("", text)
     text = _ITEM_RE.sub(lambda m: f"[{names.get(m.group(1), 'item')}]", text)
+    text = _POS_RE.sub(_place, text)
+    text = _QUEST_RE.sub(lambda m: f"{LINK_OPEN}Задание {m.group(1)}{LINK_CLOSE}", text)
+    text = _WHERE_RE.sub(lambda m: f"{LINK_OPEN}{m.group(1).strip()}{LINK_CLOSE}", text)
+    text = _EMOTES_RE.sub(EMOTE, text)
     return text.strip()
 
 

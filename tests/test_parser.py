@@ -149,3 +149,24 @@ def test_any_line_keeps_name_color_and_verb():
     line = parse_any_line(CMD_LINE)
     assert (line.color, line.verb) == ("1.0000 0.6941 0.6941", "")
     assert parse_any_line(SYSTEM_LINE).color is None
+
+
+def test_clean_text_place_quest_where_recipe_and_smileys():
+    from watcher.parser import clean_text
+
+    names = {"155007142": "Рецепт: клик", "186000163": "Монета"}
+    text = (
+        "[cmd:x;y]??? Форт [pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Место;999 1 2 0 0] "
+        "кв [quest:2058] лег [where:sweet bunny] [recipe:155007142;0] [item_ex:186000163;Tw] го? ??"
+    )
+    assert clean_text(text, names) == (
+        "✦ Форт ⟪Место · Гелькмарос⟫ ⟪Место⟫ кв ⟪Задание 2058⟫ лег ⟪sweet bunny⟫ "
+        "[Рецепт: клик] [Монета] го? ??"
+    )
+
+
+def test_pos_link_at_line_start_is_not_a_channel():
+    from watcher.parser import parse_any_line
+
+    line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут")
+    assert line.channel is None and line.text == "⟪Место · Гелькмарос⟫ тут"
