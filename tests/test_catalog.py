@@ -27,8 +27,12 @@ def test_load_watch_items_missing_file(tmp_path):
 def test_bundled_data_present():
     data = resource_root() / "data"
     items = load_watch_items(data / "watch_items.csv")
-    assert len(items) > 10000  # armour, weapons, shields and wings from level 45
-    assert all(item.level >= 45 for item in items)
+    from watcher.catalog import is_listed
+
+    assert len(items) > 25000  # equipment from level 45, plus materials, supplies and misc for chat links
+    listed = [item for item in items if is_listed(item)]
+    assert len(listed) > 9000 and all(item.level >= 45 for item in listed)
+    assert {item.category for item in items} >= {"Украшения", "Изготовление", "Припасы", "Прочее"}
     by_id = {item.id: item for item in items}
     assert by_id["100000893"].name == "Клинок Рудры"
     assert by_id["100000893"].grade == "epic"
