@@ -42,6 +42,7 @@ class Zone:
     size: int
     kx: tuple[float, float]
     ky: tuple[float, float]
+    labels: tuple[tuple[float, float, str], ...] = ()  # area names: (image x, image y, text)
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
@@ -53,13 +54,39 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
         index = json.loads((Path(maps_dir) / "maps.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+    labels = load_labels(Path(maps_dir) / "labels.tsv")
     zones = {}
     for map_id, info in index.items():
         path = Path(maps_dir) / info["file"]
         if path.is_file():
+            size = int(info["size"])
+            view_box, rows = labels.get(path.stem, (size, []))
+            k = size / view_box
             zones[map_id] = Zone(
-                map_id, names.get(map_id, map_id), path, int(info["size"]), tuple(info["x"]), tuple(info["y"])
+                map_id, names.get(map_id, map_id), path, size, tuple(info["x"]), tuple(info["y"]),
+                tuple((x * k, y * k, text) for x, y, text in rows),
             )
+    return zones
+
+
+def load_labels(path: Path) -> dict[str, tuple[float, list[tuple[float, float, str]]]]:
+    """labels.tsv -> {zone code: (viewBox size, [(x, y, text), ...])}; «|» in a name is a line break."""
+    zones: dict[str, tuple[float, list]] = {}
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    for line in lines:
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        try:
+            if line.startswith("@"):
+                zones[parts[0][1:]] = (float(parts[1]), [])
+            elif parts[0] in zones and len(parts) == 4:
+                zones[parts[0]][1].append((float(parts[1]), float(parts[2]), parts[3].replace("|", "\n")))
+        except ValueError:
+            continue
     return zones
 
 
@@ -226,6 +253,7 @@ class MapWindow:
         canvas = self.canvas
         canvas.delete("all")
         canvas.create_image(0, 0, image=self._photo, anchor="nw")
+        self._draw_labels(width, height)
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
             canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline="#0b2b28", width=2,
@@ -236,6 +264,18 @@ class MapWindow:
             canvas.create_oval(sx - 5, sy - 5, sx + 5, sy + 5, fill=PIN, outline="", tags="pin")
             canvas.create_text(sx + 18, sy - 2, text=self.place.label, anchor="w", fill="#ffffff",
                                font=(theme.FONT_FAMILY, theme.FONT_SIZE, "bold"), tags="pin")
+
+    def _draw_labels(self, width: int, height: int) -> None:
+        """Area names, like the game map: white text with a dark outline; size follows the zoom."""
+        size = max(8, min(15, round(5 + 4 * self.zoom)))
+        font = (theme.FONT_FAMILY, size, "bold")
+        for image_x, image_y, text in self.zone.labels:
+            sx, sy = self.to_screen(image_x, image_y)
+            if -200 < sx < width + 200 and -60 < sy < height + 60:
+                for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
+                    self.canvas.create_text(sx + dx, sy + dy, text=text, fill="#0d0e11", font=font,
+                                            justify="center", tags="label")
+                self.canvas.create_text(sx, sy, text=text, fill="#f2e6c9", font=font, justify="center", tags="label")
 
     def _on_pin_enter(self, event: tk.Event) -> None:
         current = self.canvas.find_withtag("current")

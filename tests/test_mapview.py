@@ -63,3 +63,28 @@ def test_zone_without_map_says_so(root):
     window.show(Place("400010000", 1, 2, "Место · Арэшурат"))
     assert "карты этой зоны нет" in window.title.cget("text")
     window.close()
+
+
+def test_area_names_on_maps(root):
+    found = zones()
+    kelk = found["220070000"]
+    names = {text for _x, _y, text in kelk.labels}
+    assert {"Митраканд", "Крепость Келькмарос", "Вход в тоннель Силентера в Келькмаросе"} <= names
+    assert all(0 <= x <= kelk.size and 0 <= y <= kelk.size for x, y, _t in kelk.labels)
+    assert "Коридор\nмучений" in {t for _x, _y, t in found["600010000"].labels}  # «|» is a line break
+    window = MapWindow(root, found)
+    window.show(Place("220070000", 1173.0, 1227.4, "Место"))
+    root.update()
+    window.render()
+    shown = {window.canvas.itemcget(i, "text") for i in window.canvas.find_withtag("label")}
+    assert "Запечатанная башня" in shown
+    window.close()
+
+
+def test_labels_file_errors_are_ignored(tmp_path):
+    from watcher.mapview import load_labels
+
+    path = tmp_path / "labels.tsv"
+    path.write_text("# c\n@df4\t3072\ndf4\t1\t2\tA|B\ndf4\tx\t2\tbad\nzz\t1\t1\tno zone\n", encoding="utf-8")
+    assert load_labels(path) == {"df4": (3072.0, [(1.0, 2.0, "A\nB")])}
+    assert load_labels(tmp_path / "missing.tsv") == {}
