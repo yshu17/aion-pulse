@@ -160,7 +160,7 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
         "кв [quest:2058] лег [where:sweet bunny] [recipe:155007142;0] [item_ex:186000163;Tw] го? ??"
     )
     assert clean_text(text, names) == (
-        "✦ Форт ⟪Место · Келькмарос⟫ ⟪Место⟫ кв ⟪Задание: Уничтожение повстанцев Ривара⟫ лег ⟪sweet bunny⟫ "
+        "Форт ⟪Место · Келькмарос⟫ ⟪Место⟫ кв ⟪Задание: Уничтожение повстанцев Ривара⟫ лег ⟪sweet bunny⟫ "
         "[Рецепт: клик] [Монета] го? ??"
     )
 

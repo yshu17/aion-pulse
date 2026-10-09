@@ -18,11 +18,11 @@ _QUEST_RE = re.compile(r"\[quest:(\d+)[^\]]*\]")
 _WHERE_RE = re.compile(r"\[where:([^\]]*)\]")
 # the game cuts long messages; a link left open at the end of the line is shown with «…»
 _CUT_LINK_RE = re.compile(r"\[(?:where|pos|quest|item|item_ex|recipe|cmd):([^\]]*)$")
-_EMOTES_RE = re.compile(r"\?{3,}")  # the client writes each chat smiley as «?» (no smileys in cp1251)
+_EMOTES_RE = re.compile(r"\?{3,}")  # the client writes each chat smiley as «?» (no smileys in cp1251): dropped
+_SPACES_RE = re.compile(r" {2,}")
 
 # Links that are not items are wrapped in these marks; the chat views draw them as <…> links.
 LINK_OPEN, LINK_CLOSE = "⟪", "⟫"
-EMOTE = "✦"  # stands for a run of smileys
 
 
 def _load_map_names() -> dict[str, str]:
@@ -92,7 +92,7 @@ def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     """Drop [cmd:...] markup and make links readable.
 
     Item / recipe links become [name] ([item] if unknown); place, quest and «where» links become
-    ⟪Место · Келькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) become ✦.
+    ⟪Место · Келькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) are dropped.
     """
     names = names or {}
     text = _CUT_LINK_RE.sub(_cut_link, text.rstrip())
@@ -101,7 +101,7 @@ def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     text = _POS_RE.sub(_place, text)
     text = _QUEST_RE.sub(_quest, text)
     text = _WHERE_RE.sub(lambda m: f"{LINK_OPEN}{m.group(1).strip()}{LINK_CLOSE}", text)
-    text = _EMOTES_RE.sub(EMOTE, text)
+    text = _SPACES_RE.sub(" ", _EMOTES_RE.sub("", text))
     return text.strip()
 
 

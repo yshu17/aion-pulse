@@ -124,14 +124,12 @@ def test_item_links_take_grade_colour(root):
     assert "[Камень]" in text.get("1.0", "end")  # unknown, non-Rudra links stay plain
 
 
-def test_place_links_and_smileys_are_styled(root):
+def test_place_links_are_styled(root):
     feed = make(root)
-    feed.add(msg("S", "✦ Форт ⟪Место · Келькмарос⟫ го"), [])
+    feed.add(msg("S", "Форт ⟪Место · Келькмарос⟫ го"), [])
     text = feed.text
     start, end = text.tag_ranges("place")
     assert text.get(start, end) == "<Место · Келькмарос>"
-    start, end = text.tag_ranges("emote")
-    assert text.get(start, end) == "✦"
 
 
 def test_copy_selection_and_whole_message(root):
