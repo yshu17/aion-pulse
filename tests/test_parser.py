@@ -32,7 +32,7 @@ def test_replaces_item_links():
     msg = parse_line(ITEM_LINE)
     assert msg is not None
     assert msg.nick == "Roflokabanchik"
-    assert msg.text == "wts [item][item] вставка"
+    assert msg.text == "wts [Предмет 168000066][Предмет 168000067] вставка"
 
 
 def test_parses_plain_message():
@@ -62,7 +62,7 @@ def test_ignores_garbage():
 
 
 def test_clean_text():
-    assert clean_text("  [cmd:X;abc=]Хил [item:1;ver2;;;] ") == "Хил [item]"
+    assert clean_text("  [cmd:X;abc=]Хил [item:1;ver2;;;] ") == "Хил [Предмет 1]"
 
 
 def test_collects_item_ids_in_order():
@@ -81,12 +81,12 @@ def test_known_item_links_show_names():
     names = {"168000066": "Клинок Рудры"}
     msg = parse_line(ITEM_LINE, names)
     assert msg is not None
-    assert msg.text == "wts [Клинок Рудры][item] вставка"
+    assert msg.text == "wts [Клинок Рудры][Предмет 168000067] вставка"
     assert msg.item_ids == ("168000066", "168000067")
 
 
 def test_clean_text_with_names():
-    assert clean_text("[item:1;ver2;;;] и [item:2;ver2;;;]", {"2": "Меч Фланаса"}) == "[item] и [Меч Фланаса]"
+    assert clean_text("[item:1;ver2;;;] и [item:2;ver2;;;]", {"2": "Меч Фланаса"}) == "[Предмет 1] и [Меч Фланаса]"
 
 
 # --- any channel (for «Весь чат») -------------------------------------------------

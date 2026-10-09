@@ -121,16 +121,20 @@ def _cut_link(match: re.Match) -> str:
     return "…"
 
 
+def _unknown_item(item_id: str) -> str:
+    return f"Предмет {item_id}" if item_id else "Предмет"
+
+
 def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     """Drop [cmd:...] markup and make links readable.
 
-    Item / recipe links become [name] ([item] if unknown); place, quest and «where» links become
+    Item / recipe links become [name] ([Предмет 166000103] if the id is not in the catalog); place, quest and «where» links become
     ⟪Место · Келькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) are dropped.
     """
     names = names or {}
     text = _CUT_LINK_RE.sub(_cut_link, text.rstrip())
     text = _CMD_RE.sub("", text)
-    text = _ITEM_RE.sub(lambda m: f"[{names.get(m.group(1), 'item')}]", text)
+    text = _ITEM_RE.sub(lambda m: f"[{names.get(m.group(1)) or _unknown_item(m.group(1))}]", text)
     text = _POS_RE.sub(_place, text)
     text = _QUEST_RE.sub(_quest, text)
     text = _WHERE_RE.sub(lambda m: f"{LINK_OPEN}{m.group(1).strip()}{LINK_CLOSE}", text)

@@ -163,7 +163,7 @@ def test_view_shows_only_wanted_channels(root, tmp_path):
     t = text(view)
     assert "Trader" not in t and "урона" not in t
     assert "[Группа] Grp: в группе" in t
-    assert "Получено: [item]" in t
+    assert "Получено: [Предмет 1]" in t
     view.deactivate()
 
 

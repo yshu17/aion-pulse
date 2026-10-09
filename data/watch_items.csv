@@ -8519,6 +8519,7 @@ id,name,level,category,grade,icon,kind
 101500465,Сияющий посох короля мудрых драконов,50,Оружие,unique,icon_item_staff_u01,Посох
 101500475,Сияющий посох короля темных драконов,50,Оружие,unique,icon_item_staff_u01,Посох
 100200701,Стилет элитного легионера Анухарта,50,Оружие,unique,icon_item_dagger_u02,Кинжал
+100901122,Усиленный двуручный меч отваги,50,Оружие,unique,icon_item_darkknight01_2hsword_e01,Двуручный меч
 100000765,Чешуйчатый меч элитного легионера Анухарта,50,Оружие,unique,icon_item_sword_u02,Меч
 100100735,Боевой молот небытия (14 д.),50,Оружие,legend,icon_item_mace_l01,Булава
 100100814,Боевой молот опытного исследователя,50,Оружие,legend,icon_item_mace_l01,Булава
@@ -22631,6 +22632,12 @@ id,name,level,category,grade,icon,kind
 169231064,Ярко-розовая краска (30 д.),1,Припасы,common,icon_cash_item_dye_pink_01,Краски
 169231012,Ярко-розовая краска (5 мин.),1,Припасы,common,icon_cash_item_dye_pink_01,Краски
 169231040,Ярко-розовая краска (7 д.),1,Припасы,common,icon_cash_item_dye_pink_01,Краски
+166000106,Волшебный камень (ур. 106),106,Прочее,epic,icon_item_enchantstone06_106,
+166000105,Волшебный камень (ур. 105),105,Прочее,epic,icon_item_enchantstone06_105,
+166000104,Волшебный камень (ур. 104),104,Прочее,epic,icon_item_enchantstone06_104,
+166000103,Волшебный камень (ур. 103),103,Прочее,epic,icon_item_enchantstone06_103,
+166000102,Волшебный камень (ур. 102),102,Прочее,epic,icon_item_enchantstone06_102,
+166000101,Волшебный камень (ур. 101),101,Прочее,epic,icon_item_enchantstone06_101,
 182006411,Предмет для тестирования добычи группы (мифический),60,Прочее,mythic,icon_item_scale01,
 169611110,[Ивент] [Свиток титула] Прославленный великий генерал (90 д.),60,Прочее,epic,icon_cash_item_card_title_01,Титулы
 169611108,[Ивент] [Свиток титула] Прославленный военачальник (90 д.),60,Прочее,epic,icon_cash_item_card_title_01,Титулы
@@ -22649,10 +22656,19 @@ id,name,level,category,grade,icon,kind
 182006409,Предмет для тестирования добычи группы (уникальный),60,Прочее,unique,icon_item_scale01,
 182006408,Предмет для тестирования добычи группы (легендарный),60,Прочее,legend,icon_item_scale01,
 182006407,Предмет для тестирования добычи группы (редкий),60,Прочее,rare,icon_item_scale01,
+160002393,Вкусное карри императора ужасных драконов,60,Прочее,common,icon_item_dish05,
+160002345,Вкусные полезные пельмени с тифабом,60,Прочее,common,icon_item_dish25,
+160002343,Вкусные полезные суши с налимом,60,Прочее,common,icon_item_dish10,
 182006418,Пикантное лакомство для питомца,60,Прочее,common,icon_item_tail01,
+160002339,Полезные пельмени с тифабом,60,Прочее,common,icon_item_dish25,
+160002337,Полезные суши с налимом,60,Прочее,common,icon_item_dish10,
 182006406,Предмет для тестирования добычи группы (обычный),60,Прочее,common,icon_item_scale01,
+152207197,Рецепт: Полезные суши с налимом,60,Прочее,common,icon_item_scroll07,
+160002385,Салат императора ужасных драконов,60,Прочее,common,icon_item_dish20,
+160002309,Суши с налимом,60,Прочее,common,icon_item_dish10,
 169610312,[Титул] Победитель Геры,55,Прочее,unique,icon_cash_item_card_title_01,Титулы
 169610112,[Титул] Победитель Теграка,55,Прочее,unique,icon_cash_item_card_title_01,Титулы
+152029205,Ослепительная выделанная качественная кожа балаура,55,Прочее,unique,icon_item_dragonhide01,
 110601277,Прославленная кираса завоевателя,55,Прочее,legend,icon_item_pl_torso_l01,
 110501303,Прославленная кольчуга завоевателя,55,Прочее,legend,icon_item_ch_torso_l01,
 110101399,Прославленная туника завоевателя,55,Прочее,legend,icon_item_rb_torso_l01,
@@ -22671,8 +22687,10 @@ id,name,level,category,grade,icon,kind
 114301328,Прославленные сапоги завоевателя,55,Прочее,legend,icon_item_lt_shoes_l01,
 113101293,Прославленные тканые набедренники завоевателя,55,Прочее,legend,icon_item_rb_pants_l01,
 110301325,Прославленный дублет завоевателя,55,Прочее,legend,icon_item_lt_torso_l01,
+152207153,Рецепт: Редкое зелье восстановления VI,55,Прочее,legend,icon_item_scroll06,
 169500807,Взрывная ловушка III,55,Прочее,rare,icon_item_skillbook_r01,Умения
 169500808,Взрывная ловушка III,55,Прочее,rare,icon_item_skillbook_r01,Умения
+152206713,Рецепт: Полированный качественный рог балаура,55,Прочее,rare,icon_item_scroll05,
 169500778,Безжалостный удар III,55,Прочее,common,icon_item_skillbook_01,Умения
 169500789,Бросок оземь III,55,Прочее,common,icon_item_skillbook_01,Умения
 169500846,Заклятие критического удара III,55,Прочее,common,icon_item_skillbook_01,Умения
@@ -22689,6 +22707,8 @@ id,name,level,category,grade,icon,kind
 169500881,Призыв: Мощь воды III,55,Прочее,common,icon_item_skillbook_01,Умения
 169500779,Разящий удар I,55,Прочее,common,icon_item_skillbook_01,Умения
 169500890,Раскалывающий удар I,55,Прочее,common,icon_item_skillbook_01,Умения
+152206700,Рецепт: Дрениумовая булава эксперта,55,Прочее,common,icon_item_scroll07,
+152206701,Рецепт: Дрениумовый двуручный меч эксперта,55,Прочее,common,icon_item_scroll07,
 169500834,Свет восстановления III,55,Прочее,common,icon_item_skillbook_01,Умения
 169500809,Точный выстрел I,55,Прочее,common,icon_item_skillbook_01,Умения
 169500820,Убийство III,55,Прочее,common,icon_item_skillbook_01,Умения
@@ -22716,6 +22736,7 @@ id,name,level,category,grade,icon,kind
 169500879,Призыв: Мощь ветра IV,54,Прочее,common,icon_item_skillbook_01,Умения
 169500775,Пронзающий клинок IV,54,Прочее,common,icon_item_skillbook_01,Умения
 169500843,Раскаленный удар IV,54,Прочее,common,icon_item_skillbook_01,Умения
+152206814,Рецепт: Кираса Турату,54,Прочее,common,icon_item_scroll07,
 169500819,Усмирение IV,54,Прочее,common,icon_item_skillbook_01,Умения
 169500774,Вспышка гнева I,53,Прочее,rare,icon_item_skillbook_r01,Умения
 169500830,Гроза I,53,Прочее,rare,icon_item_skillbook_r01,Умения
@@ -22731,6 +22752,17 @@ id,name,level,category,grade,icon,kind
 169500859,Волна холода V,53,Прочее,common,icon_item_skillbook_01,Умения
 169500829,Исполнение приговора V,53,Прочее,common,icon_item_skillbook_01,Умения
 169500773,Контратака щитом V,53,Прочее,common,icon_item_skillbook_01,Умения
+152206786,Рецепт: Дрениумовая кольчуга эксперта,53,Прочее,common,icon_item_scroll07,
+152206791,Рецепт: Дрениумовые латные набедренники эксперта,53,Прочее,common,icon_item_scroll07,
+152206789,Рецепт: Дрениумовые латные рукавицы эксперта,53,Прочее,common,icon_item_scroll07,
+152206888,Рецепт: Качественные наплечи эксперта,53,Прочее,common,icon_item_scroll07,
+152206887,Рецепт: Качественные перчатки эксперта,53,Прочее,common,icon_item_scroll07,
+152206892,Рецепт: Качественный шлем эксперта,53,Прочее,common,icon_item_scroll07,
+152207027,Рецепт: Красивые бирюзовые очки,53,Прочее,common,icon_item_scroll07,
+152207044,Рецепт: Красивые кельфаратовые очки,53,Прочее,common,icon_item_scroll07,
+152207010,Рецепт: Красивые турмалиновые очки,53,Прочее,common,icon_item_scroll07,
+152206956,Рецепт: Рунасовая туника эксперта,53,Прочее,common,icon_item_scroll07,
+152206957,Рецепт: Рунасовый пояс эксперта,53,Прочее,common,icon_item_scroll07,
 169500860,Стальной защитный барьер V,53,Прочее,common,icon_item_skillbook_01,Умения
 169500772,Волна гнева II,52,Прочее,rare,icon_item_skillbook_r01,Умения
 169500856,Вспышка тьмы II,52,Прочее,rare,icon_item_skillbook_r01,Умения
@@ -22751,6 +22783,7 @@ id,name,level,category,grade,icon,kind
 169500800,Песчаная ловушка II,52,Прочее,common,icon_item_skillbook_01,Умения
 169500912,Поглощение жизни II,52,Прочее,common,icon_item_skillbook_01,Умения
 169500771,Прокалывающий клинок II,52,Прочее,common,icon_item_skillbook_01,Умения
+152207096,Рецепт: Лук Басаима,52,Прочее,common,icon_item_scroll07,
 169500897,Рывок к жертве III,52,Прочее,common,icon_item_skillbook_01,Умения
 169500798,Шторм стрел II,52,Прочее,common,icon_item_skillbook_01,Умения
 169500939,Призыв: Святое зеркало IV,51,Прочее,rare,icon_item_skillbook_r01,Умения
@@ -22847,6 +22880,7 @@ id,name,level,category,grade,icon,kind
 169610135,[Титул] Упорный преследователь,50,Прочее,legend,icon_cash_item_card_title_01,Титулы
 182206627,Плод Каспара,50,Прочее,legend,icon_item_fruit02,
 182207604,Плод Каспара,50,Прочее,legend,icon_item_fruit02,
+160002399,[Ивент] Пир даэва,50,Прочее,rare,icon_item_dish09,
 169610115,[Титул] Захватчик,50,Прочее,rare,icon_cash_item_card_title_01,Титулы
 169610304,[Титул] Захватчик,50,Прочее,rare,icon_cash_item_card_title_01,Титулы
 169610315,[Титул] Захватчик,50,Прочее,rare,icon_cash_item_card_title_01,Титулы
@@ -22924,6 +22958,7 @@ id,name,level,category,grade,icon,kind
 169500037,Копье: практика IV,50,Прочее,common,icon_item_skillbook_02,Умения
 169500715,Коррозия V,50,Прочее,common,icon_item_skillbook_01,Умения
 169500038,Лук: практика IV,50,Прочее,common,icon_item_skillbook_02,Умения
+152029269,Материал для обработки оружия мастера VIII,50,Прочее,common,icon_item_crystalball01c_l,
 169500033,Меч: практика IV,50,Прочее,common,icon_item_skillbook_02,Умения
 169500889,Насмешка III,50,Прочее,common,icon_item_skillbook_02,Умения
 169500625,Орб: практика IV,50,Прочее,common,icon_item_skillbook_02,Умения
@@ -23743,6 +23778,7 @@ id,name,level,category,grade,icon,kind
 182203205,Секретное снадобье оборотней,10,Прочее,common,icon_item_potion_p01,
 182203017,Секретное снадобье охотника,10,Прочее,common,icon_item_salve01,
 169500536,Сон I,10,Прочее,common,icon_item_skillbook_01,Умения
+152025001,Стальной слиток,10,Прочее,common,icon_item_ingot01e,
 169500187,Стремительный удар II,10,Прочее,common,icon_item_skillbook_01,Умения
 169500295,Точный расчет I,10,Прочее,common,icon_item_skillbook_01,Умения
 169500455,Удар метеора I,10,Прочее,common,icon_item_skillbook_01,Умения
