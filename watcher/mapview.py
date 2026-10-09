@@ -30,6 +30,8 @@ ZOOM_STEP = 1.25
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
                "fortress", "artifact", "dungeon")
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
+SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
+SPLIT_ROW = 4  # icons per row when a group is laid out side by side
 SEARCH_PLACEHOLDER = "Найти: NPC, район"
 LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
 PIN = theme.ACCENT
@@ -133,6 +135,7 @@ class MapView(ttk.Frame):
         self.layers: set[str] = {t for t in SHOWN_TYPES if t in self.poi.types}
         self._poi_icons: dict[tuple[str, int], object] = {}
         self._drawn: list[tuple[float, float, list[Poi]]] = []
+        self._spots: dict[Poi, tuple[float, float]] = {}  # where each single point's icon was drawn
         self.get_places = get_places  # place links seen in the chat (pins)
         self.zone: Zone | None = None
         self.place: Place | None = None
@@ -345,7 +348,7 @@ class MapView(ttk.Frame):
         self._draw_labels(width, height)
         self._draw_poi(width, height)
         if self.selected is not None and self.selected.zone == self.zone.map_id:
-            sx, sy = self.to_screen(self.selected.x, self.selected.y)
+            sx, sy = self._spots.get(self.selected) or self.to_screen(self.selected.x, self.selected.y)
             canvas.create_oval(sx - 17, sy - 17, sx + 17, sy + 17, outline=PIN, width=3, tags="selected")
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
@@ -493,16 +496,26 @@ class MapView(ttk.Frame):
         return self._poi_icons[key]
 
     def _draw_poi(self, width: int, height: int) -> None:
-        """Points as their icons; close points of one type merge into an icon with a count."""
+        """Points as their icons; close points of one type merge into an icon with a count.
+
+        On the last two zoom levels nothing merges: points that would cover each other are laid out side by side
+        (rows of SPLIT_ROW) around their common centre, each one its own clickable icon.
+        """
         self._drawn = []
+        self._spots = {}
         if self.zone is None or not self.layers:
             return
         points = self.poi.in_zone(self.zone.map_id, self.layers)
-        groups = cluster(points, self.to_screen, radius_px=self._icon_size("") * 1.1, key=lambda p: p.type)
+        if self.zoom >= SPLIT_ZOOM:
+            groups = self._split(points)
+        else:
+            groups = cluster(points, self.to_screen, radius_px=self._icon_size("") * 1.1, key=lambda p: p.type)
         # teleporters and kisks on top of the rest
         groups.sort(key=lambda g: g[2][0].type in BIG_TYPES)
         canvas = self.canvas
         for sx, sy, members in groups:
+            if len(members) == 1:
+                self._spots[members[0]] = (sx, sy)
             size = self._icon_size(members[0].type)
             if not (-size < sx < width + size and -size < sy < height + size):
                 continue
@@ -518,6 +531,60 @@ class MapView(ttk.Frame):
                 canvas.create_oval(bx - 9, by - 9, bx + 9, by + 9, fill="#0d0e11", outline=theme.ACCENT, tags=tags)
                 canvas.create_text(bx, by, text=str(len(members)) if len(members) < 100 else "99+",
                                    fill="#ffffff", font=(theme.FONT_FAMILY, 8, "bold"), tags=tags)
+
+    def _split(self, points: list[Poi]) -> list[tuple[float, float, list[Poi]]]:
+        """Single icons that never cover each other: touching points are laid out side by side; if a laid-out row
+        then reaches a neighbouring group, both are merged and laid out again (a few rounds at most)."""
+        groups = self._touching([(p, self.to_screen(p.x, p.y)) for p in points])
+        for _ in range(6):
+            spots = [(m[0], (x, y)) for cx, cy, members in groups for x, y, m in self._spread(members, cx, cy)]
+            merged = self._touching(spots)
+            if len(merged) == len(groups):
+                break
+            # merge by exact position again, so a merged group is centred on its real points
+            groups = [(sum(self.to_screen(p.x, p.y)[0] for p in m) / len(m),
+                       sum(self.to_screen(p.x, p.y)[1] for p in m) / len(m), m) for _x, _y, m in merged]
+        return [g for cx, cy, members in groups for g in self._spread(members, cx, cy)]
+
+    def _touching(self, items: list[tuple[Poi, tuple[float, float]]]) -> list[tuple[float, float, list[Poi]]]:
+        """Groups of (point, screen spot) whose icons would touch (chains included), with each group's centre."""
+        step = self._icon_size("teleport") + 4
+        points = [p for p, _spot in items]
+        screen = [spot for _p, spot in items]
+        parent = list(range(len(points)))
+
+        def root(i: int) -> int:
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        order = sorted(range(len(points)), key=lambda i: screen[i][0])
+        for a, i in enumerate(order):  # sweep along x: only neighbours closer than step can touch
+            for j in order[a + 1:]:
+                if screen[j][0] - screen[i][0] >= step:
+                    break
+                if abs(screen[j][1] - screen[i][1]) < step:
+                    parent[root(j)] = root(i)
+        groups: dict[int, list[int]] = {}
+        for i in range(len(points)):
+            groups.setdefault(root(i), []).append(i)
+        return [(sum(screen[i][0] for i in idx) / len(idx), sum(screen[i][1] for i in idx) / len(idx),
+                 [points[i] for i in idx]) for idx in groups.values()]
+
+    def _spread(self, members: list[Poi], cx: float, cy: float) -> list[tuple[float, float, list[Poi]]]:
+        """One group -> single icons in rows around (cx, cy), spaced by the biggest icon among them."""
+        if len(members) == 1:
+            return [(cx, cy, members)]
+        ordered = sorted(members, key=lambda p: (p.type not in BIG_TYPES, p.type, p.name))
+        step = max(self._icon_size(p.type) for p in ordered) + 4
+        rows = [ordered[i:i + SPLIT_ROW] for i in range(0, len(ordered), SPLIT_ROW)]
+        out = []
+        for r, row in enumerate(rows):
+            y = cy + (r - (len(rows) - 1) / 2) * step
+            for c, p in enumerate(row):
+                out.append((cx + (c - (len(row) - 1) / 2) * step, y, [p]))
+        return out
 
     def _on_poi_enter(self, event: tk.Event) -> None:
         current = self.canvas.find_withtag("current")

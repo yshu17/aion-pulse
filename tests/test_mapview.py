@@ -234,3 +234,37 @@ def test_point_at_map_edge_can_be_centred(root):
     width, height = view._canvas_size()
     sx, sy = view.to_screen(size - 20, 30)
     assert abs(sx - width / 2) < 2 and abs(sy - height / 2) < 2
+
+
+def test_last_two_zoom_levels_split_groups_into_icons_side_by_side(root):
+    import math
+
+    from watcher.mapview import MAX_ZOOM, ZOOM_STEP
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
+    view.pack(fill="both", expand=True)
+    root.geometry("1300x900")
+    root.update()
+    view.open_zone("120010000")  # Pandaemonium: merchants stand in tight rows
+    view.zoom = 0.55
+    view.center_on(1620, 1650)
+    assert any(len(members) > 1 for _x, _y, members in view._drawn)  # still grouped below the last two levels
+    for zone, cx, cy, zoom in (("120010000", 1620, 1650, MAX_ZOOM), ("120010000", 1620, 1650, MAX_ZOOM / ZOOM_STEP),
+                               ("220070000", 2890, 1790, MAX_ZOOM)):  # Kelkmaros fortress: rows of merchants
+        if view.zone.map_id != zone:
+            view.open_zone(zone)
+        view.zoom = zoom
+        view.center_on(cx, cy)
+        assert view._drawn and all(len(members) == 1 for _x, _y, members in view._drawn)
+        spots = [(x, y, members[0]) for x, y, members in view._drawn]
+        for i, (x1, y1, p1) in enumerate(spots):  # no two icons cover each other
+            for x2, y2, p2 in spots[i + 1:]:
+                assert math.hypot(x1 - x2, y1 - y2) >= min(view._icon_size(p1.type), view._icon_size(p2.type)) - 1
+    # the selection ring follows the icon, not the hidden exact spot
+    x, y, members = view._drawn[0]
+    view.select(members[0])
+    view.render()
+    x0, y0, x1, y1 = view.canvas.coords(view.canvas.find_withtag("selected")[0])
+    assert ((x0 + x1) / 2, (y0 + y1) / 2) == pytest.approx(view._spots[members[0]], abs=1)
