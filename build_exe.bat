@@ -5,6 +5,8 @@ python -m pip install -r requirements.txt || goto :error
 python -m PyInstaller --noconfirm --clean --onefile --windowed --name AionChatWatcher ^
   --distpath . --workpath build --specpath build ^
   --add-data "%~dp0data;data" ^
+  --exclude-module numpy --exclude-module PIL.ImageQt --exclude-module PyQt5 --exclude-module PyQt6 ^
+  --exclude-module PySide6 --exclude-module matplotlib --exclude-module IPython ^
   main.py || goto :error
 echo.
 echo Done: %~dp0AionChatWatcher.exe
