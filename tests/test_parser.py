@@ -170,3 +170,11 @@ def test_pos_link_at_line_start_is_not_a_channel():
 
     line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут")
     assert line.channel is None and line.text == "⟪Место · Келькмарос⟫ тут"
+
+
+def test_message_cut_inside_a_link():
+    from watcher.parser import clean_text
+
+    text = "[where:Вступай в легион][where:Окунись в PVE!!!] [where:Любой лвл!!!Г "
+    assert clean_text(text) == "⟪Вступай в легион⟫⟪Окунись в PVE!!!⟫ ⟪Любой лвл!!!Г…⟫"
+    assert clean_text("wts [item:100000893;ver2") == "wts …"

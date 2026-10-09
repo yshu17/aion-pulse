@@ -16,6 +16,8 @@ _ITEM_RE = re.compile(r"\[(?:item|item_ex|recipe):(\d*)[^\]]*\]")
 _POS_RE = re.compile(r"\[pos:([^;\]]*);(\d+)[^\]]*\]")
 _QUEST_RE = re.compile(r"\[quest:(\d+)[^\]]*\]")
 _WHERE_RE = re.compile(r"\[where:([^\]]*)\]")
+# the game cuts long messages; a link left open at the end of the line is shown with «…»
+_CUT_LINK_RE = re.compile(r"\[(?:where|pos|quest|item|item_ex|recipe|cmd):([^\]]*)$")
 _EMOTES_RE = re.compile(r"\?{3,}")  # the client writes each chat smiley as «?» (no smileys in cp1251)
 
 # Links that are not items are wrapped in these marks; the chat views draw them as <…> links.
@@ -64,6 +66,13 @@ def _place(match: re.Match) -> str:
     return f"{LINK_OPEN}{label} · {region}{LINK_CLOSE}" if region else f"{LINK_OPEN}{label}{LINK_CLOSE}"
 
 
+def _cut_link(match: re.Match) -> str:
+    """An unclosed link at the end of a cut message: keep the readable part of «where» text."""
+    if match.group(0).startswith("[where:") and match.group(1).strip():
+        return f"{LINK_OPEN}{match.group(1).strip()}…{LINK_CLOSE}"
+    return "…"
+
+
 def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     """Drop [cmd:...] markup and make links readable.
 
@@ -71,6 +80,7 @@ def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
     ⟪Место · Келькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) become ✦.
     """
     names = names or {}
+    text = _CUT_LINK_RE.sub(_cut_link, text.rstrip())
     text = _CMD_RE.sub("", text)
     text = _ITEM_RE.sub(lambda m: f"[{names.get(m.group(1), 'item')}]", text)
     text = _POS_RE.sub(_place, text)
