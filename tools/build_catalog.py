@@ -85,8 +85,30 @@ def save_icon(name: str, path: Path) -> str:
         return f"{name}: {exc}"
     image = Image.open(io.BytesIO(raw)).convert("RGB")
     image = image.crop((0, 0, ICON_CONTENT, ICON_CONTENT)).resize((ICON_SIZE, ICON_SIZE), Image.LANCZOS)
-    image.save(path, optimize=True)
+    save_small(image, path)
     return ""
+
+
+def save_small(image, path: Path) -> None:
+    """256-colour PNG: about half the size of full colour, no visible difference at 56 px."""
+    from PIL import Image
+
+    image.convert("RGB").quantize(256, method=Image.Quantize.MEDIANCUT).save(path, optimize=True)
+
+
+def shrink_old_icons(icons_dir: Path) -> int:
+    """Convert full-colour icons left from older builds to 256 colours."""
+    from PIL import Image
+
+    count = 0
+    for path in icons_dir.glob("*.png"):
+        with Image.open(path) as image:
+            if image.mode == "P":
+                continue
+            image.load()
+        save_small(image, path)
+        count += 1
+    return count
 
 
 def main() -> int:
@@ -122,13 +144,17 @@ def main() -> int:
     missing = [name for name in sorted(wanted) if not (icons_dir / f"{Path(name).stem}.png").exists()]
     with cf.ThreadPoolExecutor(6) as pool:
         errors = [e for e in pool.map(lambda n: save_icon(n, icons_dir / f"{Path(n).stem}.png"), missing) if e]
+    shrunk = shrink_old_icons(icons_dir)
     keep = {f"{Path(name).stem}.png" for name in wanted}
     stale = [p for p in icons_dir.glob("*.png") if p.name not in keep]
     for path in stale:
         path.unlink()
     counts = {c: sum(1 for i in rows if i["category"] == c) for c in CATEGORY_ORDER}
     print(f"{len(rows)} items {counts}")
-    print(f"{len(wanted)} icons ({len(missing)} downloaded, {len(errors)} unavailable, {len(stale)} old removed)")
+    print(
+        f"{len(wanted)} icons ({len(missing)} downloaded, {len(errors)} unavailable, "
+        f"{len(stale)} old removed, {shrunk} shrunk to 256 colours)"
+    )
     for error in errors:
         print("  no icon:", error)
     return 0
