@@ -1,4 +1,7 @@
-"""Download zone maps from aioncodex.com and write data/maps/<code>.jpg + data/maps/maps.json.
+"""Download reference zone maps from aioncodex.com into data/maps/external/.
+
+The active map tab uses the local-client rasters in data/maps/client/ and maps.json. This optional
+reference downloader writes maps_external.json so it cannot replace the app's active map index.
 
 aioncodex shows each zone as a 4096 px Leaflet map (TMS tiles /zonemap/<code>/{z}/{x}/{y}.jpg) and
 places NPCs on it from their game coordinates. Fitting both for many NPCs gives, per zone,
@@ -47,7 +50,8 @@ def stitch(code: str, zoom: int):
 
 def main() -> int:
     zoom = int(sys.argv[1]) if len(sys.argv) > 1 else 3
-    out = ROOT / "data" / "maps"
+    maps_dir = ROOT / "data" / "maps"
+    out = maps_dir / "external"
     out.mkdir(parents=True, exist_ok=True)
     index = {}
     for code, map_id, (a, b, c, d) in ZONES:
@@ -55,10 +59,10 @@ def main() -> int:
         image.save(out / f"{code}.jpg", quality=85, optimize=True)
         scale = image.size[0] / FULL
         # pixel = coefficient * game + offset, already scaled to this image
-        index[map_id] = {"file": f"{code}.jpg", "size": image.size[0],
+        index[map_id] = {"file": f"external/{code}.jpg", "size": image.size[0],
                          "x": [a * scale, b * scale], "y": [c * scale, d * scale]}
         print(code, map_id, (out / f"{code}.jpg").stat().st_size // 1024, "KB", flush=True)
-    (out / "maps.json").write_text(json.dumps(index, indent=1), encoding="utf-8")
+    (maps_dir / "maps_external.json").write_text(json.dumps(index, indent=1), encoding="utf-8")
     return 0
 
 

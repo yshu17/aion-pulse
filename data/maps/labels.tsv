@@ -1,5 +1,5 @@
 # Area names from aiondb.ru zone maps, in their svg coordinates («@zone<TAB>viewBox size» starts a zone).
-# zone<TAB>x<TAB>y<TAB>name («|» = line break). Same picture as data/maps/<zone>.jpg, so image px = svg * size / viewBox.
+# zone<TAB>x<TAB>y<TAB>name («|» = line break). Image px = svg * map size / viewBox.
 @df4	3072
 df4	656	2600	Море краха
 df4	1348	592	Болото Вискома

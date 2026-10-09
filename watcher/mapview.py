@@ -4,7 +4,8 @@ Like the game map: the mouse wheel zooms to the point under the cursor, dragging
 a double click zooms in. The clicked place is a big orange pin; other places linked in the chat
 for the same zone are small pins with «nick: message» on hover.
 
-Maps and the game -> image transform come from data/maps (tools/fetch_maps.py):
+Map images and the game -> image transform come from data/maps/maps.json. The active rasters are
+stitched from the local Aion client maps in data/maps/client:
     image_x = x[0] * game_y + x[1],   image_y = y[0] * game_x + y[1]
 """
 
