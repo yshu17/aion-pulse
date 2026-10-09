@@ -40,7 +40,7 @@ against 712 «Место» links from the user's chat log.
 | Data | Client data first (exact for this client). aiondb only as an optional gap filler later. |
 | Repository / exe size | Raw extraction (79 MB: 421 dungeon maps, UI atlases, big TSVs, 3 un-calibrated zones) moves to `client_extract/` — not in `data/`, so not bundled, and not committed. The app ships 9 zone maps + one compact `data/maps/poi.json` (~1 MB) + a few icons. |
 | Map size | Keep 3072 px for sharp zoom; exe grows to ~60 MB. Downscaling to 2048 px is a later option. |
-| Icons | The client's own map icons; each type also has a colour so it reads when small. |
+| Icons | Only ready-made icons, nothing drawn: the client's own icons first; a missing one (e.g. function-NPC marks if not found in `ui.pak`) comes from aiondb's icon set (also game art). |
 | Layers | Functional NPCs (each type separately), portals, fortresses/artifacts, dungeon entrances, gathering (by resource kind), quest points, places from the chat. |
 | Improvements | Search on the map; «Рядом» for a selected point with distance in metres; clustering of close points when zoomed out; presets «Город», «ПвП», «Сбор», «Задания»; remembered filter state. |
 | Visual design | Use the installed skills `ui-ux-pro-max`, `design-theme-guide`, `high-end-visual-design`; check with `ui-visual-validator` on screenshots. |
@@ -63,7 +63,7 @@ against 712 «Место» links from the user's chat log.
 ## Error handling
 
 Missing/broken `poi.json` → map works as now, panel says «нет данных». Unknown type → generic marker in
-«Прочее». Missing icon → coloured dot.
+«Прочее». Missing icon → the type's ready-made fallback icon from aiondb (never a drawn one).
 
 ## Testing
 
