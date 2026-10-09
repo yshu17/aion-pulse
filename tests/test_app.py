@@ -434,6 +434,8 @@ def test_counters_always_shown_and_reset(tmp_path):
 def test_short_status_indicator_in_folder_row(tmp_path):
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
+        assert app.counters_bar.master is app.header  # counters in the header, «Обзор…» before the status
+        assert app.browse_btn.grid_info()["column"] < app.status_label.grid_info()["column"]
         assert app.status_short_var.get() == "○ Не слежу"
         app.start()
         assert app.status_short_var.get().startswith("● Слежу")
@@ -649,23 +651,9 @@ def test_search_mode_disables_unused_inputs(tmp_path):
             assert not any(disabled(w) for w in item_widgets)
     finally:
         root.destroy()
-
-
-def test_saved_mode_disables_inputs_on_startup(tmp_path):
-    root, app, _calls, _say = _nag_app(tmp_path, search_mode="items")
+    root, app, _calls, _say = _nag_app(tmp_path, search_mode="items")  # a saved mode applies on startup
     try:
         assert app.kw_entry.instate(["disabled"])
-    finally:
-        root.destroy()
-
-
-def test_counters_live_in_header_and_browse_sits_before_status(tmp_path):
-    root, app, _calls, _say = _nag_app(tmp_path)
-    try:
-        assert app.counters_bar.master is app.header
-        browse_col = app.browse_btn.grid_info()["column"]
-        status_col = app.status_label.grid_info()["column"]
-        assert browse_col < status_col
     finally:
         root.destroy()
 

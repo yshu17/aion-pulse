@@ -1,33 +1,25 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from watcher.config import DEFAULT_GAME_DIR, Config, load_config, save_config
 
 
-def test_missing_file_gives_defaults_and_creates_it(tmp_path):
+@pytest.mark.parametrize("content", [None, "{not json", "[1, 2]"])  # missing, broken, not an object
+def test_bad_or_missing_file_gives_defaults_and_rewrites_it(tmp_path, content):
     path = tmp_path / "config.json"
+    if content is not None:
+        path.write_text(content, encoding="utf-8")
     cfg = load_config(path)
-    assert cfg == Config()
-    assert cfg.game_dir == DEFAULT_GAME_DIR
+    assert cfg == Config() and cfg.game_dir == DEFAULT_GAME_DIR and cfg.game_check is True
     assert json.loads(path.read_text(encoding="utf-8"))["poll_interval_ms"] == 500
 
 
-def test_broken_json_gives_defaults_and_rewrites(tmp_path):
+def test_roundtrip_keeps_cyrillic_and_lists(tmp_path):
     path = tmp_path / "config.json"
-    path.write_text("{not json", encoding="utf-8")
-    assert load_config(path) == Config()
-    assert json.loads(path.read_text(encoding="utf-8"))["keywords"] == []
-
-
-def test_non_object_json_gives_defaults(tmp_path):
-    path = tmp_path / "config.json"
-    path.write_text("[1, 2]", encoding="utf-8")
-    assert load_config(path) == Config()
-
-
-def test_roundtrip_keeps_cyrillic(tmp_path):
-    path = tmp_path / "config.json"
-    cfg = Config(keywords=["хил", "ММК"], cooldown_sec=30)
+    assert Config().watch_items == []
+    cfg = Config(keywords=["хил", "ММК"], cooldown_sec=30, watch_items=["100000893", "100001081"])
     save_config(path, cfg)
     assert "хил" in path.read_text(encoding="utf-8")
     assert load_config(path) == cfg
@@ -44,11 +36,3 @@ def test_unknown_keys_ignored_missing_keys_default(tmp_path):
 def test_chat_log_path_default_and_override():
     assert Config(game_dir=r"D:\Aion").chat_log_path() == Path(r"D:\Aion") / "classic" / "Chat.log"
     assert Config(chat_log=r"E:\x\Chat.log").chat_log_path() == Path(r"E:\x\Chat.log")
-
-
-def test_watch_items_default_and_roundtrip(tmp_path):
-    path = tmp_path / "config.json"
-    assert Config().watch_items == []
-    cfg = Config(watch_items=["100000893", "100001081"])
-    save_config(path, cfg)
-    assert load_config(path).watch_items == ["100000893", "100001081"]

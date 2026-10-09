@@ -20,19 +20,10 @@ def zones():
     return load_zones(resource_root() / "data" / "maps", MAP_NAMES)
 
 
-def test_bundled_zones_and_transform():
-    found = zones()
-    assert {"220070000", "210050000", "120010000", "600010000"} <= set(found)
-    kelk = found["220070000"]
-    assert kelk.name == "Келькмарос"
-    # aioncodex: an NPC at game (978.8, 1265.0) sits at (1687.70, 1305.98) of its 4096 px map
-    x, y = kelk.to_image(978.8, 1265.0)
-    scale = kelk.size / 4096
-    assert abs(x - 1687.70 * scale) < 2 and abs(y - 1305.98 * scale) < 2
-
-
 def test_aiondb_maps_match_npc_markers():
     found = zones()
+    assert {"220070000", "210050000", "120010000", "600010000"} <= set(found)
+    assert found["220070000"].name == "Келькмарос"
     for map_id in ("220010000", "220030000", "220020000", "220050000", "220040000", "220070000", "210050000"):
         assert found[map_id].path.parent.name == "aiondb"
     # Altgard: aiondb puts teleporter 203678 (client game x 2681.14, y 1023.92) at svg (960.92, 2140.14) of 2790

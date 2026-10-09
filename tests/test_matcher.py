@@ -1,3 +1,5 @@
+import pytest
+
 from watcher.matcher import Matcher, highlight_segments, normalize
 from watcher.parser import ChatMessage
 
@@ -127,29 +129,17 @@ def run(mode, case, nick="N"):
     return Matcher(["wts"], watch_items=ITEMS, mode=mode).check(item_msg(text, ids, nick), 0)
 
 
-def test_mode_words_ignores_items():
-    assert run("words", WORD_ONLY) == ["wts"]
-    assert run("words", ITEM_ONLY) == []
-    assert run("words", BOTH) == ["wts"]
-
-
-def test_mode_items_ignores_words():
-    assert run("items", WORD_ONLY) == []
-    assert run("items", ITEM_ONLY) == ["Клинок Рудры"]
-    assert run("items", BOTH) == ["Клинок Рудры"]
-
-
-def test_mode_and_needs_both():
-    assert run("and", WORD_ONLY) == []
-    assert run("and", ITEM_ONLY) == []
-    assert run("and", BOTH) == ["wts", "Клинок Рудры"]
-
-
-def test_mode_or_is_default_and_takes_either():
-    assert Matcher([]).mode == "or"
-    assert run("or", WORD_ONLY) == ["wts"]
-    assert run("or", ITEM_ONLY) == ["Клинок Рудры"]
-    assert run("or", BOTH) == ["wts", "Клинок Рудры"]
+@pytest.mark.parametrize("mode, word_only, item_only, both", [
+    ("words", ["wts"], [], ["wts"]),
+    ("items", [], ["Клинок Рудры"], ["Клинок Рудры"]),
+    ("and", [], [], ["wts", "Клинок Рудры"]),
+    ("or", ["wts"], ["Клинок Рудры"], ["wts", "Клинок Рудры"]),
+])
+def test_search_modes(mode, word_only, item_only, both):
+    assert Matcher([]).mode == "or"  # default
+    assert run(mode, WORD_ONLY) == word_only
+    assert run(mode, ITEM_ONLY) == item_only
+    assert run(mode, BOTH) == both
 
 
 def test_set_mode_live_and_unknown_mode_falls_back_to_or():
