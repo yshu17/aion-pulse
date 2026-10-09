@@ -9,12 +9,12 @@ from tkinter import filedialog, ttk
 from watcher import theme
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
-from watcher.catalog import WatchItem, load_item_names, load_watch_items, resource_root
+from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
 from watcher.config import load_config, save_config
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
-from watcher.itemlist import ItemList
+from watcher.itemlist import ItemFilter, ItemList
 from watcher.notifier import Notifier, system_sounds
 from watcher.parser import ChatMessage, parse_line
 from watcher.specs import load_specs
@@ -378,7 +378,7 @@ class App:
         self._icons: dict[str, tk.PhotoImage] = {}
         self.item_list = ItemList(
             panel,
-            self.watch_items,
+            [item for item in self.watch_items if is_listed(item)],
             checked=self.cfg.watch_items,
             collapsed=self.cfg.collapsed_groups,
             icon_for=self._icon_for,
@@ -386,9 +386,23 @@ class App:
             on_collapse=self._on_collapse,
             on_hover=self._schedule_tooltip,
             on_leave=self._hide_tooltip,
+            item_filter=ItemFilter(
+                set(self.cfg.filter_grades),
+                self.cfg.filter_level_min,
+                self.cfg.filter_level_max,
+                self.cfg.filter_type,
+            ),
+            on_filter=self._on_filter,
         )
         self.item_list.pack(fill="both", expand=True)
         self.items_holder = self.item_list
+
+    def _on_filter(self, item_filter: ItemFilter) -> None:
+        self.cfg.filter_grades = sorted(item_filter.grades)
+        self.cfg.filter_level_min = item_filter.level_min
+        self.cfg.filter_level_max = item_filter.level_max
+        self.cfg.filter_type = item_filter.type
+        save_config(self.config_path, self.cfg)
 
     def _on_collapse(self, collapsed: list[str]) -> None:
         self.cfg.collapsed_groups = collapsed

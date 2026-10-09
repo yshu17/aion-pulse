@@ -1,10 +1,11 @@
 """Build the bundled item data from the crawl cache (see tools/crawl_items.py).
 
 Writes:
-  data/watch_items.csv     id,name,level,category,grade,icon — the «Что искать» list
+  data/watch_items.csv     id,name,level,category,grade,icon,kind — catalog; the «Что искать» list
+                           shows its listed part (see watcher.catalog.is_listed)
   data/item_specs.json.gz  item id -> tooltip spec (compact JSON text, parsed on demand)
   data/icons/<icon>.png    one picture per distinct site icon, 56 px
-Dev tool (needs Pillow). Usage: python tools/build_catalog.py <cache.jsonl>
+Dev tool (needs Pillow). Usage: python tools/build_catalog.py <cache.jsonl> [<cache.jsonl> ...]
 """
 
 import concurrent.futures as cf
@@ -28,6 +29,17 @@ ICON_SIZE = 56
 ICON_CONTENT = 40  # site icons are 64x64 sprites with the picture in the top-left 40x40
 GRADE_RANK = {"finality": 0, "mythic": 1, "epic": 2, "unique": 3, "legend": 4, "rare": 5, "common": 6}
 PREFIX_CATEGORY = {"115": "Щиты", "187": "Крылья"}  # these pages have no «Тип»
+# site list type (tools/list_by_type.py) -> (category, kind)
+SITE_TYPES = {
+    "earrings": ("Украшения", "Серьги"),
+    "necklaces": ("Украшения", "Ожерелья"),
+    "rings": ("Украшения", "Кольца"),
+    "belts": ("Украшения", "Пояса"),
+    "heads": ("Головные уборы", ""),
+    "production": ("Изготовление", ""),
+    "supplies": ("Припасы", ""),
+    "other": ("Прочее", ""),
+}
 
 
 def item_type(spec: dict) -> str:
@@ -39,11 +51,15 @@ def item_type(spec: dict) -> str:
     return ""
 
 
-def category(item: dict) -> str:
-    found = category_for(item_type(item["spec"]), item["name"])
+def category(item: dict) -> tuple[str, str]:
+    """(category, kind) — kind is the weapon type or accessory type, used by the list filter."""
+    if item.get("type") in SITE_TYPES:
+        return SITE_TYPES[item["type"]]
+    spec_type = item_type(item["spec"])
+    found = category_for(spec_type, item["name"])
     if found == "Прочее":
         found = PREFIX_CATEGORY.get(item["id"][:3], found)
-    return found
+    return found, spec_type if found == "Оружие" else ""
 
 
 def save_icon(name: str, path: Path) -> str:
@@ -68,13 +84,14 @@ def main() -> int:
     icons_dir = data / "icons"
     icons_dir.mkdir(exist_ok=True)
     items = {}
-    with open(sys.argv[1], encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                item = json.loads(line)
-                items[item["id"]] = item
+    for cache in sys.argv[1:]:
+        with open(cache, encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    item = json.loads(line)
+                    items.setdefault(item["id"], item)
     for item in items.values():
-        item["category"] = category(item)
+        item["category"], item["kind"] = category(item)
     order = {name: i for i, name in enumerate(CATEGORY_ORDER)}
     rows = sorted(
         items.values(),
@@ -82,9 +99,11 @@ def main() -> int:
     )
     with open(data / "watch_items.csv", "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")
-        writer.writerow(["id", "name", "level", "category", "grade", "icon"])
+        writer.writerow(["id", "name", "level", "category", "grade", "icon", "kind"])
         for i in rows:
-            writer.writerow([i["id"], i["name"], i["level"], i["category"], i["grade"], Path(i["icon"]).stem])
+            writer.writerow(
+                [i["id"], i["name"], i["level"], i["category"], i["grade"], Path(i["icon"]).stem, i["kind"]]
+            )
     specs = {i["id"]: json.dumps(i["spec"], ensure_ascii=False, separators=(",", ":")) for i in rows}
     blob = json.dumps(specs, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     (data / "item_specs.json.gz").write_bytes(gzip.compress(blob, 9))

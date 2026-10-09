@@ -92,7 +92,11 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
     root.withdraw()
     try:
         app = App(root, cfg_path)
-        assert len(app.item_list.order) == len(app.watch_items) >= 49
+        from watcher.catalog import is_listed
+
+        listed = [item for item in app.watch_items if is_listed(item)]
+        assert len(app.item_list.order) == len(listed) >= 49
+        assert not any(item.grade in ("common", "rare") for item in app.item_list.by_id.values())
         assert app.item_list.checked == {"100000893"}
         beeps = []
         app.notifier.play = lambda: beeps.append(1)
@@ -107,7 +111,7 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
         assert json.loads(cfg_path.read_text(encoding="utf-8"))["watch_items"] == []
 
         app._select_all_items(True)
-        assert len(app.cfg.watch_items) == len(app.watch_items)
+        assert len(app.cfg.watch_items) == len(listed)
         app.stop()
     finally:
         root.destroy()
@@ -228,7 +232,7 @@ def test_item_list_grouped_by_category(tmp_path):
     try:
         app = App(root, cfg_path)
         groups = app.item_list.groups
-        assert list(groups)[:5] == ["Рудра", "Лата", "Кольчуга", "Кожа", "Ткань"]
+        assert list(groups)[:5] == ["Рудра и Фланас", "Лата", "Кольчуга", "Кожа", "Ткань"]
         assert "Крылья" in groups
 
         app.item_list.set_group("Лата", True)

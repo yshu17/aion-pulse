@@ -23,6 +23,8 @@ def catalog(n_plate=300):
         WatchItem("2002", "Меч Фланаса", 55, "Оружие", "epic"),
         WatchItem("2003", "Чешуйчатый меч Рудры", 50, "Оружие", "epic"),
         WatchItem("3001", "Крылья Рудры", 55, "Крылья", "epic"),
+        WatchItem("2004", "Меч Сематы", 50, "Оружие", "legend", kind="Меч"),
+        WatchItem("2005", "Лук Сематы", 52, "Оружие", "unique", kind="Лук"),
     ]
     return items
 
@@ -79,11 +81,11 @@ def test_search_words_and_level(root):
 
 def test_search_unfolds_collapsed_section(root):
     lst, calls = make(root, collapsed=["Оружие"])
-    assert lst.row_top("2002") is None
-    lst.search("фланас")
+    assert lst.row_top("2004") is None
+    lst.search("сематы меч")
     assert "Оружие" not in lst.collapsed
     assert calls["collapse"][-1] == []
-    top = lst.row_top("2002")
+    top = lst.row_top("2004")
     first_visible = lst.canvas.canvasy(0)
     assert first_visible <= top <= first_visible + lst.canvas.winfo_height() - ROW_H
 
@@ -105,7 +107,7 @@ def test_click_toggles_item_and_group(root):
     lst.set_group("Лата", False)
     assert lst.checked_ids() == []
     lst.set_all(True)
-    assert len(lst.checked_ids()) == 7
+    assert len(lst.checked_ids()) == 9
 
 
 def test_click_on_rows(root):
@@ -137,10 +139,52 @@ def test_hover_reports_item(root):
 
 def test_rudra_gear_pinned_in_top_section(root):
     lst, _ = make(root)
-    assert list(lst.groups)[0] == "Рудра"
-    assert [i.id for i in lst.groups["Рудра"]] == ["2001", "2003", "3001"]
-    assert [i.id for i in lst.groups["Оружие"]] == ["2002"]
+    assert list(lst.groups)[0] == "Рудра и Фланас"
+    assert [i.id for i in lst.groups["Рудра и Фланас"]] == ["2001", "2002", "2003", "3001"]
+    assert [i.id for i in lst.groups["Оружие"]] == ["2004", "2005"]
     assert lst.row_top("2001") < lst.row_top("1000")
-    lst.toggle_collapsed("Рудра")
+    lst.toggle_collapsed("Рудра и Фланас")
     lst.search("клинок")
-    assert "Рудра" not in lst.collapsed and lst.current_match() == "2001"
+    assert "Рудра и Фланас" not in lst.collapsed and lst.current_match() == "2001"
+
+
+def test_filter_by_grade_level_and_type(root):
+    from watcher.itemlist import ItemFilter
+
+    seen = []
+    lst, _ = make(root, on_filter=seen.append)
+    assert "Оружие: Меч" in lst.type_choices() and "Лата" in lst.type_choices()
+    lst.set_filter(ItemFilter(grades={"epic"}))
+    assert set(lst.visible) == {"2001", "2002", "2003", "3001"}
+    lst.set_filter(ItemFilter(level_min=51, level_max=54))
+    assert lst.visible == ["2005"]
+    lst.set_filter(ItemFilter(type="Оружие: Меч"))
+    assert lst.visible == ["2004"]
+    lst.set_filter(ItemFilter(type="Оружие"))
+    assert lst.visible == ["2001", "2002", "2003", "2004", "2005"]  # pinned weapons too
+    assert seen[-1].type == "Оружие"
+    lst._reset_filter()
+    assert len(lst.visible) == 306
+
+
+def test_search_and_select_all_only_touch_shown_items(root):
+    from watcher.itemlist import ItemFilter
+
+    lst, _ = make(root, item_filter=ItemFilter(type="Оружие"))
+    assert lst.search("сематы") == 2
+    assert lst.search("крылья") == 0  # wings are filtered out by type
+    lst.set_all(True)
+    assert lst.checked == {"2001", "2002", "2003", "2004", "2005"}
+    lst.set_filter(ItemFilter())
+    lst.set_all(False)
+    assert lst.checked == set()
+
+
+def test_grade_chips_toggle(root):
+    lst, _ = make(root)
+    assert lst.grades == ["epic", "unique", "legend", "rare"]
+    lst._toggle_grade("rare")
+    assert lst.filter.grades == {"epic", "unique", "legend"}
+    assert "1000" not in lst.visible
+    lst._toggle_grade("rare")
+    assert lst.filter.grades == set()  # all on again = no grade filter

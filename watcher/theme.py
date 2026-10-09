@@ -366,6 +366,15 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
         ]})],
     )
     style.configure("Card.TEntry", padding=(6, 4))
+    style.layout(
+        "Card.TCombobox",
+        [("Card.Rounded.field", {"sticky": "nswe", "children": [
+            ("Combobox.downarrow", {"side": "right", "sticky": "ns"}),
+            ("Combobox.padding", {"expand": "1", "sticky": "nswe", "children": [
+                ("Combobox.textarea", {"sticky": "nswe"})
+            ]}),
+        ]})],
+    )
     style.configure("TEntry", padding=(6, 4))
     style.configure("TCombobox", padding=(6, 3), arrowsize=14)
     style.map("TCombobox", background=[("active", SURFACE_2), ("readonly", SURFACE_2)])

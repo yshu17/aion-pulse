@@ -13,7 +13,13 @@ def resource_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-CATEGORY_ORDER = ["Лата", "Кольчуга", "Кожа", "Ткань", "Оружие", "Щиты", "Крылья", "Прочее"]
+CATEGORY_ORDER = [
+    "Лата", "Кольчуга", "Кожа", "Ткань", "Оружие", "Щиты", "Крылья", "Украшения", "Головные уборы",
+    "Изготовление", "Припасы", "Прочее",
+]
+# in the catalog (chat links, tooltips) but not in the «Что искать» list
+UNLISTED_CATEGORIES = {"Изготовление", "Припасы", "Прочее"}
+UNLISTED_GRADES = {"common", "rare", "junk"}  # white and green items
 _ARMOR = {
     "Латная броня": "Лата",
     "Кольчужная броня": "Кольчуга",
@@ -37,6 +43,11 @@ def category_for(item_type: str, name: str) -> str:
     return "Прочее"
 
 
+def is_listed(item: "WatchItem") -> bool:
+    """Shown in the «Что искать» list: no white/green items, no materials, supplies or misc."""
+    return item.category not in UNLISTED_CATEGORIES and item.grade not in UNLISTED_GRADES
+
+
 @dataclass(frozen=True)
 class WatchItem:
     id: str
@@ -45,6 +56,7 @@ class WatchItem:
     category: str = "Прочее"
     grade: str = ""
     icon: str = ""  # file name in data/icons (shared by items with the same picture)
+    kind: str = ""  # finer type for the filter: weapon type («Меч»), accessory type («Кольца»)
 
 
 def load_item_names(path: Path) -> dict[str, str]:
@@ -62,7 +74,7 @@ def load_item_names(path: Path) -> dict[str, str]:
 
 
 def load_watch_items(path: Path) -> list[WatchItem]:
-    """Read watch_items.csv (id,name,level[,category,grade,icon]). A missing file gives an empty list."""
+    """Read watch_items.csv (id,name,level[,category,grade,icon,kind]). A missing file gives an empty list."""
     try:
         with open(path, encoding="utf-8", newline="") as f:
             return [
@@ -73,6 +85,7 @@ def load_watch_items(path: Path) -> list[WatchItem]:
                     category=row.get("category") or "Прочее",
                     grade=row.get("grade") or "",
                     icon=row.get("icon") or "",
+                    kind=row.get("kind") or "",
                 )
                 for row in csv.DictReader(f)
             ]
