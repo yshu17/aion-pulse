@@ -363,9 +363,10 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.map(
         "TNotebook.Tab",
         background=[("selected", SURFACE), ("active", SURFACE_3)],
-        foreground=[("selected", ACCENT)],
+        foreground=[("selected", TEXT), ("active", TEXT)],  # UI/UX item 11: the orange is the bar under the tab
         lightcolor=[("selected", SURFACE)],
         expand=[("selected", (0, 0, 0, 0))],
+        padding=[],  # clam shrinks the selected tab's padding to 6 4 6 2: its label jumped up and left
     )
 
     # status chip next to Start (UI/UX item 4): icon + text + colour, never colour alone

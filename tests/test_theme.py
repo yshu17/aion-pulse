@@ -141,3 +141,18 @@ def test_type_scale_uses_installed_families(root):
 ])
 def test_registry_text_pairs_meet_aa(fg, bg, where):
     assert contrast(fg, bg) >= TEXT_AA, f"{where}: {contrast(fg, bg):.2f}"
+
+
+def test_selected_tab_keeps_its_padding_and_has_an_accent_bar(root):
+    """UI/UX item 11: clam's smaller padding moved the selected label; the orange is a 2 px bar, the text is neutral."""
+    from PIL import Image
+
+    theme.apply_dark_theme(root, UI_DIR)
+    style = ttk.Style(root)
+    assert style.map("TNotebook.Tab", "padding") == []
+    assert ("selected", theme.TEXT) in style.map("TNotebook.Tab", "foreground")
+    image = Image.open(UI_DIR / "tab_selected.png").convert("RGB")
+    accent = tuple(int(theme.ACCENT[i:i + 2], 16) for i in (1, 3, 5))
+    middle = image.width // 2
+    assert image.getpixel((middle, image.height - 1)) == accent
+    assert image.getpixel((middle, image.height - 3)) != accent  # 2 px, not more

@@ -20,6 +20,7 @@ SCALE = 4  # draw big, then shrink: smooth (anti-aliased) corners
 RADIUS = theme.RADIUS
 CARD_RADIUS = theme.CARD_RADIUS
 SIZE = 48
+TAB_STRIPE = 2  # px, accent bar under the selected tab
 
 
 def rounded(
@@ -30,6 +31,7 @@ def rounded(
     border: str | None = None,
     width: int = 1,
     top_only: bool = False,
+    stripe: str | None = None,
 ) -> None:
     big = SIZE * SCALE
     image = Image.new("RGB", (big, big), outside)
@@ -42,7 +44,10 @@ def rounded(
         draw.rounded_rectangle(inner, max(1, (radius - width) * SCALE), fill=fill)
     else:
         draw.rounded_rectangle(box, radius * SCALE, fill=fill)
-    image.resize((SIZE, SIZE), Image.LANCZOS).save(OUT / f"{name}.png", optimize=True)
+    small = image.resize((SIZE, SIZE), Image.LANCZOS)
+    if stripe:  # a bar along the bottom edge (the selected tab, UI/UX item 11), drawn after the shrink: crisp 2 px
+        ImageDraw.Draw(small).rectangle((0, SIZE - TAB_STRIPE, SIZE - 1, SIZE - 1), fill=stripe)
+    small.save(OUT / f"{name}.png", optimize=True)
 
 
 def main() -> int:
@@ -65,7 +70,7 @@ def main() -> int:
     rounded("pill", t.SURFACE_2, t.BG, RADIUS)
     rounded("tab", t.SURFACE_2, t.BG, RADIUS, top_only=True)
     rounded("tab_active", t.SURFACE_3, t.BG, RADIUS, top_only=True)
-    rounded("tab_selected", t.SURFACE, t.BG, RADIUS, top_only=True)
+    rounded("tab_selected", t.SURFACE, t.BG, RADIUS, top_only=True, stripe=t.ACCENT)
     print(f"wrote {len(list(OUT.glob('*.png')))} images to {OUT}")
     return 0
 
