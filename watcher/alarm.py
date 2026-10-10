@@ -11,7 +11,7 @@ from watcher.parser import ChatMessage, display_text
 
 BEEP_REPEAT_MS = 1500
 BLINK_MS = 500
-DIM = "#3a2a14"
+DIM = theme.ALARM_DIM
 
 
 class _FlashInfo(ctypes.Structure):
@@ -149,7 +149,7 @@ class NagAlarm:
             text="Найдено в чате!",
             background=theme.BG,
             foreground=theme.ACCENT,
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE + 6, "bold"),
+            font=theme.font("alarm"),
             anchor="w",
         )
         self._title.pack(fill="x")
@@ -158,7 +158,7 @@ class NagAlarm:
             text="Наведи на сообщение или нажми ОК, чтобы выключить сигнал",
             background=theme.BG,
             foreground=theme.MUTED,
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1),
+            font=theme.font("caption"),
             anchor="w",
         ).pack(fill="x", pady=(2, 10))
         self.text = tk.Text(body, wrap="word", height=8, width=70, state="disabled", cursor="hand2")

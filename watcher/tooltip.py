@@ -4,12 +4,12 @@ import tkinter as tk
 
 from watcher import theme
 
-BG = "#0e1014"
-FRAME = "#5a4a2e"
-LINE = "#3a3d46"
+BG = theme.TOOLTIP_BG
+FRAME = theme.TOOLTIP_FRAME
+LINE = theme.TOOLTIP_LINE
 NAME_COLORS = theme.GRADE_COLORS
-PROPS = "#e8c55a"
-WARNING = "#ff5b5b"
+PROPS = theme.TOOLTIP_PROPS
+WARNING = theme.TOOLTIP_WARNING
 WIDTH = 440
 OFFSET = 18
 
@@ -45,7 +45,7 @@ class SpecTooltip:
         win.geometry(f"+{left}+{top}")
 
     def _label(self, parent: tk.Misc, text: str, color: str = theme.TEXT, **kw) -> tk.Label:
-        size = kw.pop("size", theme.FONT_SIZE - 1)
+        size = kw.pop("size", theme.TYPE["caption"][0])
         weight = kw.pop("weight", "normal")
         return tk.Label(
             parent,
@@ -61,7 +61,7 @@ class SpecTooltip:
 
     def _render(self, body: tk.Frame, spec: dict, icon: tk.PhotoImage | None) -> None:
         name_color = NAME_COLORS.get(spec.get("grade", ""), theme.TEXT)
-        self._label(body, spec.get("name", ""), name_color, size=theme.FONT_SIZE + 3, weight="bold").pack(
+        self._label(body, spec.get("name", ""), name_color, size=theme.TYPE["tooltip_name"][0], weight="bold").pack(
             fill="x", pady=(0, 8)
         )
         blocks = spec.get("blocks", [])
@@ -115,7 +115,7 @@ class SpecTooltip:
                     row,
                     width=22,
                     height=22,
-                    background="#1c1f26",
+                    background=theme.TOOLTIP_SLOT,
                     highlightthickness=1,
                     highlightbackground=theme.ACCENT if bonus else LINE,
                 ).pack(side="left", padx=(0, 6))

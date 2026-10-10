@@ -54,7 +54,7 @@ PLACE_ICON = 34  # px of the blue X that marks a place from the chat, as on the 
 # finds them; a point picked with a click is ringed at once
 BLINK_MS = 3000
 BLINK_STEP_MS = 300
-OTHER_PIN = "#4fd1c5"
+OTHER_PIN = theme.PLACE
 BG_RGB = tuple(int(theme.SURFACE[i : i + 2], 16) for i in (1, 3, 5))
 
 
@@ -256,7 +256,7 @@ class MapView(ttk.Frame):
         self.canvas.bind("<Motion>", self._on_motion, add="+")
         self.coords_var = tk.StringVar()
         tk.Label(card, textvariable=self.coords_var, background=theme.SURFACE, foreground=theme.MUTED,
-                 font=(theme.FONT_FAMILY, theme.FONT_SIZE - 3)).place(relx=0, rely=1, x=10, y=-8, anchor="sw")
+                 font=theme.font("micro")).place(relx=0, rely=1, x=10, y=-8, anchor="sw")
         self.canvas.tag_bind("other", "<Enter>", self._on_pin_enter)
         self.canvas.tag_bind("other", "<Leave>", lambda _e: self.canvas.delete("bubble"))
         self.canvas.tag_bind("poi", "<Enter>", self._on_poi_enter)
@@ -424,7 +424,7 @@ class MapView(ttk.Frame):
             canvas.create_oval(sx - 17, sy - 17, sx + 17, sy + 17, outline=PIN, width=3, tags="selected")
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
-            canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline="#0b2b28", width=2,
+            canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline=theme.PLACE_OUTLINE, width=2,
                                tags=("other", f"other_{index}"))
         if self.place is not None:
             sx, sy = self.to_screen(*self.zone.to_image(self.place.x, self.place.y))
@@ -435,11 +435,11 @@ class MapView(ttk.Frame):
             else:
                 canvas.create_oval(sx - 13, sy - 13, sx + 13, sy + 13, outline=PIN, width=3, tags=pin)
                 canvas.create_oval(sx - 5, sy - 5, sx + 5, sy + 5, fill=PIN, outline="", tags=pin)
-            font = (theme.FONT_FAMILY, theme.FONT_SIZE, "bold")
+            font = theme.font("body_bold")
             for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):  # dark outline, like the area names
-                canvas.create_text(sx + 18 + dx, sy - 2 + dy, text=self.place.label, anchor="w", fill="#0d0e11",
+                canvas.create_text(sx + 18 + dx, sy - 2 + dy, text=self.place.label, anchor="w", fill=theme.OUTLINE_DARK,
                                    font=font, tags="pin")
-            canvas.create_text(sx + 18, sy - 2, text=self.place.label, anchor="w", fill="#ffffff", font=font,
+            canvas.create_text(sx + 18, sy - 2, text=self.place.label, anchor="w", fill=theme.MAP_TEXT, font=font,
                                tags="pin")
         if self._blink_dim:
             canvas.itemconfigure("blink", state="hidden")
@@ -461,9 +461,9 @@ class MapView(ttk.Frame):
             sx, sy = self.to_screen(image_x, image_y)
             if -200 < sx < width + 200 and -60 < sy < height + 60:
                 for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
-                    self.canvas.create_text(sx + dx, sy + dy, text=text, fill="#0d0e11", font=font,
+                    self.canvas.create_text(sx + dx, sy + dy, text=text, fill=theme.OUTLINE_DARK, font=font,
                                             justify="center", tags="label")
-                self.canvas.create_text(sx, sy, text=text, fill="#f2e6c9", font=font, justify="center", tags="label")
+                self.canvas.create_text(sx, sy, text=text, fill=theme.MAP_LABEL, font=font, justify="center", tags="label")
 
     # --- selection and «Рядом» ------------------------------------------------------------
     def nearby(self, zone: str, gx: float, gy: float, exclude: Poi | None = None):
@@ -654,12 +654,12 @@ class MapView(ttk.Frame):
             if icon is not None:
                 canvas.create_image(sx, sy, image=icon, tags=tags)
             else:
-                canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=theme.ACCENT, outline="#0d0e11", tags=tags)
+                canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=theme.ACCENT, outline=theme.OUTLINE_DARK, tags=tags)
             if len(members) > 1:
                 bx, by = sx + size * 0.45, sy - size * 0.45
-                canvas.create_oval(bx - 9, by - 9, bx + 9, by + 9, fill="#0d0e11", outline=theme.ACCENT, tags=tags)
+                canvas.create_oval(bx - 9, by - 9, bx + 9, by + 9, fill=theme.OUTLINE_DARK, outline=theme.ACCENT, tags=tags)
                 canvas.create_text(bx, by, text=str(len(members)) if len(members) < 100 else "99+",
-                                   fill="#ffffff", font=(theme.FONT_FAMILY, 8, "bold"), tags=tags)
+                                   fill=theme.MAP_TEXT, font=theme.font("badge"), tags=tags)
 
     # --- blinking ---------------------------------------------------------------------------
     def _start_blink(self, target: str) -> None:
@@ -765,7 +765,7 @@ class MapView(ttk.Frame):
     def _bubble(self, x: float, y: float, text: str) -> None:
         self.canvas.delete("bubble")
         item = self.canvas.create_text(x + 8, y, text=text, anchor="w", fill=theme.TEXT, width=420,
-                                       font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1), tags="bubble")
+                                       font=theme.font("caption"), tags="bubble")
         x0, y0, x1, y1 = self.canvas.bbox(item)
         self.canvas.create_rectangle(x0 - 8, y0 - 5, x1 + 8, y1 + 5, fill=theme.SURFACE_2, outline=theme.BORDER,
                                      tags="bubble")
@@ -780,7 +780,7 @@ class MapView(ttk.Frame):
         note = self.others[index].note or self.others[index].label
         x, y = event.x + 14, event.y - 10
         text = self.canvas.create_text(x + 8, y, text=note, anchor="w", fill=theme.TEXT, width=420,
-                                       font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1), tags="bubble")
+                                       font=theme.font("caption"), tags="bubble")
         x0, y0, x1, y1 = self.canvas.bbox(text)
         self.canvas.create_rectangle(x0 - 8, y0 - 5, x1 + 8, y1 + 5, fill=theme.SURFACE_2, outline=theme.BORDER,
                                      tags="bubble")

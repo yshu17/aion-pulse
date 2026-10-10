@@ -56,10 +56,10 @@ class PointCard(ttk.Frame):
             icon = self.get_icon(type_)
             label = tk.Label(row, image=icon or "", text=f"  {name or type_name}", compound="left",
                              anchor="w", background=theme.SURFACE, foreground=theme.TEXT,
-                             font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1))
+                             font=theme.font("caption"))
             label.pack(side="left", fill="x", expand=True)
             dist = tk.Label(row, text=metres_text(metres), background=theme.SURFACE, foreground=theme.MUTED,
-                            font=(theme.FONT_FAMILY, theme.FONT_SIZE - 2))
+                            font=theme.font("small"))
             dist.pack(side="right")
             for widget in (row, label, dist):
                 widget.bind("<Button-1>", lambda _e, f=on_click: f())

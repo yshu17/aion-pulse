@@ -11,8 +11,8 @@ from watcher.parser import LINK_CLOSE, LINK_OPEN, split_place
 ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
 # item link | place / quest / «where» link (see parser.clean_text)
 LINKS = re.compile(rf"\[([^\[\]]+)\]|{LINK_OPEN}([^{LINK_OPEN}{LINK_CLOSE}]+){LINK_CLOSE}")
-SELECT_BG = "#2f4a6d"  # mouse selection in the chat views
-PLACE_COLOR = "#4fd1c5"  # place links, like the game's teal «Место»
+SELECT_BG = theme.SELECT_BG  # mouse selection in the chat views
+PLACE_COLOR = theme.PLACE  # place links, like the game's teal «Место»
 HIGHLIGHT_NAMES = re.compile(r"рудр", re.IGNORECASE)  # item links worth spotting in the chat
 ITEM_COLOR = theme.ACCENT  # «рыжий», like epic item links in the game
 
@@ -158,7 +158,7 @@ class CopyMenu:
         self.menu = tk.Menu(
             text, tearoff=False, background=theme.SURFACE_2, foreground=theme.TEXT,
             activebackground=theme.ACCENT, activeforeground=theme.ACCENT_TEXT, borderwidth=0,
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1),
+            font=theme.font("caption"),
         )
         self.menu.add_command(label="Копировать", command=self.copy_selection)
         self.menu.add_command(label="Копировать сообщение", command=lambda: self.copy_line(self._line))

@@ -87,3 +87,39 @@ def test_measured_values_written_in_the_theme():
     assert round(contrast("#ffffff", theme.DANGER_FILL), 2) == 5.15
     assert round(contrast(theme.BORDER_CONTROL, theme.BG), 2) == 3.37
     assert round(contrast(theme.DISABLED, theme.SURFACE), 2) == 3.56
+
+
+def test_colours_live_only_in_the_theme():
+    """UI/UX item 5: a colour that is not a row of the registry is a one-off — every #rrggbb sits in theme.py."""
+    import re
+    from pathlib import Path
+
+    stray = []
+    for path in sorted((Path(theme.__file__).parent).glob("*.py")):
+        if path.name == "theme.py":
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if re.search(r"#[0-9a-fA-F]{6}\b", line.split("  #")[0]):
+                stray.append(f"{path.name}:{number}: {line.strip()}")
+    assert not stray, "colours outside theme.py:\n" + "\n".join(stray)
+
+
+def test_registry_has_every_named_colour_and_type_roles():
+    assert theme.COLOR["PLACE"] == theme.PLACE and theme.COLOR["COUNTDOWN_URGENT"] == "#ffd0d1"
+    assert theme.font("caption") == (theme.FONT_FAMILY, theme.FONT_SIZE - 1, "normal")
+    assert set(theme.SPACE.values()) == {4, 8, 12, 16, 24, 32}
+
+
+@pytest.mark.parametrize("fg,bg,where", [
+    (theme.COUNTDOWN, theme.PENDING_BRIGHT, "countdown, bright blink"),
+    (theme.COUNTDOWN_URGENT, theme.PENDING_BRIGHT, "last seconds, bright blink"),
+    (theme.COUNTDOWN_URGENT, theme.PENDING_DIM, "last seconds, dim blink"),
+    (theme.MISSED_TEXT, theme.MISSED_BG, "missed row"),
+    (theme.QUIET_NOTE, theme.SURFACE, "«Уже принято»"),
+    (theme.PLACE, theme.SURFACE, "place link"),
+    (theme.TEXT, theme.SELECT_BG, "selected chat text"),
+    (theme.TOOLTIP_WARNING, theme.TOOLTIP_BG, "tooltip warning"),
+    *[(colour, theme.SURFACE, f"chat channel {name}") for name, colour in theme.CHAT_COLORS.items()],
+])
+def test_registry_text_pairs_meet_aa(fg, bg, where):
+    assert contrast(fg, bg) >= TEXT_AA, f"{where}: {contrast(fg, bg):.2f}"

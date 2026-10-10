@@ -46,6 +46,76 @@ GRADE_COLORS = {
 RADIUS = 9  # buttons, fields, tabs, counters (images drawn by tools/build_ui.py)
 CARD_RADIUS = 12  # cards (feed, item list)
 
+# ---- The rest of the registry (UI/UX item 5). Every colour, type role, space, radius and motion value of the
+# program lives here; other modules use these names only (tests/test_theme.py rejects a #rrggbb anywhere else).
+# The number after a text colour is its measured WCAG contrast on the background named.
+
+# match feed (watcher/feed.py)
+PENDING_BRIGHT = "#7a5410"  # bright phase of a waiting alert's blink
+PENDING_DIM = "#3a2a0c"  # its dim phase
+ACCEPTED_BG = "#173a24"  # a row the user accepted
+MISSED_BG = "#3d1a1d"  # a row that ran out of time
+QUIET_NOTE = "#7fd69b"  # «Уже принято»: 9.52 on SURFACE — AAA
+COUNTDOWN = "#ffd166"  # seconds left: 9.60 on PENDING_DIM, 4.69 on PENDING_BRIGHT — AA
+COUNTDOWN_URGENT = "#ffd0d1"  # last seconds: 10.02 on PENDING_DIM, 4.90 on PENDING_BRIGHT — AA
+# (it was DANGER #ff6b70: 2.45 on PENDING_BRIGHT — fails; the red stays in its hue, lighter)
+MISSED_TEXT = "#ff8a8f"  # «Пропущено» on a row: 6.81 on MISSED_BG — AA
+ALARM_DIM = "#3a2a14"  # dim phase of the «Найдено в чате!» window frame
+# item list (watcher/itemlist.py)
+MATCH_BG = "#3a2a12"  # a searched item's row: TEXT 11.20, epic orange 5.93 — AA
+# chat text (watcher/textview.py, watcher/mapview.py)
+SELECT_BG = "#2f4a6d"  # mouse selection: TEXT 7.33 — AAA
+PLACE = "#4fd1c5"  # «Место» links and the other places on the map, like the game's teal: 8.93 on SURFACE — AAA
+PLACE_OUTLINE = "#0b2b28"  # outline of those map pins
+# map drawing (watcher/mapview.py): text on a picture gets a dark outline, so no fixed background to measure
+MAP_LABEL = "#f2e6c9"  # area names, like the game's map
+MAP_TEXT = "#ffffff"  # the chat place's label, count badges
+OUTLINE_DARK = "#0d0e11"  # outline under map text, badge fill
+# game colours — copied from the game, kept as they are
+CHAT_COLORS = {  # chat channels, as [charname:Name;r g b] in Chat.log (Aion's defaults)
+    "Поиск группы": "#ffb45e",  # 9.47 on SURFACE
+    "Общий": "#e9e7e4",  # 13.5
+    "Личное": "#a0ffa0",  # 13.73
+    "Группа": "#05c8d7",  # 8.13
+    "Легион": "#9ce7dc",  # 11.80
+}
+TOOLTIP_BG = "#0e1014"  # item tooltip in the game's style (watcher/tooltip.py)
+TOOLTIP_FRAME = "#5a4a2e"
+TOOLTIP_LINE = "#3a3d46"
+TOOLTIP_SLOT = "#1c1f26"  # empty manastone / socket slot
+TOOLTIP_PROPS = "#e8c55a"  # 11.39 on TOOLTIP_BG
+TOOLTIP_WARNING = "#ff5b5b"  # 6.26 on TOOLTIP_BG
+
+# type roles: sizes in Tk points around FONT_SIZE (UI/UX item 6 sets the final scale)
+TYPE = {
+    "display": (FONT_SIZE + 5, "bold"),  # program name
+    "alarm": (FONT_SIZE + 6, "bold"),  # «Найдено в чате!»
+    "tooltip_name": (FONT_SIZE + 3, "bold"),  # item name in its tooltip
+    "title": (FONT_SIZE + 1, "bold"),  # card titles
+    "body": (FONT_SIZE, "normal"),
+    "body_bold": (FONT_SIZE, "bold"),
+    "caption": (FONT_SIZE - 1, "normal"),  # hints, notes, bubbles
+    "caption_bold": (FONT_SIZE - 1, "bold"),  # countdowns
+    "small": (FONT_SIZE - 2, "normal"),  # levels, coordinates in the card
+    "micro": (FONT_SIZE - 3, "normal"),  # coordinates under the map cursor
+    "badge": (8, "bold"),  # count on a map group
+}
+
+
+def font(role: str) -> tuple[str, int, str]:
+    """A type role as a Tk font tuple, e.g. font("caption")."""
+    size, weight = TYPE[role]
+    return (FONT_FAMILY, size, weight)
+
+
+SPACE = {1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32}  # px, a 4 px unit; window gutter 16, inside cards 12–16
+RADII = {"control": RADIUS, "card": CARD_RADIUS}
+MOTION = {"fast": 120, "base": 200, "blink": 300, "alarm_blink": 500, "found_blink": 3000}  # ms
+
+# every named colour, for the record and for tests
+COLOR = {name: value for name, value in globals().items()
+         if name.isupper() and isinstance(value, str) and value.startswith("#")}
+
 _images: list[tk.PhotoImage] = []  # keep references, Tk does not
 CHECKS: dict[str, tk.PhotoImage] = {}  # "off", "on", "off_dim", "on_dim" (set by apply_dark_theme)
 

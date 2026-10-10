@@ -39,7 +39,7 @@ class Hint:
             text=self.text,
             background=theme.SURFACE_2,
             foreground=theme.TEXT,
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1),
+            font=theme.font("caption"),
             padx=8,
             pady=5,
             relief="solid",

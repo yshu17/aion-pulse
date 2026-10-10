@@ -16,13 +16,7 @@ RETRY_MS = 2000
 MAX_ROWS = 2000
 # Shown categories and their colours. Channel-less player lines are told apart by the name colour
 # the game writes into [charname:Name;r g b] (Aion's default chat colours).
-CATEGORY_COLORS = {
-    "Поиск группы": "#ffb45e",
-    "Общий": "#e9e7e4",
-    "Личное": "#a0ffa0",
-    "Группа": "#05c8d7",
-    "Легион": "#9ce7dc",
-}
+CATEGORY_COLORS = theme.CHAT_COLORS
 _NAME_COLORS = {
     "1.0000 1.0000 1.0000": "Общий",
     "0.6275 1.0000 0.6275": "Личное",

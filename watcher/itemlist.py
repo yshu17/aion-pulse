@@ -30,7 +30,7 @@ ICON_X = 46
 NAME_X = 112
 GROUP_CHECK_W = 96  # right part of a section header that toggles the whole section
 SEARCH_DELAY_MS = 150
-MATCH_BG = "#3a2a12"
+MATCH_BG = theme.MATCH_BG
 HOVER_BG = theme.SURFACE_2
 PINNED_GROUP = "Рудра и Фланас"  # their gear is pulled out of its sections into this one, always on top
 PINNED_RE = re.compile(r"рудр|фланас", re.IGNORECASE)
@@ -114,7 +114,7 @@ class ItemList(ttk.Frame):
         self._search_after: str | None = None
         self.font = tkfont.Font(family=theme.FONT_FAMILY, size=theme.FONT_SIZE)
         self.bold = tkfont.Font(family=theme.FONT_FAMILY, size=theme.FONT_SIZE, weight="bold")
-        self.small = tkfont.Font(family=theme.FONT_FAMILY, size=theme.FONT_SIZE - 2)
+        self.small = tkfont.Font(family=theme.FONT_FAMILY, size=theme.TYPE["small"][0])
 
         search = ttk.Frame(self, style="Surface.TFrame")
         search.pack(fill="x", padx=(0, 8))

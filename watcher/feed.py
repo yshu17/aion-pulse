@@ -13,10 +13,10 @@ from watcher import theme
 from watcher.parser import ChatMessage
 from watcher.textview import BottomAnchor, CopyMenu, ItemLinker
 
-PENDING_BRIGHT = "#7a5410"
-PENDING_DIM = "#3a2a0c"
-ACCEPTED_BG = "#173a24"
-MISSED_BG = "#3d1a1d"
+PENDING_BRIGHT = theme.PENDING_BRIGHT
+PENDING_DIM = theme.PENDING_DIM
+ACCEPTED_BG = theme.ACCEPTED_BG
+MISSED_BG = theme.MISSED_BG
 STATE_BG = {"accepted": ACCEPTED_BG, "missed": MISSED_BG}
 STATE_STYLE = {"accepted": "Accept.TCheckbutton", "missed": "Missed.TCheckbutton"}
 HOLDER_WIDTH = 120  # space kept free at the right of an alert row for countdown + checkbox
@@ -58,7 +58,7 @@ class MatchFeed(ttk.Frame):
         self.text.tag_configure("missed", background=MISSED_BG)
         self.text.tag_raise("hit")
         self.text.tag_configure("note", foreground=theme.MUTED, justify="center")
-        self.text.tag_configure("quiet_note", foreground="#7fd69b")
+        self.text.tag_configure("quiet_note", foreground=theme.QUIET_NOTE)
         self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades, on_place=on_place)
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.copy = CopyMenu(self.text)
@@ -112,7 +112,7 @@ class MatchFeed(ttk.Frame):
             label = self.countdowns.get(alert_id)
             if label is not None and alert_id in self._pending:
                 left = max(0, math.ceil(seconds))
-                color = theme.DANGER if left <= URGENT_SEC else "#ffd166"
+                color = theme.COUNTDOWN_URGENT if left <= URGENT_SEC else theme.COUNTDOWN
                 label.configure(text=f"{left} с", foreground=color)
 
     def mark(self, alert_id: int, state: str) -> None:
@@ -130,7 +130,7 @@ class MatchFeed(ttk.Frame):
         background = STATE_BG[state]
         self.countdowns[alert_id].configure(
             text="" if state == "accepted" else "пропущено",
-            foreground="#ff8a8f",
+            foreground=theme.MISSED_TEXT,
             background=background,
         )
         self._holders[alert_id].configure(background=background)
@@ -152,8 +152,8 @@ class MatchFeed(ttk.Frame):
             holder,
             text="",
             background=PENDING_DIM,
-            foreground="#ffd166",
-            font=(theme.FONT_FAMILY, theme.FONT_SIZE - 1, "bold"),
+            foreground=theme.COUNTDOWN,
+            font=theme.font("caption_bold"),
         )
         label.pack(side="left", padx=(0, 6))
         var = tk.BooleanVar(value=False)
