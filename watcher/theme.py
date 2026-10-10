@@ -78,7 +78,7 @@ COUNTDOWN = "#ffd166"  # seconds left: 9.60 on PENDING_DIM, 4.69 on PENDING_BRIG
 COUNTDOWN_URGENT = "#ffd0d1"  # last seconds: 10.02 on PENDING_DIM, 4.90 on PENDING_BRIGHT — AA
 # (it was DANGER #ff6b70: 2.45 on PENDING_BRIGHT — fails; the red stays in its hue, lighter)
 MISSED_TEXT = "#ff8a8f"  # «Пропущено» on a row: 6.81 on MISSED_BG — AA
-ALARM_DIM = "#3a2a14"  # dim phase of the «Найдено в чате!» window frame
+ALARM_DIM = ACCENT_SUBTLE  # dim phase of the «Найдено в чате!» window frame: ACCENT ↔ ACCENT_SUBTLE (UI/UX 14)
 # item list (watcher/itemlist.py)
 MATCH_BG = "#3a2a12"  # a searched item's row: TEXT 11.20, epic orange 5.93 — AA
 # chat text (watcher/textview.py, watcher/mapview.py)

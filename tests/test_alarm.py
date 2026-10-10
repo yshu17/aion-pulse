@@ -132,3 +132,39 @@ def test_popup_reactions_notify_app(root):
     alarm._on_ok()
     assert acks == [1, 1]
     assert alarm.window is None
+
+
+def test_window_height_follows_the_messages_up_to_six_then_scrolls(root):
+    alarm, _, _ = make(root)
+    alarm.trigger([(msg("Nick", "ищу хила"), ["хил"])])
+    root.update()
+    assert int(alarm.text.cget("height")) == 1  # one short message: one line, not a fixed 8
+    assert not alarm._scroll.winfo_ismapped()
+    alarm.trigger([(msg(f"N{i}", "хил нужен"), ["хил"]) for i in range(7)])
+    root.update()
+    first, last = alarm.text.yview()
+    assert 6 <= int(alarm.text.cget("height")) <= 12 and last < 1  # the six newest fit, the rest scrolls
+    assert alarm._scroll.winfo_ismapped()  # the eighth needs the scroll bar
+    alarm.close()
+
+
+def test_enter_and_escape_work_as_ok(root):
+    for key in ("<Return>", "<Escape>"):
+        acks = []
+        alarm, notifier, _ = make(root)
+        alarm.on_ack = lambda: acks.append(1)
+        alarm.trigger([(msg("Nick", "хил"), ["хил"])])
+        alarm.window.focus_force()  # the user clicked into the window: it never takes the keyboard itself
+        root.update()
+        alarm.window.event_generate(key, when="tail")
+        root.update()
+        assert alarm.window is None and acks == [1] and "stop" in notifier.calls
+
+
+def test_message_with_a_watched_item_gets_its_picture(root):
+    picture = tk.PhotoImage(master=root, width=28, height=28)
+    alarm = NagAlarm(root, FakeNotifier(True), flash=lambda _on: None,
+                     icon_for=lambda hits: picture if "Клинок Рудры" in hits else None)
+    alarm.trigger([(msg("Seller", "WTS Клинок Рудры"), ["Клинок Рудры"]), (msg("Nick", "хил"), ["хил"])])
+    assert len(alarm.text.image_names()) == 1  # only the item message has a picture
+    alarm.close()

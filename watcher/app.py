@@ -119,6 +119,7 @@ class App:
             self.notifier,
             on_ack=self._on_popup_ack,
             window_icons=self._window_icons,
+            icon_for=self._popup_icon,
         )
         self._set_status("Остановлен")
         self._update_counters()
@@ -582,6 +583,17 @@ class App:
                 self._icons[""] = icon
             self._icons[key] = icon
         return icon
+
+    def _popup_icon(self, hits: list[str]) -> tk.PhotoImage | None:
+        """The picture of the first watched item among the hits, at half size (28 px) for the alarm window."""
+        names = {item.name.lower(): item for item in self.item_by_id.values()}
+        item = next((names[h.lower()] for h in hits if h.lower() in names), None)
+        if item is None:
+            return None
+        key = f"half:{item.id}"
+        if key not in self._icons:
+            self._icons[key] = self._icon_for(item).subsample(2)
+        return self._icons[key]
 
     def _schedule_tooltip(self, item_id: str) -> None:
         self._hide_tooltip()

@@ -1,7 +1,9 @@
 """«Назойливый» alert mode: a looping sound and a blinking popup until the user reacts."""
 
 import ctypes
+import math
 import tkinter as tk
+import tkinter.font as tkfont
 from collections.abc import Callable
 from tkinter import ttk
 
@@ -12,6 +14,7 @@ from watcher.window_icon import apply_app_icon
 
 BEEP_REPEAT_MS = 1500
 BLINK_MS = 500
+MAX_SHOWN = 6  # messages the window shows without scrolling (UI/UX item 14)
 DIM = theme.ALARM_DIM
 
 
@@ -48,6 +51,7 @@ class NagAlarm:
         flash: Callable[[bool], None] | None = None,
         on_ack: Callable[[], None] | None = None,
         window_icons: tuple[tk.PhotoImage, ...] | None = None,
+        icon_for: Callable[[list[str]], tk.PhotoImage | None] | None = None,
     ) -> None:
         self.root = root
         self.notifier = notifier
@@ -61,6 +65,7 @@ class NagAlarm:
         self._beep_after: str | None = None
         self._blink_after: str | None = None
         self._blink_on = False
+        self.icon_for = icon_for or (lambda _hits: None)  # small item picture for a message
 
     # --- public ---------------------------------------------------------------
     def trigger(self, entries: list[tuple[ChatMessage, list[str]]], popup: bool = True) -> None:
@@ -72,6 +77,7 @@ class NagAlarm:
                 self._add_row(msg, hits)
             self.window.deiconify()
             self.window.lift()
+            self._fit()  # now the text has its width, so wrapped lines count right
         if not self.sounding:
             self._start()
 
@@ -165,14 +171,21 @@ class NagAlarm:
             font=theme.font("caption"),
             anchor="w",
         ).pack(fill="x", pady=(2, 10))
-        self.text = tk.Text(body, wrap="word", height=8, width=70, state="disabled", cursor="hand2")
+        holder = tk.Frame(body, background=theme.BG)
+        holder.pack(fill="both", expand=True)
+        self.text = tk.Text(holder, wrap="word", height=1, width=70, state="disabled", cursor="hand2")
         theme.style_text(self.text)
-        self.text.pack(fill="both", expand=True)
+        self._scroll = ttk.Scrollbar(holder, command=self.text.yview)
+        self.text.configure(yscrollcommand=self._scroll.set)
+        self.text.pack(side="left", fill="both", expand=True)
         self.text.bind("<Enter>", lambda _e: self._on_hover())
+        self.text.bind("<Configure>", lambda _e: self._fit())  # wrapped lines are known once the text has a width
         self.text.bind("<Button-1>", self.silence_on_click)
-        ttk.Button(body, text="ОК", style="Accent.TButton", command=self._on_ok).pack(
-            anchor="e", pady=(12, 0)
-        )
+        ok = ttk.Button(body, text="ОК", style="Accent.TButton", command=self._on_ok, default="active")
+        ok.pack(anchor="e", pady=(12, 0))
+        # Enter / Esc = ОК once the window has the keyboard (it never takes it from the game by itself)
+        for key in ("<Return>", "<KP_Enter>", "<Escape>"):
+            win.bind(key, lambda _e: self._on_ok())
         win.update_idletasks()
         x = self.root.winfo_screenwidth() // 2 - win.winfo_reqwidth() // 2
         y = self.root.winfo_screenheight() // 3 - win.winfo_reqheight() // 2
@@ -187,4 +200,28 @@ class NagAlarm:
         parts += ["\n", ()]
         self.text.configure(state="normal")
         self.text.insert("1.0", *parts)
+        icon = self.icon_for(hits)
+        if icon is not None:
+            self.text.image_create("1.0", image=icon, padx=4, align="center")
         self.text.configure(state="disabled")
+
+    def _fit(self) -> None:
+        """Height by content: 1 to MAX_SHOWN messages, more scroll (UI/UX item 14 — was a fixed 8 lines)."""
+        if self.text is None:
+            return
+        messages = int(self.text.index("end-1c").split(".")[0]) - 1
+        shown = min(messages, MAX_SHOWN)
+        # Tk measures «height» in lines of the font plus the message spacing above and below (spacing1 + spacing3);
+        # a wrapped continuation line takes only the font line plus spacing2: count the screen lines, convert
+        wrapped = self.text.count("1.0", f"{shown + 1}.0", "displaylines") if self.text.winfo_width() > 1 else None
+        rows = wrapped[0] if wrapped else shown
+        line = tkfont.Font(font=self.text.cget("font")).metrics("linespace")
+        unit = line + int(self.text.cget("spacing1")) + int(self.text.cget("spacing3"))
+        pixels = shown * unit + (rows - shown) * (line + int(self.text.cget("spacing2")))
+        height = max(1, math.ceil(pixels / unit))
+        if int(self.text.cget("height")) != height:
+            self.text.configure(height=height)
+        if messages > MAX_SHOWN:
+            self._scroll.pack(side="right", fill="y", before=self.text)
+        else:
+            self._scroll.pack_forget()
