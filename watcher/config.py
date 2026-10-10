@@ -38,6 +38,7 @@ class Config:
     filter_level_max: int = 0  # item list: highest level shown, 0 = any
     items_width: int = 0  # «Поиск» tab: width of the item list (divider position), 0 = natural
     map_quests: bool = True  # «Карта»: show NPCs with quests (the «Задания» check box)
+    map_theme: str = "game"  # «Карта»: "game" — the game's map, "relief" — the radar map
     game_check: bool = True  # stop watching (and warn) when the game process aion.bin is not running
     filter_type: str = ""  # item list: category («Лата») or «Оружие: Меч», "" = all
 

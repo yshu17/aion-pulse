@@ -316,3 +316,23 @@ def test_quest_givers_toggle_and_card_lists_quests(root):
     assert view.search(giver.name, 0) in ("нет", "") or view.selected.type not in quest_types
     hidden = MapView(root, zones(), poi=store, show_quests=False)
     assert not quest_types & hidden.layers
+
+
+def test_relief_theme_uses_the_radar_map_in_the_same_frame(root):
+    all_zones = zones()
+    assert all(z.relief is not None and z.relief.is_file() for z in all_zones.values())  # tools/build_relief.py
+    saved = []
+    view = MapView(root, all_zones, map_theme="game", on_theme=saved.append)
+    view.open_zone("220070000")
+    game_pixel = view._image.getpixel((1500, 1500))
+    view.zoom, view.left, view.top = 2.0, 900.0, 700.0
+    view.theme_var.set("Рельеф")
+    view._on_theme_selected()
+    assert saved == ["relief"] and view.theme == "relief"
+    assert view._image.size == (3072, 3072) and view._image.getpixel((1500, 1500)) != game_pixel
+    assert (view.zoom, view.left, view.top) == (2.0, 900.0, 700.0)  # same frame: the view stays put
+    view.open_zone("120010000")
+    assert view.zone.relief.name == "dc1.jpg"
+    relief = MapView(root, all_zones, map_theme="relief")
+    relief.open_zone("220070000")
+    assert relief.theme_var.get() == "Рельеф" and relief._image.getpixel((1500, 1500)) != game_pixel

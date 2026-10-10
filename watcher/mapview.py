@@ -26,6 +26,9 @@ MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
+# map themes: the game map (newmap) or the client's radar map («Рельеф»), the choice is kept in config.json
+THEMES = {"game": "Игра", "relief": "Рельеф"}
+
 # Silentera Tunnel entrances only (tools/build_poi.py).
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
                "fortress", "artifact", "dungeon", "portal")
@@ -58,6 +61,7 @@ class Zone:
     kx: tuple[float, float]
     ky: tuple[float, float]
     labels: tuple[tuple[float, float, str], ...] = ()  # area names: (image x, image y, text)
+    relief: Path | None = None  # the «Рельеф» theme: the radar map cut to the same frame (tools/build_relief.py)
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
@@ -96,6 +100,7 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
             zones[map_id] = Zone(
                 map_id, names.get(map_id, map_id), path, size, tuple(info["x"]), tuple(info["y"]),
                 tuple((x * k, y * k, text) for x, y, text in rows),
+                relief if (relief := Path(maps_dir) / "relief" / path.name).is_file() else None,
             )
     return zones
 
@@ -133,12 +138,16 @@ class MapView(ttk.Frame):
         icons_dir: Path | None = None,
         show_quests: bool = True,
         on_show_quests: Callable[[bool], None] | None = None,
+        map_theme: str = "game",
+        on_theme: Callable[[str], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.zones = zones
         self.poi = (poi or PoiStore({}, {})).projected({map_id: z.to_image for map_id, z in zones.items()})
         self.icons_dir = icons_dir or Path(".")
         self.on_show_quests = on_show_quests or (lambda _on: None)
+        self.theme = map_theme if map_theme in THEMES else "game"
+        self.on_theme = on_theme or (lambda _theme: None)
         self.layers: set[str] = set()
         self._set_layers(show_quests)
         self._poi_icons: dict[tuple[str, int], object] = {}
@@ -180,6 +189,12 @@ class MapView(ttk.Frame):
         if any(t in self.poi.types for t in QUEST_TYPES):
             ttk.Checkbutton(bar, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
                             command=self._on_quests_toggled).pack(side="left", padx=(12, 0))
+        self.theme_var = tk.StringVar(value=THEMES[self.theme])
+        if any(z.relief is not None for z in zones.values()):
+            self.theme_box = ttk.Combobox(bar, textvariable=self.theme_var, values=list(THEMES.values()),
+                                          state="readonly", width=8)
+            self.theme_box.pack(side="left", padx=(12, 0))
+            self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._on_theme_selected())
         self.title = ttk.Label(bar, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
         for text, command in (
@@ -292,11 +307,25 @@ class MapView(ttk.Frame):
         from PIL import Image
 
         self.zone = zone
-        with Image.open(zone.path) as image:
-            self._image = image.convert("RGB")
+        self._load_image()
         self.zone_var.set(zone.name)
         self.zoom = self._fit_zoom()
         self.canvas.delete("all")
+
+    def _load_image(self) -> None:
+        from PIL import Image
+
+        path = self.zone.relief if self.theme == "relief" and self.zone.relief is not None else self.zone.path
+        with Image.open(path) as image:
+            self._image = image.convert("RGB")
+
+    def _on_theme_selected(self) -> None:
+        """«Игра» / «Рельеф»: both pictures share the frame, so the view and the points stay where they are."""
+        self.theme = next(key for key, name in THEMES.items() if name == self.theme_var.get())
+        self.on_theme(self.theme)
+        if self.zone is not None:
+            self._load_image()
+            self.render()
 
     # --- geometry ----------------------------------------------------------------------
     def _canvas_size(self) -> tuple[int, int]:
