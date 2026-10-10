@@ -106,7 +106,22 @@ def test_colours_live_only_in_the_theme():
 
 def test_registry_has_every_named_colour_and_type_roles():
     assert theme.COLOR["PLACE"] == theme.PLACE and theme.COLOR["COUNTDOWN_URGENT"] == "#ffd0d1"
-    assert theme.font("caption") == (theme.FONT_FAMILY, theme.FONT_SIZE - 1, "normal")
+    assert theme.font("caption")[1:] == (11, "normal")
+
+
+def test_type_scale_uses_installed_families(root):
+    """UI/UX item 6: the plan's scale — display 18, title 14, body 13, control 12, caption 11, micro 10, mono 11."""
+    from tkinter import font as tkfont
+
+    theme.resolve_fonts(root)
+    installed = set(tkfont.families(root))
+    sizes = {role: theme.font(role)[1] for role in ("display", "title", "body", "control", "caption", "micro", "mono")}
+    assert sizes == {"display": 18, "title": 14, "body": 13, "control": 12, "caption": 11, "micro": 10, "mono": 11}
+    for role in theme.TYPE:
+        family, _size, weight = theme.font(role)
+        assert family in installed, role  # never a silent fallback to Tk's default
+        assert weight in ("normal", "bold")
+    assert theme.font("mono")[0] in ("Cascadia Mono", "Consolas")
     assert set(theme.SPACE.values()) == {4, 8, 12, 16, 24, 32}
 
 

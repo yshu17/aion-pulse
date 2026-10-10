@@ -112,9 +112,9 @@ class ItemList(ttk.Frame):
         self._height = 0
         self._hover: tuple[str, str] | None = None
         self._search_after: str | None = None
-        self.font = tkfont.Font(family=theme.FONT_FAMILY, size=theme.FONT_SIZE)
-        self.bold = tkfont.Font(family=theme.FONT_FAMILY, size=theme.FONT_SIZE, weight="bold")
-        self.small = tkfont.Font(family=theme.FONT_FAMILY, size=theme.TYPE["small"][0])
+        self.font = tkfont.Font(font=theme.font("body"))
+        self.bold = tkfont.Font(font=theme.font("body_strong"))
+        self.small = tkfont.Font(font=theme.font("small"))
 
         search = ttk.Frame(self, style="Surface.TFrame")
         search.pack(fill="x", padx=(0, 8))

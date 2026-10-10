@@ -86,26 +86,51 @@ TOOLTIP_SLOT = "#1c1f26"  # empty manastone / socket slot
 TOOLTIP_PROPS = "#e8c55a"  # 11.39 on TOOLTIP_BG
 TOOLTIP_WARNING = "#ff5b5b"  # 6.26 on TOOLTIP_BG
 
-# type roles: sizes in Tk points around FONT_SIZE (UI/UX item 6 sets the final scale)
-TYPE = {
-    "display": (FONT_SIZE + 5, "bold"),  # program name
-    "alarm": (FONT_SIZE + 6, "bold"),  # «Найдено в чате!»
-    "tooltip_name": (FONT_SIZE + 3, "bold"),  # item name in its tooltip
-    "title": (FONT_SIZE + 1, "bold"),  # card titles
-    "body": (FONT_SIZE, "normal"),
-    "body_bold": (FONT_SIZE, "bold"),
-    "caption": (FONT_SIZE - 1, "normal"),  # hints, notes, bubbles
-    "caption_bold": (FONT_SIZE - 1, "bold"),  # countdowns
-    "small": (FONT_SIZE - 2, "normal"),  # levels, coordinates in the card
-    "micro": (FONT_SIZE - 3, "normal"),  # coordinates under the map cursor
-    "badge": (8, "bold"),  # count on a map group
+# Type scale (UI/UX item 6, plan section 2). Families are tried in order: Segoe UI Variable (Windows 11) first,
+# then Segoe UI (Windows 10); a «strong» role uses a Semibold family, or bold Segoe UI where that is missing.
+FAMILIES = {
+    "display_strong": ("Segoe UI Variable Display Semib", "Segoe UI Semibold"),
+    "text": ("Segoe UI Variable Text", "Segoe UI"),
+    "text_strong": ("Segoe UI Variable Text Semibold", "Segoe UI Semibold"),
+    "small": ("Segoe UI Variable Small", "Segoe UI"),
+    "small_strong": ("Segoe UI Variable Small Semibol", "Segoe UI Semibold"),
+    "mono": ("Cascadia Mono", "Consolas"),  # the time column: every digit the same width
 }
+TYPE = {  # role: (size in Tk points, family)
+    "display": (18, "display_strong"),  # program name
+    "alarm": (18, "display_strong"),  # «Найдено в чате!» — over the game, so as large as the name
+    "tooltip_name": (16, "text_strong"),  # item name in its tooltip, as in the game
+    "title": (14, "text_strong"),  # card titles
+    "body": (13, "text"),  # feed and «Весь чат» — read from the corner of an eye
+    "body_strong": (13, "text_strong"),  # nicks, counters
+    "body_bold": (13, "text_strong"),  # map place label (same as body_strong)
+    "control": (12, "text"),  # buttons, fields, tabs, lists
+    "control_strong": (12, "text_strong"),  # main buttons, status chip
+    "caption": (11, "text"),  # hints, notes, bubbles
+    "caption_strong": (11, "text_strong"),  # countdowns
+    "caption_bold": (11, "text_strong"),
+    "small": (11, "text"),  # levels, coordinates in the card (= caption)
+    "micro": (10, "small"),  # coordinates under the map cursor
+    "badge": (8, "small_strong"),  # count on a map group (inside an 18 px circle)
+    "mono": (11, "mono"),  # time in the feed, «Весь чат» and the alarm window
+}
+_resolved: dict[str, str] = {}  # family key -> the installed family (filled by resolve_fonts)
+
+
+def resolve_fonts(root: tk.Misc) -> None:
+    """Pick the first installed family of each chain (needs a Tk root)."""
+    installed = set(tkfont.families(root))
+    for key, chain in FAMILIES.items():
+        _resolved[key] = next((name for name in chain if name in installed), FONT_FAMILY)
 
 
 def font(role: str) -> tuple[str, int, str]:
     """A type role as a Tk font tuple, e.g. font("caption")."""
-    size, weight = TYPE[role]
-    return (FONT_FAMILY, size, weight)
+    size, key = TYPE[role]
+    family = _resolved.get(key, FONT_FAMILY)
+    # a Semibold family is already heavy; plain Segoe UI needs Tk's bold to stand out
+    weight = "bold" if key.endswith("_strong") and "semi" not in family.lower() else "normal"
+    return (family, size, weight)
 
 
 SPACE = {1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32}  # px, a 4 px unit; window gutter 16, inside cards 12–16
@@ -128,8 +153,10 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     # images made for an earlier (destroyed) root are useless; dropping them frees Tk's resources
     _images.clear()
     CHECKS.clear()
+    resolve_fonts(root)
+    family, size, _weight = font("control")
     for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):
-        tkfont.nametofont(name).configure(family=FONT_FAMILY, size=FONT_SIZE)
+        tkfont.nametofont(name).configure(family=family, size=size)
     root.configure(background=BG)
 
     style = ttk.Style(root)
@@ -171,13 +198,13 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         "Title.TLabel",
         background=SURFACE,
         foreground=ACCENT,
-        font=(FONT_FAMILY, FONT_SIZE + 1, "bold"),
+        font=font("title"),
     )
     style.configure(
         "AppTitle.TLabel",
         background=BG,
         foreground=TEXT,
-        font=(FONT_FAMILY, FONT_SIZE + 5, "bold"),
+        font=font("display"),
     )
 
     button = dict(
@@ -243,7 +270,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     root.option_add("*TCombobox*Listbox.foreground", TEXT)
     root.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
     root.option_add("*TCombobox*Listbox.selectForeground", ACCENT_TEXT)
-    root.option_add("*TCombobox*Listbox.font", (FONT_FAMILY, FONT_SIZE))
+    root.option_add("*TCombobox*Listbox.font", font("control"))
 
     style.configure(
         "Vertical.TScrollbar",
@@ -325,7 +352,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         foreground=MUTED,
         padding=(22, 8),
         borderwidth=0,
-        font=(FONT_FAMILY, FONT_SIZE, "bold"),
+        font=font("body_strong"),
     )
     style.map(
         "TNotebook.Tab",
@@ -338,13 +365,13 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     # status chip next to Start (UI/UX item 4): icon + text + colour, never colour alone
     for name, color in (("Idle", MUTED), ("Live", SUCCESS), ("Warn", WARNING), ("Error", DANGER)):
         style.configure(f"{name}.Chip.TLabel", background=SURFACE_2, foreground=color,
-                        font=(FONT_FAMILY, FONT_SIZE, "bold"), padding=(12, 6))
+                        font=font("control_strong"), padding=(12, 6))
     for name, color in (("Found", TEXT), ("Reacted", SUCCESS), ("Missed", DANGER)):
         style.configure(
             f"{name}.Counter.TLabel",
             background=SURFACE_2,
             foreground=color,
-            font=(FONT_FAMILY, FONT_SIZE, "bold"),
+            font=font("body_strong"),
             padding=(14, 6),
         )
     style.layout("Plain.TCheckbutton", style.layout("Item.TCheckbutton"))
@@ -358,11 +385,13 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         "Group.TLabel",
         background=SURFACE_2,
         foreground=TEXT,
-        font=(FONT_FAMILY, FONT_SIZE, "bold"),
+        font=font("body_strong"),
         padding=(4, 2),
     )
     if ui_dir is not None and (Path(ui_dir) / "btn.png").is_file():
         _apply_rounded(style, root, Path(ui_dir))
+        if all((Path(ui_dir) / f"scrollbar_thumb{suffix}.png").is_file() for suffix in ("", "_hover")):
+            _apply_scrollbar(style, root, Path(ui_dir))
     style.configure("Item.TCheckbutton", background=SURFACE, foreground=TEXT, padding=(8, 4))
     style.map(
         "Item.TCheckbutton",
@@ -495,6 +524,42 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     )
 
 
+def _apply_scrollbar(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
+    """Use a slim, arrowless 8px scrollbar with a rounded thumb."""
+    thumb = load_png(root, ui_dir / "scrollbar_thumb.png")
+    thumb_hover = load_png(root, ui_dir / "scrollbar_thumb_hover.png")
+    _images.extend((thumb, thumb_hover))
+    element = "Slim.Vertical.Scrollbar.thumb"
+    style.element_create(
+        element,
+        "image",
+        thumb,
+        ("active", thumb_hover),
+        border=(2, 4, 2, 4),
+        sticky="nswe",
+    )
+    style.configure(
+        "Vertical.TScrollbar",
+        width=8,
+        background=SURFACE_3,
+        troughcolor=SURFACE,
+        bordercolor=SURFACE,
+        lightcolor=SURFACE,
+        darkcolor=SURFACE,
+        relief="flat",
+        borderwidth=0,
+        padding=0,
+        arrowsize=0,
+    )
+    style.layout(
+        "Vertical.TScrollbar",
+        [("Vertical.Scrollbar.trough", {
+            "sticky": "nswe",
+            "children": [(element, {"unit": "1", "sticky": "nswe"})],
+        })],
+    )
+
+
 def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
     """Draw 24px boxes: unchecked, checked, and their dimmed (disabled) variants."""
     size = CHECK_SIZE
@@ -588,7 +653,7 @@ def _solid_button(style: ttk.Style, name: str, color: str, hover: str, text: str
         bordercolor=color,
         lightcolor=color,
         darkcolor=color,
-        font=(FONT_FAMILY, FONT_SIZE, "bold"),
+        font=font("control_strong"),
         padding=(18, 6),
     )
     style.map(
@@ -613,12 +678,12 @@ def style_text(widget: tk.Text) -> None:
         highlightthickness=0,
         padx=12,
         pady=10,
-        font=(FONT_FAMILY, FONT_SIZE),
+        font=font("body"),
         spacing1=4,
         spacing3=4,
     )
-    widget.tag_configure("meta", foreground=MUTED)
-    widget.tag_configure("nick", foreground=NICK, font=(FONT_FAMILY, FONT_SIZE, "bold"))
+    widget.tag_configure("meta", foreground=MUTED, font=font("mono"))  # time: an even column of digits
+    widget.tag_configure("nick", foreground=NICK, font=font("body_strong"))
     widget.tag_configure("hit", background=HIT_BG, foreground=HIT_FG)
 
 

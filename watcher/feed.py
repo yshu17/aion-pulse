@@ -153,7 +153,7 @@ class MatchFeed(ttk.Frame):
             text="",
             background=PENDING_DIM,
             foreground=theme.COUNTDOWN,
-            font=theme.font("caption_bold"),
+            font=theme.font("caption_strong"),
         )
         label.pack(side="left", padx=(0, 6))
         var = tk.BooleanVar(value=False)
