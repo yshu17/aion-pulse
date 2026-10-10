@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EXTRACT = ROOT / "client_extract"
-OUT = ROOT / "data" / "maps" / "icons"
+OUT = ROOT / "client_extract" / "icons_native"  # native size; tools/upscale_icons.py --install puts the x4 ones in data/maps/icons
 CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 SIZE = 48  # px, square canvas; the app scales down
 AIONDB = "https://aiondb.ru"
