@@ -78,6 +78,9 @@ class MatchFeed(ttk.Frame):
         if quiet:
             parts += ["   Уже принято", ("quiet_note",)]
         self.text.insert("end-1c", *parts, "\n", ())
+        # every row keeps a stripe-wide left margin; a row with a match colours it orange (UI/UX item 9)
+        has_hit = any(isinstance(part, tuple) and "hit" in part for part in parts)
+        self.text.tag_add("hitline" if has_hit else "row", start, "end-1c")
         if quiet:
             self.text.tag_add("accepted", start, "end-1c")
         if alert_id is not None:

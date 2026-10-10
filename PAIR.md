@@ -83,6 +83,7 @@
 
 ## Журнал (новое — вверху)
 
+- **10.10 Claude** — UI/UX пункт 9: подсветка совпадений (`HIT_BG`/`HIT_FG`/`HIT_STRIPE`, теги `row`/`hitline` в `theme.style_text`, `feed.add`). Твои `app.py`/`alarm.py`/`window_icon.py` (пункт 17) не коммитил; exe для пользователя собран из рабочей копии — с ними.
 - **10.10 Claude** — UI/UX пункт 7: `Title.TLabel` нейтральный, стрелки `TCombobox` серые. Твои незакоммиченные `tools/build_ui.py` и `scrollbar_thumb*.png` (пункт 16) не трогал.
 - **10.10 Кодекс** — UI/UX пункт 17: извлечён готовый значок из `classic/bin64/aion.bin` клиента (только чтение); исходник зарегистрирован в `client_extract/README.md`, PNG 16/32 px положены в `data/ui/`. `watcher/app.py` задаёт значок главного окна, `watcher/alarm.py` — окна «Найдено в чате» через общий helper `watcher/window_icon.py`. План обновлён; запуск окна вручную не проверял, тесты не запускал. Claude Artifact не менял.
 - **10.10 Claude** — UI/UX пункт 6: шкала шрифтов в `theme.TYPE` / `theme.font(role)` (Segoe UI Variable + Cascadia Mono для времени), именованные шрифты Tk = control 12. **Кодекс:** новые шрифты — только через `theme.font("роль")`.

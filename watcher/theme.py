@@ -29,8 +29,12 @@ SUCCESS = "#5fd38d"  # «Слежу», «Отреагировал»: 7.75 on SUR
 WARNING = "#f5b544"  # «Игра не запущена», «Chat.log не найден»: 8.02 on SURFACE_2 — AAA
 DANGER_FILL = "#c9363b"  # Stop button fill: white text 5.15 — AA (was #e5484d, 3.91)
 DANGER_FILL_HOVER = "#d13b40"  # its hover: white text 4.76 — AA (was #f06a6e, 3.00)
-HIT_BG = "#ff8c1a"
-HIT_FG = "#1b1206"
+ACCENT_SUBTLE = "#3a2810"  # a quiet orange ground: ACCENT text on it 6.05 — AA
+# a match in the chat (UI/UX item 9): orange bold words on the quiet ground plus a 3 px stripe at the line's left,
+# instead of a solid orange block — still easy to spot, and the text stays readable
+HIT_BG = ACCENT_SUBTLE
+HIT_FG = ACCENT
+HIT_STRIPE = 3  # px; ACCENT on SURFACE 7.15
 NICK = "#9cc4ff"
 CHECK_SIZE = 24
 # item name colours by grade, as in the game
@@ -677,7 +681,7 @@ def style_text(widget: tk.Text) -> None:
         relief="flat",
         borderwidth=0,
         highlightthickness=0,
-        padx=12,
+        padx=12 - HIT_STRIPE,  # every row has a HIT_STRIPE left margin (tag «row»), so text still starts at 12
         pady=10,
         font=font("body"),
         spacing1=4,
@@ -685,7 +689,9 @@ def style_text(widget: tk.Text) -> None:
     )
     widget.tag_configure("meta", foreground=MUTED, font=font("mono"))  # time: an even column of digits
     widget.tag_configure("nick", foreground=NICK, font=font("body_strong"))
-    widget.tag_configure("hit", background=HIT_BG, foreground=HIT_FG)
+    widget.tag_configure("hit", background=HIT_BG, foreground=HIT_FG, font=font("body_strong"))
+    widget.tag_configure("row", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE)
+    widget.tag_configure("hitline", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE, lmargincolor=ACCENT)
 
 
 def dark_title_bar(root: tk.Tk) -> None:

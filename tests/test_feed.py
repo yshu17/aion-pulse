@@ -173,3 +173,20 @@ def test_click_on_place_link_reports_coordinates(root):
     text.event_generate("<Button-1>", x=x + width // 2, y=y + height // 2)
     root.update()
     assert opened == [("220070000", 2010.1, 1315.8, "Место · Келькмарос")]
+
+
+def test_match_is_quiet_orange_bold_with_a_stripe_on_its_line(root):
+    """UI/UX item 9: no solid orange block — orange bold words on a quiet ground and a stripe at the line's left."""
+    from watcher import theme
+
+    feed = make(root)
+    feed.add(msg("Leader", "ммк 1/12 нужен хил"), ["хил"])
+    feed.add(msg("Other", "просто чат"), [])
+    text = feed.text
+    assert text.tag_cget("hit", "background") == theme.ACCENT_SUBTLE
+    assert text.tag_cget("hit", "foreground") == theme.ACCENT
+    assert text.tag_cget("hitline", "lmargincolor") == theme.ACCENT
+    first, second = [i for i in range(1, 6) if text.get(f"{i}.0", f"{i}.end").strip()][:2]
+    assert "hitline" in text.tag_names(f"{first}.5") and "hitline" not in text.tag_names(f"{second}.5")
+    assert "row" in text.tag_names(f"{second}.5")  # same left margin, so plain rows do not shift
+    assert text.tag_cget("row", "lmargin1") == text.tag_cget("hitline", "lmargin1")
