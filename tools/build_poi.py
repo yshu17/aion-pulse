@@ -37,6 +37,7 @@ TYPES = {
     "artifact": ("landmark", "Артефакт"),
     "dungeon": ("landmark", "Вход в данж"),
     "raid_boss": ("landmark", "Рейдовый босс"),
+    "tunnel": ("landmark", "Проход в тоннель Силентера"),
     "portal": ("landmark", "Портал"),
     "direct_portal": ("landmark", "Точка перемещения"),
     "gather_herb": ("gather", "Травы"),
@@ -169,7 +170,7 @@ def service_points(rows: list[dict], zone_ids: dict[str, str]) -> dict[str, list
 # caught in the object name; without a string, the nearest area label names the point.
 LANDMARKS = [
     (re.compile(r"^Ab1_(\d{4})_Gatecontrol", re.I), "fortress", "_SV_{id}"),  # each siege fortress has a gate control
-    (re.compile(r"door_Underpass_IN", re.I), "portal", "STR_DIC_W_Underpass_SZ_S2"),  # «Проход в тоннель Силентера»
+    (re.compile(r"door_Underpass_IN", re.I), "tunnel", "STR_DIC_W_Underpass_SZ_S2"),  # «Проход в тоннель Силентера»
 ]
 LANDMARK_NAME_M = 60  # the area name of a landmark stands within this many metres of it
 

@@ -47,6 +47,7 @@ ICONS = {
     "fortress": ("client", "abyss_fortress.png"),
     "dungeon": ("client", "abyss_indun.png"),
     "raid_boss": ("client", "abyss_bossraid_dark.png"),
+    "tunnel": ("client", "abyss_underpass.png"),
     "portal": ("client", "abyss_underpass.png"),
     "direct_portal": ("client", "teleport_dest_up.png"),
     "camp": ("aiondb", "map_icon_ui_camp"),

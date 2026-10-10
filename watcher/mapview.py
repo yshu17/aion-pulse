@@ -31,9 +31,12 @@ THEMES = {"game": "Игра", "relief": "Рельеф"}
 
 # Silentera Tunnel entrances only (tools/build_poi.py).
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
-               "fortress", "artifact", "dungeon", "portal", "raid_boss")
+               "fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss")
 QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests; a check box shows / hides them
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
+# landmarks drawn this many times the usual size: siege fortresses and the way into the Silentera tunnel
+# +85 %, dungeon entrances +50 %
+ICON_SCALE = {"fortress": 1.85, "tunnel": 1.85, "dungeon": 1.5}
 SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
 SPLIT_ROW = 4  # icons per row when a group is laid out side by side
 SEARCH_PLACEHOLDER = "Найти: NPC, район"
@@ -547,7 +550,9 @@ class MapView(ttk.Frame):
     def _icon_size(self, type_: str) -> int:
         """Icon px for the current zoom: big enough to read on the whole map, teleporters bigger."""
         size = max(28, min(40, round(22 + 8 * self.zoom)))
-        return size + 8 if type_ in BIG_TYPES else size
+        if type_ in BIG_TYPES:
+            size += 8
+        return round(size * ICON_SCALE.get(type_, 1.0))
 
     def _poi_icon(self, type_: str, size: int):
         key = (type_, size)
@@ -571,8 +576,8 @@ class MapView(ttk.Frame):
             groups = self._split(points)
         else:
             groups = cluster(points, self.to_screen, radius_px=self._icon_size("") * 1.1, key=lambda p: p.type)
-        # teleporters and kisks on top of the rest
-        groups.sort(key=lambda g: g[2][0].type in BIG_TYPES)
+        # big landmarks (fortresses, the tunnel, dungeons) at the bottom, teleporters and kisks on top
+        groups.sort(key=lambda g: (g[2][0].type in BIG_TYPES, g[2][0].type not in ICON_SCALE))
         canvas = self.canvas
         for sx, sy, members in groups:
             if len(members) == 1:

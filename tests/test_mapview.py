@@ -155,7 +155,7 @@ def test_fixed_point_set_without_gathering_or_quests(root):
     assert not hasattr(view, "panel")  # no layer panel any more
     assert {"teleport", "warehouse", "merchant", "artifact"} <= view.layers
     hidden = {"direct_portal", "quest_point"} | {t for t in store.types if t.startswith("gather_")}
-    assert "portal" in view.layers  # the Silentera entrances from the game files
+    assert {"tunnel", "portal"} <= view.layers  # the Silentera entrances, Abyss gates and tunnel exits
     assert not view.layers & hidden
     shown = {m.type for _x, _y, members in view._drawn for m in members}
     assert "teleport" in shown and not shown & hidden
@@ -283,6 +283,16 @@ def test_last_two_zoom_levels_split_groups_into_icons_side_by_side(root):
     view.render()
     x0, y0, x1, y1 = view.canvas.coords(view.canvas.find_withtag("selected")[0])
     assert ((x0 + x1) / 2, (y0 + y1) / 2) == pytest.approx(view._spots[members[0]], abs=1)
+
+
+def test_fortresses_tunnel_and_dungeons_drawn_bigger(root):
+    view = MapView(root, zones())
+    for zoom in (0.2, 1.0, 3.0):
+        view.zoom = zoom
+        usual = view._icon_size("merchant")
+        assert view._icon_size("fortress") == view._icon_size("tunnel") == round(usual * 1.85)  # +85 %
+        assert view._icon_size("dungeon") == round(usual * 1.5)  # +50 %
+        assert view._icon_size("portal") == usual  # Abyss gates and the tunnel's exits stay as they were
 
 
 def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):

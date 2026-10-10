@@ -107,7 +107,7 @@ def test_silentera_entrances_are_the_portals():
     ]
     labels = {"220070000": [(930.0, 1430.0, "Вход в тоннель\nСилентера")]}  # game y, game x
     points = build_poi.landmark_points(entities, labels)
-    assert points["220070000"] == [{"t": "portal", "x": 0.0, "y": 0.0, "gx": 1449.4, "gy": 904.2,
+    assert points["220070000"] == [{"t": "tunnel", "x": 0.0, "y": 0.0, "gx": 1449.4, "gy": 904.2,
                                     "name": "Вход в тоннель Силентера"}]  # no string: the nearest area label
     assert points["210050000"][0]["name"] == ""  # no area name close enough
     strings = {"STR_DIC_W_Underpass_SZ_S2": "Проход в тоннель Силентера;Вход в тоннель из Келькмароса."}
