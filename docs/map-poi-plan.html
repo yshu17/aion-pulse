@@ -51,7 +51,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
 
   <h2>v3: порядок работ</h2>
   <div class="card">
-    <div><b id="pct3">0%</b> <span class="tag">— статус обновляю я после каждого шага (и коммичу). Начинаю после твоего «поехали».</span></div>
+    <div><b id="pct3">0%</b> <span class="tag">— номер шага = номер задачи в PAIR.md; статус обновляю я после каждого шага (и коммичу).</span></div>
     <div class="bar"><i id="barfill3"></i></div>
     <div class="steps" id="steps3"></div>
   </div>
@@ -61,7 +61,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
     <tr><td>Кодекс</td><td>распаковка и разбор файлов клиента, таблицы данных в client_extract/raw, поиск источников (данжи, боссы, подписи), генераторы планов и картинок в tools/</td></tr>
     <tr><td>Claude</td><td>код программы (watcher/), подключение данных к карте, значки и точки, тесты, сборка exe, этот план</td></tr>
     <tr><td>Ты</td><td>решения («делаем», варианты), проверка в игре, ссылки «Место» для сверки</td></tr>
-    <tr><td>Связь</td><td>задачи и журнал — PAIR.md в корне проекта; задания Кодексу — CODEX_TASK_*.md</td></tr>
+    <tr><td>Связь</td><td>задачи и журнал — PAIR.md в корне проекта (номера задач карты = номера шагов v3 здесь; UI/UX — UI-1, UI-2, Telegram — TG-1, TG-2); задания Кодексу — CODEX_TASK_*.md</td></tr>
   </table></div>
 
   <h2>v3: нужно твоё решение</h2>
@@ -131,7 +131,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
     <tr><td>Входы в данжи — не все</td><td>15 входов из npc_info клиента на карте. Входов, которых нет в npc_info (например Харамель в Исхальгене), пока нет — Кодекс сверит.</td></tr>
     <tr><td>Пандемониум</td><td>Привязка сверена по точкам клиента, но не по твоим «Местам» в игре.</td></tr>
     <tr><td>Келькмарос и Ингисон</td><td>Одинаковое число складов (11), торговцев (24), «товаров за монеты» (22) — похоже на зеркальные крепости, проверить в игре.</td></tr>
-    <tr><td>Значки мылятся</td><td>Исходники значков 16–36 px, на карте растянуты в 2–4 раза. Задача 22 (Кодекс) и 24 (Claude).</td></tr>
+    <tr><td>Значки мылятся</td><td>Исходники значков 16–36 px, на карте растянуты в 2–4 раза. Шаг 17 (Кодекс) и 19 (Claude).</td></tr>
     <tr><td>Мелочи</td><td>Значок артефакта мелкий (в исходнике мало пикселей); у кибелисков нет собственных имён (в игре тоже); в Тоннеле Силентера в файлах игры нет функциональных NPC. Сбор и задания (≈11,8 тыс. точек) ещё лежат в poi.json, хотя не показываются.</td></tr>
   </table></div>
 
@@ -239,9 +239,9 @@ const STEPS=[
  {t:"Добор пробелов с aiondb (по желанию)",d:"недостающие привратники и кибелиски — если по факту их не хватит",s:"todo",note:"По плану — только по твоему решению после того, как посмотришь карту в игре: сейчас в клиенте, например, 2 привратника в Келькмаросе против 7 на aiondb."},
  {t:"Поиск, полировка, сборка",d:"поиск по карте, оформление с навыками дизайна и проверкой скриншотами, README, пересборка exe",s:"done",note:"Поиск по карте: NPC по имени и типу (и в скрытых слоях) и районы, Enter / Shift+Enter, счётчик «2 / 7»; найденная точка ставится в центр и обводится. Полировка по скриншотам (навыки ui-visual-validator и high-end-visual-design): обводка у подписи метки, тихий текст пустой карточки, короткая подсказка, игровые координаты под курсором, карту можно сдвинуть за край, чтобы точка у края вставала в центр. README обновлён. Exe пересобирается после закрытия программы. Тесты: 217."}];
 const MARK={done:["✓","#5fd38d","сделано"],doing:["▶","#ff8c1a","в работе"],todo:["○","#8c919c","ждёт"]};
-function steps(list,boxId,pctId,barId){const box=document.getElementById(boxId);box.innerHTML="";
+function steps(list,boxId,pctId,barId,prefix=""){const box=document.getElementById(boxId);box.innerHTML="";
   list.forEach((st,i)=>{const m=MARK[st.s]||MARK.todo;const r=document.createElement("div");r.className="step"+(st.s==="done"?" done":"");
-    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span>${st.who?` <span class="chip" style="cursor:default;margin:0 0 0 6px">${st.who}</span>`:""}</div><div class="tag">${st.d}</div>${st.note?`<div style="margin-top:6px;font-size:13px;color:#cfd3da">${st.note}</div>`:""}</div>`;
+    r.innerHTML=`<div style="width:22px;text-align:center;font-size:18px;color:${m[1]};flex:none">${m[0]}</div><div style="flex:1"><div class="t"><b>${prefix}${i+1}.</b> ${st.t} <span class="tag" style="color:${m[1]}">· ${m[2]}</span>${st.who?` <span class="chip" style="cursor:default;margin:0 0 0 6px">${st.who}</span>`:""}</div><div class="tag">${st.d}</div>${st.note?`<div style="margin-top:6px;font-size:13px;color:#cfd3da">${st.note}</div>`:""}</div>`;
     box.appendChild(r);});
   const done=list.filter(x=>x.s==="done").length, p=Math.round(done/list.length*100);
   document.getElementById(pctId).textContent=`${done} из ${list.length} шагов`;document.getElementById(barId).style.width=p+"%";}
@@ -268,7 +268,7 @@ const STEPS3=[
  {t:"Подключить чёткие значки",who:"Claude (после Кодекса)",d:"выбранный способ — в tools/build_map_icons.py, значки 64–144 px в data/maps/icons, программа только уменьшает; проверка снимками, тесты, сборка exe",s:"todo"},
  {t:"Проверка в игре и сборка",who:"ты + Claude",d:"ты смотришь 2–3 зоны в игре, я правлю, тесты, README, пересборка exe",s:"todo"}
 ];
-steps(STEPS,"steps","pct","barfill");steps(STEPS3,"steps3","pct3","barfill3");render();
+steps(STEPS,"steps","pct","barfill","v2.");steps(STEPS3,"steps3","pct3","barfill3");render();
 </script>
 </body>
 </html>
