@@ -1,9 +1,40 @@
-from watcher.app import split_keywords
+from watcher.app import plural, split_keywords
 
 
 def test_split_keywords():
     assert split_keywords(" хил,  ММК ,,чант , ") == ["хил", "ММК", "чант"]
     assert split_keywords("") == []
+
+
+def test_plural():
+    assert [plural(n, "слово", "слова", "слов") for n in (0, 1, 2, 5, 11, 21, 22, 112)] == [
+        "0 слов", "1 слово", "2 слова", "5 слов", "11 слов", "21 слово", "22 слова", "112 слов"]
+
+
+def test_empty_feed_before_start_names_what_is_looked_for(tmp_path):
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "fake_chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(log), "keywords": ["ммк", "хил"], "game_check": False}),
+                        encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        empty = app.feed.empty
+        assert empty.shown and empty.title.cget("text") == "Нажми Start — здесь появятся совпадения"
+        assert empty.hint.cget("text").startswith("Ищу: 2 слова")
+        app.start()
+        assert empty.title.cget("text") == "Слежу — совпадений пока нет"
+        app.stop()
+        assert empty.title.cget("text").startswith("Нажми Start")
+    finally:
+        root.destroy()
 
 
 def test_tick_keeps_polling_when_processing_fails(tmp_path):

@@ -190,3 +190,29 @@ def test_match_is_quiet_orange_bold_with_a_stripe_on_its_line(root):
     assert "hitline" in text.tag_names(f"{first}.5") and "hitline" not in text.tag_names(f"{second}.5")
     assert "row" in text.tag_names(f"{second}.5")  # same left margin, so plain rows do not shift
     assert text.tag_cget("row", "lmargin1") == text.tag_cget("hitline", "lmargin1")
+
+
+def test_empty_feed_says_what_will_appear_until_the_first_row(root):
+    feed = make(root)
+    feed.show_empty("magnifying-glass", "Нажми Start — здесь появятся совпадения", "Ищу: 2 слова, 0 предметов")
+    root.update()
+    assert feed.empty.shown and feed.empty.title.cget("text").startswith("Нажми Start")
+    assert feed.empty.picture.cget("image")  # the 32 px Phosphor picture
+    feed.add(msg("Nick", "ищу хила"), ["хил"])
+    assert not feed.empty.shown
+    feed.show_empty("magnifying-glass", "Слежу — совпадений пока нет")  # rows exist: the empty state stays away
+    assert not feed.empty.shown
+
+
+def test_loading_state_animates_its_dots(root):
+    feed = make(root)
+    feed.show_empty("hourglass-medium", "Читаю историю за 15 мин…", loading=True)
+    texts = set()
+    for _ in range(4):
+        texts.add(feed.empty.title.cget("text"))
+        feed.empty._stop_dots()
+        feed.empty._tick_dots()
+    assert all(t.startswith("Читаю историю за 15 мин") for t in texts)
+    assert len(texts) >= 3  # «», «.», «..», «...» — the line breathes
+    feed.add_note("— выше история —")
+    assert not feed.empty.shown and feed.empty._after is None

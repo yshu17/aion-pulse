@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from tkinter import ttk
 
 from watcher import theme
+from watcher.catalog import resource_root
+from watcher.emptystate import EmptyState
+from watcher.ui_icons import IconSet
 from watcher.parser import ChatLine, parse_any_line
 from watcher.tailer import LogTailer
 from watcher.textview import ITEM_COLOR, BottomAnchor, CopyMenu, ItemLinker
@@ -118,6 +121,7 @@ class AllChatView(ttk.Frame):
         self.anchor = BottomAnchor(self.text)
         self.copy = CopyMenu(self.text)
         self.text.bind("<Configure>", lambda _e: self.anchor.update())
+        self.empty = EmptyState(self.text, IconSet(self, resource_root() / "data" / "ui" / "icons"))
 
     def _tag_for(self, color: str) -> str:
         tag = self._color_tags.get(color)
@@ -134,6 +138,8 @@ class AllChatView(ttk.Frame):
         self.active = True
         self._clear()
         self._held = []
+        self.empty.show("hourglass-medium", "Читаю чат…", loading=True)
+        self.update_idletasks()  # paint «reading» before the (blocking) read
         self._open(with_history=True)
 
     def deactivate(self) -> None:
@@ -181,6 +187,11 @@ class AllChatView(ttk.Frame):
         self.tailer = tailer
         self.status_var.set("")
         self._show(lines)
+        if self._rows == 0:
+            minutes = self.get_minutes() if with_history else 0
+            self.empty.show("chat-circle-dots", "Пока тихо",
+                            "Здесь появятся новые сообщения чата" + (f"; за последние {minutes} мин их не было"
+                                                                       if minutes else ""))
         if with_history:
             self.text.after_idle(lambda: self.text.yview_moveto(1.0))  # open at the newest line
         self._schedule(POLL_MS)
@@ -232,6 +243,7 @@ class AllChatView(ttk.Frame):
                 rows.append((line, None))
         if not rows:
             return
+        self.empty.hide()
         at_bottom = self.text.yview()[1] >= 0.999
         self.text.configure(state="normal")
         for line, kind in rows:

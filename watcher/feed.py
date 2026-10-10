@@ -10,8 +10,11 @@ from collections.abc import Callable, Mapping
 from tkinter import ttk
 
 from watcher import theme
+from watcher.catalog import resource_root
+from watcher.emptystate import EmptyState
 from watcher.parser import ChatMessage
 from watcher.textview import BottomAnchor, CopyMenu, ItemLinker
+from watcher.ui_icons import IconSet
 
 PENDING_BRIGHT = theme.PENDING_BRIGHT
 PENDING_DIM = theme.PENDING_DIM
@@ -63,6 +66,16 @@ class MatchFeed(ttk.Frame):
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.copy = CopyMenu(self.text)
         self.text.bind("<Configure>", lambda _e: self._relayout())
+        self.empty = EmptyState(self.text, IconSet(self, resource_root() / "data" / "ui" / "icons"))
+
+    @property
+    def rows(self) -> int:
+        return self._rows
+
+    def show_empty(self, icon: str, title: str, hint: str = "", loading: bool = False) -> None:
+        """What the feed will show, while it shows nothing yet (UI/UX item 12)."""
+        if self._rows == 0:
+            self.empty.show(icon, title, hint, loading)
 
     # --- public -----------------------------------------------------------------------
     def add(self, msg: ChatMessage, hits: list[str], alert_id: int | None = None, quiet: bool = False) -> None:
@@ -70,6 +83,7 @@ class MatchFeed(ttk.Frame):
 
         quiet: a repeat of an already accepted series — a green row marked «уже принято», no alert.
         """
+        self.empty.hide()
         at_bottom = self.text.yview()[1] >= 0.999
         self.text.configure(state="normal")
         start = self.text.index("end-1c")
@@ -99,6 +113,7 @@ class MatchFeed(ttk.Frame):
 
     def add_note(self, note: str) -> None:
         """A muted centred separator line (e.g. between history and live messages)."""
+        self.empty.hide()
         at_bottom = self.text.yview()[1] >= 0.999
         self.text.configure(state="normal")
         self.text.insert("end-1c", note + "\n", ("note",))

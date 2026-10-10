@@ -68,6 +68,13 @@ def short_status(text: str) -> tuple[str, str]:
     return "Не слежу", "Idle.Chip.TLabel"
 
 
+def plural(n: int, one: str, few: str, many: str) -> str:
+    """«1 слово», «3 слова», «5 слов» (Russian plural forms)."""
+    last2, last = n % 100, n % 10
+    word = one if last == 1 and last2 != 11 else few if 2 <= last <= 4 and not 12 <= last2 <= 14 else many
+    return f"{n} {word}"
+
+
 def split_keywords(text: str) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
 
@@ -115,6 +122,7 @@ class App:
         )
         self._set_status("Остановлен")
         self._update_counters()
+        self._feed_empty_state()
         self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
 
     def _build_ui(self) -> None:
@@ -390,6 +398,21 @@ class App:
         self.item_list.set_enabled(not items_off)
         self.items_title.configure(text="Что искать  ·  не используется" if items_off else "Что искать")
         self.kw_entry.state(["disabled"] if mode == "items" else ["!disabled"])
+        if hasattr(self, "feed"):
+            self._feed_empty_state()
+
+    def _feed_empty_state(self) -> None:
+        """The empty feed says what will appear there and what is being looked for (UI/UX item 12)."""
+        if self.feed.rows:
+            return
+        words, items = len(self.cfg.keywords), len(self.cfg.watch_items)
+        missing = self._search_hint()
+        hint = (f"Сейчас {missing}" if missing else
+                f"Ищу: {plural(words, 'слово', 'слова', 'слов')}, {plural(items, 'предмет', 'предмета', 'предметов')}")
+        if self.running:
+            self.feed.show_empty("magnifying-glass", "Слежу — совпадений пока нет", hint)
+        else:
+            self.feed.show_empty("magnifying-glass", "Нажми Start — здесь появятся совпадения", hint)
 
     def _search_hint(self) -> str:
         """What the chosen search mode is missing, e.g. «нет ключевых слов»."""
@@ -632,6 +655,7 @@ class App:
         self.cfg.watch_items = self.item_list.checked_ids()
         self.matcher.set_watch_items(self._checked_items())
         save_config(self.config_path, self.cfg)
+        self._feed_empty_state()
 
     def _select_all_items(self, value: bool) -> None:
         self.item_list.set_all(value)
@@ -682,6 +706,7 @@ class App:
         self.cfg.keywords = keywords
         self.matcher.set_keywords(keywords)
         save_config(self.config_path, self.cfg)
+        self._feed_empty_state()
 
     def toggle(self) -> None:
         if self.running:
@@ -697,6 +722,9 @@ class App:
         self.tailer = None
         self._scan_history = self.cfg.history_min > 0
         self.start_btn.configure(text="Stop", style="Danger.TButton")
+        if self._scan_history:
+            self.feed.show_empty("hourglass-medium", f"Читаю историю за {self.cfg.history_min} мин…", loading=True)
+            self.root.update_idletasks()  # paint «reading» before the (blocking) read
         self._tick()
 
     def stop(self) -> None:
@@ -708,6 +736,7 @@ class App:
         self.tailer = None
         self.start_btn.configure(text="Start", style="Accent.TButton")
         self._set_status("Остановлен")
+        self._feed_empty_state()
 
     def _game_closed(self) -> bool:
         """Game check (config «game_check»): no aion.bin process -> stop watching and say so.
@@ -763,6 +792,7 @@ class App:
         else:
             hint = self._search_hint()
             self._set_status(f"Слежу за {path}" + (f"  ·  {hint}" if hint else ""))
+            self._feed_empty_state()
         self._schedule(self.cfg.poll_interval_ms)
 
     def _show_history(self, lines: list[str]) -> None:
