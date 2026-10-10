@@ -19,6 +19,7 @@ from watcher.gamecheck import game_running
 from watcher.itemlist import ItemFilter, ItemList
 from watcher.ui_icons import IconSet
 from watcher.hint import Hint
+from watcher.window_icon import load_app_icon
 from watcher.notifier import Notifier, system_sounds
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
@@ -106,7 +107,12 @@ class App:
         self._build_ui()
         self._apply_search_mode_state()
         self.tooltip = SpecTooltip(root)
-        self.alarm = NagAlarm(root, self.notifier, on_ack=self._on_popup_ack)
+        self.alarm = NagAlarm(
+            root,
+            self.notifier,
+            on_ack=self._on_popup_ack,
+            window_icons=self._window_icons,
+        )
         self._set_status("Остановлен")
         self._update_counters()
         self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
@@ -117,6 +123,7 @@ class App:
         root.geometry("1400x860")
         root.minsize(1000, 600)
         theme.apply_dark_theme(root, resource_root() / "data" / "ui")
+        self._window_icons = load_app_icon(root, resource_root() / "data" / "ui")
         theme.dark_title_bar(root)
 
         header = ttk.Frame(root, padding=(16, 12, 16, 4))
@@ -231,7 +238,7 @@ class App:
         )
         volume.pack(side="left")
         volume.bind("<ButtonRelease-1>", lambda _e: self._on_volume_changed())
-        self.volume_label = ttk.Label(alert_row2, text=f"{self.notifier.volume}%", style="CardMuted.TLabel", width=5)
+        self.volume_label = ttk.Label(alert_row2, text=f"{self.notifier.volume}%", style="Caption.TLabel", width=5)
         self.volume_label.pack(side="left", padx=(8, 0))
         ttk.Label(settings, text="История", style="CardMuted.TLabel").grid(row=2, column=0, sticky="w")
         history_row = ttk.Frame(settings, style="Surface.TFrame")

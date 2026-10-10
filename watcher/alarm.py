@@ -8,6 +8,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.matcher import highlight_segments
 from watcher.parser import ChatMessage, display_text
+from watcher.window_icon import apply_app_icon
 
 BEEP_REPEAT_MS = 1500
 BLINK_MS = 500
@@ -46,11 +47,13 @@ class NagAlarm:
         notifier,
         flash: Callable[[bool], None] | None = None,
         on_ack: Callable[[], None] | None = None,
+        window_icons: tuple[tk.PhotoImage, ...] | None = None,
     ) -> None:
         self.root = root
         self.notifier = notifier
         self.flash = flash or taskbar_flasher(root)
         self.on_ack = on_ack  # the user reacted in the popup (hover, click or OK)
+        self.window_icons = window_icons or ()
         self.window: tk.Toplevel | None = None
         self.text: tk.Text | None = None
         self.sounding = False
@@ -140,6 +143,7 @@ class NagAlarm:
     def _open(self) -> None:
         win = tk.Toplevel(self.root, background=theme.ACCENT, padx=6, pady=6)
         win.title("Найдено в чате")
+        apply_app_icon(win, self.window_icons)
         win.attributes("-topmost", True)
         win.protocol("WM_DELETE_WINDOW", self._on_ok)
         body = tk.Frame(win, background=theme.BG, padx=16, pady=14)

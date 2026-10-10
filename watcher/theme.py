@@ -186,6 +186,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.configure("TLabel", background=BG, foreground=TEXT)
     style.configure("Muted.TLabel", background=BG, foreground=MUTED)
     style.configure("CardMuted.TLabel", background=SURFACE, foreground=MUTED)
+    style.configure("Caption.TLabel", background=SURFACE, foreground=MUTED, font=font("caption"))
     style.configure("Status.TLabel", background=BG, foreground=MUTED)
     style.configure("Live.TLabel", background=BG, foreground="#5fd38d")
     style.configure("Warn.TLabel", background=BG, foreground=DANGER)
@@ -405,6 +406,8 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         _apply_rounded(style, root, Path(ui_dir))
         if all((Path(ui_dir) / f"scrollbar_thumb{suffix}.png").is_file() for suffix in ("", "_hover")):
             _apply_scrollbar(style, root, Path(ui_dir))
+        if all((Path(ui_dir) / name).is_file() for name in ("scale_track.png", "scale_thumb.png", "scale_thumb_hover.png")):
+            _apply_scale(style, root, Path(ui_dir))
     style.configure("Item.TCheckbutton", background=SURFACE, foreground=TEXT, padding=(8, 4))
     style.map(
         "Item.TCheckbutton",
@@ -415,9 +418,13 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
 
 def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     """Swap the flat clam borders for 9-slice rounded images."""
+    scale = _ui_dpi_scale(root)
+    suffix = min(((1.0, ""), (1.25, "@125"), (1.5, "@150"), (2.0, "@2x")),
+                 key=lambda item: abs(item[0] - scale))[1]
 
     def img(name: str) -> tk.PhotoImage:
-        image = load_png(root, ui_dir / f"{name}.png")
+        variant = ui_dir / f"{name}{suffix}.png"
+        image = load_png(root, variant if variant.is_file() else ui_dir / f"{name}.png")
         _images.append(image)
         return image
 
@@ -428,8 +435,8 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             options["padding"] = padding
         style.element_create(name, "image", img(base), *specs, **options)
 
-    edge = RADIUS + 1
-    inner = (RADIUS // 2 + 3, 3)  # keeps text clear of the corners without growing the widget
+    edge = round((RADIUS + 1) * scale)
+    inner = (round((RADIUS // 2 + 3) * scale), round(3 * scale))  # preserve the text inset at high DPI
     # buttons: on the window background, and on cards («Card.» prefix)
     for prefix, file_prefix in (("", ""), ("Card.", "card_")):
         name = f"{prefix}Rounded.Button.border"
@@ -521,7 +528,7 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     style.map("TCombobox", background=[("active", SURFACE_2), ("readonly", SURFACE_2)])
 
     # cards, group headers, counters
-    element("Card.border", "card", [], CARD_RADIUS + 1)
+    element("Card.border", "card", [], round((CARD_RADIUS + 1) * scale))
     style.layout("Card.TFrame", [("Card.border", {"sticky": "nswe"})])
     element("Group.border", "group", [], edge)
     style.layout("Group.TFrame", [("Group.border", {"sticky": "nswe"})])
@@ -546,6 +553,16 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             ]})
         ]})],
     )
+
+
+def _ui_dpi_scale(root: tk.Misc) -> float:
+    """Return the display scale represented by Tk (1.0 at 96 DPI)."""
+    try:
+        tk_scale = float(root.tk.call("tk", "scaling"))
+    except (TypeError, ValueError, tk.TclError):
+        return 1.0
+    # Tk scaling is pixels per point: the Windows 96 DPI baseline is 96 / 72.
+    return max(1.0, min(2.0, tk_scale / (96 / 72)))
 
 
 def _apply_scrollbar(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
@@ -582,6 +599,31 @@ def _apply_scrollbar(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             "children": [(element, {"unit": "1", "sticky": "nswe"})],
         })],
     )
+
+
+def _apply_scale(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
+    """Use a slim image track and a round, stateful thumb for horizontal scales."""
+    track = load_png(root, ui_dir / "scale_track.png")
+    thumb = load_png(root, ui_dir / "scale_thumb.png")
+    thumb_hover = load_png(root, ui_dir / "scale_thumb_hover.png")
+    _images.extend((track, thumb, thumb_hover))
+    style.element_create("Slim.Horizontal.Scale.trough", "image", track, border=0, sticky="we")
+    style.element_create(
+        "Round.Horizontal.Scale.slider",
+        "image",
+        thumb,
+        ("active", thumb_hover),
+        border=0,
+        sticky="",
+    )
+    style.layout(
+        "Horizontal.TScale",
+        [("Slim.Horizontal.Scale.trough", {
+            "sticky": "we",
+            "children": [("Round.Horizontal.Scale.slider", {"side": "left", "sticky": ""})],
+        })],
+    )
+    style.configure("Horizontal.TScale", background=SURFACE, troughcolor=SURFACE_2, sliderthickness=16)
 
 
 def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
