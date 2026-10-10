@@ -50,19 +50,22 @@ def test_build_keeps_calibrated_zones_and_rounds(tmp_path):
     ]
     entities = [{"map_id": "220070000", "entity_class": "AbyssArtifacts", "name": f"Artifact_30111_1_1_{side}",
                  "game_x": "1", "game_y": "2", "image_x": "3", "image_y": "4"} for side in ("Li", "Da", "Dr")]
-    data = build_poi.build(rows, entities, {"220070000", "210050000"})  # one artifact listed for 3 sides
+    data = build_poi.build(rows, entities, {"220070000", "210050000"}, gather=True)  # one artifact for 3 sides
     points = data["zones"]["220070000"]
     assert {p["t"] for p in points} == {"gather_herb", "artifact"} and len(points) == 2
     herb = next(p for p in points if p["t"] == "gather_herb")
     assert herb == {"t": "gather_herb", "x": 1686.1, "y": 793.1, "gx": 100.0, "gy": 200.0, "name": ""}
     assert "210020000" not in data["zones"]
-    assert data["types"]["gather_herb"] == {"group": "gather", "name": "Травы", "icon": "gather_herb.png"}
+    assert data["types"]["gather_herb"]["name"] == "Травы"  # no icon file while gathering is off
+    assert data["types"]["artifact"] == {"group": "landmark", "name": "Артефакт", "icon": "artifact.png"}
     json.dumps(data)  # serialisable
+    plain = build_poi.build(rows, entities, {"220070000", "210050000"})  # gathering is off in the program
+    assert [p["t"] for p in plain["zones"]["220070000"]] == ["artifact"] and "gather_herb" not in plain["types"]
 
 
 def test_functional_npcs_only_from_the_world_xml_and_neighbours_kept():
     rows = [obj(function="Teleport", ru="Раниу из миссии"), obj("HSP", "HSPDF4_a_herb1")]
-    data = build_poi.build(rows, [], {"220070000"})
+    data = build_poi.build(rows, [], {"220070000"}, gather=True)
     assert {p["t"] for p in data["zones"]["220070000"]} == {"gather_herb"}  # mission NPCs are not used
     service = [  # client_world_*.xml (Codex: npc_service_coords.tsv)
         {"zone": "df4", "npc_id": "799330", "russian_name": "Раниу", "function_type": "Teleport", "x": "793", "y": "1685"},
@@ -137,6 +140,14 @@ def test_dungeon_entrances_and_abyss_gates_from_the_world_xml():
                                  "name": "Врата Бездны Морхейма"}]
     assert out["600010000"][0]["t"] == "portal"  # the tunnel's exit to Kelkmaros
     assert "120010000" not in out and "220040000" not in out  # quest doors and exits are not dungeons
+
+
+def test_raid_bosses_from_codex_table():
+    rows = [{"map_id": "220070000", "boss_name_ru": "Теграк", "x": "1769.114868", "y": "1765.704102"},
+            {"map_id": "210050000", "boss_name_ru": "Гера", "x": "1079.880371", "y": "1626.382568"}]
+    out = build_poi.raid_boss_points(rows)
+    assert out["220070000"] == [{"t": "raid_boss", "x": 0.0, "y": 0.0, "gx": 1769.1, "gy": 1765.7, "name": "Теграк"}]
+    assert out["210050000"][0]["name"] == "Гера"
 
 
 def test_quest_givers_placed_from_the_client_one_point_per_npc():

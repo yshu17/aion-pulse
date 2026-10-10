@@ -87,30 +87,40 @@ def test_zone_without_map_says_so(root):
     assert "карты этой зоны нет" in window.title.cget("text")
 
 
-def test_area_names_on_maps(root):
+def test_area_names_on_maps_from_the_client(root):
     found = zones()
     kelk = found["220070000"]
-    names = {text for _x, _y, text in kelk.labels}
-    assert {"Митраканд", "Крепость Келькмарос", "Вход в тоннель Силентера в Келькмаросе"} <= names
-    assert all(0 <= x <= kelk.size and 0 <= y <= kelk.size for x, y, _t in kelk.labels)
-    assert "Коридор\nмучений" in {t for _x, _y, t in found["600010000"].labels}  # «|» is a line break
+    names = {text.replace("\n", " "): level for _x, _y, text, level in kelk.labels}
+    assert names["Митраканд"] == "main" and names["Запечатанная башня"] == "zoom"
+    assert "Вход в тоннель Силентера в Келькмаросе" in names
+    assert "Пещера Мариссы" not in names  # ui_map «none»: the game does not write it on the map
+    assert all(0 <= x <= kelk.size and 0 <= y <= kelk.size for x, y, _t, _l in kelk.labels)
+    assert "Коридор мучений" in {t for _x, _y, t, _l in found["600010000"].labels}
+    assert found["120010000"].labels  # Pandaemonium has names now (aiondb had none)
     window = MapView(root, found)
     window.pack(fill="both", expand=True)
     root.geometry("1000x900")
     root.update()
-    window.show(Place("220070000", 1173.0, 1227.4, "Место"))
-    root.update()
+    window.open_zone("220070000")
+    window.zoom = 1300 / window.zone.size
     window.render()
     shown = {window.canvas.itemcget(i, "text") for i in window.canvas.find_withtag("label")}
-    assert "Запечатанная башня" in shown
+    assert "Митраканд" in shown and "Запечатанная башня" not in shown  # whole map: «main» names only
+    window.show(Place("220070000", 1173.0, 1227.4, "Место"))
+    window.zoom = 2.0
+    window.center_on(*window.zone.to_image(1173.0, 1227.4))
+    window.render()
+    shown = {window.canvas.itemcget(i, "text") for i in window.canvas.find_withtag("label")}
+    assert "Запечатанная башня" in shown  # closer in: the «zoom» names too
 
 
 def test_labels_file_errors_are_ignored(tmp_path):
     from watcher.mapview import load_labels
 
     path = tmp_path / "labels.tsv"
-    path.write_text("# c\n@df4\t3072\ndf4\t1\t2\tA|B\ndf4\tx\t2\tbad\nzz\t1\t1\tno zone\n", encoding="utf-8")
-    assert load_labels(path) == {"df4": (3072.0, [(1.0, 2.0, "A\nB")])}
+    path.write_text("# c\n220070000\tmain\t1\t2\tA|B\n220070000\tzoom\tx\t2\tbad\n"
+                    "220070000\tnone\t1\t1\thidden\nshort\tline\n", encoding="utf-8")
+    assert load_labels(path) == {"220070000": [(1.0, 2.0, "A\nB", "main")]}
     assert load_labels(tmp_path / "missing.tsv") == {}
 
 

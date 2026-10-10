@@ -31,13 +31,15 @@ THEMES = {"game": "Игра", "relief": "Рельеф"}
 
 # Silentera Tunnel entrances only (tools/build_poi.py).
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
-               "fortress", "artifact", "dungeon", "portal")
+               "fortress", "artifact", "dungeon", "portal", "raid_boss")
 QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests; a check box shows / hides them
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
 SPLIT_ROW = 4  # icons per row when a group is laid out side by side
 SEARCH_PLACEHOLDER = "Найти: NPC, район"
 LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
+LABELS_ZOOM_WIDTH = 4000  # px before the «zoom» names (camps, gates, small places) are drawn too
+LABEL_LEVELS = ("main", "zoom")
 PIN = theme.ACCENT
 OTHER_PIN = "#4fd1c5"
 BG_RGB = tuple(int(theme.SURFACE[i : i + 2], 16) for i in (1, 3, 5))
@@ -60,7 +62,7 @@ class Zone:
     size: int
     kx: tuple[float, float]
     ky: tuple[float, float]
-    labels: tuple[tuple[float, float, str], ...] = ()  # area names: (image x, image y, text)
+    labels: tuple[tuple[float, float, str, str], ...] = ()  # area names: (image x, image y, text, level)
     relief: Path | None = None  # the «Рельеф» theme: the radar map cut to the same frame (tools/build_relief.py)
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
@@ -94,33 +96,31 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
     for map_id, info in index.items():
         path = Path(maps_dir) / info["file"]
         if path.is_file():
-            size = int(info["size"])
-            view_box, rows = labels.get(path.stem, (size, []))
-            k = size / view_box
+            kx, ky = tuple(info["x"]), tuple(info["y"])
             zones[map_id] = Zone(
-                map_id, names.get(map_id, map_id), path, size, tuple(info["x"]), tuple(info["y"]),
-                tuple((x * k, y * k, text) for x, y, text in rows),
+                map_id, names.get(map_id, map_id), path, int(info["size"]), kx, ky,
+                tuple((kx[0] * gy + kx[1], ky[0] * gx + ky[1], text, level)
+                      for gx, gy, text, level in labels.get(map_id, [])),
                 relief if (relief := Path(maps_dir) / "relief" / path.name).is_file() else None,
             )
     return zones
 
 
-def load_labels(path: Path) -> dict[str, tuple[float, list[tuple[float, float, str]]]]:
-    """labels.tsv -> {zone code: (viewBox size, [(x, y, text), ...])}; «|» in a name is a line break."""
-    zones: dict[str, tuple[float, list]] = {}
+def load_labels(path: Path) -> dict[str, list[tuple[float, float, str, str]]]:
+    """labels.tsv (tools/build_labels.py, the client's own area names) -> {map id: [(game x, game y, text,
+    level), ...]}; level «main» is drawn on the whole map, «zoom» closer in; «|» in a name is a line break."""
+    zones: dict[str, list] = {}
     try:
         lines = Path(path).read_text(encoding="utf-8").splitlines()
     except OSError:
         return {}
     for line in lines:
-        if not line or line.startswith("#"):
-            continue
         parts = line.split("\t")
+        if line.startswith("#") or len(parts) != 5 or parts[1] not in LABEL_LEVELS:
+            continue
         try:
-            if line.startswith("@"):
-                zones[parts[0][1:]] = (float(parts[1]), [])
-            elif parts[0] in zones and len(parts) == 4:
-                zones[parts[0]][1].append((float(parts[1]), float(parts[2]), parts[3].replace("|", "\n")))
+            zones.setdefault(parts[0], []).append((float(parts[2]), float(parts[3]), parts[4].replace("|", "\n"),
+                                                   parts[1]))
         except ValueError:
             continue
     return zones
@@ -414,8 +414,12 @@ class MapView(ttk.Frame):
         if self.zoom * self.zone.size < LABELS_MIN_WIDTH:
             return
         size = max(8, min(15, round(5 + 4 * self.zoom)))
-        font = (theme.FONT_FAMILY, size, "bold")
-        for image_x, image_y, text in self.zone.labels:
+        fonts = {"main": (theme.FONT_FAMILY, size + 1, "bold"), "zoom": (theme.FONT_FAMILY, size - 1, "bold")}
+        close = self.zoom * self.zone.size >= LABELS_ZOOM_WIDTH
+        for image_x, image_y, text, level in self.zone.labels:
+            if level == "zoom" and not close:
+                continue
+            font = fonts[level]
             sx, sy = self.to_screen(image_x, image_y)
             if -200 < sx < width + 200 and -60 < sy < height + 60:
                 for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
@@ -483,7 +487,8 @@ class MapView(ttk.Frame):
         if step == 0 or query != self._match_query:
             words = normalize(query).split()
             points = self.poi.search(self.zone.map_id, query, self.layers)
-            areas = [(x, y, text) for x, y, text in self.zone.labels if all(w in normalize(text) for w in words)]
+            areas = [(x, y, text) for x, y, text, _level in self.zone.labels
+                     if all(w in normalize(text) for w in words)]
             self._matches = list(points) + areas
             self._match_query = query
             self._match_index = -1

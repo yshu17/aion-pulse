@@ -10,7 +10,8 @@ Output:
      "zones": {"220070000": [{"t": "teleport", "x": 1686.1, "y": 793.1, "gx": 792.6, "gy": 1685.0,
                               "name": "Раниу"}, ...]}}
 x/y are map pixels, gx/gy game coordinates (1 unit ≈ 1 m).
-Dev tool. Usage: python tools/build_poi.py [client_extract_dir]
+Gathering points are left out (the map does not show them); --gather keeps them.
+Dev tool. Usage: python tools/build_poi.py [--gather] [client_extract_dir]
 """
 
 import csv
@@ -35,6 +36,7 @@ TYPES = {
     "fortress": ("landmark", "Крепость"),
     "artifact": ("landmark", "Артефакт"),
     "dungeon": ("landmark", "Вход в данж"),
+    "raid_boss": ("landmark", "Рейдовый босс"),
     "portal": ("landmark", "Портал"),
     "direct_portal": ("landmark", "Точка перемещения"),
     "gather_herb": ("gather", "Травы"),
@@ -115,13 +117,14 @@ def _point(type_: str, row: dict, name: str) -> dict | None:
         return None  # no map pixels: zone without a calibrated map
 
 
-def build(objects: list[dict], entities: list[dict], zones: set[str]) -> dict:
+def build(objects: list[dict], entities: list[dict], zones: set[str], gather: bool = False) -> dict:
+    """Points of the level data; gathering points (≈11.8k) only with gather=True — the map does not show them."""
     out: dict[str, list[dict]] = {}
     for row in objects:
         if row.get("function_type"):
             continue  # functional NPCs come from the client's world XML only (service_points), as the game's map
         type_ = classify_object(row)
-        if type_ is None or row.get("map_id") not in zones:
+        if type_ is None or row.get("map_id") not in zones or (not gather and type_.startswith("gather_")):
             continue
         name = row.get("npc_russian_name") or ""
         point = _point(type_, row, name)
@@ -234,6 +237,15 @@ def entrance_points(npcs: dict[str, dict], spawns: dict[str, list[tuple[str, flo
     return out
 
 
+def raid_boss_points(rows: list[dict]) -> dict[str, list[dict]]:
+    """Raid bosses (BossRaid of client_abyss.xml) where <npc_info> places them: raid_boss_spawns.tsv by Codex."""
+    out: dict[str, list[dict]] = {}
+    for row in rows:
+        out.setdefault(row["map_id"], []).append({"t": "raid_boss", "x": 0.0, "y": 0.0, "gx": round(float(row["x"]), 1),
+                                                  "gy": round(float(row["y"]), 1), "name": row["boss_name_ru"]})
+    return out
+
+
 def quest_points(quests: dict[str, dict], links: list[dict], spawns: dict[str, list[tuple[str, float, float]]],
                  zone_ids: dict[str, str], names: dict[str, str]) -> dict[str, list[dict]]:
     """NPCs that give quests, one point per placed NPC.
@@ -291,28 +303,25 @@ def read_tsv(path: Path) -> list[dict]:
 
 
 def main() -> int:
-    source = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "client_extract"
+    args = [a for a in sys.argv[1:] if a != "--gather"]
+    source = Path(args[0]) if args else ROOT / "client_extract"
     zones = set(json.loads((ROOT / "data" / "maps" / "maps.json").read_text(encoding="utf-8")))
     objects = read_tsv(source / "client_level_objects.tsv")
-    data = build(objects, read_tsv(source / "client_level_entities.tsv"), zones)
+    data = build(objects, read_tsv(source / "client_level_entities.tsv"), zones, gather="--gather" in sys.argv)
     zone_ids = {row["zone"]: row["map_id"] for row in objects if row["map_id"] in zones}
     service = source / "raw" / "npc_service_coords.tsv"
     if service.is_file():
         print(f"client world xml: {merge(data, service_points(read_tsv(service), zone_ids))} functional NPCs")
     sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(ROOT / "tools"))
-    from build_newmaps import zonemaps
     from watcher.mapview import load_labels
 
-    frames = zonemaps()
-    labels = {}  # area names in game coordinates: svg units are metres from the zonemap offset
-    for code, (_view, rows) in load_labels(ROOT / "data" / "maps" / "labels.tsv").items():
-        frame = frames.get(code)
-        if frame:
-            labels[frame["id"]] = [(x + frame["offset"][0], y + frame["offset"][1], t) for x, y, t in rows]
+    labels = {map_id: [(gy, gx, text.replace("\n", " ")) for gx, gy, text, _level in rows]  # the client's area names
+              for map_id, rows in load_labels(ROOT / "data" / "maps" / "labels.tsv").items()}
     entities = read_tsv(source / "client_level_entities.tsv")
     strings_path = source / "raw" / "strings_ru.tsv"
-    strings = dict(r[:2] for r in csv.reader(open(strings_path, encoding="utf-8"), delimiter="	") if len(r) >= 2)         if strings_path.is_file() else {}
+    strings = (dict(r[:2] for r in csv.reader(open(strings_path, encoding="utf-8"), delimiter="\t") if len(r) >= 2)
+               if strings_path.is_file() else {})
     landmarks = landmark_points([e for e in entities if e["map_id"] in zones], labels, strings)
     print(f"fortresses and entrances: {merge(data, landmarks)}")
     spawns: dict[str, list[tuple[str, float, float]]] = {}
@@ -324,6 +333,10 @@ def main() -> int:
             spawns.setdefault(nid, []).append((zone, gx, gy))
     npcs = {r["npc_id"]: r for r in read_tsv(source / "client_npcs.tsv")}
     print(f"dungeon entrances and gates: {merge(data, entrance_points(npcs, spawns, zone_ids))}")
+    bosses = source / "raw" / "raid_boss_spawns.tsv"
+    if bosses.is_file():
+        rows = [r for r in csv.DictReader(open(bosses, encoding="utf-8-sig"), delimiter="\t") if r["map_id"] in zones]
+        print(f"raid bosses: {merge(data, raid_boss_points(rows))}")
     links_path = ROOT / "downloads" / "aiondb_quests" / "quest_start_npc.tsv"
     quests_path = source / "raw" / "quest_givers.tsv"
     if links_path.is_file() and quests_path.is_file():
