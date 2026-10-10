@@ -51,10 +51,11 @@ def collect() -> list[dict]:
                       "text": st.get("d", ""), "status": st.get("s", "todo")})
     ui_lines = build_ui_ux_plan.SOURCE.read_text(encoding="utf-8").splitlines()
     ui_owners = build_ui_ux_plan.task_owners(ui_lines)
+    ui_status = build_ui_ux_plan.task_status(ui_lines)
     for task in build_ui_ux_plan.task_rows(ui_lines):
         items.append({"plan": "ui", "id": f"UI #{task['id']}", "title": task["problem"],
                       "who": ui_owners.get(task["id"], ""), "text": f"{task['priority']} · {task['solution']}",
-                      "status": "todo"})
+                      "status": ui_status.get(task["id"], ("todo", ""))[0]})
     tasks, _stages, _deferred = build_telegram_plan.parse_plan(build_telegram_plan.SOURCE.read_text(encoding="utf-8"))
     for task in tasks:
         who, _sep, title = task["title"].partition(" · ")

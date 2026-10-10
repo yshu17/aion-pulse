@@ -82,12 +82,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from plan_common import set_nav  # noqa: E402
 
 
+STATUS_MARKS = {"x": "done", "~": "doing"}
+
+
+def task_status(lines: list[str]) -> dict[str, tuple[str, str]]:
+    """Section 9 «Статус выполнения»: «- [x] **2** — note» -> {task id: (status, note)}."""
+    out: dict[str, tuple[str, str]] = {}
+    inside = False
+    for line in lines:
+        if line.startswith("## "):
+            inside = line.startswith("## 9.")
+            continue
+        match = re.match(r"^-\s+\[(x|~| )\]\s+\*\*(\d+)\*\*\s*[—-]?\s*(.*)$", line) if inside else None
+        if match:
+            out[match.group(2)] = (STATUS_MARKS.get(match.group(1), "todo"), match.group(3).strip())
+    return out
+
+
 def main() -> None:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     tasks = task_rows(lines)
     owners = task_owners(lines)
+    done = task_status(lines)
     for task in tasks:
         task["owner"] = owners.get(task["id"], "—")
+        task["status"], task["note"] = done.get(task["id"], ("todo", ""))
     stages = stage_rows(lines)
     if len(tasks) != 31 or len(stages) != 9:
         raise SystemExit(f"Expected 31 tasks and 9 stages, got {len(tasks)} and {len(stages)}")
@@ -130,11 +149,11 @@ function load(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch{ret
 function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function md(v){return esc(v).replace(/`([^`]+)`/g,"<code>$1</code>")}
-function status(id){return state[id]||"todo"}
+function status(id){return state[id]||(DATA.tasks.find(t=>t.id===String(id))||{}).status||"todo"}
 function stageTasks(stage){return DATA.tasks.filter(t=>stage.tasks.includes(+t.id))}
 function stageProgress(stage){if(!stage.tasks.length)return state.stage0==="done"?1:0;let tasks=stageTasks(stage);return tasks.length?tasks.filter(t=>status(t.id)==="done").length/tasks.length:0}
 function renderStages(){const box=document.getElementById("stages");box.innerHTML=DATA.stages.map(s=>{const pct=Math.round(stageProgress(s)*100),selected=document.getElementById("stageFilter").value===String(s.id);return `<div class="stage ${selected?"selected":""}"><button data-stage="${s.id}"><div class="stage-top"><span class="stitle">${s.id}. ${esc(s.name)}</span><span class="tag">${pct}%</span></div><div class="tag">${md(s.content)}</div><div class="bar"><i style="width:${pct}%"></i></div></button></div>`}).join("");box.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{document.getElementById("stageFilter").value=b.dataset.stage;render()})}
-function renderTasks(){const q=document.getElementById("search").value.trim().toLocaleLowerCase("ru"),p=document.getElementById("priority").value,s=document.getElementById("stageFilter").value;let list=DATA.tasks.filter(t=>(!q||Object.values(t).join(" ").toLocaleLowerCase("ru").includes(q))&&(!p||t.priority===p)&&(!s||DATA.stages.find(x=>String(x.id)===s)?.tasks.includes(+t.id)));document.getElementById("resultCount").textContent=`Показано: ${list.length} из ${DATA.tasks.length}`;const box=document.getElementById("tasks");if(!list.length){box.innerHTML='<div class="card empty">Ничего не найдено</div>';return}box.innerHTML=list.map(t=>`<article class="card task ${status(t.id)==="done"?"done":""}" data-task="${t.id}"><div class="task-top"><span class="num">#${t.id}</span><span class="problem">${md(t.problem)} <span class="tag owner">· ${esc(t.owner)}</span></span><span class="priority ${t.priority}">${t.priority}</span><span class="chev">⌄</span><select class="status" aria-label="Статус задачи ${t.id}"><option value="todo" ${status(t.id)==="todo"?"selected":""}>Не начато</option><option value="doing" ${status(t.id)==="doing"?"selected":""}>В работе</option><option value="done" ${status(t.id)==="done"?"selected":""}>Готово</option></select></div><div class="detail"><div><h4>Решение</h4><p>${md(t.solution)}</p></div><div><h4>Область · сложность</h4><p>${esc(t.area)} · ${esc(t.effort)}</p></div><div><h4>Файлы</h4><p>${md(t.files)}</p></div><div><h4>Зависимости</h4><p>${md(t.dependencies)}</p></div><div class="wide"><h4>Ожидаемый эффект</h4><p>${md(t.impact)}</p></div></div></article>`).join("");box.querySelectorAll(".task").forEach(card=>{card.querySelector(".task-top").addEventListener("click",e=>{if(e.target.closest("select"))return;card.classList.toggle("open")});card.querySelector("select").addEventListener("change",e=>{state[card.dataset.task]=e.target.value;save()})})}
+function renderTasks(){const q=document.getElementById("search").value.trim().toLocaleLowerCase("ru"),p=document.getElementById("priority").value,s=document.getElementById("stageFilter").value;let list=DATA.tasks.filter(t=>(!q||Object.values(t).join(" ").toLocaleLowerCase("ru").includes(q))&&(!p||t.priority===p)&&(!s||DATA.stages.find(x=>String(x.id)===s)?.tasks.includes(+t.id)));document.getElementById("resultCount").textContent=`Показано: ${list.length} из ${DATA.tasks.length}`;const box=document.getElementById("tasks");if(!list.length){box.innerHTML='<div class="card empty">Ничего не найдено</div>';return}box.innerHTML=list.map(t=>`<article class="card task ${status(t.id)==="done"?"done":""}" data-task="${t.id}"><div class="task-top"><span class="num">#${t.id}</span><span class="problem">${md(t.problem)} <span class="tag owner">· ${esc(t.owner)}</span></span><span class="priority ${t.priority}">${t.priority}</span><span class="chev">⌄</span><select class="status" aria-label="Статус задачи ${t.id}"><option value="todo" ${status(t.id)==="todo"?"selected":""}>Не начато</option><option value="doing" ${status(t.id)==="doing"?"selected":""}>В работе</option><option value="done" ${status(t.id)==="done"?"selected":""}>Готово</option></select></div><div class="detail"><div><h4>Решение</h4><p>${md(t.solution)}</p></div><div><h4>Область · сложность</h4><p>${esc(t.area)} · ${esc(t.effort)}</p></div><div><h4>Файлы</h4><p>${md(t.files)}</p></div><div><h4>Зависимости</h4><p>${md(t.dependencies)}</p></div><div class="wide"><h4>Ожидаемый эффект</h4><p>${md(t.impact)}</p></div>${t.note?`<div class="wide"><h4>Сделано</h4><p>${md(t.note)}</p></div>`:""}</div></article>`).join("");box.querySelectorAll(".task").forEach(card=>{card.querySelector(".task-top").addEventListener("click",e=>{if(e.target.closest("select"))return;card.classList.toggle("open")});card.querySelector("select").addEventListener("change",e=>{state[card.dataset.task]=e.target.value;save()})})}
 function renderProgress(){const counts={todo:0,doing:0,done:0};DATA.tasks.forEach(t=>counts[status(t.id)]++);document.getElementById("doneCount").textContent=counts.done;document.getElementById("doingCount").textContent=counts.doing;document.getElementById("todoCount").textContent=counts.todo;document.getElementById("overallText").textContent=`${counts.done} из ${DATA.tasks.length} задач`;document.getElementById("overallBar").style.width=`${Math.round(counts.done/DATA.tasks.length*100)}%`}
 function render(){renderStages();renderTasks();renderProgress()}
 const stageSelect=document.getElementById("stageFilter");DATA.stages.forEach(s=>stageSelect.insertAdjacentHTML("beforeend",`<option value="${s.id}">${s.id}. ${esc(s.name)}</option>`));
