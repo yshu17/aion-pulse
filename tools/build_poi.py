@@ -34,6 +34,7 @@ TYPES = {
     "bindstone": ("npc", "Кибелиск"),
     "fortress": ("landmark", "Крепость"),
     "artifact": ("landmark", "Артефакт"),
+    "dungeon": ("landmark", "Вход в данж"),
     "portal": ("landmark", "Портал"),
     "direct_portal": ("landmark", "Точка перемещения"),
     "gather_herb": ("gather", "Травы"),
@@ -203,6 +204,36 @@ def world_npcs(text: str, code: str) -> list[tuple[str, str, float, float]]:
         r"<npc_info>.*?<nameid>(\d+)</nameid>.*?<x>([\d.]+)</x>\s*<y>([\d.]+)</y>", text, re.S)]
 
 
+# The client's dungeon entrances and gates are objects (ids 700000+) placed by <npc_info> like NPCs:
+# «Вход в храм Удас» is DF4_IDTemple_Up_IN. Quest doors (_Q2076) and exits (_Out) are left out; the Silentera
+# tunnel's own entrances come from the level data (door_Underpass_IN), its exits from here.
+ENTRANCE = re.compile(r"(_In|_IN|_Entrance(_[LD])?)$")
+GATE = re.compile(r"AbyssGate|UnderPass_out")
+
+
+def entrance_points(npcs: dict[str, dict], spawns: dict[str, list[tuple[str, float, float]]],
+                    zone_ids: dict[str, str]) -> dict[str, list[dict]]:
+    """Dungeon entrances and gates (Abyss gates, Silentera exits) placed in mapped zones."""
+    out: dict[str, list[dict]] = {}
+    for nid, places in spawns.items():
+        npc = npcs.get(nid)
+        if npc is None or int(nid) < 700000:
+            continue
+        internal, name = npc["internal_name"], npc["russian_name"]
+        if GATE.search(internal):
+            type_ = "portal"
+        elif (ENTRANCE.search(internal) and name.startswith("Вход") and "UnderPass" not in internal
+              and not re.search(r"_Q\d+", internal)):
+            type_ = "dungeon"
+        else:
+            continue
+        for code, gx, gy in sorted(set(places)):
+            if code in zone_ids:
+                out.setdefault(zone_ids[code], []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(gx, 1),
+                                                           "gy": round(gy, 1), "name": name})
+    return out
+
+
 def quest_points(quests: dict[str, dict], links: list[dict], spawns: dict[str, list[tuple[str, float, float]]],
                  zone_ids: dict[str, str], names: dict[str, str]) -> dict[str, list[dict]]:
     """NPCs that give quests, one point per placed NPC.
@@ -284,18 +315,20 @@ def main() -> int:
     strings = dict(r[:2] for r in csv.reader(open(strings_path, encoding="utf-8"), delimiter="	") if len(r) >= 2)         if strings_path.is_file() else {}
     landmarks = landmark_points([e for e in entities if e["map_id"] in zones], labels, strings)
     print(f"fortresses and entrances: {merge(data, landmarks)}")
+    spawns: dict[str, list[tuple[str, float, float]]] = {}
+    for code in zone_ids:
+        world = source / "raw" / "Data" / "world" / "world" / f"client_world_{code}"
+        text = (world.with_suffix(".txt.xml").read_text(encoding="utf-8") if world.with_suffix(".txt.xml").is_file()
+                else world.with_suffix(".xml").read_bytes().decode("utf-16", errors="replace"))
+        for nid, zone, gx, gy in world_npcs(text, code):
+            spawns.setdefault(nid, []).append((zone, gx, gy))
+    npcs = {r["npc_id"]: r for r in read_tsv(source / "client_npcs.tsv")}
+    print(f"dungeon entrances and gates: {merge(data, entrance_points(npcs, spawns, zone_ids))}")
     links_path = ROOT / "downloads" / "aiondb_quests" / "quest_start_npc.tsv"
     quests_path = source / "raw" / "quest_givers.tsv"
     if links_path.is_file() and quests_path.is_file():
         quests = {r["quest_id"]: r for r in csv.DictReader(open(quests_path, encoding="utf-8-sig"), delimiter="\t")}
-        spawns: dict[str, list[tuple[str, float, float]]] = {}
-        for code in zone_ids:
-            world = source / "raw" / "Data" / "world" / "world" / f"client_world_{code}"
-            text = (world.with_suffix(".txt.xml").read_text(encoding="utf-8") if world.with_suffix(".txt.xml").is_file()
-                    else world.with_suffix(".xml").read_bytes().decode("utf-16", errors="replace"))
-            for nid, zone, gx, gy in world_npcs(text, code):
-                spawns.setdefault(nid, []).append((zone, gx, gy))
-        names = {r["npc_id"]: r["russian_name"] for r in read_tsv(source / "client_npcs.tsv")}
+        names = {nid: r["russian_name"] for nid, r in npcs.items()}
         with open(links_path, encoding="utf-8", newline="") as f:
             links = list(csv.DictReader(f, delimiter="\t"))
         print(f"quest givers: {merge(data, quest_points(quests, links, spawns, zone_ids, names))}")

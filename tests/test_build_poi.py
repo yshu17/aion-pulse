@@ -112,6 +112,33 @@ def test_silentera_entrances_are_the_portals():
     assert {p["name"] for z in named.values() for p in z} == {"Проход в тоннель Силентера"}  # the client's string
 
 
+def test_dungeon_entrances_and_abyss_gates_from_the_world_xml():
+    npcs = {  # client_npcs.tsv: the client's own objects, placed by <npc_info> of client_world_*.xml
+        "730278": {"internal_name": "DF4_IDTemple_Up_IN", "russian_name": "Вход в храм Удас"},
+        "730486": {"internal_name": "IDDramata_FOBJ_Entrance_D", "russian_name": "Вход в пещеру Мариссы"},
+        "730063": {"internal_name": "DF2_OP_AbyssGate", "russian_name": "Врата Бездны Морхейма"},
+        "730271": {"internal_name": "DF4_UnderPass_out", "russian_name": "Вход в Келькмарос"},
+        "730260": {"internal_name": "DF4_UnderPass_In", "russian_name": "Восточный вход в тоннель Силентера"},
+        "700368": {"internal_name": "DC1_door_Q2076", "russian_name": "Вход на подземную арену"},  # quest door
+        "730138": {"internal_name": "DF3_Seadoor_Out", "russian_name": "Выход из дворца Аллукины"},
+    }
+    spawns = {"730278": [("df4", 2266.5, 1605.2)], "730486": [("df4", 2972.3, 1212.9)],
+              "730063": [("df2", 305.0, 2350.0)], "730271": [("underpass", 471.5, 1078.1)],
+              "730260": [("df4", 1449.0, 904.9)], "700368": [("dc1", 978.2, 1556.5)],
+              "730138": [("df3", 590.8, 2534.8)], "1": [("df4", 1.0, 1.0)]}
+    zone_ids = {"df4": "220070000", "df2": "220020000", "underpass": "600010000", "dc1": "120010000",
+                "df3": "220040000"}
+    out = build_poi.entrance_points(npcs, spawns, zone_ids)
+    kelk = sorted(out["220070000"], key=lambda p: p["gx"])
+    assert [(p["t"], p["name"]) for p in kelk] == [("dungeon", "Вход в храм Удас"),
+                                                   ("dungeon", "Вход в пещеру Мариссы")]
+    assert (kelk[0]["gx"], kelk[0]["gy"]) == (2266.5, 1605.2)
+    assert out["220020000"] == [{"t": "portal", "x": 0.0, "y": 0.0, "gx": 305.0, "gy": 2350.0,
+                                 "name": "Врата Бездны Морхейма"}]
+    assert out["600010000"][0]["t"] == "portal"  # the tunnel's exit to Kelkmaros
+    assert "120010000" not in out and "220040000" not in out  # quest doors and exits are not dungeons
+
+
 def test_quest_givers_placed_from_the_client_one_point_per_npc():
     quests = {  # client quest.xml (Codex: quest_givers.tsv)
         "100": {"quest_id": "100", "name_ru": "Первое", "min_level": "10", "category": "quest | Морхейм"},
