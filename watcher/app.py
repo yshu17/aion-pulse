@@ -118,53 +118,62 @@ class App:
         ttk.Label(header, text="Aion Chat Watcher", style="AppTitle.TLabel").pack(side="left")
         ttk.Label(header, text="  ·  Поиск группы", style="Muted.TLabel").pack(side="left", pady=(6, 0))
 
-        top = ttk.Frame(root, padding=(16, 8))
-        top.pack(fill="x")
-        ttk.Label(top, text="Папка игры", style="Muted.TLabel").grid(row=0, column=0, sticky="w")
-        self.game_dir_var = tk.StringVar(value=str(self.cfg.chat_log_path()))
-        dir_entry = ttk.Entry(top, textvariable=self.game_dir_var)
-        dir_entry.grid(row=0, column=1, sticky="ew", padx=(12, 12), pady=4)
-        dir_entry.bind("<Return>", lambda _e: self._apply_game_dir())
-        dir_entry.bind("<FocusOut>", lambda _e: self._apply_game_dir())
+        # UI/UX plan item 3: one always visible control row (Start, status, what to look for) and the settings that
+        # change rarely (game folder, alerts, history) in a card that folds away; open on the first run, remembered.
+        control = ttk.Frame(root, padding=(16, 6, 16, 8))
+        control.pack(fill="x")
+        self.control_bar = control
+        self.start_btn = ttk.Button(control, text="Start", style="Accent.TButton", command=self.toggle)
+        self.start_btn.pack(side="left")
         self.status_short_var = tk.StringVar()
-        self.status_label = ttk.Label(top, textvariable=self.status_short_var, style="Status.TLabel")
-        self.browse_btn = ttk.Button(top, text="Обзор…", command=self._pick_dir)
-        self.browse_btn.grid(row=0, column=2, pady=4, padx=(0, 12))
-        self.status_label.grid(row=0, column=3, sticky="w")
-
-        ttk.Label(top, text="Ключевые слова", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
+        self.status_label = ttk.Label(control, textvariable=self.status_short_var, style="Status.TLabel")
+        self.status_label.pack(side="left", padx=(12, 0))
+        ttk.Label(control, text="Ключевые слова", style="Muted.TLabel").pack(side="left", padx=(20, 8))
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
-        kw_entry = ttk.Entry(top, textvariable=self.kw_var)
+        kw_entry = ttk.Entry(control, textvariable=self.kw_var)
         self.kw_entry = kw_entry
-        kw_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=(12, 12), pady=4)
+        kw_entry.pack(side="left", fill="x", expand=True)
         self.search_mode_var = tk.StringVar(
             value=next((k for k, v in SEARCH_MODES.items() if v == self.cfg.search_mode), "Слово ИЛИ предмет")
         )
         search_mode = ttk.Combobox(
-            top, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=18
+            control, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=18
         )
-        search_mode.grid(row=1, column=3, sticky="ew", pady=4)
+        search_mode.pack(side="left", padx=(8, 0))
         search_mode.bind("<<ComboboxSelected>>", lambda _e: self._on_search_mode_selected())
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
-        ttk.Label(top, text="Оповещение", style="Muted.TLabel").grid(row=2, column=0, sticky="w")
+        self.settings_btn = ttk.Button(control, command=self._toggle_settings)
+        self.settings_btn.pack(side="left", padx=(8, 0))
+
+        settings = ttk.Frame(root, style="Card.TFrame", padding=(16, 4))
+        self.settings_card = settings
+        ttk.Label(settings, text="Папка игры", style="CardMuted.TLabel").grid(row=0, column=0, sticky="w")
+        self.game_dir_var = tk.StringVar(value=str(self.cfg.chat_log_path()))
+        dir_entry = ttk.Entry(settings, textvariable=self.game_dir_var, style="Card.TEntry")
+        dir_entry.grid(row=0, column=1, sticky="ew", padx=(12, 12), pady=4)
+        dir_entry.bind("<Return>", lambda _e: self._apply_game_dir())
+        dir_entry.bind("<FocusOut>", lambda _e: self._apply_game_dir())
+        self.browse_btn = ttk.Button(settings, text="Обзор…", style="Card.TButton", command=self._pick_dir)
+        self.browse_btn.grid(row=0, column=2, pady=4, sticky="w")
+        ttk.Label(settings, text="Оповещение", style="CardMuted.TLabel").grid(row=1, column=0, sticky="nw", pady=(10, 0))
         # two lines: the mode, sound and reaction; then the popup and the volume (on a 1000 px window
         # one line does not fit and the volume went off the edge)
-        alert = ttk.Frame(top)
-        alert.grid(row=2, column=1, columnspan=3, sticky="w", padx=(12, 0), pady=4)
-        alert_row = ttk.Frame(alert)
+        alert = ttk.Frame(settings, style="Surface.TFrame")
+        alert.grid(row=1, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=4)
+        alert_row = ttk.Frame(alert, style="Surface.TFrame")
         alert_row.pack(anchor="w")
-        alert_row2 = ttk.Frame(alert)
-        alert_row2.pack(anchor="w", pady=(6, 0))
+        alert_row2 = ttk.Frame(alert, style="Surface.TFrame")
+        alert_row2.pack(anchor="w", pady=(4, 0))
         self.mode_var = tk.StringVar(
             value=next((k for k, v in ALERT_MODES.items() if v == self.cfg.alert_mode), "Стандартный")
         )
         mode = ttk.Combobox(
-            alert_row, textvariable=self.mode_var, values=list(ALERT_MODES), state="readonly", width=12
+            alert_row, textvariable=self.mode_var, values=list(ALERT_MODES), state="readonly", width=12, style="Card.TCombobox"
         )
         mode.pack(side="left")
         mode.bind("<<ComboboxSelected>>", lambda _e: self._on_mode_selected())
-        ttk.Label(alert_row, text="Звук", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Label(alert_row, text="Звук", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
         self.sound_choices = self._sound_choices()
         self.sound_var = tk.StringVar(value=self._sound_label(self.cfg.sound_path))
         self.sound_box = ttk.Combobox(
@@ -173,16 +182,17 @@ class App:
             values=[*self.sound_choices, CUSTOM_SOUND],
             state="readonly",
             width=22,
+            style="Card.TCombobox",
         )
         self.sound_box.pack(side="left")
         self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
-        ttk.Button(alert_row, text="▶", width=3, command=self.notifier.play).pack(side="left", padx=8)
-        ttk.Label(alert_row, text="Реакция", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Button(alert_row, text="▶", width=3, style="Card.TButton", command=self.notifier.play).pack(side="left", padx=8)
+        ttk.Label(alert_row, text="Реакция", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
         self.react_var = tk.StringVar(
             value=next((k for k, v in REACT_CHOICES.items() if v == self.cfg.react_sec), "30 с")
         )
         react = ttk.Combobox(
-            alert_row, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7
+            alert_row, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7, style="Card.TCombobox"
         )
         react.pack(side="left")
         react.bind("<<ComboboxSelected>>", lambda _e: self._on_react_selected())
@@ -191,10 +201,10 @@ class App:
             alert_row2,
             text="Окно поверх игры",
             variable=self.popup_var,
-            style="Plain.TCheckbutton",
+            style="CardPlain.TCheckbutton",
             command=self._on_popup_toggled,
         ).pack(side="left", padx=(18, 0))
-        ttk.Label(alert_row2, text="Громкость", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Label(alert_row2, text="Громкость", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
         self.volume_var = tk.IntVar(value=self.notifier.volume)
         volume = ttk.Scale(
             alert_row2,
@@ -207,19 +217,15 @@ class App:
         )
         volume.pack(side="left")
         volume.bind("<ButtonRelease-1>", lambda _e: self._on_volume_changed())
-        self.volume_label = ttk.Label(alert_row2, text=f"{self.notifier.volume}%", style="Muted.TLabel", width=5)
+        self.volume_label = ttk.Label(alert_row2, text=f"{self.notifier.volume}%", style="CardMuted.TLabel", width=5)
         self.volume_label.pack(side="left", padx=(8, 0))
-        top.columnconfigure(1, weight=1)
-
-        bar = ttk.Frame(root, padding=(16, 6, 16, 10))
-        bar.pack(fill="x")
-        self.start_btn = ttk.Button(bar, text="Start", style="Accent.TButton", command=self.toggle)
-        self.start_btn.pack(side="left")
-        ttk.Label(bar, text="История", style="Muted.TLabel").pack(side="left", padx=(16, 6))
+        ttk.Label(settings, text="История", style="CardMuted.TLabel").grid(row=2, column=0, sticky="w")
+        history_row = ttk.Frame(settings, style="Surface.TFrame")
+        history_row.grid(row=2, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=4)
         minutes_to_choice = {m: c for c, m in HISTORY_CHOICES.items()}
         self.history_var = tk.StringVar(value=minutes_to_choice.get(self.cfg.history_min, "нет"))
         history = ttk.Combobox(
-            bar,
+            history_row,
             textvariable=self.history_var,
             values=list(HISTORY_CHOICES),
             state="readonly",
@@ -227,7 +233,9 @@ class App:
         )
         history.pack(side="left")
         history.bind("<<ComboboxSelected>>", lambda _e: self._on_history_changed())
-        ttk.Label(bar, text="поиск при Start и «Весь чат»", style="Muted.TLabel").pack(side="left", padx=10)
+        ttk.Label(history_row, text="поиск при Start и «Весь чат»", style="CardMuted.TLabel").pack(side="left", padx=10)
+        settings.columnconfigure(1, weight=1)
+        self._show_settings(self.cfg.settings_open)
         self.status_var = tk.StringVar()  # full status text; the folder row shows a short form
 
         self.tabs = ttk.Notebook(root)
@@ -728,6 +736,19 @@ class App:
 
     def _on_map_quests(self, on: bool) -> None:
         self.cfg.map_quests = on
+        save_config(self.config_path, self.cfg)
+
+    def _show_settings(self, open_: bool) -> None:
+        """The «Настройки» card under the control row; the button names the action and shows the state."""
+        if open_:
+            self.settings_card.pack(fill="x", padx=16, pady=(0, 6), after=self.control_bar)
+        else:
+            self.settings_card.pack_forget()
+        self.settings_btn.configure(text="Настройки  ▴" if open_ else "Настройки  ▾")
+
+    def _toggle_settings(self) -> None:
+        self.cfg.settings_open = not self.cfg.settings_open
+        self._show_settings(self.cfg.settings_open)
         save_config(self.config_path, self.cfg)
 
     def _on_map_theme(self, theme: str) -> None:

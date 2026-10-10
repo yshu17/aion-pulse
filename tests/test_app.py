@@ -431,11 +431,13 @@ def test_counters_always_shown_and_reset(tmp_path):
         root.destroy()
 
 
-def test_short_status_indicator_in_folder_row(tmp_path):
+def test_short_status_indicator_next_to_start(tmp_path):
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
-        assert app.counters_bar.master is app.header  # counters in the header, «Обзор…» before the status
-        assert app.browse_btn.grid_info()["column"] < app.status_label.grid_info()["column"]
+        assert app.counters_bar.master is app.header  # counters in the header
+        # UI/UX item 3: Start, the status and the keywords in one always visible row, the game folder in «Настройки»
+        assert app.status_label.master is app.control_bar is app.start_btn.master is app.kw_entry.master
+        assert app.browse_btn.master is app.settings_card
         assert app.status_short_var.get() == "○ Не слежу"
         app.start()
         assert app.status_short_var.get().startswith("● Слежу")
@@ -534,6 +536,26 @@ def test_all_chat_tab_activates_on_select(tmp_path):
         app.tabs.select(app.search_tab)
         app._on_tab_changed()
         assert activated == ["on", "off"]
+    finally:
+        root.destroy()
+
+
+def test_settings_card_folds_away_and_is_remembered(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.update()
+        assert app.cfg.settings_open and app.settings_card.winfo_manager() == "pack"  # open on the first run
+        assert app.settings_btn.cget("text").endswith("▴")
+        app._toggle_settings()
+        root.update()
+        assert not app.settings_card.winfo_manager() and app.settings_btn.cget("text").endswith("▾")
+        assert '"settings_open": false' in app.config_path.read_text(encoding="utf-8")
+        app._toggle_settings()
+        root.update()
+        assert app.settings_card.winfo_manager() == "pack"
+        # unfolded again right under the control row, above the tabs
+        assert app.settings_card.winfo_y() > app.control_bar.winfo_y()
+        assert app.settings_card.winfo_y() < app.tabs.winfo_y()
     finally:
         root.destroy()
 

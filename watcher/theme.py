@@ -274,6 +274,9 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.layout("Plain.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Plain.TCheckbutton", background=BG, foreground=TEXT, padding=(0, 0))
     style.map("Plain.TCheckbutton", background=[("active", BG)], foreground=[("selected", ACCENT)])
+    style.layout("CardPlain.TCheckbutton", style.layout("Item.TCheckbutton"))  # the same check box, on a card
+    style.configure("CardPlain.TCheckbutton", background=SURFACE, foreground=TEXT, padding=(0, 0))
+    style.map("CardPlain.TCheckbutton", background=[("active", SURFACE)], foreground=[("selected", ACCENT)])
     style.configure("Group.TFrame", background=SURFACE_2)
     style.configure(
         "Group.TLabel",
