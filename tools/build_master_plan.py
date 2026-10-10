@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import build_telegram_plan  # noqa: E402
 import build_ui_ux_plan  # noqa: E402
-from plan_common import MASTER, PLANS, nav_html, owners, set_nav  # noqa: E402
+from plan_common import MASTER, PLANS, RESOURCES, nav_html, owners, set_nav  # noqa: E402
 
 FIELD = re.compile(r'(\w+):"((?:[^"\\]|\\.)*)"')
 
@@ -70,7 +70,9 @@ def collect() -> list[dict]:
 def main() -> int:
     items = collect()
     plans = [{"key": k, "title": t, "page": p, "gate": g} for k, t, p, g in PLANS]
-    data = json.dumps({"plans": plans, "items": items, "built": date.today().strftime("%d.%m.%Y")},
+    needs = [{"plan": key, "title": title, "detail": detail, "link": link}
+             for key, *_ in PLANS for kind, title, detail, link in RESOURCES.get(key, []) if kind == "need"]
+    data = json.dumps({"plans": plans, "items": items, "needs": needs, "built": date.today().strftime("%d.%m.%Y")},
                       ensure_ascii=False).replace("</", "<\\/")
     page = TEMPLATE.replace("__NAV__", f"<!--NAV-->{nav_html('master')}<!--/NAV-->").replace("__DATA__", data)
     (DOCS / MASTER).write_text(page, encoding="utf-8")
@@ -176,7 +178,8 @@ function plans(){document.getElementById("plans").innerHTML=DATA.plans.map(p=>{c
   ${doing.length?`<div class="tag">в работе: ${doing.map(i=>esc(i.id+". "+i.title)).join("; ")}</div>`:""}</div>`}).join("");}
 function you(){const gates=DATA.plans.filter(p=>p.gate!=="в работе").map(p=>`<div><b>${esc(p.title)}</b> — ${esc(p.gate)} · <a href="${p.page}">открыть план</a></div>`);
   const steps=DATA.items.filter(i=>i.status!=="done"&&i.owners.includes("Ты")).map(i=>`<div><b>${esc(plan(i.plan).title)} · ${esc(i.id)}.</b> ${md(i.title)}</div>`);
-  document.getElementById("you").innerHTML=gates.concat(steps).join("")||'<div>Ничего — всё у Claude и Кодекса.</div>';}
+  const needs=DATA.needs.map(n=>`<div style="border-color:#4aa3ff"><b>${esc(plan(n.plan).title)} · файл / ресурс:</b> ${n.link?`<a href="${esc(n.link)}">${esc(n.title)}</a>`:esc(n.title)} — <span class="tag">${esc(n.detail)}</span></div>`);
+  document.getElementById("you").innerHTML=gates.concat(steps,needs).join("")||'<div>Ничего — всё у Claude и Кодекса.</div>';}
 function chips(){const pc=document.getElementById("planChips"),oc=document.getElementById("ownerChips");
   pc.innerHTML=DATA.plans.map(p=>`<span class="chip ${f.plans.includes(p.key)?"on":""}" data-p="${p.key}">${esc(p.title)}</span>`).join(" ");
   oc.innerHTML=Object.keys(OWN).map(o=>`<span class="chip ${f.owners.includes(o)?"on":""}" data-o="${o}">${o}</span>`).join(" ");
