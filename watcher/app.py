@@ -17,6 +17,8 @@ from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
 from watcher.gamecheck import game_running
 from watcher.itemlist import ItemFilter, ItemList
+from watcher.ui_icons import IconSet
+from watcher.hint import Hint
 from watcher.notifier import Notifier, system_sounds
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
@@ -47,18 +49,21 @@ GAME_CHECK_SEC = 5  # while watching: how often to look for the game process
 GAME_OFF = "Игра не запущена — слежение остановлено"
 
 
+STATUS_CHARS = 20  # the status chip keeps one width, so the keywords field does not jump; full text in its hint
+
+
 def short_status(text: str) -> tuple[str, str]:
     """Compact status for the folder row and its label style."""
     if text.startswith("Слежу"):
         hint = text.split("  ·  ", 1)[1] if "  ·  " in text else ""
-        return ("● Слежу" + (f"  ·  {hint}" if hint else ""), "Live.TLabel")
+        return ("Слежу" + (f"  ·  {hint}" if hint else ""), "Live.Chip.TLabel")
     if text.startswith("Игра не запущена"):
-        return "⚠ Игра не запущена", "Warn.TLabel"
+        return "Игра не запущена", "Warn.Chip.TLabel"
     if text.startswith("Chat.log не найден"):
-        return "⚠ Chat.log не найден", "Warn.TLabel"
+        return "Chat.log не найден", "Warn.Chip.TLabel"
     if text.startswith("Ошибка"):
-        return "⚠ " + (text if len(text) <= 40 else text[:39] + "…"), "Warn.TLabel"
-    return "○ Не слежу", "Status.TLabel"
+        return (text if len(text) <= STATUS_CHARS else text[:STATUS_CHARS - 1] + "…"), "Error.Chip.TLabel"
+    return "Не слежу", "Idle.Chip.TLabel"
 
 
 def split_keywords(text: str) -> list[str]:
@@ -70,6 +75,7 @@ class App:
         self.root = root
         self.config_path = config_path
         self.cfg = load_config(config_path)
+        self.ui_icons = IconSet(root, resource_root() / "data" / "ui" / "icons")
         data_dir = resource_root() / "data"
         self.item_names = load_item_names(data_dir / "item_names.tsv")
         self.watch_items = load_watch_items(data_dir / "watch_items.csv")
@@ -126,7 +132,9 @@ class App:
         self.start_btn = ttk.Button(control, text="Start", style="Accent.TButton", command=self.toggle)
         self.start_btn.pack(side="left")
         self.status_short_var = tk.StringVar()
-        self.status_label = ttk.Label(control, textvariable=self.status_short_var, style="Status.TLabel")
+        self.status_label = ttk.Label(control, textvariable=self.status_short_var, style="Idle.Chip.TLabel", compound="left",
+                                      width=STATUS_CHARS)
+        self.status_hint = Hint(self.status_label, "")
         self.status_label.pack(side="left", padx=(12, 0))
         ttk.Label(control, text="Ключевые слова", style="Muted.TLabel").pack(side="left", padx=(20, 8))
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
@@ -143,7 +151,7 @@ class App:
         search_mode.bind("<<ComboboxSelected>>", lambda _e: self._on_search_mode_selected())
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
-        self.settings_btn = ttk.Button(control, command=self._toggle_settings)
+        self.settings_btn = ttk.Button(control, text="Настройки", command=self._toggle_settings, compound="right")
         self.settings_btn.pack(side="left", padx=(8, 0))
 
         settings = ttk.Frame(root, style="Card.TFrame", padding=(16, 4))
@@ -186,7 +194,12 @@ class App:
         )
         self.sound_box.pack(side="left")
         self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
-        ttk.Button(alert_row, text="▶", width=3, style="Card.TButton", command=self.notifier.play).pack(side="left", padx=8)
+        play_button = ttk.Button(
+            alert_row, image=self.ui_icons.get("play", "accent", 16), style="Card.TButton",
+            command=self.notifier.play, padding=(6, 5),
+        )
+        play_button.pack(side="left", padx=8)
+        Hint(play_button, "Прослушать звук")
         ttk.Label(alert_row, text="Реакция", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
         self.react_var = tk.StringVar(
             value=next((k for k, v in REACT_CHOICES.items() if v == self.cfg.react_sec), "30 с")
@@ -602,7 +615,12 @@ class App:
         self.status_var.set(text)
         short, style = short_status(text)
         self.status_short_var.set(short)
-        self.status_label.configure(style=style)
+        # the chip's icon repeats its colour: green check, yellow warning, red warning, grey circle
+        icon = {"Live.Chip.TLabel": ("check-circle", "success"), "Warn.Chip.TLabel": ("warning", "caution"),
+                "Error.Chip.TLabel": ("warning", "warning")}.get(style, ("circle", "muted"))
+        image = self.ui_icons.get(*icon, 16)
+        self.status_label.configure(style=style, image=image)
+        self.status_hint.text = text  # the full status (path, error) on hover
 
     def _pick_dir(self) -> None:
         chosen = filedialog.askdirectory(initialdir=self.cfg.game_dir or None)
@@ -744,7 +762,10 @@ class App:
             self.settings_card.pack(fill="x", padx=16, pady=(0, 6), after=self.control_bar)
         else:
             self.settings_card.pack_forget()
-        self.settings_btn.configure(text="Настройки  ▴" if open_ else "Настройки  ▾")
+        self.settings_btn.configure(
+            text="Настройки",
+            image=self.ui_icons.get("caret-up" if open_ else "caret-down", "muted", 16),
+        )
 
     def _toggle_settings(self) -> None:
         self.cfg.settings_open = not self.cfg.settings_open

@@ -76,7 +76,7 @@ class MatchFeed(ttk.Frame):
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
         parts += self.linker.parts(msg.text, hits)
         if quiet:
-            parts += ["   ✓ уже принято", ("quiet_note",)]
+            parts += ["   Уже принято", ("quiet_note",)]
         self.text.insert("end-1c", *parts, "\n", ())
         if quiet:
             self.text.tag_add("accepted", start, "end-1c")

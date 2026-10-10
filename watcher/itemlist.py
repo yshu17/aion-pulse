@@ -1,8 +1,8 @@
 """The «Что искать» item list: thousands of items in collapsible sections, with a search box.
 
 Only the rows in view are drawn (on a Canvas), so the list stays fast with ~11 000 items.
-Typing in the search box jumps to the first matching item; Enter / ▼ go to the next match,
-Shift+Enter / ▲ to the previous one. A match inside a folded section unfolds it.
+Typing in the search box jumps to the first matching item; Enter advances and Shift+Enter goes back.
+A match inside a folded section unfolds it.
 Filters under the search box hide items by grade, level range and type; search, «Все» and the
 section checkboxes only act on the items that are shown.
 """
@@ -17,6 +17,9 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.catalog import CATEGORY_ORDER, WatchItem
+from watcher.catalog import resource_root
+from watcher.ui_icons import IconSet
+from watcher.hint import Hint
 from watcher.matcher import normalize
 
 ROW_H = 62  # 56 px icon + gap
@@ -78,6 +81,7 @@ class ItemList(ttk.Frame):
         on_filter: Callable[[ItemFilter], None] | None = None,
     ) -> None:
         super().__init__(parent, style="Surface.TFrame")
+        self.ui_icons = IconSet(self, resource_root() / "data" / "ui" / "icons")
         self.icon_for = icon_for or (lambda _item: None)
         self.on_change = on_change or (lambda: None)
         self.on_collapse = on_collapse or (lambda _c: None)
@@ -118,8 +122,12 @@ class ItemList(ttk.Frame):
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(search, textvariable=self.search_var, style="Card.TEntry")
         self.search_entry.pack(side="left", fill="x", expand=True)
-        self.prev_btn = ttk.Button(search, text="▲", width=3, style="Card.TButton", command=lambda: self.step(-1))
-        self.next_btn = ttk.Button(search, text="▼", width=3, style="Card.TButton", command=lambda: self.step(1))
+        self.prev_btn = ttk.Button(search, image=self.ui_icons.get("arrow-up", "muted"), style="Card.TButton",
+                                   command=lambda: self.step(-1), padding=(6, 5))
+        self.next_btn = ttk.Button(search, image=self.ui_icons.get("arrow-down", "muted"), style="Card.TButton",
+                                   command=lambda: self.step(1), padding=(6, 5))
+        Hint(self.prev_btn, "Предыдущее совпадение")
+        Hint(self.next_btn, "Следующее совпадение")
         self.count_label = ttk.Label(search, text="", style="CardMuted.TLabel", width=8, anchor="center")
         self.count_label.pack(side="left", padx=(6, 0))
         self.prev_btn.pack(side="left", padx=(4, 0))
@@ -290,8 +298,10 @@ class ItemList(ttk.Frame):
                                      state="readonly", width=18, style="Card.TCombobox")
         self.type_box.pack(side="left", padx=(12, 0), fill="x", expand=True)
         self.type_box.bind("<<ComboboxSelected>>", lambda _e: self._on_filter_widgets())
-        self.reset_btn = ttk.Button(row, text="✕", width=3, style="Card.TButton", command=self._reset_filter)
+        self.reset_btn = ttk.Button(row, image=self.ui_icons.get("x", "muted"), style="Card.TButton",
+                                    command=self._reset_filter, padding=(6, 5))
         self.reset_btn.pack(side="left", padx=(4, 0))
+        Hint(self.reset_btn, "Сбросить фильтры")
         self._sync_filter_widgets()
 
     def _sync_filter_widgets(self) -> None:
@@ -367,15 +377,22 @@ class ItemList(ttk.Frame):
     def _draw_group(self, category: str, y: int, width: int) -> None:
         canvas = self.canvas
         _round_rect(canvas, 2, y, width - 4, y + GROUP_H, theme.RADIUS, fill=theme.SURFACE_2, tags="row")
-        arrow = "▸" if category in self.collapsed else "▾"
+        mid = y + GROUP_H // 2
         items = self.shown.get(category, [])
         marked = sum(1 for item in items if item.id in self.checked)
-        star = "★ " if category == PINNED_GROUP else ""
-        title = f"{arrow}  {star}{category}  ·  {len(items)}"
+        collapsed = category in self.collapsed
+        canvas.create_image(
+            14, mid, image=self.ui_icons.get("caret-right" if collapsed else "caret-down", "muted"),
+            anchor="w", tags="row",
+        )
+        title_x = 34
+        if category == PINNED_GROUP:
+            canvas.create_image(34, mid, image=self.ui_icons.get("star", "accent"), anchor="w", tags="row")
+            title_x += 20
+        title = f"{category}  ·  {len(items)}"
         if marked:
-            title += f"  ·  ✓ {marked}"
-        mid = y + GROUP_H // 2
-        canvas.create_text(14, mid, text=title, anchor="w", fill=theme.TEXT, font=self.bold, tags="row")
+            title += f"  ·  отмечено {marked}"
+        canvas.create_text(title_x, mid, text=title, anchor="w", fill=theme.TEXT, font=self.bold, tags="row")
         check = self._check_image(self.group_checked(category))
         x = width - GROUP_CHECK_W + 8
         canvas.create_image(x, mid, image=check, anchor="w", tags="row")

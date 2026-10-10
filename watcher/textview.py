@@ -150,7 +150,7 @@ class CopyMenu:
     """Copy from a read-only chat Text: select with the mouse and Ctrl+C (any keyboard layout),
     or right-click: «Копировать», «Копировать сообщение» (the whole line), «Выделить всё»."""
 
-    NOTE = "   ✓ уже принято"  # feed suffix, not part of the message
+    NOTE = "   Уже принято"  # feed suffix, not part of the message
 
     def __init__(self, text: tk.Text) -> None:
         self.text = text

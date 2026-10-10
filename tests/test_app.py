@@ -438,14 +438,14 @@ def test_short_status_indicator_next_to_start(tmp_path):
         # UI/UX item 3: Start, the status and the keywords in one always visible row, the game folder in «Настройки»
         assert app.status_label.master is app.control_bar is app.start_btn.master is app.kw_entry.master
         assert app.browse_btn.master is app.settings_card
-        assert app.status_short_var.get() == "○ Не слежу"
+        assert app.status_short_var.get() == "Не слежу"
         app.start()
-        assert app.status_short_var.get().startswith("● Слежу")
+        assert app.status_short_var.get().startswith("Слежу")
         app.stop()
-        assert app.status_short_var.get() == "○ Не слежу"
+        assert app.status_short_var.get() == "Не слежу"
         app.cfg.chat_log = str(tmp_path / "missing.log")
         app.start()
-        assert app.status_short_var.get() == "⚠ Chat.log не найден"
+        assert app.status_short_var.get() == "Chat.log не найден"
         app.stop()
     finally:
         root.destroy()
@@ -540,15 +540,34 @@ def test_all_chat_tab_activates_on_select(tmp_path):
         root.destroy()
 
 
+def test_status_chip_colour_icon_and_one_width(tmp_path):
+    from watcher.app import GAME_OFF
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        widths = set()
+        for text, style in (("Остановлен", "Idle"), ("Слежу за X", "Live"), (GAME_OFF, "Warn"),
+                            ("Chat.log не найден: X", "Warn"), ("Ошибка чтения: очень длинная причина ошибки", "Error")):
+            app._set_status(text)
+            root.update()
+            assert app.status_label.cget("style") == f"{style}.Chip.TLabel"
+            assert app.status_label.cget("image")  # an icon as well as the colour
+            assert app.status_hint.text == text  # the full status on hover
+            widths.add(app.status_label.winfo_reqwidth())
+        assert len(widths) == 1  # the keywords field next to it never jumps
+    finally:
+        root.destroy()
+
+
 def test_settings_card_folds_away_and_is_remembered(tmp_path):
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
         root.update()
         assert app.cfg.settings_open and app.settings_card.winfo_manager() == "pack"  # open on the first run
-        assert app.settings_btn.cget("text").endswith("▴")
+        assert app.settings_btn.cget("text") == "Настройки" and app.settings_btn.cget("image")
         app._toggle_settings()
         root.update()
-        assert not app.settings_card.winfo_manager() and app.settings_btn.cget("text").endswith("▾")
+        assert not app.settings_card.winfo_manager() and app.settings_btn.cget("text") == "Настройки"
         assert '"settings_open": false' in app.config_path.read_text(encoding="utf-8")
         app._toggle_settings()
         root.update()
@@ -729,7 +748,7 @@ def test_series_rings_until_accepted_then_repeats_are_silent(tmp_path):
         _post(app, "Leader", "ммк 4/12")
         assert _rings(calls) == 2  # accepted: the rest of the series is silent
         assert app.tracker.pending_ids == []
-        assert "уже принято" in app.feed.text.get("1.0", "end")
+        assert "Уже принято" in app.feed.text.get("1.0", "end")
         assert counters(app) == (4, 1, 1)  # silent repeats are found, not reacted / missed
         _post(app, "Other", "ммк 1/6")
         assert _rings(calls) == 3  # another player rings
@@ -819,17 +838,17 @@ def test_start_refused_and_watching_stopped_when_game_not_running(tmp_path, monk
         monkeypatch.setattr(app_module, "game_running", lambda: False)
         app.start()  # game closed: no watching, a warning instead
         assert not app.running
-        assert app.status_short_var.get() == "⚠ Игра не запущена"
+        assert app.status_short_var.get() == "Игра не запущена"
         assert "Игра не запущена" in app.text.get("1.0", "end") and beeps == [1]
 
         monkeypatch.setattr(app_module, "game_running", lambda: True)
         app.start()
-        assert app.running and app.status_short_var.get().startswith("● Слежу")
+        assert app.running and app.status_short_var.get().startswith("Слежу")
         monkeypatch.setattr(app_module, "game_running", lambda: False)  # the game is closed while watching
         app._last_game_check = -1e9
         app._tick()
         assert not app.running and app._after_id is None
-        assert app.status_short_var.get() == "⚠ Игра не запущена" and beeps == [1, 1]
+        assert app.status_short_var.get() == "Игра не запущена" and beeps == [1, 1]
 
         monkeypatch.setattr(app_module, "game_running", lambda: None)  # process list unavailable: keep going
         app.start()

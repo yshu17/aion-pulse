@@ -18,6 +18,9 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
+from watcher.catalog import resource_root
+from watcher.ui_icons import IconSet
+from watcher.hint import Hint
 from watcher.mapcard import NEARBY_TYPES, PointCard
 from watcher.matcher import normalize
 from watcher.poi import Poi, PoiStore, cluster
@@ -155,6 +158,7 @@ class MapView(ttk.Frame):
     ) -> None:
         super().__init__(parent)
         self.zones = zones
+        self.ui_icons = IconSet(self, resource_root() / "data" / "ui" / "icons")
         self.poi = (poi or PoiStore({}, {})).projected({map_id: z.to_image for map_id, z in zones.items()})
         self.icons_dir = icons_dir or Path(".")
         self.on_show_quests = on_show_quests or (lambda _on: None)
@@ -220,13 +224,15 @@ class MapView(ttk.Frame):
             self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._on_theme_selected())
         self.title = ttk.Label(bar, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
-        for text, command in (
-            ("⌂", self._fit),
-            ("−", lambda: self._zoom_center(1 / ZOOM_STEP)),
-            ("+", lambda: self._zoom_center(ZOOM_STEP)),
-            ("◎", self._back_to_place),
+        for name, hint, command in (
+            ("house", "Показать всю карту", self._fit),
+            ("minus", "Уменьшить масштаб", lambda: self._zoom_center(1 / ZOOM_STEP)),
+            ("plus", "Увеличить масштаб", lambda: self._zoom_center(ZOOM_STEP)),
+            ("crosshair", "Вернуться к метке из чата", self._back_to_place),
         ):
-            ttk.Button(bar, text=text, width=3, command=command).pack(side="right", padx=(6, 0))
+            button = ttk.Button(bar, image=self.ui_icons.get(name, "muted"), command=command, padding=(6, 5))
+            button.pack(side="right", padx=(6, 0))
+            Hint(button, hint)
         self.hint = ttk.Label(bar, text="колесо — масштаб · тяни — сдвиг · клик — карточка", style="Muted.TLabel")
         self.hint.pack(side="right", padx=12)
         body = ttk.Frame(self)

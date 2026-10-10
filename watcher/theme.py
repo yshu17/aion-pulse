@@ -25,6 +25,8 @@ ACCENT_HOVER = "#ffa54a"
 ACCENT_TEXT = "#1b1206"
 DISABLED = "#6f7480"  # only for really unavailable controls: 3.56 on SURFACE (WCAG exempts inactive ones; was 2.65)
 DANGER = "#ff6b70"  # danger as text («Пропущено», warnings): 5.26 on SURFACE_2, 6.59 on BG — AA (was 3.72)
+SUCCESS = "#5fd38d"  # «Слежу», «Отреагировал»: 7.75 on SURFACE_2 — AAA
+WARNING = "#f5b544"  # «Игра не запущена», «Chat.log не найден»: 8.02 on SURFACE_2 — AAA
 DANGER_FILL = "#c9363b"  # Stop button fill: white text 5.15 — AA (was #e5484d, 3.91)
 DANGER_FILL_HOVER = "#d13b40"  # its hover: white text 4.76 — AA (was #f06a6e, 3.00)
 HIT_BG = "#ff8c1a"
@@ -263,7 +265,11 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         expand=[("selected", (0, 0, 0, 0))],
     )
 
-    for name, color in (("Found", TEXT), ("Reacted", "#5fd38d"), ("Missed", DANGER)):
+    # status chip next to Start (UI/UX item 4): icon + text + colour, never colour alone
+    for name, color in (("Idle", MUTED), ("Live", SUCCESS), ("Warn", WARNING), ("Error", DANGER)):
+        style.configure(f"{name}.Chip.TLabel", background=SURFACE_2, foreground=color,
+                        font=(FONT_FAMILY, FONT_SIZE, "bold"), padding=(12, 6))
+    for name, color in (("Found", TEXT), ("Reacted", SUCCESS), ("Missed", DANGER)):
         style.configure(
             f"{name}.Counter.TLabel",
             background=SURFACE_2,
@@ -396,9 +402,10 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     element("Group.border", "group", [], edge)
     style.layout("Group.TFrame", [("Group.border", {"sticky": "nswe"})])
     element("Pill.border", "pill", [], edge, inner)
-    for name in ("Found", "Reacted", "Missed"):
+    for name in ("Found.Counter", "Reacted.Counter", "Missed.Counter", "Idle.Chip", "Live.Chip", "Warn.Chip",
+                 "Error.Chip"):
         style.layout(
-            f"{name}.Counter.TLabel",
+            f"{name}.TLabel",
             [("Pill.border", {"sticky": "nswe", "children": [
                 ("Label.padding", {"sticky": "nswe", "children": [("Label.label", {"sticky": "nswe"})]})
             ]})],
