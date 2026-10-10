@@ -25,10 +25,10 @@ from watcher.poi import Poi, PoiStore, cluster
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
-# The fixed set of points on the map (no layer panel). Gathering, quest points and portals are not shown:
-# the client's Portal objects are editor triggers, not the portals a player sees (map plan v3).
+# The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
+# Silentera Tunnel entrances only (tools/build_poi.py).
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
-               "fortress", "artifact", "dungeon")
+               "fortress", "artifact", "dungeon", "portal")
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
 SPLIT_ROW = 4  # icons per row when a group is laid out side by side

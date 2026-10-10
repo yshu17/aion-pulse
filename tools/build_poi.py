@@ -84,8 +84,6 @@ def classify_object(row: dict) -> str | None:
     if function:
         return FUNCTIONS.get(function)
     kind = row.get("object_type")
-    if kind == "Portal":
-        return "portal"
     if kind == "DP":
         return "direct_portal"
     if kind == "HSP":
@@ -153,25 +151,41 @@ def service_points(rows: list[dict], zone_ids: dict[str, str]) -> dict[str, list
     return out
 
 
-GATE_RE = re.compile(r"^Ab1_(\d{4})_Gatecontrol", re.I)
-FORTRESS_NAME_M = 60  # the area name of a fortress stands within this many metres of its gate control
+# level objects that mark a landmark the game's map shows: (pattern on the object name, layer type).
+# The mission files' «Portal» objects are CryEngine visibility portals (caves, rooms), not the game's portals;
+# the only passages a player sees are the doors into the Silentera Tunnel.
+# The name comes from the client's Russian strings (client_extract/raw/strings_ru.tsv) by key: {id} = the number
+# caught in the object name; without a string, the nearest area label names the point.
+LANDMARKS = [
+    (re.compile(r"^Ab1_(\d{4})_Gatecontrol", re.I), "fortress", "_SV_{id}"),  # each siege fortress has a gate control
+    (re.compile(r"door_Underpass_IN", re.I), "portal", "STR_DIC_W_Underpass_SZ_S2"),  # «Проход в тоннель Силентера»
+]
+LANDMARK_NAME_M = 60  # the area name of a landmark stands within this many metres of it
 
 
-def fortress_points(entities: list[dict], labels: dict[str, list[tuple[float, float, str]]]) -> dict[str, list[dict]]:
-    """Siege fortresses: each has a gate control object «Ab1_<abyss id>_Gatecontrol_N» in the level data.
-    labels: map id -> [(game y, game x, area name)]; the nearest one names the fortress."""
+def landmark_points(entities: list[dict], labels: dict[str, list[tuple[float, float, str]]],
+                    strings: dict[str, str] | None = None) -> dict[str, list[dict]]:
+    """Siege fortresses and Silentera entrances from the level objects (client_level_entities.tsv).
+    strings: client string key -> Russian text; labels: map id -> [(game y, game x, area name)] as a fallback."""
+    strings = strings or {}
     out: dict[str, list[dict]] = {}
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     for row in entities:
-        match = GATE_RE.match(row.get("name", ""))
-        if not match or (row["map_id"], match.group(1)) in seen:
+        found = next(((m, t, k) for pattern, t, k in LANDMARKS if (m := pattern.search(row.get("name", "")))), None)
+        if found is None:
             continue
-        seen.add((row["map_id"], match.group(1)))
+        match, type_, key_rule = found
+        key_part = key_rule.format(id=match.group(1) if match.groups() else "")
+        text = next((v for k, v in strings.items() if k == key_part or (key_part.startswith("_") and k.endswith(key_part))), "")
+        key = (row["map_id"], type_, match.group(1) if match.groups() else row["name"])
+        if key in seen:
+            continue
+        seen.add(key)
         gx, gy = float(row["game_x"]), float(row["game_y"])
         named = [(math.hypot(ly - gy, lx - gx), text) for ly, lx, text in labels.get(row["map_id"], [])]
-        dist, text = min(named, default=(math.inf, ""))
-        name = " ".join(text.split()) if dist < FORTRESS_NAME_M else ""
-        out.setdefault(row["map_id"], []).append({"t": "fortress", "x": 0.0, "y": 0.0, "gx": round(gx, 1),
+        dist, label = min(named, default=(math.inf, ""))
+        name = text.split(";")[0] or (" ".join(label.split()) if dist < LANDMARK_NAME_M else "")
+        out.setdefault(row["map_id"], []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(gx, 1),
                                                    "gy": round(gy, 1), "name": name})
     return out
 
@@ -225,7 +239,10 @@ def main() -> int:
         if frame:
             labels[frame["id"]] = [(x + frame["offset"][0], y + frame["offset"][1], t) for x, y, t in rows]
     entities = read_tsv(source / "client_level_entities.tsv")
-    print(f"fortresses: {merge(data, fortress_points([e for e in entities if e['map_id'] in zones], labels))}")
+    strings_path = source / "raw" / "strings_ru.tsv"
+    strings = dict(r[:2] for r in csv.reader(open(strings_path, encoding="utf-8"), delimiter="	") if len(r) >= 2)         if strings_path.is_file() else {}
+    landmarks = landmark_points([e for e in entities if e["map_id"] in zones], labels, strings)
+    print(f"fortresses and entrances: {merge(data, landmarks)}")
     out = ROOT / "data" / "maps" / "poi.json"
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     counts: dict[str, int] = {}

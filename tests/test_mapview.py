@@ -131,7 +131,7 @@ def test_browse_zone_from_picker_with_chat_pins(root):
     assert "Келькмарос" in view.zone_box.cget("values")
 
 
-def test_fixed_point_set_without_gathering_quests_or_portals(root):
+def test_fixed_point_set_without_gathering_or_quests(root):
     from watcher.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
@@ -144,7 +144,8 @@ def test_fixed_point_set_without_gathering_quests_or_portals(root):
     view.render()
     assert not hasattr(view, "panel")  # no layer panel any more
     assert {"teleport", "warehouse", "merchant", "artifact"} <= view.layers
-    hidden = {"portal", "direct_portal", "quest_point"} | {t for t in store.types if t.startswith("gather_")}
+    hidden = {"direct_portal", "quest_point"} | {t for t in store.types if t.startswith("gather_")}
+    assert "portal" in view.layers  # the Silentera entrances from the game files
     assert not view.layers & hidden
     shown = {m.type for _x, _y, members in view._drawn for m in members}
     assert "teleport" in shown and not shown & hidden
@@ -209,7 +210,7 @@ def test_map_search_points_and_areas(root):
     assert view.search("митраканд", 0).endswith("/ 2")  # area names: «Митраканд», «Сигнальный маяк Митраканда»
     assert view.point_card.kind.cget("text") == "Район"
     assert view.search("абвгд", 0) == "нет"
-    assert view.search("портал", 0) == "нет"  # hidden kinds are not found either
+    assert view.search("травы", 0) == "нет"  # hidden kinds (gathering) are not found either
     view.search_var.set("склад")
     view._search(0)
     assert view.search_count.cget("text").startswith("1 /")

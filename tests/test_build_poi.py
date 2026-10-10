@@ -33,7 +33,7 @@ def test_classify_object():
     assert c(obj(function="Coin_merchant")) == "coin_merchant"
     assert c(obj(function="vendor")) == "vendor"
     assert c(obj(function="Stigma_master")) == "stigma"
-    assert c(obj("Portal", "PortalDC1_Area2")) == "portal"
+    assert c(obj("Portal", "PortalVisArea_OP8")) is None  # CryEngine visibility portals, not the game's
     assert c(obj("DP", "DPDf1_DirectPortal3")) == "direct_portal"
     assert c(obj("HSP", "HSPDF1_Alder_herb2")) == "gather_herb"
     assert c(obj("KP", "DF1_KeyPoints_Alder_3")) == "quest_point"
@@ -89,5 +89,24 @@ def test_siege_fortresses_from_gate_controls_named_by_the_nearest_area():
          "game_x": "727", "game_y": "2282", "image_x": "", "image_y": ""},  # a door, not a fortress
     ]
     labels = {"220070000": [(1158.0, 1870.0, "Храм красной\nземли"), (100.0, 100.0, "Далеко")]}  # game y, game x
-    points = build_poi.fortress_points(entities, labels)["220070000"]
+    points = build_poi.landmark_points(entities, labels)["220070000"]
     assert points == [{"t": "fortress", "x": 0.0, "y": 0.0, "gx": 1880.2, "gy": 1147.4, "name": "Храм красной земли"}]
+    by_string = build_poi.landmark_points(entities, {}, {"STR_DF4_SV_3021": "Храм красной земли"})["220070000"]
+    assert by_string[0]["name"] == "Храм красной земли"  # the client's string, no label needed
+
+
+def test_silentera_entrances_are_the_portals():
+    entities = [
+        {"map_id": "220070000", "entity_class": "PlaceableObject", "name": "door_Underpass_IN_01a1",
+         "game_x": "1449.4", "game_y": "904.2", "image_x": "", "image_y": ""},
+        {"map_id": "210050000", "entity_class": "PlaceableObject", "name": "PlaceableObject_door_Underpass_IN_01a",
+         "game_x": "1363", "game_y": "2304", "image_x": "", "image_y": ""},
+    ]
+    labels = {"220070000": [(930.0, 1430.0, "Вход в тоннель\nСилентера")]}  # game y, game x
+    points = build_poi.landmark_points(entities, labels)
+    assert points["220070000"] == [{"t": "portal", "x": 0.0, "y": 0.0, "gx": 1449.4, "gy": 904.2,
+                                    "name": "Вход в тоннель Силентера"}]  # no string: the nearest area label
+    assert points["210050000"][0]["name"] == ""  # no area name close enough
+    strings = {"STR_DIC_W_Underpass_SZ_S2": "Проход в тоннель Силентера;Вход в тоннель из Келькмароса."}
+    named = build_poi.landmark_points(entities, labels, strings)
+    assert {p["name"] for z in named.values() for p in z} == {"Проход в тоннель Силентера"}  # the client's string
