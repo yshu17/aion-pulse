@@ -37,8 +37,8 @@ SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant"
 QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests; a check box shows / hides them
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 # landmarks drawn this many times the usual size: siege fortresses and the way into the Silentera tunnel
-# +85 %, dungeon entrances +50 %
-ICON_SCALE = {"fortress": 1.85, "tunnel": 1.85, "dungeon": 1.5}
+# +85 %, dungeon entrances +50 %, artifacts +25 %
+ICON_SCALE = {"fortress": 1.85, "tunnel": 1.85, "dungeon": 1.5, "artifact": 1.25}
 SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
 SPLIT_ROW = 4  # icons per row when a group is laid out side by side
 SEARCH_PLACEHOLDER = "Найти: NPC, район"

@@ -294,6 +294,7 @@ def test_fortresses_tunnel_and_dungeons_drawn_bigger(root):
         usual = view._icon_size("merchant")
         assert view._icon_size("fortress") == view._icon_size("tunnel") == round(usual * 1.85)  # +85 %
         assert view._icon_size("dungeon") == round(usual * 1.5)  # +50 %
+        assert view._icon_size("artifact") == round(usual * 1.25)  # +25 %
         assert view._icon_size("portal") == usual  # Abyss gates and the tunnel's exits stay as they were
 
 
