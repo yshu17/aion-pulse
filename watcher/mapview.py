@@ -44,6 +44,11 @@ LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are
 LABELS_ZOOM_WIDTH = 4000  # px before the «zoom» names (camps, gates, small places) are drawn too
 LABEL_LEVELS = ("main", "zoom")
 PIN = theme.ACCENT
+PLACE_ICON = 34  # px of the blue X that marks a place from the chat, as on the game's map
+# a point found by the search or reached from «Рядом», and a place from the chat, blink this long so the eye
+# finds them; a point picked with a click is ringed at once
+BLINK_MS = 3000
+BLINK_STEP_MS = 300
 OTHER_PIN = "#4fd1c5"
 BG_RGB = tuple(int(theme.SURFACE[i : i + 2], 16) for i in (1, 3, 5))
 
@@ -166,6 +171,10 @@ class MapView(ttk.Frame):
         self._image = None  # PIL image of the zone
         self._photo = None
         self._render_after: str | None = None
+        self._blink_target: str | None = None  # "poi" (the selected point) or "pin" (the chat's place)
+        self._blink_left = 0
+        self._blink_dim = False
+        self._blink_after: str | None = None
         self._drag: tuple[int, int, float, float] | None = None
         self._by_name = {zone.name: map_id for map_id, zone in sorted(zones.items(), key=lambda kv: kv[1].name)}
 
@@ -257,6 +266,7 @@ class MapView(ttk.Frame):
             return
         self.place = None
         self.selected = None
+        self._stop_blink()
         self.point_card.clear()
         self._set_zone(zone)
         self.title.configure(text="")
@@ -281,6 +291,7 @@ class MapView(ttk.Frame):
         self.update_idletasks()
         if self.zoom < self._fit_zoom() * 2:
             self.zoom = min(MAX_ZOOM, self._fit_zoom() * 2)
+        self._start_blink("pin")
         self.center_on(*zone.to_image(place.x, place.y))
 
     def center_on(self, image_x: float, image_y: float) -> None:
@@ -391,7 +402,7 @@ class MapView(ttk.Frame):
         canvas.create_image(0, 0, image=self._photo, anchor="nw")
         self._draw_labels(width, height)
         self._draw_poi(width, height)
-        if self.selected is not None and self.selected.zone == self.zone.map_id:
+        if self.selected is not None and self.selected.zone == self.zone.map_id and self._blink_target != "poi":
             sx, sy = self._spots.get(self.selected) or self.to_screen(self.selected.x, self.selected.y)
             canvas.create_oval(sx - 17, sy - 17, sx + 17, sy + 17, outline=PIN, width=3, tags="selected")
         for index, other in enumerate(self.others):
@@ -400,14 +411,21 @@ class MapView(ttk.Frame):
                                tags=("other", f"other_{index}"))
         if self.place is not None:
             sx, sy = self.to_screen(*self.zone.to_image(self.place.x, self.place.y))
-            canvas.create_oval(sx - 13, sy - 13, sx + 13, sy + 13, outline=PIN, width=3, tags="pin")
-            canvas.create_oval(sx - 5, sy - 5, sx + 5, sy + 5, fill=PIN, outline="", tags="pin")
+            pin = ("pin", "blink") if self._blink_target == "pin" else "pin"
+            cross = self._place_icon()
+            if cross is not None:
+                canvas.create_image(sx, sy, image=cross, tags=pin)
+            else:
+                canvas.create_oval(sx - 13, sy - 13, sx + 13, sy + 13, outline=PIN, width=3, tags=pin)
+                canvas.create_oval(sx - 5, sy - 5, sx + 5, sy + 5, fill=PIN, outline="", tags=pin)
             font = (theme.FONT_FAMILY, theme.FONT_SIZE, "bold")
             for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):  # dark outline, like the area names
                 canvas.create_text(sx + 18 + dx, sy - 2 + dy, text=self.place.label, anchor="w", fill="#0d0e11",
                                    font=font, tags="pin")
             canvas.create_text(sx + 18, sy - 2, text=self.place.label, anchor="w", fill="#ffffff", font=font,
                                tags="pin")
+        if self._blink_dim:
+            canvas.itemconfigure("blink", state="hidden")
 
     def _draw_labels(self, width: int, height: int) -> None:
         """Area names, like the game map: white text with a dark outline; size follows the zoom.
@@ -444,10 +462,15 @@ class MapView(ttk.Frame):
         return out
 
     def select(self, poi: Poi, centre: bool = False) -> None:
-        """Show a point in the card (and ring it on the map)."""
+        """Show a point in the card. A click (centre=False) rings it on the map; the search and «Рядом»
+        (centre=True) move the map to it and make its icon blink for BLINK_MS, then ring it."""
         self.selected = poi
         kind = self.poi.type_name(poi.type)
         self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, poi.note, self.nearby(poi.zone, poi.gx, poi.gy, poi))
+        if centre:
+            self._start_blink("poi")
+        else:
+            self._stop_blink()
         if centre:
             self.center_on(poi.x, poi.y)
         else:
@@ -554,6 +577,12 @@ class MapView(ttk.Frame):
             size += 8
         return round(size * ICON_SCALE.get(type_, 1.0))
 
+    def _place_icon(self):
+        key = ("place", PLACE_ICON)
+        if key not in self._poi_icons:
+            self._poi_icons[key] = load_icon(self.icons_dir / "place.png", PLACE_ICON, self.canvas)
+        return self._poi_icons[key]
+
     def _poi_icon(self, type_: str, size: int):
         key = (type_, size)
         if key not in self._poi_icons:
@@ -586,6 +615,8 @@ class MapView(ttk.Frame):
             if not (-size < sx < width + size and -size < sy < height + size):
                 continue
             tags = ("poi", f"poi_{len(self._drawn)}")
+            if self._blink_target == "poi" and self.selected in members:
+                tags += ("blink",)
             self._drawn.append((sx, sy, members))
             icon = self._poi_icon(members[0].type, size)
             if icon is not None:
@@ -597,6 +628,35 @@ class MapView(ttk.Frame):
                 canvas.create_oval(bx - 9, by - 9, bx + 9, by + 9, fill="#0d0e11", outline=theme.ACCENT, tags=tags)
                 canvas.create_text(bx, by, text=str(len(members)) if len(members) < 100 else "99+",
                                    fill="#ffffff", font=(theme.FONT_FAMILY, 8, "bold"), tags=tags)
+
+    # --- blinking ---------------------------------------------------------------------------
+    def _start_blink(self, target: str) -> None:
+        self._stop_blink(redraw=False)
+        self._blink_target = target
+        self._blink_left = BLINK_MS // BLINK_STEP_MS
+        self._blink_dim = False
+        self._blink_after = self.after(BLINK_STEP_MS, self._blink_tick)
+
+    def _stop_blink(self, redraw: bool = True) -> None:
+        if self._blink_after is not None:
+            self.after_cancel(self._blink_after)
+            self._blink_after = None
+        was = self._blink_target
+        self._blink_target = None
+        self._blink_dim = False
+        if was and redraw:
+            self._schedule_render()
+
+    def _blink_tick(self) -> None:
+        """Hide / show the blinking items; when the time is up the point gets its usual ring."""
+        self._blink_after = None
+        self._blink_left -= 1
+        if self._blink_left <= 0:
+            self._stop_blink()
+            return
+        self._blink_dim = not self._blink_dim
+        self.canvas.itemconfigure("blink", state="hidden" if self._blink_dim else "normal")
+        self._blink_after = self.after(BLINK_STEP_MS, self._blink_tick)
 
     def _split(self, points: list[Poi]) -> list[tuple[float, float, list[Poi]]]:
         """Single icons that never cover each other: touching points are laid out side by side; if a laid-out row

@@ -181,10 +181,12 @@ def test_point_card_and_nearby(root):
     types = [t for t, _name, _m in view.point_card.rows]
     assert types[:3] == ["teleport", "bindstone", "warehouse"]
     assert all(m < 600 for t, _n, m in view.point_card.rows if t in ("warehouse", "merchant"))
-    # clicking a «Рядом» row selects that point and rings it
+    # clicking a «Рядом» row jumps to that point: it blinks first, then gets the ring
     view.point_card.near.winfo_children()[types.index("warehouse")].event_generate("<Button-1>")
     root.update()
     assert view.selected is not None and view.selected.type == "warehouse"
+    assert view._blink_target == "poi"
+    view._stop_blink()
     view.render()
     assert view.canvas.find_withtag("selected")
     # a click (no drag) on a single drawn point opens its card
@@ -293,6 +295,41 @@ def test_fortresses_tunnel_and_dungeons_drawn_bigger(root):
         assert view._icon_size("fortress") == view._icon_size("tunnel") == round(usual * 1.85)  # +85 %
         assert view._icon_size("dungeon") == round(usual * 1.5)  # +50 %
         assert view._icon_size("portal") == usual  # Abyss gates and the tunnel's exits stay as they were
+
+
+def test_click_rings_the_point_search_and_jumps_blink_first(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
+    view.pack(fill="both", expand=True)
+    root.geometry("1300x900")
+    root.update()
+    view.open_zone("220070000")
+    teleport = next(iter(view.poi.in_zone("220070000", {"teleport"})))
+    view.select(teleport)  # a click: the ring at once, no blinking
+    view.render()
+    assert view._blink_target is None and view.canvas.find_withtag("selected")
+    view.search("привратник", 0)  # the search: no ring yet, the found icon blinks
+    view.render()
+    assert view._blink_target == "poi" and not view.canvas.find_withtag("selected")
+    assert view.canvas.find_withtag("blink")
+    view._blink_tick()
+    assert all(view.canvas.itemcget(i, "state") == "hidden" for i in view.canvas.find_withtag("blink"))
+    view.render()  # a redraw keeps the phase
+    assert all(view.canvas.itemcget(i, "state") == "hidden" for i in view.canvas.find_withtag("blink"))
+    for _ in range(20):
+        if view._blink_target is None:
+            break
+        view._blink_tick()
+    view.render()
+    assert view._blink_target is None and view.canvas.find_withtag("selected")  # 3 s later: the usual ring
+    view.show(Place("220070000", 1173.0, 1227.4, "Место"))  # a place from the chat blinks too
+    view.render()
+    blinking = set(view.canvas.find_withtag("blink"))
+    assert view._blink_target == "pin" and blinking and blinking < set(view.canvas.find_withtag("pin"))  # not the label
+    view.select(teleport)  # a click stops it
+    assert view._blink_target is None
 
 
 def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):

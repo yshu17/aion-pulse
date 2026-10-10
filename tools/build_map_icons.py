@@ -43,6 +43,9 @@ ICONS = {
     "quest_give": ("sprite", "v4_radar_quest_give_icon_zonemap"),
     "quest_important": ("sprite", "v4_radar_important_quest_give_icon_zonemap"),
     "quest_event": ("sprite", "v4_radar_event_quest_give_icon_zonemap"),
+    # the game's mark of a linked place («Место» from the chat): the X of the zone map; green in the atlas,
+    # blue in the game, so its green and blue channels are swapped (RECOLOR)
+    "place": ("sprite", "v4_radar_link_icon_zonemap"),
     "artifact": ("client", "abyss_artifact.png"),
     "fortress": ("client", "abyss_fortress.png"),
     "dungeon": ("client", "abyss_indun.png"),
@@ -65,6 +68,9 @@ ICONS = {
     "gather_fish": ("aiondb_url", "/upload/images/icon/items/icon_item_fish04.png"),
     "gather_other": ("client", "new_map_way_point.png"),
 }
+
+
+RECOLOR = {"place": "swap_green_blue"}
 
 
 def pattern_to_svg(pattern: str) -> str:
@@ -141,6 +147,12 @@ def main() -> int:
         out = OUT / f"{type_}.png"
         if source == "sprite":
             cut_sprite(key, sprites, out)
+            if RECOLOR.get(type_) == "swap_green_blue":
+                from PIL import Image
+
+                with Image.open(out) as image:
+                    r, g, b, a = image.convert("RGBA").split()
+                    Image.merge("RGBA", (r, b, g, a)).save(out)
         elif source == "client":
             out.write_bytes((EXTRACT / "icons" / key).read_bytes())
         elif source == "aiondb_url":

@@ -49,6 +49,7 @@ SOURCES = {
     "direct_portal": ("client image client_extract/icons/teleport_dest_up.png", "32x78"),
     "camp": ("aiondb icon downloads/aiondb_icons map_icon_ui_camp", "36x36"),
     "tunnel": ("client image client_extract/icons/abyss_underpass.png", "30x30"),
+    "place": ("client sprite v4_common:v4_radar_link_icon_zonemap, green and blue swapped", "18x18"),
 }
 
 
