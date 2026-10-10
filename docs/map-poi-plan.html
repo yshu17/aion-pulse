@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>План карты v3</title>
+<title>План карты</title>
 <style>
 :root{--bg:#141519;--surface:#1c1e24;--surface2:#262931;--border:#363a45;--text:#e9e7e4;--muted:#8c919c;--accent:#ff8c1a;--ok:#5fd38d;--warn:#e5484d}
 *{box-sizing:border-box}
@@ -43,8 +43,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
 </head>
 <body>
 <div class="wrap">
+<!--NAV--><style>.pn{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 18px;padding:8px;background:#1c1e24;border:1px solid #363a45;border-radius:10px;font:13px/1.4 'Segoe UI',system-ui,sans-serif}.pn a{color:#e9e7e4;text-decoration:none;padding:4px 10px;border-radius:7px;border:1px solid transparent}.pn a:hover{border-color:#ff8c1a}.pn a.on{background:#3a2a12;border-color:#ff8c1a;color:#ff8c1a}.pn .pn-sep{width:1px;height:18px;background:#363a45;margin:0 2px}.pn .pn-x{margin-left:auto;color:#8c919c}</style><nav class="pn" aria-label="Планы"><a href="index.html">★ Мастер-план</a><span class="pn-sep"></span><a href="map-poi-plan.html" class="on">Карта</a><a href="schedule-notify-plan.html">Расписание и уведомления</a><a href="ui-ux-improvement-plan.html">UI/UX</a><a href="telegram-bridge-plan.html">Telegram</a><a class="pn-x" href="../PAIR.md">PAIR.md</a></nav><!--/NAV-->
   <h1>Карта зон: точки интереса и фильтры</h1>
-  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план v3 от 09.10.2026 — переделка после проверки в игре (v2 ниже как история) · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
+  <div class="sub">Aion Chat Watcher · вкладка «Карта» · план v3–v4, обновлён 10.10.2026 · v3 — переделка после проверки в игре, v4 — Бездна и элийские локации; v2 — в архиве ниже · спецификация: <code>docs/superpowers/specs/2026-10-09-map-poi-design.md</code></div>
 
   <div class="current"><b>Сейчас</b><br>Шаги 1–19 и 21 выполнены; шаг 20 ждёт проверки в игре. Открытые и новые пункты показываются первыми, выполненные шаги свёрнуты по версиям.</div>
 
@@ -162,10 +163,10 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;bord
   <h2>Вне карты</h2>
   <div class="card"><table>
     <tr><td>Работа в паре</td><td>Claude и Кодекс общаются через <code>PAIR.md</code> в корне проекта (правила, задачи, журнал); <code>AGENTS.md</code> и <code>CLAUDE.md</code> отсылают к нему. Скачанное — в <code>downloads/</code>, извлечённое из клиента — в <code>client_extract/</code>, у обеих папок README с описанием.</td></tr>
-    <tr><td>Тесты</td><td>213 проходят; пересекающиеся объединены (222 → 213 без потери проверок)</td></tr>
+    <tr><td>Тесты</td><td>229 проходят</td></tr>
     <tr><td>Проверка игры</td><td>сделано: без запущенного aion.bin слежение не включается и останавливается (config <code>game_check</code>)</td></tr>
-    <tr><td>Телеграм-бот</td><td>ждёт твоего «делаем» — план в <code>docs/telegram-bridge-plan.md</code></td></tr>
-    <tr><td>Ветка и слияние</td><td>твоё решение</td></tr>
+    <tr><td>Телеграм-бот</td><td>ждёт твоего «делаем» — <a href="telegram-bridge-plan.html">план Telegram</a>; отправка станет выходом общего центра уведомлений (<a href="schedule-notify-plan.html">план расписания и уведомлений</a>)</td></tr>
+    <tr><td>Другие планы</td><td><a href="index.html">мастер-план</a> — все планы и шаги в одном месте, с фильтром по исполнителю</td></tr>
     <tr><td>Неизвестные предметы</td><td>9 серверных номеров показываются как «[Предмет id]»; новые докачивает <code>tools/fill_missing_items.py</code></td></tr>
   </table></div>
 </div>
@@ -274,7 +275,7 @@ const STEPS3=[
  {t:"Проверка в игре и сборка",who:"ты + Claude",d:"ты смотришь 2–3 зоны в игре, я правлю, тесты, README, пересборка exe",s:"todo"},
  {t:"Подсветка: обводка при выборе, мигание при переходе и поиске",who:"Claude — готово",d:"клик — кольцо; поиск, «Рядом» и «Место» — мигание 3 с, затем кольцо. Метка места из чата — игровой синий крестик; он тоже мигает",s:"done",note:"Готово в 2441d9d."},
  {t:"v4 · Артефакты крупнее на 25 %",who:"Claude — готово",d:"значок артефакта ×1,25 к обычному размеру (ICON_SCALE в watcher/mapview.py), тест размеров",s:"done"},
- {t:"v4 · Бездна: данные из клиента",who:"Кодекс",d:"CODEX_TASK_V4.md, часть А. Склейка карты Бездны (newmap ab1: слои ab1_1_*, ab1_2_*, … по 9 плиток и вставки крепостей ab1_1011…AB1_1251), привязка слоёв (zonemap ab1: мир 4096 м) и правило, по какой высоте z игра выбирает слой; выгрузка для ab1: функциональные NPC (npc_info — 2 066 записей), крепости и артефакты, входы, подписи (85 подзон), русские названия; отчёт",s:"todo"},
+ {t:"v4 · Бездна: данные из клиента",who:"Кодекс",d:"CODEX_TASK_V4.md, часть А. Склейка карты Бездны (newmap ab1: слои ab1_1_*, ab1_2_*, … по 9 плиток и вставки крепостей ab1_1011…AB1_1251), привязка слоёв (zonemap ab1: мир 4096 м) и правило, по какой высоте z игра выбирает слой; выгрузка для ab1: функциональные NPC (npc_info — 2 066 записей), крепости и артефакты, входы, подписи (85 подзон), русские названия; отчёт",s:"done",note:"Готово: три растровых слоя, 122 функциональных NPC, 80 подписей, 9 полигонов крепостей и 40 уникальных артефактов. Пороги z для выбора слоя и точные Gatecontrol в XML не найдены; см. client_extract/raw/REPORT_V4.md."},
  {t:"v4 · Бездна в программе",who:"Claude (после 23)",d:"зона «Бездна» с выбором слоя (верхний / ядро / нижний — как назовёт клиент), точки и подписи своего слоя; ссылка «Место» открывает слой по высоте; значки крепостей Бездны, артефакты, тесты",s:"todo"},
  {t:"v4 · Элийские локации: данные из клиента",who:"Кодекс",d:"CODEX_TASK_V4.md, часть Б. Недостающие карты newmap и радарные карты: Верторон (lf1a), Теобомос (lf2a), Элизиум (lc1), lc2 — если есть; склейки Пойеты (lf1), Элтенена (lf2), Интердики (lf3); проверка zonemap; те же выгрузки, что для асмодианских зон: npc_service_coords, subzone_labels, входы в данжи, BossRaid — для lf1, lf1a, lf2, lf2a, lf3, lc1",s:"todo"},
  {t:"v4 · Элийские локации в программе",who:"Claude (после 25)",d:"карты в data/maps/client и relief, maps.json, poi.json (NPC, крепости, входы, элийские задания уже скачаны), подписи районов; сверка привязки по NPC, тесты. exe вырастет примерно на 20–25 МБ (по 2 картинки на зону)",s:"todo"},
