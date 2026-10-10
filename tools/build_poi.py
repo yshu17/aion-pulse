@@ -32,6 +32,7 @@ TYPES = {
     "stigma": ("npc", "Мастер стигм"),
     "postbox": ("npc", "Почтовый ящик"),
     "bindstone": ("npc", "Кибелиск"),
+    "fortress": ("landmark", "Крепость"),
     "artifact": ("landmark", "Артефакт"),
     "portal": ("landmark", "Портал"),
     "direct_portal": ("landmark", "Точка перемещения"),
@@ -120,10 +121,13 @@ def build(objects: list[dict], entities: list[dict], zones: set[str]) -> dict:
         point = _point(type_, row, name)
         if point is not None:
             out.setdefault(row["map_id"], []).append(point)
+    artifacts = set()
     for row in entities:
         if row.get("entity_class") == "AbyssArtifacts" and row.get("map_id") in zones:
             point = _point("artifact", row, "")
-            if point is not None:
+            spot = (row["map_id"], point and point["gx"], point and point["gy"])
+            if point is not None and spot not in artifacts:  # each artifact is listed for Li / Da / Dr
+                artifacts.add(spot)
                 out.setdefault(row["map_id"], []).append(point)
     used = {p["t"] for points in out.values() for p in points}
     icons = ROOT / "data" / "maps" / "icons"
@@ -146,6 +150,29 @@ def service_points(rows: list[dict], zone_ids: dict[str, str]) -> dict[str, list
         if type_ and map_id:
             out.setdefault(map_id, []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(float(row["x"]), 1),
                                                "gy": round(float(row["y"]), 1), "name": row.get("russian_name", "")})
+    return out
+
+
+GATE_RE = re.compile(r"^Ab1_(\d{4})_Gatecontrol", re.I)
+FORTRESS_NAME_M = 60  # the area name of a fortress stands within this many metres of its gate control
+
+
+def fortress_points(entities: list[dict], labels: dict[str, list[tuple[float, float, str]]]) -> dict[str, list[dict]]:
+    """Siege fortresses: each has a gate control object «Ab1_<abyss id>_Gatecontrol_N» in the level data.
+    labels: map id -> [(game y, game x, area name)]; the nearest one names the fortress."""
+    out: dict[str, list[dict]] = {}
+    seen: set[tuple[str, str]] = set()
+    for row in entities:
+        match = GATE_RE.match(row.get("name", ""))
+        if not match or (row["map_id"], match.group(1)) in seen:
+            continue
+        seen.add((row["map_id"], match.group(1)))
+        gx, gy = float(row["game_x"]), float(row["game_y"])
+        named = [(math.hypot(ly - gy, lx - gx), text) for ly, lx, text in labels.get(row["map_id"], [])]
+        dist, text = min(named, default=(math.inf, ""))
+        name = " ".join(text.split()) if dist < FORTRESS_NAME_M else ""
+        out.setdefault(row["map_id"], []).append({"t": "fortress", "x": 0.0, "y": 0.0, "gx": round(gx, 1),
+                                                   "gy": round(gy, 1), "name": name})
     return out
 
 
@@ -186,6 +213,19 @@ def main() -> int:
     service = source / "raw" / "npc_service_coords.tsv"
     if service.is_file():
         print(f"client world xml: {merge(data, service_points(read_tsv(service), zone_ids))} functional NPCs")
+    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "tools"))
+    from build_newmaps import zonemaps
+    from watcher.mapview import load_labels
+
+    frames = zonemaps()
+    labels = {}  # area names in game coordinates: svg units are metres from the zonemap offset
+    for code, (_view, rows) in load_labels(ROOT / "data" / "maps" / "labels.tsv").items():
+        frame = frames.get(code)
+        if frame:
+            labels[frame["id"]] = [(x + frame["offset"][0], y + frame["offset"][1], t) for x, y, t in rows]
+    entities = read_tsv(source / "client_level_entities.tsv")
+    print(f"fortresses: {merge(data, fortress_points([e for e in entities if e['map_id'] in zones], labels))}")
     out = ROOT / "data" / "maps" / "poi.json"
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     counts: dict[str, int] = {}

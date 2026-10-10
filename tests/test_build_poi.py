@@ -48,9 +48,9 @@ def test_build_keeps_calibrated_zones_and_rounds(tmp_path):
         obj("HSP", "HSPDF4_a_herb2", map_id="210020000"),  # zone without a map
         obj("HSP", "HSPDF4_a_herb3", x="", y=""),  # no pixels
     ]
-    entities = [{"map_id": "220070000", "entity_class": "AbyssArtifacts", "name": "Artifact_01",
-                 "game_x": "1", "game_y": "2", "image_x": "3", "image_y": "4"}]
-    data = build_poi.build(rows, entities, {"220070000", "210050000"})
+    entities = [{"map_id": "220070000", "entity_class": "AbyssArtifacts", "name": f"Artifact_30111_1_1_{side}",
+                 "game_x": "1", "game_y": "2", "image_x": "3", "image_y": "4"} for side in ("Li", "Da", "Dr")]
+    data = build_poi.build(rows, entities, {"220070000", "210050000"})  # one artifact listed for 3 sides
     points = data["zones"]["220070000"]
     assert {p["t"] for p in points} == {"gather_herb", "artifact"} and len(points) == 2
     herb = next(p for p in points if p["t"] == "gather_herb")
@@ -79,3 +79,15 @@ def test_functional_npcs_only_from_the_world_xml_and_neighbours_kept():
     kisk = next(p for p in points if p["t"] == "bindstone")
     assert (kisk["gx"], kisk["gy"]) == (500.0, 600.0)
     assert data["types"]["bindstone"]["name"] == "Кибелиск"
+
+
+def test_siege_fortresses_from_gate_controls_named_by_the_nearest_area():
+    entities = [
+        {"map_id": "220070000", "entity_class": "PlaceableObject", "name": "Ab1_3021_Gatecontrol_1",
+         "game_x": "1880.2", "game_y": "1147.4", "image_x": "", "image_y": ""},
+        {"map_id": "220070000", "entity_class": "PlaceableObject", "name": "Ab_Castledoor_F_2",
+         "game_x": "727", "game_y": "2282", "image_x": "", "image_y": ""},  # a door, not a fortress
+    ]
+    labels = {"220070000": [(1158.0, 1870.0, "Храм красной\nземли"), (100.0, 100.0, "Далеко")]}  # game y, game x
+    points = build_poi.fortress_points(entities, labels)["220070000"]
+    assert points == [{"t": "fortress", "x": 0.0, "y": 0.0, "gx": 1880.2, "gy": 1147.4, "name": "Храм красной земли"}]

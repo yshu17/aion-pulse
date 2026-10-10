@@ -27,18 +27,18 @@ SIZE = 48  # px, square canvas; the app scales down
 AIONDB = "https://aiondb.ru"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120", "Referer": "https://aiondb.ru/maps/"}
 
-# layer type -> source: ("sprite", client sprite name), ("client", file) or ("aiondb", pattern id).
-# The game's own icons first; aiondb only where the client has none (kisk, camp).
+# layer type -> source: ("sprite", client sprite name[@texture]), ("client", file) or ("aiondb", pattern id).
+# NPCs use the icons the game's own map and radar draw (v4_radar_*, checked on an in-game screenshot).
 ICONS = {
-    "teleport": ("sprite", "v5_npc_func_teleport"),
-    "warehouse": ("sprite", "v5_npc_func_warehouse"),
-    "merchant": ("sprite", "v5_npc_func_buy"),
-    "coin_merchant": ("sprite", "coin_merchant_marker"),
-    "vendor": ("sprite", "v5_npc_func_vendor"),
-    "stigma": ("sprite", "v5_npc_func_stigma"),
-    "postbox": ("sprite", "v4_mailicon"),
-    "bindstone": ("aiondb", "map_icon_function_bindstone"),
-    "quest_point": ("sprite", "v4_quest_bullet"),
+    "teleport": ("sprite", "v4_radar_icon_teleport"),
+    "warehouse": ("sprite", "v4_radar_icon_warehouse"),
+    "merchant": ("sprite", "v4_radar_icon_merchant"),
+    "coin_merchant": ("sprite", "coin_merchant_marker@v4_common"),
+    "vendor": ("sprite", "v4_radar_icon_vendor"),
+    "stigma": ("sprite", "v4_radar_icon_stigma_master"),
+    "postbox": ("sprite", "v4_radar_postbox_icon"),
+    "bindstone": ("sprite", "v4_radar_bindstone_icon"),
+    "quest_point": ("sprite", "v4_radar_quest_icon_zonemap"),
     "artifact": ("client", "abyss_artifact.png"),
     "fortress": ("client", "abyss_fortress.png"),
     "dungeon": ("client", "abyss_indun.png"),
@@ -100,19 +100,23 @@ def fetch_png(pattern: str, out: Path) -> None:
 SPRITE_RE = re.compile(r'name="([^"]+)" src_image="(\d+),(\d+),(\d+),(\d+)" texture="([^"]+)"')
 
 
-def sprite_table(texts: list[str]) -> dict[str, tuple[str, tuple[int, int, int, int]]]:
-    """Client sprite tables -> {sprite name: (texture file stem in lower case, (x, y, w, h))}; first entry wins."""
-    out: dict[str, tuple[str, tuple[int, int, int, int]]] = {}
+def sprite_table(texts: list[str]) -> dict[str, list[tuple[str, tuple[int, int, int, int]]]]:
+    """Client sprite tables -> {sprite name: [(texture file stem in lower case, (x, y, w, h)), ...]}."""
+    out: dict[str, list[tuple[str, tuple[int, int, int, int]]]] = {}
     for text in texts:
         for name, x, y, w, h, texture in SPRITE_RE.findall(text):
-            out.setdefault(name, (texture.replace("\\", "/").rsplit("/", 1)[-1].lower(), (int(x), int(y), int(w), int(h))))
+            entry = (texture.replace("\\", "/").rsplit("/", 1)[-1].lower(), (int(x), int(y), int(w), int(h)))
+            if entry not in out.setdefault(name, []):
+                out[name].append(entry)
     return out
 
 
-def cut_sprite(name: str, table: dict, out: Path) -> None:
+def cut_sprite(key: str, table: dict, out: Path) -> None:
+    """key = sprite name, or «name@texture» when the name exists in several atlases."""
     from PIL import Image
 
-    texture, (x, y, w, h) = table[name]
+    name, _at, wanted = key.partition("@")
+    texture, (x, y, w, h) = next(e for e in table[name] if not wanted or e[0] == wanted.lower())
     folder = EXTRACT / "raw" / "textures" / "ui" / "ui"
     path = next(p for p in folder.glob("*.png") if p.stem.lower() == texture)
     with Image.open(path) as atlas:
