@@ -148,21 +148,27 @@ class App:
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
         ttk.Label(top, text="Оповещение", style="Muted.TLabel").grid(row=2, column=0, sticky="w")
+        # two lines: the mode, sound and reaction; then the popup and the volume (on a 1000 px window
+        # one line does not fit and the volume went off the edge)
         alert = ttk.Frame(top)
         alert.grid(row=2, column=1, columnspan=3, sticky="w", padx=(12, 0), pady=4)
+        alert_row = ttk.Frame(alert)
+        alert_row.pack(anchor="w")
+        alert_row2 = ttk.Frame(alert)
+        alert_row2.pack(anchor="w", pady=(6, 0))
         self.mode_var = tk.StringVar(
             value=next((k for k, v in ALERT_MODES.items() if v == self.cfg.alert_mode), "Стандартный")
         )
         mode = ttk.Combobox(
-            alert, textvariable=self.mode_var, values=list(ALERT_MODES), state="readonly", width=12
+            alert_row, textvariable=self.mode_var, values=list(ALERT_MODES), state="readonly", width=12
         )
         mode.pack(side="left")
         mode.bind("<<ComboboxSelected>>", lambda _e: self._on_mode_selected())
-        ttk.Label(alert, text="Звук", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Label(alert_row, text="Звук", style="Muted.TLabel").pack(side="left", padx=(18, 8))
         self.sound_choices = self._sound_choices()
         self.sound_var = tk.StringVar(value=self._sound_label(self.cfg.sound_path))
         self.sound_box = ttk.Combobox(
-            alert,
+            alert_row,
             textvariable=self.sound_var,
             values=[*self.sound_choices, CUSTOM_SOUND],
             state="readonly",
@@ -170,37 +176,38 @@ class App:
         )
         self.sound_box.pack(side="left")
         self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
-        ttk.Button(alert, text="▶", width=3, command=self.notifier.play).pack(side="left", padx=8)
-        ttk.Label(alert, text="Реакция", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Button(alert_row, text="▶", width=3, command=self.notifier.play).pack(side="left", padx=8)
+        ttk.Label(alert_row, text="Реакция", style="Muted.TLabel").pack(side="left", padx=(18, 8))
         self.react_var = tk.StringVar(
             value=next((k for k, v in REACT_CHOICES.items() if v == self.cfg.react_sec), "30 с")
         )
         react = ttk.Combobox(
-            alert, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7
+            alert_row, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7
         )
         react.pack(side="left")
         react.bind("<<ComboboxSelected>>", lambda _e: self._on_react_selected())
         self.popup_var = tk.BooleanVar(value=self.cfg.nag_popup)
         ttk.Checkbutton(
-            alert,
+            alert_row2,
             text="Окно поверх игры",
             variable=self.popup_var,
             style="Plain.TCheckbutton",
             command=self._on_popup_toggled,
         ).pack(side="left", padx=(18, 0))
-        ttk.Label(alert, text="Громкость", style="Muted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Label(alert_row2, text="Громкость", style="Muted.TLabel").pack(side="left", padx=(18, 8))
         self.volume_var = tk.IntVar(value=self.notifier.volume)
-        ttk.Scale(
-            alert,
+        volume = ttk.Scale(
+            alert_row2,
             from_=0,
             to=100,
             orient="horizontal",
             length=120,
             variable=self.volume_var,
             command=lambda _v: self._on_volume_changed(save=False),
-        ).pack(side="left")
-        alert.winfo_children()[-1].bind("<ButtonRelease-1>", lambda _e: self._on_volume_changed())
-        self.volume_label = ttk.Label(alert, text=f"{self.notifier.volume}%", style="Muted.TLabel", width=5)
+        )
+        volume.pack(side="left")
+        volume.bind("<ButtonRelease-1>", lambda _e: self._on_volume_changed())
+        self.volume_label = ttk.Label(alert_row2, text=f"{self.notifier.volume}%", style="Muted.TLabel", width=5)
         self.volume_label.pack(side="left", padx=(8, 0))
         top.columnconfigure(1, weight=1)
 
