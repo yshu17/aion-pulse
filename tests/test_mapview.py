@@ -168,10 +168,10 @@ def test_point_card_and_nearby(root):
     assert view.point_card.title.cget("text") == "Место · Келькмарос"
     assert "сбор у склада" in view.point_card.note.cget("text")
     types = [t for t, _name, _m in view.point_card.rows]
-    assert types[:2] == ["teleport", "warehouse"]
+    assert types[:3] == ["teleport", "bindstone", "warehouse"]
     assert all(m < 600 for t, _n, m in view.point_card.rows if t in ("warehouse", "merchant"))
     # clicking a «Рядом» row selects that point and rings it
-    view.point_card.near.winfo_children()[1].event_generate("<Button-1>")
+    view.point_card.near.winfo_children()[types.index("warehouse")].event_generate("<Button-1>")
     root.update()
     assert view.selected is not None and view.selected.type == "warehouse"
     view.render()
@@ -197,11 +197,14 @@ def test_map_search_points_and_areas(root):
     root.geometry("1400x900")
     root.update()
     view.open_zone("220070000")
-    assert view.search("привратник", 0) == "1 / 2"
+    count = len(view.poi.in_zone("220070000", {"teleport"}))
+    assert count >= 5 and view.search("привратник", 0) == f"1 / {count}"
     first = view.selected
     assert first.type == "teleport"
-    assert view.search("привратник", 1) == "2 / 2" and view.selected != first
-    assert view.search("привратник", 1) == "1 / 2"  # wraps around
+    assert view.search("привратник", 1) == f"2 / {count}" and view.selected != first
+    for _ in range(count - 1):
+        view.search("привратник", 1)
+    assert view.selected == first  # wraps around
     assert view.search("митраканд", 0).endswith("/ 2")  # area names: «Митраканд», «Сигнальный маяк Митраканда»
     assert view.point_card.kind.cget("text") == "Район"
     assert view.search("абвгд", 0) == "нет"
@@ -278,3 +281,20 @@ def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):
         icon = load_icon(icons / f"{name}.png", 36, root)
         assert max(icon.width(), icon.height()) == 36
     assert load_icon(icons / "missing.png", 36, root) is None
+
+
+def test_teleporters_kisks_and_aiondb_note(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    teleports = sum(len(store.in_zone(z, {"teleport"})) for z in zones())
+    kisks = sum(len(store.in_zone(z, {"bindstone"})) for z in zones())
+    assert teleports >= 45 and kisks >= 30  # were 35 and 0 before the client's world XML was added
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
+    assert "bindstone" in view.layers
+    from_aiondb = next(p for p in view.poi.in_zone("220070000", {"teleport"}) if p.src == "aiondb")
+    view.select(from_aiondb)
+    assert "aiondb" in view.point_card.note.cget("text")
+    client = next(p for p in view.poi.in_zone("220070000", {"teleport"}) if not p.src)
+    view.select(client)
+    assert view.point_card.note.cget("text") == ""

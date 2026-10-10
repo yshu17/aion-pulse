@@ -97,3 +97,14 @@ def test_projected_recomputes_map_pixels_from_game_coordinates(store):
     assert (raniu.x, raniu.y) == (100, 100) and (raniu.gx, raniu.gy) == (1000, 1000)
     other = moved.in_zone("210050000", {"teleport"})[0]
     assert (other.x, other.y) == (5, 5)  # no transform for this zone: kept as stored
+
+
+def test_point_source_is_loaded(tmp_path):
+    path = tmp_path / "poi.json"
+    path.write_text(json.dumps({"types": {"teleport": {"name": "Привратник"}}, "zones": {Z: [
+        {"t": "teleport", "x": 1, "y": 1, "gx": 1, "gy": 1, "name": "A", "src": "aiondb"},
+        {"t": "teleport", "x": 2, "y": 2, "gx": 2, "gy": 2, "name": "B"}]}}), encoding="utf-8")
+    a, b = PoiStore.load(path).in_zone(Z, {"teleport"})
+    assert (a.src, b.src) == ("aiondb", "")
+    moved = PoiStore.load(path).projected({Z: lambda gx, gy: (gx, gy)})
+    assert moved.in_zone(Z, {"teleport"})[0].src == "aiondb"
