@@ -59,10 +59,7 @@ FUNCTIONS = {
     "Postbox": "postbox",
     "Bindstone": "bindstone",
 }
-AIONDB_TYPES = {"teleport": "teleport", "bindstone": "bindstone", "warehouse": "warehouse", "merchant": "merchant",
-                "coin_merchant": "coin_merchant", "vendor": "vendor", "stigma_master": "stigma", "postbox": "postbox"}
-AIONDB_SKIP = {"dc1"}  # aiondb shows another version of Pandaemonium: its NPCs do not match the client
-SAME_NPC_M = 15  # a point of the same type closer than this is the same NPC (data sources differ by a few metres)
+SAME_SPOT_M = 1.0  # the world XML lists a few NPCs twice at the same spot
 # searched in this order: «noblemetal» before «metal»
 GATHER_KINDS = ["noblemetal", "metal", "jewelry", "herb", "plant", "berry", "vegetable", "vege", "tree", "fish",
                 "shell", "od"]
@@ -114,6 +111,8 @@ def _point(type_: str, row: dict, name: str) -> dict | None:
 def build(objects: list[dict], entities: list[dict], zones: set[str]) -> dict:
     out: dict[str, list[dict]] = {}
     for row in objects:
+        if row.get("function_type"):
+            continue  # functional NPCs come from the client's world XML only (service_points), as the game's map
         type_ = classify_object(row)
         if type_ is None or row.get("map_id") not in zones:
             continue
@@ -138,8 +137,8 @@ def build(objects: list[dict], entities: list[dict], zones: set[str]) -> dict:
 
 
 def service_points(rows: list[dict], zone_ids: dict[str, str]) -> dict[str, list[dict]]:
-    """Functional NPCs from the client's world XML (client_extract/raw/npc_service_coords.tsv by Codex):
-    more teleporters than the mission files and all the kisks. x / y are game coordinates."""
+    """Functional NPCs from the client's world XML (client_world_<zone>.xml <npc_info>, the list the game's own map
+    and NPC search use; client_extract/raw/npc_service_coords.tsv by Codex). x / y are game coordinates."""
     out: dict[str, list[dict]] = {}
     for row in rows:
         type_ = FUNCTIONS.get(row.get("function_type", ""))
@@ -150,35 +149,16 @@ def service_points(rows: list[dict], zone_ids: dict[str, str]) -> dict[str, list
     return out
 
 
-def aiondb_points(rows: list[dict], frames: dict[str, dict], names: dict[str, str]) -> dict[str, list[dict]]:
-    """NPCs placed by aiondb.ru (downloads/aiondb_maps/aiondb_npcs.csv). Their svg units are game metres from the
-    zonemap.xml offset: game y = cx + offset_x, game x = cy + offset_y. Marked "src": "aiondb". Only NPCs our client
-    knows (names: client npc id -> Russian name) are kept."""
-    out: dict[str, list[dict]] = {}
-    for row in rows:
-        frame = frames.get(row.get("zone", ""))
-        type_ = AIONDB_TYPES.get(row.get("type", ""))
-        name = names.get(row.get("npc_id", ""), "")
-        # an NPC our client does not know cannot appear in our game (aiondb shows Classic 5.5 content)
-        if not frame or not type_ or row["zone"] in AIONDB_SKIP or not name:
-            continue
-        gy = float(row["cx"]) + frame["offset"][0]
-        gx = float(row["cy"]) + frame["offset"][1]
-        out.setdefault(frame["id"], []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(gx, 1), "gy": round(gy, 1),
-                                                "name": name, "src": "aiondb"})
-    return out
-
-
-def merge(data: dict, extra: dict[str, list[dict]], radius: float = SAME_NPC_M) -> int:
-    """Add points that are not already there (same type within radius metres). Returns how many were added.
+def merge(data: dict, extra: dict[str, list[dict]], radius: float = SAME_SPOT_M) -> int:
+    """Add points except exact repeats (same type and name within radius metres): two different NPCs standing
+    next to each other (a teleporter and an ether ship) both stay. Returns how many were added.
     x / y stay 0: the program places points from game coordinates with each zone's map transform."""
     added = 0
     for map_id, points in extra.items():
         known = data["zones"].setdefault(map_id, [])
         for point in points:
-            if any(p["t"] == point["t"] and (math.hypot(p["gx"] - point["gx"], p["gy"] - point["gy"]) < radius
-                                             or (point.get("src") and point["name"] and p["name"] == point["name"]))
-                   for p in known):  # the same NPC: close by, or (from aiondb) the same name placed elsewhere
+            if any(p["t"] == point["t"] and p["name"] == point["name"]
+                   and math.hypot(p["gx"] - point["gx"], p["gy"] - point["gy"]) < radius for p in known):
                 continue
             known.append(point)
             added += 1
@@ -205,16 +185,7 @@ def main() -> int:
     zone_ids = {row["zone"]: row["map_id"] for row in objects if row["map_id"] in zones}
     service = source / "raw" / "npc_service_coords.tsv"
     if service.is_file():
-        print(f"client world xml: +{merge(data, service_points(read_tsv(service), zone_ids))} points")
-    aiondb = ROOT / "downloads" / "aiondb_maps" / "aiondb_npcs.csv"
-    if aiondb.is_file():
-        sys.path.insert(0, str(ROOT / "tools"))
-        from build_newmaps import zonemaps
-
-        frames = {code: f for code, f in zonemaps().items() if f["id"] in zones}
-        names = {r["npc_id"]: r["russian_name"] for r in read_tsv(source / "client_npcs.tsv")}
-        with open(aiondb, encoding="utf-8", newline="") as f:
-            print(f"aiondb gaps: +{merge(data, aiondb_points(list(csv.DictReader(f)), frames, names))} points")
+        print(f"client world xml: {merge(data, service_points(read_tsv(service), zone_ids))} functional NPCs")
     out = ROOT / "data" / "maps" / "poi.json"
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     counts: dict[str, int] = {}

@@ -28,7 +28,7 @@ AIONDB = "https://aiondb.ru"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120", "Referer": "https://aiondb.ru/maps/"}
 
 # layer type -> source: ("sprite", client sprite name), ("client", file) or ("aiondb", pattern id).
-# The game's own icons first; aiondb only where the client has none (kisk, quest point, camp).
+# The game's own icons first; aiondb only where the client has none (kisk, camp).
 ICONS = {
     "teleport": ("sprite", "v5_npc_func_teleport"),
     "warehouse": ("sprite", "v5_npc_func_warehouse"),
@@ -38,7 +38,7 @@ ICONS = {
     "stigma": ("sprite", "v5_npc_func_stigma"),
     "postbox": ("sprite", "v4_mailicon"),
     "bindstone": ("aiondb", "map_icon_function_bindstone"),
-    "quest_point": ("aiondb", "map_icon_quest_quest"),
+    "quest_point": ("sprite", "v4_quest_bullet"),
     "artifact": ("client", "abyss_artifact.png"),
     "fortress": ("client", "abyss_fortress.png"),
     "dungeon": ("client", "abyss_indun.png"),

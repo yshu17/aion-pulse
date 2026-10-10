@@ -180,9 +180,10 @@ def test_point_card_and_nearby(root):
     view.open_zone("220070000")
     root.update()
     teleport = view.poi.in_zone("220070000", {"teleport"})[0]
-    view.zoom = 3.0
+    view.zoom = 4.0  # closest zoom: every point is its own icon
     view.center_on(teleport.x, teleport.y)
-    sx, sy, members = next(d for d in view._drawn if d[2] == [teleport])
+    sx, sy = view._spots[teleport]
+    members = [teleport]
     view._on_press(SimpleNamespace(x=int(sx), y=int(sy)))
     view._on_release(SimpleNamespace(x=int(sx), y=int(sy)))
     assert view.selected == members[0]
@@ -283,18 +284,14 @@ def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):
     assert load_icon(icons / "missing.png", 36, root) is None
 
 
-def test_teleporters_kisks_and_aiondb_note(root):
+def test_teleporters_and_kisks_from_the_game_files(root):
     from watcher.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
-    teleports = sum(len(store.in_zone(z, {"teleport"})) for z in zones())
-    kisks = sum(len(store.in_zone(z, {"bindstone"})) for z in zones())
-    assert teleports >= 45 and kisks >= 30  # were 35 and 0 before the client's world XML was added
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
     assert "bindstone" in view.layers
-    from_aiondb = next(p for p in view.poi.in_zone("220070000", {"teleport"}) if p.src == "aiondb")
-    view.select(from_aiondb)
-    assert "aiondb" in view.point_card.note.cget("text")
-    client = next(p for p in view.poi.in_zone("220070000", {"teleport"}) if not p.src)
-    view.select(client)
-    assert view.point_card.note.cget("text") == ""
+    kelk = {p.name for p in view.poi.in_zone("220070000", {"teleport"})}
+    # the client's world XML: Раниу and Нотуд plus the ether ships right next to them, and the ship to Pandaemonium
+    assert {"Раниу", "Нотуд", "Эфирный корабль", "Корабль до Пандемониума"} <= kelk
+    assert len(view.poi.in_zone("220070000", {"teleport"})) == 6
+    assert sum(len(store.in_zone(z, {"bindstone"})) for z in zones()) >= 30

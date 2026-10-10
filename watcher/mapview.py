@@ -33,7 +33,6 @@ BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
 SPLIT_ROW = 4  # icons per row when a group is laid out side by side
 SEARCH_PLACEHOLDER = "Найти: NPC, район"
-AIONDB_NOTE = "Место по aiondb.ru: в файлах клиента этот NPC не расставлен, сервер может ставить его иначе"
 LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
 PIN = theme.ACCENT
 OTHER_PIN = "#4fd1c5"
@@ -403,8 +402,7 @@ class MapView(ttk.Frame):
         """Show a point in the card (and ring it on the map)."""
         self.selected = poi
         kind = self.poi.type_name(poi.type)
-        note = AIONDB_NOTE if poi.src == "aiondb" else ""
-        self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, note, self.nearby(poi.zone, poi.gx, poi.gy, poi))
+        self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, "", self.nearby(poi.zone, poi.gx, poi.gy, poi))
         if centre:
             self.center_on(poi.x, poi.y)
         else:
