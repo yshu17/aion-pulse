@@ -265,7 +265,8 @@ def quest_points(quests: dict[str, dict], links: list[dict], spawns: dict[str, l
         kinds = {QUEST_KINDS.get(q["category"].split("|")[0].strip(), "quest_give") for q in given}
         type_ = next(t for t in QUEST_ORDER if t in kinds)
         titles = sorted({q["name_ru"] for q in given})
-        note = f"Задания ({len(titles)}): " + "; ".join(titles[:QUEST_NOTE_MAX]) + ("; …" if len(titles) > QUEST_NOTE_MAX else "")
+        elyos = all(q.get("race", "").strip() == "pc_light" for q in given)  # an Asmodian cannot take them
+        note = f"{'Элийские задания' if elyos else 'Задания'} ({len(titles)}): " + "; ".join(titles[:QUEST_NOTE_MAX]) + ("; …" if len(titles) > QUEST_NOTE_MAX else "")
         for code, gx, gy in spawns.get(npc, []):
             if code in zone_ids:
                 out.setdefault(zone_ids[code], []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(gx, 1),

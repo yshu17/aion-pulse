@@ -170,3 +170,7 @@ def test_quest_givers_placed_from_the_client_one_point_per_npc():
     assert morheim[1]["note"] == "Задания (2): Важное; Первое"  # important wins the icon, all quests listed
     assert (morheim[1]["gx"], morheim[1]["gy"]) == (100.0, 200.0)
     assert out["120010000"][0]["t"] == "quest_event"  # the same NPC placed in two zones
+    quests["104"] = {"quest_id": "104", "name_ru": "Для элийцев", "min_level": "50", "category": "quest | Ингисон",
+                     "race": "pc_light"}
+    elyos = build_poi.quest_points(quests, [{"quest_id": "104", "start_npc_id": "7"}], spawns, zone_ids, {})
+    assert elyos["220020000"][0]["note"] == "Элийские задания (1): Для элийцев"
