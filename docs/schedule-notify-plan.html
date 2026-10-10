@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>План: расписание и уведомления</title>
+<style>
+:root{--bg:#141519;--surface:#1c1e24;--surface2:#262931;--border:#363a45;--text:#e9e7e4;--muted:#8c919c;--accent:#ff8c1a;--ok:#5fd38d;--warn:#e5484d;--info:#4aa3ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 "Segoe UI",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:32px 0 12px}h3{font-size:15px;margin:0 0 8px}
+.sub{color:var(--muted)}
+code{background:var(--surface2);border-radius:4px;padding:0 4px;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.current{border:1px solid #594322;background:#2b241a;border-radius:10px;padding:12px 14px;margin:16px 0 4px}
+.issues{display:grid;gap:8px}.issue{border-left:3px solid var(--warn);background:var(--surface);padding:8px 12px;border-radius:0 8px 8px 0}
+.issue b{display:block;margin-bottom:2px}
+.steps .step{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:flex-start}
+.steps .step:last-child{border-bottom:0}
+.check{width:22px;text-align:center;font-size:18px;flex:none}
+.step .desc{font-size:13px;color:var(--muted);margin-top:2px}
+.bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.tag{font-size:12px;color:var(--muted)}
+.chip{display:inline-block;padding:3px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;margin:0 4px 6px 0;font-size:13px;user-select:none}
+.chip.on{background:#3a2a12;border-color:var(--accent);color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.k{color:var(--muted);width:30%}
+.risk{border-left:3px solid var(--warn);padding:6px 12px;margin:8px 0;background:var(--surface)}
+button{font:inherit;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#1a1206;font-weight:600}
+button:hover{border-color:var(--accent)}
+/* mock of the «Расписание» tab */
+.ev{display:grid;grid-template-columns:62px minmax(0,1fr) 92px 34px;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border)}
+.ev:last-child{border-bottom:0}
+.ev .time{font-variant-numeric:tabular-nums;font-weight:600}
+.ev .name small{display:block;color:var(--muted);font-size:12px}
+.ev .left{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;text-align:right}
+.ev.soon .left{color:var(--accent);font-weight:600}
+.ev.past{opacity:.45}
+.bell{background:none;border:0;font-size:17px;padding:0;cursor:pointer;filter:grayscale(1);opacity:.5}
+.bell.on{filter:none;opacity:1}
+.day{font-size:12px;color:var(--muted);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.04em}
+/* Steam-like toast, bottom right */
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column-reverse;gap:8px;z-index:50;width:min(340px,calc(100vw - 32px))}
+.toast{display:flex;gap:10px;background:linear-gradient(180deg,#2a2d35,#1d1f25);border:1px solid #3d424e;border-left:3px solid var(--accent);
+  border-radius:8px;padding:10px 12px;box-shadow:0 8px 24px #0009;transform:translateX(120%);opacity:0;transition:transform .28s ease-out,opacity .28s}
+.toast.in{transform:none;opacity:1}
+.toast .ico{width:36px;height:36px;border-radius:6px;background:#3a2a12;display:grid;place-items:center;font-size:20px;flex:none}
+.toast .tt{font-weight:600;font-size:14px}.toast .tx{font-size:13px;color:#c9ccd3}
+.toast .act{margin-top:6px;display:flex;gap:6px}.toast .act button{padding:2px 8px;font-size:12px}
+.toast .x{margin-left:auto;background:none;border:0;color:var(--muted);padding:0 0 0 6px;font-size:16px;align-self:flex-start}
+.toast .life{height:2px;background:var(--accent);margin-top:8px;border-radius:2px;transform-origin:left;transition:transform linear}
+.toast.chat{border-left-color:var(--info)}.toast.chat .ico{background:#13283d}
+.toast.warn{border-left-color:var(--warn)}.toast.warn .ico{background:#3a1416}
+svg text{font:12px "Segoe UI",sans-serif}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Расписание сервера и уведомления</h1>
+  <div class="sub">Aion Chat Watcher · новая вкладка «Расписание» и общий центр уведомлений: тосты справа внизу, как в Steam, отдельным окном поверх игры · план v1 от 10.10.2026</div>
+
+  <div class="current"><b>Сейчас</b><br>Только план, код не начат. Нужны твои решения (ниже) и «делаем». Номера шагов — те же, что в <code>PAIR.md</code> с меткой <code>SN-</code>.</div>
+
+  <h2>Нужно твоё решение</h2>
+  <div class="issues">
+    <div class="issue" style="border-color:var(--accent)"><b>1. Откуда брать расписание</b>
+      <span id="srcChips"></span>
+      <div class="tag" id="srcNote"></div></div>
+    <div class="issue" style="border-color:var(--accent)"><b>2. Время сервера</b>Расписания пишут во времени сервера. Нужен часовой пояс сервера (например UTC+3) — программа сама переведёт в твоё время и учтёт переход на летнее.</div>
+    <div class="issue" style="border-color:var(--accent)"><b>3. Как запущена игра</b>«Оконный без рамки» — тосты видны поверх игры. Настоящий «полный экран» Windows перекрывает любые окна: тогда тост не увидишь, останутся звук и мигание кнопки на панели задач (как сейчас).</div>
+  </div>
+
+  <h2>Попробуй макет</h2>
+  <div class="two">
+    <div class="card">
+      <h3>Вкладка «Расписание» <span class="tag">· колокольчик — напомнить; таймер идёт по-настоящему</span></h3>
+      <div style="margin-bottom:8px"><span class="chip on" data-f="all">Все</span><span class="chip" data-f="siege">Осады</span><span class="chip" data-f="reset">Сбросы</span><span class="chip" data-f="event">События</span></div>
+      <div id="sched"></div>
+    </div>
+    <div class="card">
+      <h3>Уведомление поверх игры</h3>
+      <div class="tag" style="margin-bottom:10px">Отдельное окно без рамки справа внизу экрана: въезжает справа, висит 8 с (наведение — пауза), до 3 штук стопкой, лишние ждут в очереди. Не забирает фокус у игры.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="primary" data-demo="siege">Осада через 15 мин</button>
+        <button data-demo="chat">Совпадение в чате</button>
+        <button data-demo="warn">Игра не запущена</button>
+      </div>
+      <h3 style="margin-top:16px">Настройки (вкладка «Уведомления»)</h3>
+      <table>
+        <tr><td class="k">Источники</td><td>чат (совпадения) · расписание · «игра не запущена» · позже Telegram — у каждого вкл/выкл и свой звук</td></tr>
+        <tr><td class="k">Показ</td><td>угол экрана, сколько секунд, сколько штук стопкой, монитор игры или основной</td></tr>
+        <tr><td class="k">Не беспокоить</td><td>выключить тосты на время / по часам; звук и счётчики работают</td></tr>
+        <tr><td class="k">Напоминать</td><td>за 30 / 15 / 5 мин и в начале — по умолчанию для всех событий, можно поменять у каждого</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Как устроено</h2>
+  <div class="card">
+    <svg viewBox="0 0 1100 250" width="100%" role="img" aria-label="Источники отправляют уведомления в центр, центр показывает тосты в отдельном окне">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#8c919c"/></marker></defs>
+      <g fill="#262931" stroke="#363a45">
+        <rect x="10" y="20" width="220" height="42" rx="8"/><rect x="10" y="74" width="220" height="42" rx="8"/>
+        <rect x="10" y="128" width="220" height="42" rx="8"/><rect x="10" y="182" width="220" height="42" rx="8"/>
+      </g>
+      <g fill="#e9e7e4"><text x="24" y="46">Чат: совпадения, «назойливый»</text><text x="24" y="100">Расписание: напоминания</text>
+        <text x="24" y="154">Проверка «игра запущена»</text><text x="24" y="208" fill="#8c919c">Telegram (позже)</text></g>
+      <rect x="330" y="70" width="300" height="110" rx="10" fill="#2b241a" stroke="#ff8c1a"/>
+      <text x="348" y="98" fill="#ff8c1a" style="font-weight:600">Центр уведомлений</text>
+      <text x="348" y="122" fill="#e9e7e4">notify(вид, заголовок, текст, кнопки)</text>
+      <text x="348" y="144" fill="#8c919c">правила: вкл/выкл, «не беспокоить»,</text>
+      <text x="348" y="164" fill="#8c919c">очередь, звук, повторы</text>
+      <rect x="730" y="40" width="360" height="70" rx="10" fill="#262931" stroke="#4aa3ff"/>
+      <text x="748" y="68" fill="#e9e7e4">Окно тостов: без рамки, поверх всех,</text><text x="748" y="90" fill="#8c919c">справа внизу, не берёт фокус</text>
+      <rect x="730" y="140" width="360" height="70" rx="10" fill="#262931" stroke="#363a45"/>
+      <text x="748" y="168" fill="#e9e7e4">Звук и мигание на панели задач</text><text x="748" y="190" fill="#8c919c">если тост не виден (полный экран)</text>
+      <g stroke="#8c919c" fill="none" marker-end="url(#a)">
+        <path d="M230 41C285 41 285 100 328 110"/><path d="M230 95L328 118"/><path d="M230 149L328 128"/><path d="M230 203C285 203 285 150 328 140" stroke-dasharray="4 4"/>
+        <path d="M630 110L728 80"/><path d="M630 140L728 172"/>
+      </g>
+    </svg>
+    <div class="tag">Один центр для всего: старый «назойливый» попап и будущий Telegram пойдут через него, чтобы правила («не беспокоить», звук, очередь) были одни.</div>
+  </div>
+
+  <h2>План работ · кто что делает</h2>
+  <div class="card">
+    <div><b id="pct">0%</b> <span class="tag">— статус обновляю после каждого шага и коммичу.</span></div>
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="steps" id="steps"></div>
+  </div>
+
+  <h2>Что в событии расписания</h2>
+  <div class="card"><table>
+    <tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr>
+    <tr><td>вид</td><td>осада · сброс · событие · босс</td><td>фильтр, значок тоста</td></tr>
+    <tr><td>название, место</td><td>Осада крепостей Бездны · Бездна</td><td>текст тоста; позже — ссылка на карту</td></tr>
+    <tr><td>когда</td><td>каждую субботу 20:00 (время сервера), длится 1 ч</td><td>повтор: раз, каждый день, по дням недели</td></tr>
+    <tr><td>напомнить</td><td>за 15 и 5 мин, в начале</td><td>свои у события или общие</td></tr>
+    <tr><td>вкл</td><td>колокольчик</td><td>не напоминать, но показывать в списке</td></tr>
+  </table></div>
+
+  <h2>Риски</h2>
+  <div class="risk"><b>Полный экран.</b> Окно поверх не видно в эксклюзивном полноэкранном режиме — тогда звук + мигание. Проверим в игре (шаг SN-9).</div>
+  <div class="risk"><b>Фокус.</b> Тост не должен забирать клавиатуру у игры: окно-«инструмент» без активации (WS_EX_NOACTIVATE). Если tkinter не даст — тонкая обёртка WinAPI.</div>
+  <div class="risk"><b>Неверное расписание.</b> Время на сервере может меняться — поэтому расписание редактируемое, а шаблон только стартовый.</div>
+  <div class="risk"><b>Масштаб Windows, несколько мониторов.</b> Угол считаем по рабочей области монитора с игрой (без панели задач).</div>
+
+  <h2>Связь с другими планами</h2>
+  <div class="card"><table>
+    <tr><td class="k">UI/UX</td><td>тост и вкладка — в тех же токенах и компонентах (<code>docs/ui-ux-improvement-plan.html</code>); анимация въезда — из <code>watcher/motion.py</code>, если он уже будет</td></tr>
+    <tr><td class="k">Telegram</td><td>отправка в Telegram станет ещё одним выходом центра уведомлений (<code>docs/telegram-bridge-plan.html</code>)</td></tr>
+    <tr><td class="k">Карта</td><td>событие с местом (крепость, босс) — кнопка «На карте» в тосте и в списке</td></tr>
+  </table></div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+// s: "done" | "doing" | "todo"
+const STEPS=[
+ {t:"Центр уведомлений",who:"Claude",d:"watcher/notify_center.py: notify(вид, заголовок, текст, кнопки, звук); очередь, правила источников, «не беспокоить», повтор и «отложить»; тесты без окон",s:"todo"},
+ {t:"Окно тостов, как в Steam",who:"Claude",d:"отдельное окно без рамки поверх всех, правый нижний угол рабочей области монитора игры; въезд справа, 8 с, пауза при наведении, до 3 стопкой; не забирает фокус (WS_EX_NOACTIVATE / TOOLWINDOW); клик — открыть программу на нужной вкладке",s:"todo"},
+ {t:"Картинки тоста",who:"Кодекс",d:"фон и рамка 9-slice в стиле программы, значки видов (осада, сброс, событие, чат, предупреждение) — из клиента, где есть, увеличенные Waifu2x, как значки карты; @2x для 125/150 %",s:"todo"},
+ {t:"Старые оповещения — через центр",who:"Claude",d:"совпадения в чате, «назойливый» режим (звук по кругу до реакции) и «игра не запущена» отправляют в центр; старый попап заменяется тостом с кнопкой «Принять»",s:"todo"},
+ {t:"Вкладка «Уведомления» (настройки)",who:"Claude",d:"источники вкл/выкл и звук у каждого, угол, длительность, стопка, «не беспокоить», кнопка «Проверить»; всё в config.json",s:"todo"},
+ {t:"Расписание: данные и шаблон 2.0",who:"Кодекс → Claude",d:"Кодекс: поискать время осад и сбросов в файлах клиента (client_abyss, siege, instance_cooltime) и собрать стартовый шаблон schedule.json; Claude: модель события, повторы, часовой пояс сервера, хранение и правка",s:"todo"},
+ {t:"Вкладка «Расписание»",who:"Claude",d:"сегодня и неделя, таймер до начала, фильтр по видам, колокольчик, добавить / изменить / удалить событие; событие с местом — «На карте»",s:"todo"},
+ {t:"Напоминания",who:"Claude",d:"за N минут и в начале; повтор, если не нажал; «отложить на 5 мин»; пропущенные за время, пока программа была закрыта, — одним тостом",s:"todo"},
+ {t:"Проверка поверх игры и сборка",who:"ты + Claude",d:"тосты в оконном без рамки и в полном экране, на 100/125/150 %, на двух мониторах; снимки Кодекса (tools/ui_snapshots.py) до/после; exe",s:"todo"},
+];
+const MARK={done:["✓","#5fd38d","сделано"],doing:["▶","#ff8c1a","в работе"],todo:["○","#8c919c","ждёт"]};
+function steps(){
+  const box=document.getElementById("steps");box.innerHTML="";
+  STEPS.forEach((st,i)=>{const m=MARK[st.s];const r=document.createElement("div");r.className="step";
+    r.innerHTML=`<div class="check" style="color:${m[1]}" title="${m[2]}">${m[0]}</div><div><b>SN-${i+1}.</b> ${st.t} <span class="chip" style="cursor:default">${st.who}</span><div class="desc">${st.d}</div></div>`;
+    box.appendChild(r);});
+  const done=STEPS.filter(x=>x.s==="done").length;
+  document.getElementById("pct").textContent=`${done} из ${STEPS.length} шагов`;
+  document.getElementById("barfill").style.width=Math.round(done/STEPS.length*100)+"%";
+}
+steps();
+
+// decision 1: schedule source
+const SRC=[
+ ["edit","Сам заполняю во вкладке","Рекомендую: стартовый шаблон 2.0 + правка; без интернета, всегда верно для твоего сервера."],
+ ["site","С сайта сервера","Надёжно, только если у сервера есть страница расписания в стабильном виде — пришли ссылку."],
+ ["file","Общий файл по ссылке","schedule.json по ссылке (например от гильдии); программа подтягивает изменения."],
+];
+let src="edit";
+function drawSrc(){const box=document.getElementById("srcChips");box.innerHTML="";
+  SRC.forEach(([k,n])=>{const c=document.createElement("span");c.className="chip"+(k===src?" on":"");c.textContent=n;c.onclick=()=>{src=k;drawSrc()};box.appendChild(c)});
+  document.getElementById("srcNote").textContent=SRC.find(x=>x[0]===src)[2];}
+drawSrc();
+
+// schedule mock: times relative to now so the countdown is live
+const now=new Date();
+const at=(mins)=>new Date(now.getTime()+mins*60000);
+const EVENTS=[
+ {k:"reset",n:"Ежедневный сброс",p:"все зоны",t:at(-40),bell:false},
+ {k:"siege",n:"Осада крепостей Келькмароса",p:"Храм красной земли, Запечатанная башня",t:at(14),bell:true},
+ {k:"event",n:"Вторжение балауров",p:"Бездна",t:at(95),bell:true},
+ {k:"siege",n:"Осада крепостей Бездны",p:"Бездна",t:at(60*26),bell:true},
+ {k:"reset",n:"Сброс данжей",p:"Удас, Пхасумандир",t:at(60*40),bell:false},
+];
+const KIND={siege:"Осада",reset:"Сброс",event:"Событие"};
+let filt="all";
+document.querySelectorAll("[data-f]").forEach(c=>c.onclick=()=>{filt=c.dataset.f;
+  document.querySelectorAll("[data-f]").forEach(x=>x.classList.toggle("on",x===c));drawSched()});
+const pad=n=>String(n).padStart(2,"0");
+function left(ms){if(ms<0)return "прошло";const m=Math.floor(ms/60000),s=Math.floor(ms/1000)%60;
+  return m>=60?`${Math.floor(m/60)} ч ${pad(m%60)} мин`:`${m}:${pad(s)}`;}
+function drawSched(){const box=document.getElementById("sched");box.innerHTML="";let day="";
+  EVENTS.filter(e=>filt==="all"||e.k===filt).forEach((e,i)=>{
+    const d=e.t.toDateString()===now.toDateString()?"Сегодня":"Завтра";
+    if(d!==day){day=d;const h=document.createElement("div");h.className="day";h.textContent=d;box.appendChild(h);}
+    const ms=e.t-new Date(),r=document.createElement("div");
+    r.className="ev"+(ms<0?" past":ms<30*60000?" soon":"");
+    r.innerHTML=`<div class="time">${pad(e.t.getHours())}:${pad(e.t.getMinutes())}</div><div class="name">${e.n}<small>${KIND[e.k]} · ${e.p}</small></div><div class="left">${left(ms)}</div>`;
+    const b=document.createElement("button");b.className="bell"+(e.bell?" on":"");b.textContent="🔔";b.title=e.bell?"напоминание включено":"напомнить";
+    b.onclick=()=>{e.bell=!e.bell;drawSched();if(e.bell)toast("siege","Напоминание включено",`${e.n} — за 15 и 5 мин`)};
+    r.appendChild(b);box.appendChild(r);});}
+drawSched();setInterval(drawSched,1000);
+
+// Steam-like toast: slide in, 8 s, hover pauses, max 3, the rest queued
+const MAX=3,LIFE=8000,queue=[];
+function toast(kind,title,text,actions){queue.push({kind,title,text,actions});pump();}
+function pump(){const box=document.getElementById("toasts");
+  while(box.children.length<MAX&&queue.length){show(queue.shift());}}
+function show({kind,title,text,actions}){const box=document.getElementById("toasts");
+  const ico={siege:"⚔",chat:"💬",warn:"⚠"}[kind]||"🔔";
+  const el=document.createElement("div");el.className="toast "+kind;
+  el.innerHTML=`<div class="ico">${ico}</div><div style="flex:1;min-width:0"><div class="tt">${title}</div><div class="tx">${text}</div>${actions?`<div class="act">${actions.map(a=>`<button>${a}</button>`).join("")}</div>`:""}<div class="life"></div></div><button class="x" title="закрыть">×</button>`;
+  box.appendChild(el);requestAnimationFrame(()=>el.classList.add("in"));
+  const life=el.querySelector(".life");let leftMs=LIFE,start=Date.now(),timer;
+  const run=()=>{start=Date.now();life.style.transition=`transform ${leftMs}ms linear`;life.style.transform="scaleX(0)";timer=setTimeout(close,leftMs)};
+  const pause=()=>{clearTimeout(timer);leftMs-=Date.now()-start;const w=leftMs/LIFE;life.style.transition="none";life.style.transform=`scaleX(${w})`};
+  function close(){clearTimeout(timer);el.classList.remove("in");setTimeout(()=>{el.remove();pump()},280)}
+  el.onmouseenter=pause;el.onmouseleave=run;el.querySelector(".x").onclick=close;
+  el.querySelectorAll(".act button").forEach(b=>b.onclick=close);
+  requestAnimationFrame(()=>requestAnimationFrame(run));}
+document.querySelectorAll("[data-demo]").forEach(b=>b.onclick=()=>({
+  siege:()=>toast("siege","Осада через 15 мин","Келькмарос · Храм красной земли, Запечатанная башня",["На карте","Отложить 5 мин"]),
+  chat:()=>toast("chat","Совпадение в «Поиске группы»","Ник: ищем в Удас, нужен хил",["Принять"]),
+  warn:()=>toast("warn","Игра не запущена","Слежение остановлено — запусти Aion и нажми Start"),
+})[b.dataset.demo]());
+</script>
+</body>
+</html>
