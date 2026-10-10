@@ -54,10 +54,10 @@ def main() -> int:
         rounded(f"{prefix}btn_disabled", t.SURFACE, outside, RADIUS, border=t.SURFACE_2)
     rounded("accent", t.ACCENT, t.BG, RADIUS)
     rounded("accent_active", t.ACCENT_HOVER, t.BG, RADIUS)
-    rounded("danger", t.DANGER, t.BG, RADIUS)
-    rounded("danger_active", t.DANGER_HOVER, t.BG, RADIUS)
+    rounded("danger", t.DANGER_FILL, t.BG, RADIUS)
+    rounded("danger_active", t.DANGER_FILL_HOVER, t.BG, RADIUS)
     for outside, prefix in ((t.BG, ""), (t.SURFACE, "card_")):
-        rounded(f"{prefix}field", t.SURFACE_2, outside, RADIUS, border=t.BORDER)
+        rounded(f"{prefix}field", t.SURFACE_2, outside, RADIUS, border=t.BORDER_CONTROL)
         rounded(f"{prefix}field_focus", t.SURFACE_2, outside, RADIUS, border=t.ACCENT)
         rounded(f"{prefix}field_disabled", t.SURFACE, outside, RADIUS, border=t.SURFACE_2)
     rounded("card", t.SURFACE, t.BG, CARD_RADIUS)

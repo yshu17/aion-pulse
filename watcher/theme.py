@@ -13,15 +13,20 @@ BG = "#141519"
 SURFACE = "#1c1e24"
 SURFACE_2 = "#262931"
 SURFACE_3 = "#30343e"
-BORDER = "#363a45"
+# Contrast is WCAG 2.x, measured by tests/test_theme.py (which fails if a value drifts below its norm):
+# text 4.5:1, borders of controls 3:1 (SC 1.4.3, 1.4.11). The number after each colour is that measurement.
+BORDER = "#363a45"  # dividers inside cards, decorative (border.subtle) — not for controls: 1.61 on BG
+BORDER_CONTROL = "#646a7a"  # outline of fields, check boxes: 3.37 on BG, 3.08 on SURFACE — AA
+# (the plan's #4a505e measured 2.26 on BG — fails 3:1, not used)
 TEXT = "#e9e7e4"
 MUTED = "#8c919c"
 ACCENT = "#ff8c1a"
 ACCENT_HOVER = "#ffa54a"
 ACCENT_TEXT = "#1b1206"
-DISABLED = "#5c606a"
-DANGER = "#e5484d"
-DANGER_HOVER = "#f06a6e"
+DISABLED = "#6f7480"  # only for really unavailable controls: 3.56 on SURFACE (WCAG exempts inactive ones; was 2.65)
+DANGER = "#ff6b70"  # danger as text («Пропущено», warnings): 5.26 on SURFACE_2, 6.59 on BG — AA (was 3.72)
+DANGER_FILL = "#c9363b"  # Stop button fill: white text 5.15 — AA (was #e5484d, 3.91)
+DANGER_FILL_HOVER = "#d13b40"  # its hover: white text 4.76 — AA (was #f06a6e, 3.00)
 HIT_BG = "#ff8c1a"
 HIT_FG = "#1b1206"
 NICK = "#9cc4ff"
@@ -122,13 +127,13 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         bordercolor=[("focus", ACCENT)],
     )
     _solid_button(style, "Accent.TButton", ACCENT, ACCENT_HOVER, ACCENT_TEXT)
-    _solid_button(style, "Danger.TButton", DANGER, DANGER_HOVER, "#ffffff")
+    _solid_button(style, "Danger.TButton", DANGER_FILL, DANGER_FILL_HOVER, "#ffffff")
 
     style.configure(
         "TEntry",
         fieldbackground=SURFACE_2,
         foreground=TEXT,
-        bordercolor=BORDER,
+        bordercolor=BORDER_CONTROL,
         lightcolor=SURFACE_2,
         darkcolor=SURFACE_2,
         insertcolor=TEXT,
@@ -148,7 +153,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         background=SURFACE_2,
         foreground=TEXT,
         arrowcolor=ACCENT,
-        bordercolor=BORDER,
+        bordercolor=BORDER_CONTROL,
         lightcolor=SURFACE_2,
         darkcolor=SURFACE_2,
         padding=5,
@@ -416,7 +421,7 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
     images = [tk.PhotoImage(master=root, width=size + 12, height=size) for _ in range(4)]
     off, on, off_dim, on_dim = images
     for image, fill, border in (
-        (off, SURFACE_2, BORDER),
+        (off, SURFACE_2, BORDER_CONTROL),
         (on, ACCENT, ACCENT),
         (off_dim, SURFACE, SURFACE_2),
         (on_dim, "#6b4a26", "#6b4a26"),
