@@ -30,6 +30,7 @@ from watcher.tooltip import SpecTooltip
 
 MAX_ROWS = 500
 MAX_PLACES = 300  # place links remembered for the map's pins
+STAT_DOT = 8  # px, the coloured dot of a header statistic
 RETRY_MS = 2000
 TOOLTIP_DELAY_MS = 300
 HISTORY_CHOICES = {"нет": 0, **{f"{m} мин": m for m in (5, 15, 30, 45, 60)}}
@@ -331,19 +332,36 @@ class App:
         self.found_var = tk.StringVar()
         self.reacted_var = tk.StringVar()
         self.missed_var = tk.StringVar()
-        for var, style in (
-            (self.found_var, "Found.Counter.TLabel"),
-            (self.reacted_var, "Reacted.Counter.TLabel"),
-            (self.missed_var, "Missed.Counter.TLabel"),
+        # UI/UX item 10: statistics, not buttons — a dot, a large number and a caption; only «Сбросить» is pressed
+        for var, name, caption in (
+            (self.found_var, "Found", "найдено"),
+            (self.reacted_var, "Reacted", "отреагировал"),
+            (self.missed_var, "Missed", "пропущено"),
         ):
-            ttk.Label(self.counters_bar, textvariable=var, style=style).pack(side="left", padx=(0, 8))
-        ttk.Button(self.counters_bar, text="Сбросить", command=self._reset_counters).pack(side="left")
+            stat = ttk.Frame(self.counters_bar)
+            dot = tk.Canvas(stat, width=STAT_DOT, height=STAT_DOT, background=theme.BG, highlightthickness=0)
+            color = theme.STAT_COLORS[name]
+            dot.create_oval(0, 0, STAT_DOT - 1, STAT_DOT - 1, fill=color, outline=color)
+            dot.pack(side="left", padx=(0, 6))
+            ttk.Label(stat, textvariable=var, style=f"{name}.Stat.TLabel").pack(side="left")
+            ttk.Label(stat, text=caption, style="Stat.TLabel").pack(side="left", padx=(4, 0), pady=(3, 0))
+            stat.pack(side="left", padx=(0, 16))
+        self.reset_btn = ttk.Button(
+            self.counters_bar,
+            text="Сбросить",
+            image=(self.ui_icons.get("x", "muted", 16), "active", self.ui_icons.get("x", "text", 16)),
+            compound="left",
+            style="Ghost.TButton",
+            command=self._reset_counters,
+        )
+        self.reset_btn.pack(side="left")
+        Hint(self.reset_btn, "Обнулить счётчики")
         self.counters_bar.pack(side="right")
 
     def _update_counters(self) -> None:
-        self.found_var.set(f"Найдено: {self.tracker.found}")
-        self.reacted_var.set(f"Отреагировал: {self.tracker.reacted}")
-        self.missed_var.set(f"Пропущено: {self.tracker.missed}")
+        self.found_var.set(str(self.tracker.found))
+        self.reacted_var.set(str(self.tracker.reacted))
+        self.missed_var.set(str(self.tracker.missed))
 
     def _reset_counters(self) -> None:
         self.tracker.reset()

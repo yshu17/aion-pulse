@@ -36,7 +36,9 @@ def test_rounded_theme_uses_image_elements(root):
     assert first_element(style, "TCombobox") == "Rounded.field"
     assert first_element(style, "Card.TFrame") == "Card.border"
     assert first_element(style, "TNotebook.Tab") == "Rounded.tab"
-    assert first_element(style, "Found.Counter.TLabel") == "Pill.border"
+    assert first_element(style, "Live.Chip.TLabel") == "Pill.border"
+    assert first_element(style, "Found.Stat.TLabel") != "Pill.border"  # UI/UX item 10: a statistic has no ground
+    assert first_element(style, "Ghost.TButton") == "Ghost.Rounded.border"
 
 
 def test_without_images_theme_stays_flat(root, tmp_path):
@@ -66,7 +68,8 @@ PAIRS = [
     (theme.MUTED, theme.BG, TEXT_AA, "labels"),
     (theme.MUTED, theme.SURFACE_2, TEXT_AA, "labels on fields"),
     (theme.DANGER, theme.SURFACE_2, TEXT_AA, "«Пропущено» counter"),
-    (theme.DANGER, theme.BG, TEXT_AA, "warning label"),
+    (theme.DANGER, theme.BG, TEXT_AA, "warning label, «пропущено» number"),
+    (theme.SUCCESS, theme.BG, TEXT_AA, "«отреагировал» number"),
     ("#ffffff", theme.DANGER_FILL, TEXT_AA, "Stop button"),
     ("#ffffff", theme.DANGER_FILL_HOVER, TEXT_AA, "Stop button, hover"),
     (theme.ACCENT_TEXT, theme.ACCENT, TEXT_AA, "Start button"),

@@ -364,7 +364,7 @@ def test_nag_rows_accept_counts_reacted_and_silences(tmp_path):
         say("A", "B")
         assert calls == [("ring", False, 2)]  # popup is off by default
         assert counters(app) == (2, 0, 0)
-        assert app.found_var.get() == "Найдено: 2"
+        assert app.found_var.get() == "2"
         first, second = app.tracker.pending_ids
         app.feed.boxes[first].invoke()
         assert counters(app) == (2, 1, 0)
@@ -372,7 +372,7 @@ def test_nag_rows_accept_counts_reacted_and_silences(tmp_path):
         app.feed.boxes[second].invoke()
         assert counters(app) == (2, 2, 0)
         assert calls[-1] == ("close",)
-        assert app.reacted_var.get() == "Отреагировал: 2"
+        assert app.reacted_var.get() == "2"
         app.stop()
     finally:
         root.destroy()
@@ -387,7 +387,7 @@ def test_unaccepted_rows_expire_to_missed(tmp_path):
         app._ui_tick(now=app.tracker._pending[alert_id].created + 31)
         assert counters(app) == (1, 0, 1)
         assert app.feed.countdowns[alert_id].cget("text") == "пропущено"
-        assert app.missed_var.get() == "Пропущено: 1"
+        assert app.missed_var.get() == "1"
         assert calls[-1] == ("close",)
         app.stop()
     finally:
@@ -425,7 +425,7 @@ def test_counters_always_shown_and_reset(tmp_path):
         say("A")
         assert counters(app) == (1, 0, 0)
         app._reset_counters()
-        assert app.found_var.get() == "Найдено: 0"
+        assert app.found_var.get() == "0"
         app.stop()
     finally:
         root.destroy()

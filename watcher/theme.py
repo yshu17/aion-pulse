@@ -29,6 +29,7 @@ SUCCESS = "#5fd38d"  # «Слежу», «Отреагировал»: 7.75 on SUR
 WARNING = "#f5b544"  # «Игра не запущена», «Chat.log не найден»: 8.02 on SURFACE_2 — AAA
 DANGER_FILL = "#c9363b"  # Stop button fill: white text 5.15 — AA (was #e5484d, 3.91)
 DANGER_FILL_HOVER = "#d13b40"  # its hover: white text 4.76 — AA (was #f06a6e, 3.00)
+STAT_COLORS = {"Found": TEXT, "Reacted": SUCCESS, "Missed": DANGER}  # header statistics: dot and number
 ACCENT_SUBTLE = "#3a2810"  # a quiet orange ground: ACCENT text on it 6.05 — AA
 # a match in the chat (UI/UX item 9): orange bold words on the quiet ground plus a 3 px stripe at the line's left,
 # instead of a solid orange block — still easy to spot, and the text stays readable
@@ -371,14 +372,20 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     for name, color in (("Idle", MUTED), ("Live", SUCCESS), ("Warn", WARNING), ("Error", DANGER)):
         style.configure(f"{name}.Chip.TLabel", background=SURFACE_2, foreground=color,
                         font=font("control_strong"), padding=(12, 6))
-    for name, color in (("Found", TEXT), ("Reacted", SUCCESS), ("Missed", DANGER)):
-        style.configure(
-            f"{name}.Counter.TLabel",
-            background=SURFACE_2,
-            foreground=color,
-            font=font("body_strong"),
-            padding=(14, 6),
-        )
+    # counters are statistics, not buttons (UI/UX item 10): no ground, a coloured dot, a large number, a caption
+    style.configure("Stat.TLabel", background=BG, foreground=MUTED, font=font("caption"))
+    for name, color in STAT_COLORS.items():
+        style.configure(f"{name}.Stat.TLabel", background=BG, foreground=color, font=font("title"))
+    # ghost button: no ground until hovered — still an action, quieter than the stats next to it
+    style.configure("Ghost.TButton", background=BG, foreground=MUTED, bordercolor=BG, lightcolor=BG, darkcolor=BG,
+                    padding=(10, 6))
+    style.map(
+        "Ghost.TButton",
+        foreground=[("disabled", DISABLED), ("active", TEXT)],
+        background=[("pressed", SURFACE_3), ("active", SURFACE_2)],
+        lightcolor=[("active", SURFACE_2)],
+        darkcolor=[("active", SURFACE_2)],
+    )
     style.layout("Plain.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Plain.TCheckbutton", background=BG, foreground=TEXT, padding=(0, 0))
     style.map("Plain.TCheckbutton", background=[("active", BG)], foreground=[("selected", ACCENT)])
@@ -440,6 +447,18 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             ]})],
         )
     style.configure("Card.TButton", background=SURFACE, foreground=TEXT, padding=(14, 6))
+    # ghost button: transparent until hovered, then the ordinary button's rounded ground
+    hover = img("btn_active")
+    blank = tk.PhotoImage(master=root, width=hover.width(), height=hover.height())  # fully transparent
+    _images.append(blank)
+    style.element_create("Ghost.Rounded.border", "image", blank, ("pressed", hover), ("active", hover),
+                         border=edge, sticky="nswe", padding=inner)
+    style.layout(
+        "Ghost.TButton",
+        [("Ghost.Rounded.border", {"sticky": "nswe", "children": [
+            ("Button.padding", {"sticky": "nswe", "children": [("Button.label", {"sticky": "nswe"})]})
+        ]})],
+    )
     style.map("Card.TButton", foreground=[("disabled", DISABLED)])
     for name, base, hover in (("Accent", "accent", "accent_active"), ("Danger", "danger", "danger_active")):
         element(f"{name}.Rounded.border", base, [("pressed", base), ("active", hover)], edge, inner)
@@ -506,8 +525,7 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     element("Group.border", "group", [], edge)
     style.layout("Group.TFrame", [("Group.border", {"sticky": "nswe"})])
     element("Pill.border", "pill", [], edge, inner)
-    for name in ("Found.Counter", "Reacted.Counter", "Missed.Counter", "Idle.Chip", "Live.Chip", "Warn.Chip",
-                 "Error.Chip"):
+    for name in ("Idle.Chip", "Live.Chip", "Warn.Chip", "Error.Chip"):
         style.layout(
             f"{name}.TLabel",
             [("Pill.border", {"sticky": "nswe", "children": [
