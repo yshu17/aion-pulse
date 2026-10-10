@@ -48,6 +48,19 @@ GRADE_COLORS = {
     "mythic": "#c77dff",
     "finality": "#ff6b6b",
 }
+
+
+def mix(color: str, ground: str, share: float) -> str:
+    """color laid over ground at share (0–1) opacity, as a #rrggbb colour."""
+    a = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
+    b = [int(ground[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#%02x%02x%02x" % tuple(round(x * share + y * (1 - share)) for x, y in zip(a, b))
+
+
+# grade filter chips (UI/UX item 13): «on» — a quiet ground of the grade colour, its text and a 1 px outline in
+# that colour; «off» — no ground, MUTED text, BORDER_CONTROL outline; grade text on its ground ≥ 4.57 — AA
+GRADE_CHIP_SHARE = 0.18
+GRADE_SUBTLE = {grade: mix(color, SURFACE, GRADE_CHIP_SHARE) for grade, color in GRADE_COLORS.items()}
 RADIUS = 9  # buttons, fields, tabs, counters (images drawn by tools/build_ui.py)
 CARD_RADIUS = 12  # cards (feed, item list)
 

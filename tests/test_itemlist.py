@@ -188,3 +188,23 @@ def test_grade_chips_toggle(root):
     assert "1000" not in lst.visible
     lst._toggle_grade("rare")
     assert lst.filter.grades == set()  # all on again = no grade filter
+
+
+def test_grade_chip_states_on_off_disabled(root):
+    lst, _ = make(root)
+    chip = lst.grade_chips["epic"]
+    assert lst.chip_state("epic") == "on"
+    assert chip.cget("background") == theme.GRADE_SUBTLE["epic"] and chip.cget("foreground") == theme.ACCENT
+    assert chip.cget("highlightbackground") == theme.ACCENT  # outline: the state is not told by hue alone
+    lst._toggle_grade("epic")
+    assert lst.chip_state("epic") == "off"
+    assert chip.cget("background") == theme.SURFACE and chip.cget("foreground") == theme.MUTED
+    assert chip.cget("highlightbackground") == theme.BORDER_CONTROL
+    lst._hover_chip("epic")
+    assert chip.cget("foreground") == theme.TEXT  # hover answers on an «off» chip
+    lst._hover_chip(None)
+    lst.set_enabled(False)
+    assert lst.chip_state("epic") == "disabled" and chip.cget("foreground") == theme.DISABLED
+    grades = set(lst.filter.grades)
+    lst._toggle_grade("epic")
+    assert lst.filter.grades == grades  # a disabled list ignores the chips

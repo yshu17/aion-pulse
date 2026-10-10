@@ -192,6 +192,8 @@ class ItemList(ttk.Frame):
     def set_enabled(self, enabled: bool) -> None:
         """Disabled: checkboxes do nothing and the rows are dimmed (search and folding still work)."""
         self.enabled = enabled
+        if hasattr(self, "grade_chips"):
+            self._paint_chips()
         self.render()
 
     def scroll(self, steps: int) -> None:
@@ -272,13 +274,16 @@ class ItemList(ttk.Frame):
         bar = ttk.Frame(self, style="Surface.TFrame")
         bar.pack(fill="x", padx=(0, 8), pady=(8, 0))
         self.grade_chips: dict[str, tk.Label] = {}
+        self._chip_hover: str | None = None
         for grade in self.grades:
             chip = tk.Label(
-                bar, text=GRADE_LABELS.get(grade, grade), background=theme.SURFACE_2,
-                font=self.small, padx=8, pady=3, cursor="hand2",
+                bar, text=GRADE_LABELS.get(grade, grade), background=theme.SURFACE,
+                font=self.small, padx=8, pady=3, cursor="hand2", borderwidth=0, highlightthickness=1,
             )
             chip.pack(side="left", padx=(0, 4))
             chip.bind("<Button-1>", lambda _e, g=grade: self._toggle_grade(g))
+            chip.bind("<Enter>", lambda _e, g=grade: self._hover_chip(g))
+            chip.bind("<Leave>", lambda _e: self._hover_chip(None))
             self.grade_chips[grade] = chip
         row = ttk.Frame(self, style="Surface.TFrame")
         row.pack(fill="x", padx=(0, 8), pady=(6, 0))
@@ -306,15 +311,40 @@ class ItemList(ttk.Frame):
 
     def _sync_filter_widgets(self) -> None:
         f = self.filter
-        for grade, chip in self.grade_chips.items():
-            on = not f.grades or grade in f.grades
-            chip.configure(foreground=theme.GRADE_COLORS.get(grade, theme.TEXT) if on else theme.DISABLED,
-                           background=theme.SURFACE_3 if on else theme.SURFACE_2)
+        self._paint_chips()
         self.level_min_var.set(str(f.level_min) if f.level_min else ANY_LEVEL)
         self.level_max_var.set(str(f.level_max) if f.level_max else ANY_LEVEL)
         self.type_var.set(f.type or ALL_TYPES)
 
+    def chip_state(self, grade: str) -> str:
+        """«on» (the grade is shown), «off» or «disabled» (the item list is not used by the search mode)."""
+        if not self.enabled:
+            return "disabled"
+        return "on" if not self.filter.grades or grade in self.filter.grades else "off"
+
+    def _paint_chips(self) -> None:
+        """UI/UX item 13: on — quiet ground + grade colour + outline; off — outline and MUTED text, never «dead»."""
+        for grade, chip in self.grade_chips.items():
+            state = self.chip_state(grade)
+            color = theme.GRADE_COLORS.get(grade, theme.TEXT)
+            hover = self._chip_hover == grade and state != "disabled"
+            if state == "on":
+                ground, text, outline = theme.GRADE_SUBTLE.get(grade, theme.SURFACE_2), color, color
+            elif state == "off":
+                ground, text, outline = theme.SURFACE, theme.TEXT if hover else theme.MUTED, (
+                    theme.TEXT if hover else theme.BORDER_CONTROL)
+            else:
+                ground, text, outline = theme.SURFACE, theme.DISABLED, theme.SURFACE_3
+            chip.configure(background=ground, foreground=text, highlightbackground=outline, highlightcolor=outline,
+                           cursor="hand2" if state != "disabled" else "")
+
+    def _hover_chip(self, grade: str | None) -> None:
+        self._chip_hover = grade
+        self._paint_chips()
+
     def _toggle_grade(self, grade: str) -> None:
+        if not self.enabled:
+            return
         shown = set(self.filter.grades or self.grades)
         shown ^= {grade}
         grades = set() if shown >= set(self.grades) else shown

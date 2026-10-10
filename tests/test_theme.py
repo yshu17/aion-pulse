@@ -156,3 +156,10 @@ def test_selected_tab_keeps_its_padding_and_has_an_accent_bar(root):
     middle = image.width // 2
     assert image.getpixel((middle, image.height - 1)) == accent
     assert image.getpixel((middle, image.height - 3)) != accent  # 2 px, not more
+
+
+def test_grade_chip_text_on_its_quiet_ground_meets_aa():
+    for grade in ("finality", "mythic", "epic", "unique", "legend"):
+        ratio = contrast(theme.GRADE_COLORS[grade], theme.GRADE_SUBTLE[grade])
+        assert ratio >= 4.5, f"{grade}: {ratio:.2f}"
+    assert contrast(theme.MUTED, theme.SURFACE) >= 4.5 and contrast(theme.BORDER_CONTROL, theme.SURFACE) >= 3
