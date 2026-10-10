@@ -150,16 +150,39 @@ def build(objects: list[dict], entities: list[dict], zones: set[str], gather: bo
     return {"version": 1, "types": types, "zones": out}
 
 
-def service_points(rows: list[dict], zone_ids: dict[str, str]) -> dict[str, list[dict]]:
+OWNER_PAIR_M = 3.0  # an Elyos and an Asmodian NPC of one function this close: one spot, the owner's NPC stands
+OWNER_NOTE = {"dark": "Стоит, когда крепостью владеют асмодиане.", "light": "Стоит, когда крепостью владеют элийцы."}
+SIDES = {"pc_dark": "dark", "pc_light": "light"}
+
+
+def service_points(rows: list[dict], zone_ids: dict[str, str],
+                   races: dict[str, str] | None = None) -> dict[str, list[dict]]:
     """Functional NPCs from the client's world XML (client_world_<zone>.xml <npc_info>, the list the game's own map
-    and NPC search use; client_extract/raw/npc_service_coords.tsv by Codex). x / y are game coordinates."""
+    and NPC search use; client_extract/raw/npc_service_coords.tsv by Codex). x / y are game coordinates.
+
+    races: npc id -> race_type (client_npcs.tsv). Fortress NPCs come in pairs at one spot — an Elyos one and an
+    Asmodian one, and the game spawns only the owner's (4 NPCs at a fortress in the game, 8 in the client list).
+    Both are kept with "side": "dark" / "light"; the map shows the side picked by the user."""
+    races = races or {}
     out: dict[str, list[dict]] = {}
     for row in rows:
         type_ = FUNCTIONS.get(row.get("function_type", ""))
         map_id = zone_ids.get(row.get("zone", ""))
         if type_ and map_id:
             out.setdefault(map_id, []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(float(row["x"]), 1),
-                                               "gy": round(float(row["y"]), 1), "name": row.get("russian_name", "")})
+                                               "gy": round(float(row["y"]), 1), "name": row.get("russian_name", ""),
+                                               "_side": SIDES.get(races.get(row.get("npc_id", ""), "").lower(), "")})
+    for points in out.values():
+        light = [p for p in points if p["_side"] == "light"]
+        for dark in (p for p in points if p["_side"] == "dark"):
+            twin = next((p for p in light if "side" not in p and p["t"] == dark["t"]
+                         and math.hypot(p["gx"] - dark["gx"], p["gy"] - dark["gy"]) < OWNER_PAIR_M), None)
+            if twin is not None:
+                for p in (dark, twin):
+                    p["side"] = p["_side"]
+                    p["note"] = OWNER_NOTE[p["side"]]
+        for p in points:
+            del p["_side"]
     return out
 
 
@@ -266,13 +289,14 @@ def quest_points(quests: dict[str, dict], links: list[dict], spawns: dict[str, l
         kinds = {QUEST_KINDS.get(q["category"].split("|")[0].strip(), "quest_give") for q in given}
         type_ = next(t for t in QUEST_ORDER if t in kinds)
         titles = sorted({q["name_ru"] for q in given})
-        elyos = all(q.get("race", "").strip() == "pc_light" for q in given)  # an Asmodian cannot take them
-        note = f"{'Элийские задания' if elyos else 'Задания'} ({len(titles)}): " + "; ".join(titles[:QUEST_NOTE_MAX]) + ("; …" if len(titles) > QUEST_NOTE_MAX else "")
+        races = {q.get("race", "").strip() for q in given}
+        side = SIDES.get(races.pop(), "") if len(races) == 1 else ""  # «pc_light pc_dark» quests: both sides
+        note = f"{'Элийские задания' if side == 'light' else 'Задания'} ({len(titles)}): " + "; ".join(titles[:QUEST_NOTE_MAX]) + ("; …" if len(titles) > QUEST_NOTE_MAX else "")
         for code, gx, gy in spawns.get(npc, []):
             if code in zone_ids:
                 out.setdefault(zone_ids[code], []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(gx, 1),
                                                            "gy": round(gy, 1), "name": names.get(npc, ""),
-                                                           "note": note})
+                                                           "note": note, **({"side": side} if side else {})})
     return out
 
 
@@ -313,7 +337,8 @@ def main() -> int:
     zone_ids = {row["zone"]: row["map_id"] for row in objects if row["map_id"] in zones}
     service = source / "raw" / "npc_service_coords.tsv"
     if service.is_file():
-        print(f"client world xml: {merge(data, service_points(read_tsv(service), zone_ids))} functional NPCs")
+        races = {r["npc_id"]: r["race_type"] for r in read_tsv(source / "client_npcs.tsv")}
+        print(f"client world xml: {merge(data, service_points(read_tsv(service), zone_ids, races))} functional NPCs")
     sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(ROOT / "tools"))
     from watcher.mapview import load_labels

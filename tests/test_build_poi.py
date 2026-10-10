@@ -84,6 +84,25 @@ def test_functional_npcs_only_from_the_world_xml_and_neighbours_kept():
     assert data["types"]["bindstone"]["name"] == "Кибелиск"
 
 
+def test_fortress_npcs_of_both_sides_at_one_spot_are_marked_by_side():
+    service = [  # Запечатанная башня: the client lists both sides' NPCs, the game spawns the owner's only
+        {"zone": "df4", "npc_id": "799041", "russian_name": "Бецария", "function_type": "Warehouse", "x": "1100", "y": "900"},
+        {"zone": "df4", "npc_id": "799303", "russian_name": "Инсидра", "function_type": "Warehouse", "x": "1100.5", "y": "900"},
+        {"zone": "df4", "npc_id": "799040", "russian_name": "Мадония", "function_type": "Merchant", "x": "1110", "y": "900"},
+        {"zone": "df4", "npc_id": "799302", "russian_name": "Иссейм", "function_type": "Merchant", "x": "1110.4", "y": "900"},
+        {"zone": "df4", "npc_id": "799202", "russian_name": "Сэти", "function_type": "Merchant", "x": "500", "y": "500"},
+        {"zone": "df4", "npc_id": "799367", "russian_name": "Никорун", "function_type": "Merchant", "x": "501", "y": "500"},
+    ]
+    races = {"799041": "PC_Light", "799303": "pc_dark", "799040": "PC_Light", "799302": "pc_dark",
+             "799202": "pc_dark", "799367": "pc_dark"}  # two Asmodian merchants side by side: both stay
+    points = build_poi.service_points(service, {"df4": "220070000"}, races)["220070000"]
+    assert len(points) == 6  # both sides stay, marked; the map shows the side the user picked
+    sides = {p["name"]: p.get("side") for p in points}
+    assert sides == {"Бецария": "light", "Инсидра": "dark", "Мадония": "light", "Иссейм": "dark",
+                     "Сэти": None, "Никорун": None}  # two Asmodian merchants side by side: no pair
+    assert next(p for p in points if p["name"] == "Инсидра")["note"] == "Стоит, когда крепостью владеют асмодиане."
+
+
 def test_siege_fortresses_from_gate_controls_named_by_the_nearest_area():
     entities = [
         {"map_id": "220070000", "entity_class": "PlaceableObject", "name": "Ab1_3021_Gatecontrol_1",
@@ -174,3 +193,4 @@ def test_quest_givers_placed_from_the_client_one_point_per_npc():
                      "race": "pc_light"}
     elyos = build_poi.quest_points(quests, [{"quest_id": "104", "start_npc_id": "7"}], spawns, zone_ids, {})
     assert elyos["220020000"][0]["note"] == "Элийские задания (1): Для элийцев"
+    assert elyos["220020000"][0]["side"] == "light" and "side" not in morheim[1]  # Morheim quests: no race given

@@ -28,6 +28,8 @@ ZOOM_STEP = 1.25
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
 # map themes: the game map (newmap) or the client's radar map («Рельеф»), the choice is kept in config.json
 THEMES = {"game": "Игра", "relief": "Рельеф"}
+# whose NPCs the map shows where the two sides differ: fortress NPCs (the owner's stand) and quest givers
+SIDES = {"dark": "Асмодиане", "light": "Элийцы"}
 
 # Silentera Tunnel entrances only (tools/build_poi.py).
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
@@ -148,6 +150,8 @@ class MapView(ttk.Frame):
         on_show_quests: Callable[[bool], None] | None = None,
         map_theme: str = "game",
         on_theme: Callable[[str], None] | None = None,
+        side: str = "dark",
+        on_side: Callable[[str], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.zones = zones
@@ -156,6 +160,8 @@ class MapView(ttk.Frame):
         self.on_show_quests = on_show_quests or (lambda _on: None)
         self.theme = map_theme if map_theme in THEMES else "game"
         self.on_theme = on_theme or (lambda _theme: None)
+        self.side = side if side in SIDES else "dark"
+        self.on_side = on_side or (lambda _side: None)
         self.layers: set[str] = set()
         self._set_layers(show_quests)
         self._poi_icons: dict[tuple[str, int], object] = {}
@@ -197,6 +203,11 @@ class MapView(ttk.Frame):
         self.search_entry.bind("<Shift-Return>", lambda _e: self._search(-1))
         self.search_entry.bind("<Escape>", lambda _e: self.search_var.set(""))
         self.search_entry.bind("<KeyRelease>", self._on_search_key)
+        self.side_var = tk.StringVar(value=SIDES[self.side])
+        self.side_box = ttk.Combobox(bar, textvariable=self.side_var, values=list(SIDES.values()), state="readonly",
+                                     width=11)
+        self.side_box.pack(side="left", padx=(12, 0))
+        self.side_box.bind("<<ComboboxSelected>>", lambda _e: self._on_side_selected())
         self.quests_var = tk.BooleanVar(value=show_quests)
         if any(t in self.poi.types for t in QUEST_TYPES):
             ttk.Checkbutton(bar, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
@@ -453,7 +464,7 @@ class MapView(ttk.Frame):
         """Closest teleporter, warehouse, merchant, … around a game position, for the card."""
         out = []
         for type_ in NEARBY_TYPES:
-            candidates = [p for p in self.poi.in_zone(zone, {type_}) if p != exclude]
+            candidates = [p for p in self.poi.in_zone(zone, {type_}, self.side) if p != exclude]
             if not candidates:
                 continue
             best = min(candidates, key=lambda p: math.hypot(p.gx - gx, p.gy - gy))
@@ -512,7 +523,7 @@ class MapView(ttk.Frame):
             return ""
         if step == 0 or query != self._match_query:
             words = normalize(query).split()
-            points = self.poi.search(self.zone.map_id, query, self.layers)
+            points = self.poi.search(self.zone.map_id, query, self.layers, self.side)
             areas = [(x, y, text) for x, y, text, _level in self.zone.labels
                      if all(w in normalize(text) for w in words)]
             self._matches = list(points) + areas
@@ -537,6 +548,21 @@ class MapView(ttk.Frame):
     def _set_layers(self, show_quests: bool) -> None:
         shown = SHOWN_TYPES + (QUEST_TYPES if show_quests else ())
         self.layers = {t for t in shown if t in self.poi.types}
+
+    def _on_side_selected(self) -> None:
+        """«Асмодиане» / «Элийцы»: fortress NPCs of that side (as if it owned the fortresses) and its quest givers."""
+        self.side = next(key for key, name in SIDES.items() if name == self.side_var.get())
+        if self.selected is not None and self.selected.side and self.selected.side != self.side:
+            self.selected = None
+            self._stop_blink(redraw=False)
+            self.point_card.clear()
+        elif self.selected is not None:  # «Рядом» lists that side's NPCs now
+            kind = self.poi.type_name(self.selected.type)
+            p = self.selected
+            self.point_card.show(kind, p.name or kind, p.gx, p.gy, p.note, self.nearby(p.zone, p.gx, p.gy, p))
+        self._match_query = ""
+        self.on_side(self.side)
+        self._schedule_render()
 
     def _on_quests_toggled(self) -> None:
         """«Задания» check box: NPCs with quests (from aiondb links, see tools/build_poi.py) on or off."""
@@ -600,7 +626,7 @@ class MapView(ttk.Frame):
         self._spots = {}
         if self.zone is None or not self.layers:
             return
-        points = self.poi.in_zone(self.zone.map_id, self.layers)
+        points = self.poi.in_zone(self.zone.map_id, self.layers, self.side)
         if self.zoom >= SPLIT_ZOOM:
             groups = self._split(points)
         else:

@@ -287,6 +287,8 @@ class App:
             on_show_quests=self._on_map_quests,
             map_theme=self.cfg.map_theme,
             on_theme=self._on_map_theme,
+            side=self.cfg.map_side,
+            on_side=self._on_map_side,
         )
         self.map_view.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.map_view, text="Карта")
@@ -723,6 +725,10 @@ class App:
 
     def _on_map_theme(self, theme: str) -> None:
         self.cfg.map_theme = theme
+        save_config(self.config_path, self.cfg)
+
+    def _on_map_side(self, side: str) -> None:
+        self.cfg.map_side = side
         save_config(self.config_path, self.cfg)
 
     def _remember_places(self, msg: ChatMessage) -> None:

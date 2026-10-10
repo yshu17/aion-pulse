@@ -332,6 +332,28 @@ def test_click_rings_the_point_search_and_jumps_blink_first(root):
     assert view._blink_target is None
 
 
+def test_side_switch_shows_that_sides_fortress_npcs_and_quest_givers(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    saved = []
+    view = MapView(root, zones(), poi=store, side="dark", on_side=saved.append)
+    view.open_zone("220070000")
+    names = lambda: {p.name for p in view.poi.in_zone("220070000", view.layers, view.side)}  # noqa: E731
+    assert {"Инсидра", "Иссейм"} <= names() and not {"Бецария", "Мадония"} & names()  # Запечатанная башня
+    tower = next(p for p in view.poi.in_zone("220070000", {"fortress"}) if p.name == "Запечатанная башня")
+    view.select(tower)
+    assert "Инсидра" in {name for _t, name, _m in view.point_card.rows}
+    view.side_var.set("Элийцы")
+    view._on_side_selected()
+    assert saved == ["light"] and view.side == "light"
+    assert "Бецария" in {name for _t, name, _m in view.point_card.rows}  # the card's «Рядом» follows the side
+    assert {"Бецария", "Мадония"} <= names() and not {"Инсидра", "Иссейм"} & names()
+    elyos = [p for p in view.poi.in_zone("210050000", {"quest_give", "quest_important"}, "light") if p.side == "light"]
+    assert elyos and not [p for p in view.poi.in_zone("210050000", {"quest_give"}, "dark") if p.side == "light"]
+    assert view.search("инсидра", 0) == "нет"  # the other side is not found either
+
+
 def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):
     from watcher.mapview import load_icon
 
