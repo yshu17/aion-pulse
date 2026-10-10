@@ -197,7 +197,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.configure(
         "Title.TLabel",
         background=SURFACE,
-        foreground=ACCENT,
+        foreground=TEXT,  # UI/UX item 7: headings are neutral; orange means «important» or «selected» only
         font=font("title"),
     )
     style.configure(
@@ -251,7 +251,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         fieldbackground=SURFACE_2,
         background=SURFACE_2,
         foreground=TEXT,
-        arrowcolor=ACCENT,
+        arrowcolor=MUTED,  # neutral arrow; lighter on hover (item 7)
         bordercolor=BORDER_CONTROL,
         lightcolor=SURFACE_2,
         darkcolor=SURFACE_2,
@@ -264,6 +264,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         selectbackground=[("readonly", SURFACE_2)],
         selectforeground=[("readonly", TEXT)],
         bordercolor=[("focus", ACCENT), ("hover", SURFACE_3)],
+        arrowcolor=[("active", TEXT), ("hover", TEXT)],
         background=[("active", SURFACE_3)],
     )
     root.option_add("*TCombobox*Listbox.background", SURFACE_2)
