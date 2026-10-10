@@ -29,6 +29,7 @@ ZOOM_STEP = 1.25
 # Silentera Tunnel entrances only (tools/build_poi.py).
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
                "fortress", "artifact", "dungeon", "portal")
+QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests; a check box shows / hides them
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 SPLIT_ZOOM = MAX_ZOOM / ZOOM_STEP * 0.999  # the last two zoom levels: no count badges, every point its own icon
 SPLIT_ROW = 4  # icons per row when a group is laid out side by side
@@ -130,12 +131,16 @@ class MapView(ttk.Frame):
         get_places: Callable[[], Iterable[Place]] = list,
         poi: PoiStore | None = None,
         icons_dir: Path | None = None,
+        show_quests: bool = True,
+        on_show_quests: Callable[[bool], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.zones = zones
         self.poi = (poi or PoiStore({}, {})).projected({map_id: z.to_image for map_id, z in zones.items()})
         self.icons_dir = icons_dir or Path(".")
-        self.layers: set[str] = {t for t in SHOWN_TYPES if t in self.poi.types}
+        self.on_show_quests = on_show_quests or (lambda _on: None)
+        self.layers: set[str] = set()
+        self._set_layers(show_quests)
         self._poi_icons: dict[tuple[str, int], object] = {}
         self._drawn: list[tuple[float, float, list[Poi]]] = []
         self._spots: dict[Poi, tuple[float, float]] = {}  # where each single point's icon was drawn
@@ -171,6 +176,10 @@ class MapView(ttk.Frame):
         self.search_entry.bind("<Shift-Return>", lambda _e: self._search(-1))
         self.search_entry.bind("<Escape>", lambda _e: self.search_var.set(""))
         self.search_entry.bind("<KeyRelease>", self._on_search_key)
+        self.quests_var = tk.BooleanVar(value=show_quests)
+        if any(t in self.poi.types for t in QUEST_TYPES):
+            ttk.Checkbutton(bar, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
+                            command=self._on_quests_toggled).pack(side="left", padx=(12, 0))
         self.title = ttk.Label(bar, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
         for text, command in (
@@ -402,7 +411,7 @@ class MapView(ttk.Frame):
         """Show a point in the card (and ring it on the map)."""
         self.selected = poi
         kind = self.poi.type_name(poi.type)
-        self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, "", self.nearby(poi.zone, poi.gx, poi.gy, poi))
+        self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, poi.note, self.nearby(poi.zone, poi.gx, poi.gy, poi))
         if centre:
             self.center_on(poi.x, poi.y)
         else:
@@ -464,6 +473,21 @@ class MapView(ttk.Frame):
             self.point_card.coords.configure(text="")
             self.center_on(x, y)
         return f"{self._match_index + 1} / {len(self._matches)}"
+
+    def _set_layers(self, show_quests: bool) -> None:
+        shown = SHOWN_TYPES + (QUEST_TYPES if show_quests else ())
+        self.layers = {t for t in shown if t in self.poi.types}
+
+    def _on_quests_toggled(self) -> None:
+        """«Задания» check box: NPCs with quests (from aiondb links, see tools/build_poi.py) on or off."""
+        on = bool(self.quests_var.get())
+        self._set_layers(on)
+        if self.selected is not None and self.selected.type not in self.layers:
+            self.selected = None
+            self.point_card.clear()
+        self._match_query = ""
+        self.on_show_quests(on)
+        self._schedule_render()
 
     def _search(self, step: int) -> str:
         """Search box: next (1) / previous (-1) / first (0) match; shows «2 / 7» or «нет»."""

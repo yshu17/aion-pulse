@@ -39,6 +39,10 @@ ICONS = {
     "postbox": ("sprite", "v4_radar_postbox_icon"),
     "bindstone": ("sprite", "v4_radar_bindstone_icon"),
     "quest_point": ("sprite", "v4_radar_quest_icon_zonemap"),
+    # NPCs with a quest to give, as the game's map marks them
+    "quest_give": ("sprite", "v4_radar_quest_give_icon_zonemap"),
+    "quest_important": ("sprite", "v4_radar_important_quest_give_icon_zonemap"),
+    "quest_event": ("sprite", "v4_radar_event_quest_give_icon_zonemap"),
     "artifact": ("client", "abyss_artifact.png"),
     "fortress": ("client", "abyss_fortress.png"),
     "dungeon": ("client", "abyss_indun.png"),

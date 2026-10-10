@@ -49,7 +49,16 @@ TYPES = {
     "gather_shell": ("gather", "Ракушки"),
     "gather_other": ("gather", "Прочий сбор"),
     "quest_point": ("quest", "Точка задания"),
+    "quest_give": ("quest", "Задание"),
+    "quest_important": ("quest", "Важное задание"),
+    "quest_event": ("quest", "Событие"),
 }
+QUEST_MAX_LEVEL = 55  # version 2.0: later quests are left out
+# client quest category1 -> map type; the most important type of an NPC's quests picks its icon
+QUEST_KINDS = {"important": "quest_important", "significant": "quest_important", "mission": "quest_important",
+               "event": "quest_event"}
+QUEST_ORDER = ["quest_important", "quest_give", "quest_event"]
+QUEST_NOTE_MAX = 6
 FUNCTIONS = {
     "Teleport": "teleport",
     "Warehouse": "warehouse",
@@ -88,8 +97,6 @@ def classify_object(row: dict) -> str | None:
         return "direct_portal"
     if kind == "HSP":
         return f"gather_{gather_kind(row.get('object_name', ''))}"
-    if kind in ("KP", "MP"):
-        return "quest_point"
     return None
 
 
@@ -190,6 +197,40 @@ def landmark_points(entities: list[dict], labels: dict[str, list[tuple[float, fl
     return out
 
 
+def world_npcs(text: str, code: str) -> list[tuple[str, str, float, float]]:
+    """<npc_info> of a client_world_<zone>.xml: (npc id, zone code, game x, game y) of every placed NPC."""
+    return [(nid, code, float(x), float(y)) for nid, x, y in re.findall(
+        r"<npc_info>.*?<nameid>(\d+)</nameid>.*?<x>([\d.]+)</x>\s*<y>([\d.]+)</y>", text, re.S)]
+
+
+def quest_points(quests: dict[str, dict], links: list[dict], spawns: dict[str, list[tuple[str, float, float]]],
+                 zone_ids: dict[str, str], names: dict[str, str]) -> dict[str, list[dict]]:
+    """NPCs that give quests, one point per placed NPC.
+
+    quests: our client's quests (quest_givers.tsv by Codex); links: quest -> start NPC from aiondb.ru
+    (downloads/aiondb_quests/quest_start_npc.tsv; the client has no such link); spawns: npc id -> where the client
+    places it. Kept: quests of our client up to level QUEST_MAX_LEVEL whose NPC the client places in a mapped zone.
+    """
+    by_npc: dict[str, list[dict]] = {}
+    for link in links:
+        quest = quests.get(link["quest_id"])
+        if quest is None or int(quest.get("min_level") or 0) > QUEST_MAX_LEVEL:
+            continue
+        by_npc.setdefault(link["start_npc_id"], []).append(quest)
+    out: dict[str, list[dict]] = {}
+    for npc, given in by_npc.items():
+        kinds = {QUEST_KINDS.get(q["category"].split("|")[0].strip(), "quest_give") for q in given}
+        type_ = next(t for t in QUEST_ORDER if t in kinds)
+        titles = sorted({q["name_ru"] for q in given})
+        note = f"Задания ({len(titles)}): " + "; ".join(titles[:QUEST_NOTE_MAX]) + ("; …" if len(titles) > QUEST_NOTE_MAX else "")
+        for code, gx, gy in spawns.get(npc, []):
+            if code in zone_ids:
+                out.setdefault(zone_ids[code], []).append({"t": type_, "x": 0.0, "y": 0.0, "gx": round(gx, 1),
+                                                           "gy": round(gy, 1), "name": names.get(npc, ""),
+                                                           "note": note})
+    return out
+
+
 def merge(data: dict, extra: dict[str, list[dict]], radius: float = SAME_SPOT_M) -> int:
     """Add points except exact repeats (same type and name within radius metres): two different NPCs standing
     next to each other (a teleporter and an ether ship) both stay. Returns how many were added.
@@ -243,6 +284,21 @@ def main() -> int:
     strings = dict(r[:2] for r in csv.reader(open(strings_path, encoding="utf-8"), delimiter="	") if len(r) >= 2)         if strings_path.is_file() else {}
     landmarks = landmark_points([e for e in entities if e["map_id"] in zones], labels, strings)
     print(f"fortresses and entrances: {merge(data, landmarks)}")
+    links_path = ROOT / "downloads" / "aiondb_quests" / "quest_start_npc.tsv"
+    quests_path = source / "raw" / "quest_givers.tsv"
+    if links_path.is_file() and quests_path.is_file():
+        quests = {r["quest_id"]: r for r in csv.DictReader(open(quests_path, encoding="utf-8-sig"), delimiter="\t")}
+        spawns: dict[str, list[tuple[str, float, float]]] = {}
+        for code in zone_ids:
+            world = source / "raw" / "Data" / "world" / "world" / f"client_world_{code}"
+            text = (world.with_suffix(".txt.xml").read_text(encoding="utf-8") if world.with_suffix(".txt.xml").is_file()
+                    else world.with_suffix(".xml").read_bytes().decode("utf-16", errors="replace"))
+            for nid, zone, gx, gy in world_npcs(text, code):
+                spawns.setdefault(nid, []).append((zone, gx, gy))
+        names = {r["npc_id"]: r["russian_name"] for r in read_tsv(source / "client_npcs.tsv")}
+        with open(links_path, encoding="utf-8", newline="") as f:
+            links = list(csv.DictReader(f, delimiter="\t"))
+        print(f"quest givers: {merge(data, quest_points(quests, links, spawns, zone_ids, names))}")
     out = ROOT / "data" / "maps" / "poi.json"
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     counts: dict[str, int] = {}

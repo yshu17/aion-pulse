@@ -98,3 +98,12 @@ def test_projected_recomputes_map_pixels_from_game_coordinates(store):
     other = moved.in_zone("210050000", {"teleport"})[0]
     assert (other.x, other.y) == (5, 5)  # no transform for this zone: kept as stored
 
+
+
+def test_point_note_is_loaded_and_kept(tmp_path):
+    path = tmp_path / "poi.json"
+    path.write_text(json.dumps({"types": {"quest_give": {"name": "Задание"}}, "zones": {Z: [
+        {"t": "quest_give", "x": 1, "y": 1, "gx": 1, "gy": 1, "name": "A", "note": "Задания (1): X"}]}}),
+        encoding="utf-8")
+    point = PoiStore.load(path).projected({Z: lambda gx, gy: (gx, gy)}).in_zone(Z, {"quest_give"})[0]
+    assert point.note == "Задания (1): X"

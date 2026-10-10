@@ -296,3 +296,23 @@ def test_teleporters_and_kisks_from_the_game_files(root):
     assert {"Раниу", "Нотуд", "Эфирный корабль", "Корабль до Пандемониума"} <= kelk
     assert len(view.poi.in_zone("220070000", {"teleport"})) == 6
     assert sum(len(store.in_zone(z, {"bindstone"})) for z in zones()) >= 30
+
+
+def test_quest_givers_toggle_and_card_lists_quests(root):
+    from watcher.poi import PoiStore
+
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    saved = []
+    view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons",
+                   show_quests=True, on_show_quests=saved.append)
+    quest_types = {"quest_give", "quest_important", "quest_event"}
+    assert quest_types & view.layers and view.quests_var.get() is True
+    giver = next(p for p in view.poi.in_zone("220070000", quest_types))
+    view.select(giver)
+    assert view.point_card.note.cget("text").startswith("Задания (")
+    view.quests_var.set(False)
+    view._on_quests_toggled()
+    assert not quest_types & view.layers and saved == [False]
+    assert view.search(giver.name, 0) in ("нет", "") or view.selected.type not in quest_types
+    hidden = MapView(root, zones(), poi=store, show_quests=False)
+    assert not quest_types & hidden.layers

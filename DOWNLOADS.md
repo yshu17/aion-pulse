@@ -20,6 +20,7 @@
 |---|---|---|
 | `downloads/kb_items/` | kb.aionempire.com, 08–09.10.2026 | список и страницы предметов → `data/watch_items.csv`, `item_specs.json.gz`, `icons/`, `item_names.tsv` |
 | `downloads/aiondb_maps/` | aiondb.ru `/local/templates/inn/images/maps/zones/<зона>.jpg` и страницы `/maps/<регион>/<зона>/npc/<тип>/`, 09.10.2026 | карты 9 зон (запасные — те же игровые), 258 NPC для проверки привязки |
+| `downloads/aiondb_quests/` | aiondb.ru, страницы заданий, 10.10.2026 | кто выдаёт задания (в клиенте этой связи нет) → NPC с заданиями на карте |
 | `downloads/aiondb_icons/` | aiondb.ru, 09.10.2026 | значки карты (SVG) → `data/maps/icons/` |
 | `client_extract/` | клиент игры (только чтение) | см. `client_extract/README.md`; полный отчёт распаковки — `client_extract/raw/REPORT.md` |
 

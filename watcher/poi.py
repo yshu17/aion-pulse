@@ -22,6 +22,7 @@ class Poi:
     gx: float  # game coordinates (1 unit ≈ 1 m)
     gy: float
     name: str
+    note: str = ""  # extra line for the card, e.g. the quests an NPC gives
 
 
 class PoiStore:
@@ -35,7 +36,8 @@ class PoiStore:
         try:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
             zones = {
-                zone: [Poi(zone, p["t"], p["x"], p["y"], p["gx"], p["gy"], p.get("name", "")) for p in points]
+                zone: [Poi(zone, p["t"], p["x"], p["y"], p["gx"], p["gy"], p.get("name", ""), p.get("note", ""))
+                       for p in points]
                 for zone, points in data.get("zones", {}).items()
             }
             return cls(dict(data.get("types", {})), zones)
@@ -50,7 +52,7 @@ class PoiStore:
         zones = {}
         for zone, points in self._zones.items():
             f = to_image.get(zone)
-            zones[zone] = [Poi(p.zone, p.type, *f(p.gx, p.gy), p.gx, p.gy, p.name) for p in points] if f else points
+            zones[zone] = [Poi(p.zone, p.type, *f(p.gx, p.gy), p.gx, p.gy, p.name, p.note) for p in points] if f else points
         return PoiStore(self.types, zones)
 
     def type_name(self, type_: str) -> str:

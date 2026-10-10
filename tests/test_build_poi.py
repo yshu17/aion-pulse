@@ -36,8 +36,8 @@ def test_classify_object():
     assert c(obj("Portal", "PortalVisArea_OP8")) is None  # CryEngine visibility portals, not the game's
     assert c(obj("DP", "DPDf1_DirectPortal3")) == "direct_portal"
     assert c(obj("HSP", "HSPDF1_Alder_herb2")) == "gather_herb"
-    assert c(obj("KP", "DF1_KeyPoints_Alder_3")) == "quest_point"
-    assert c(obj("MP", "Mappiont_DC1_SUB_C")) == "quest_point"
+    assert c(obj("KP", "DF1_KeyPoints_Alder_3")) is None  # mission key points: not the quest givers
+    assert c(obj("MP", "Mappiont_DC1_SUB_C")) is None
     assert c(obj("SP")) is None  # plain monster spawns are not a layer
     assert c(obj(function="Unknown_role")) is None
 
@@ -110,3 +110,25 @@ def test_silentera_entrances_are_the_portals():
     strings = {"STR_DIC_W_Underpass_SZ_S2": "Проход в тоннель Силентера;Вход в тоннель из Келькмароса."}
     named = build_poi.landmark_points(entities, labels, strings)
     assert {p["name"] for z in named.values() for p in z} == {"Проход в тоннель Силентера"}  # the client's string
+
+
+def test_quest_givers_placed_from_the_client_one_point_per_npc():
+    quests = {  # client quest.xml (Codex: quest_givers.tsv)
+        "100": {"quest_id": "100", "name_ru": "Первое", "min_level": "10", "category": "quest | Морхейм"},
+        "101": {"quest_id": "101", "name_ru": "Важное", "min_level": "12", "category": "important | Морхейм"},
+        "102": {"quest_id": "102", "name_ru": "Поздний мир", "min_level": "60", "category": "quest | Морхейм"},
+        "103": {"quest_id": "103", "name_ru": "Праздник", "min_level": "1", "category": "event | Ивент"},
+    }
+    links = [{"quest_id": "100", "start_npc_id": "7"}, {"quest_id": "101", "start_npc_id": "7"},
+             {"quest_id": "102", "start_npc_id": "8"},  # above level 55: not in the 2.0 range
+             {"quest_id": "103", "start_npc_id": "9"},
+             {"quest_id": "999", "start_npc_id": "9"},  # not in our client
+             {"quest_id": "100", "start_npc_id": "404"}]  # the NPC is not placed in the client
+    spawns = {"7": [("df2", 100.0, 200.0)], "8": [("df2", 1.0, 1.0)], "9": [("df2", 5.0, 5.0), ("dc1", 6.0, 6.0)]}
+    zone_ids = {"df2": "220020000", "dc1": "120010000"}
+    out = build_poi.quest_points(quests, links, spawns, zone_ids, {"7": "Миэя", "9": "Шуго"})
+    morheim = sorted(out["220020000"], key=lambda p: p["gx"])
+    assert [(p["t"], p["name"]) for p in morheim] == [("quest_event", "Шуго"), ("quest_important", "Миэя")]
+    assert morheim[1]["note"] == "Задания (2): Важное; Первое"  # important wins the icon, all quests listed
+    assert (morheim[1]["gx"], morheim[1]["gy"]) == (100.0, 200.0)
+    assert out["120010000"][0]["t"] == "quest_event"  # the same NPC placed in two zones
