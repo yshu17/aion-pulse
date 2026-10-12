@@ -696,3 +696,12 @@ def test_icon_groups_do_not_change_while_the_map_is_dragged():
 def test_silentera_tunnel_passes_belong_to_the_rifts_entry():
     from watcher.mapview import FILTER_GROUPS
     assert "tunnel" in FILTER_GROUPS["rifts"][1] and "tunnel" not in FILTER_GROUPS["buildings"][1]
+
+
+def test_place_marker_is_65_percent_of_the_former_size(root):
+    """map:32: the blue X of a place from the chat went from 34 px to 22 px (34 * 0.65 = 22.1), scaled from place.png."""
+    from watcher.mapview import PLACE_ICON, load_icon
+
+    assert PLACE_ICON == 22
+    icon = load_icon(resource_root() / "data" / "maps" / "icons" / "place.png", PLACE_ICON, root)
+    assert icon is not None and max(icon.width(), icon.height()) == 22
