@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 sys.path.insert(0, str(ROOT / "tools"))
 import plan_states  # noqa: E402
+import plan_verification  # noqa: E402
 
 import build_master_plan  # noqa: E402
 import build_feature_drafts  # noqa: E402
@@ -141,6 +142,27 @@ def validate_pages(model: dict, docs: Path = DOCS) -> list[str]:
     return errors
 
 
+def validate_verification(model: dict, entries: dict | None = None, commit_check=None) -> list[str]:
+    """Verification is stored apart from the status: its entries must name real tasks and carry evidence."""
+    errors: list[str] = []
+    entries = plan_verification.load()["tasks"] if entries is None else entries
+    by_key = {item["key"]: item for item in model["items"]}
+    check = commit_check or plan_verification.commit_exists
+    for key, entry in entries.items():
+        if key not in by_key:
+            errors.append(f"verification for a missing task: {key}")
+            continue
+        errors.extend(plan_verification.validate_entry(key, entry, by_key[key].get("status"), check))
+    for item in model["items"]:
+        expected_set = item.get("status") in ("done", "review")
+        state = item.get("verification", "")
+        if expected_set and state not in plan_verification.STATE_KEYS:
+            errors.append(f"done/review task without a verification state: {item['key']}")
+        if not expected_set and state:
+            errors.append(f"verification state on a task that is not done or in review: {item['key']}")
+    return errors
+
+
 def main() -> int:
     model = json.loads((DOCS / "plan-model.json").read_text(encoding="utf-8"))
     source = build_master_plan.collect()
@@ -148,7 +170,7 @@ def main() -> int:
     for item in source:
         item["status"] = plan_states.normalize_status(item["status"])
         item["priority"] = plan_states.normalize_priority(item["priority"])
-    errors = validate_model(model, source, load_task_meta()) + validate_pages(model)
+    errors = validate_model(model, source, load_task_meta()) + validate_pages(model) + validate_verification(model)
     draft = build_feature_drafts.load()
     all_stage_ids = [stage["id"] for plan in draft["plans"] for stage in plan["stages"]]
     stage_ids = set(all_stage_ids)

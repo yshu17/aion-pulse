@@ -19,11 +19,11 @@ STATES = [
     ("planned", "Запланировано", "#8c919c"),
     ("research", "Исследование", "#4aa3ff"),
     ("doing", "В работе", "#ff8c1a"),
-    ("blocked", "Заблокировано", "#e5484d"),
+    ("blocked", "Заблокировано", "#ff6b70"),  # contrast 6.02 on the card, 5.26 on the status list
     ("review", "На проверке", "#f5b544"),
     ("done", "Выполнено", "#5fd38d"),
     ("deferred", "Отложено", "#a58fd6"),
-    ("cancelled", "Отменено", "#6b7080"),
+    ("cancelled", "Отменено", "#8f94a0"),  # near-grey for contrast; the card also strikes the title through
 ]
 STATE_KEYS = [key for key, _label, _color in STATES]
 LABELS = {key: label for key, label, _color in STATES}

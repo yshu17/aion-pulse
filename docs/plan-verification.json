@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "tasks": {
+    "ui:42": {
+      "state": "verified",
+      "evidence": [
+        {
+          "kind": "commit",
+          "ref": "d702783"
+        },
+        {
+          "kind": "commit",
+          "ref": "d125e49"
+        },
+        {
+          "kind": "test",
+          "ref": "pytest 316 passed on the accepted commit, independent run 12.10.2026"
+        },
+        {
+          "kind": "snapshot",
+          "ref": "before/after screenshots measured: tab width 108 -> 96 px, label centre unchanged (179.5), window outside the tab strip identical; stored in tmp only"
+        },
+        {
+          "kind": "report",
+          "ref": "PAIR.md journal, entry «приёмка ui:42»"
+        }
+      ],
+      "at": "12.10.2026",
+      "by": "Claude Code"
+    },
+    "ui:43": {
+      "state": "verified",
+      "evidence": [
+        {
+          "kind": "commit",
+          "ref": "4d60228"
+        },
+        {
+          "kind": "commit",
+          "ref": "8276a35"
+        },
+        {
+          "kind": "test",
+          "ref": "pytest 330 passed; tests/test_ui_snapshots.py 14 passed"
+        },
+        {
+          "kind": "snapshot",
+          "ref": "python tools/ui_snapshots.py check PASS on 20 scenarios; two runs of one commit, 0 differing pixels (12.10.2026)"
+        },
+        {
+          "kind": "report",
+          "ref": "docs/UI_SNAPSHOTS.md"
+        }
+      ],
+      "at": "12.10.2026",
+      "by": "Claude Code"
+    }
+  }
+}

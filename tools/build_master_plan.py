@@ -26,6 +26,7 @@ import build_feature_drafts  # noqa: E402
 from plan_common import MASTER, PLANS, RESOURCES, nav_html, owners, set_nav  # noqa: E402
 from plan_task_meta import OLD_TASK_DATE, backfill_dates, load_task_meta, remember_known, register_new_tasks, register_source_changes, task_meta  # noqa: E402
 import plan_states  # noqa: E402
+import plan_verification  # noqa: E402
 import plan_ai_tools  # noqa: E402
 from plan_ai_view import MASTER_SECTION as AI_SECTION  # noqa: E402
 
@@ -50,18 +51,18 @@ def collect() -> list[dict]:
     map_page = (DOCS / "map-poi-plan.html").read_text(encoding="utf-8")
     for i, st in enumerate(js_steps(map_page, "STEPS3"), 1):
         items.append({"plan": "map", "id": str(i), "title": st["t"], "who": st.get("who", ""), "text": st.get("d", ""),
-                      "status": st.get("s", "todo"), **task_meta(metadata, f"map:{i}")})
+                      "note": st.get("note", ""), "status": st.get("s", "todo"), **task_meta(metadata, f"map:{i}")})
     sn_page = (DOCS / "schedule-notify-plan.html").read_text(encoding="utf-8")
     for i, st in enumerate(js_steps(sn_page, "STEPS"), 1):
         items.append({"plan": "sn", "id": f"SN-{i}", "title": st["t"], "who": st.get("who", ""),
-                      "text": st.get("d", ""), "status": st.get("s", "todo"), **task_meta(metadata, f"sn:SN-{i}")})
+                      "text": st.get("d", ""), "note": st.get("note", ""), "status": st.get("s", "todo"), **task_meta(metadata, f"sn:SN-{i}")})
     ui_lines = build_ui_ux_plan.SOURCE.read_text(encoding="utf-8").splitlines()
     ui_owners = build_ui_ux_plan.task_owners(ui_lines)
     ui_status = build_ui_ux_plan.task_status(ui_lines)
     for task in build_ui_ux_plan.task_rows(ui_lines):
         items.append({"plan": "ui", "id": f"UI #{task['id']}", "title": task["problem"],
                       "who": ui_owners.get(task["id"], ""), "text": f"{task['priority']} · {task['solution']}",
-                      "status": ui_status.get(task["id"], ("todo", ""))[0], "priority": task["priority"],
+                      "note": ui_status.get(task["id"], ("todo", ""))[1], "status": ui_status.get(task["id"], ("todo", ""))[0], "priority": task["priority"],
                       "dependencies_text": task["dependencies"], **task_meta(metadata, f"ui:{task['id']}")})
     tasks, _stages, _deferred = build_telegram_plan.parse_plan(build_telegram_plan.SOURCE.read_text(encoding="utf-8"))
     for task in tasks:
@@ -69,13 +70,13 @@ def collect() -> list[dict]:
         if not owners(who):
             who, title = "Claude", task["title"]
         items.append({"plan": "tg", "id": f"TG {task['id']}", "title": title, "who": who, "text": "",
-                      "status": task["initial"], **task_meta(metadata, f"tg:{task['id']}")})
+                      "note": "", "status": task["initial"], **task_meta(metadata, f"tg:{task['id']}")})
     draft_doc = build_feature_drafts.load()
     for draft in draft_doc["plans"]:
         for stage in draft.get("stages", []):
             # stages of a feature draft: investigation until the user approves the feature (status research)
             items.append({"plan": "draft", "id": stage["id"], "title": stage["title"], "who": "Claude",
-                          "text": stage.get("result", ""), "status": "research", "priority": "",
+                          "text": stage.get("result", ""), "note": "", "status": "research", "priority": "",
                           "added_at": draft_doc.get("added_at", ""),
                           "depends_on": [f"draft:{d}" for d in stage.get("depends_on", [])]})
     for item in items:
@@ -133,6 +134,11 @@ def main() -> int:
         item["status"] = plan_states.normalize_status(item["status"])
         item["priority"] = plan_states.normalize_priority(item["priority"])
         item["is_new"] = item.get("is_latest", False) and item["status"] == "planned"
+    # how sure we are that "done" is true: a separate state, never derived from the status alone
+    verification = plan_verification.load()
+    for item in items:
+        item["verification"], item["verification_evidence"] = plan_verification.resolve(
+            item["status"], verification["tasks"].get(item["key"]))
     plans = [{"key": k, "title": t, "page": p, "gate": g} for k, t, p, g in PLANS]
     needs = [{"plan": key, "title": title, "detail": detail, "link": link}
              for key, *_ in PLANS for kind, title, detail, link in RESOURCES.get(key, []) if kind == "need"]
@@ -143,6 +149,7 @@ def main() -> int:
              "latest": load_task_meta().get("latest", ""), "built": date.today().strftime("%d.%m.%Y"),
              "states": [{"key": k, "label": l, "color": c} for k, l, c in plan_states.STATES],
              "priorities": plan_states.PRIORITIES, "priority_not_set": plan_states.NOT_SET,
+             "verification": [{"key": k, "label": l, "color": c, "mark": m} for k, l, c, m in plan_verification.STATES],
              "ai": {"updated_at": ai_data.get("updated_at", ""), "skills": list(ai_skills.values()),
                     "drafts": plan_ai_tools.draft_items(build_feature_drafts.load(), ai_data, ai_skills)}}
     (ROOT / "docs" / "AI_SKILLS_TASK_MAPPING.md").write_text(
@@ -263,8 +270,9 @@ function itemStatus(i){if(window.planState)return window.planState.status(i);try
 function itemIsNew(i){return i.is_latest&&itemStatus(i)==="planned"}
 document.getElementById("built").textContent=DATA.built;
 function totals(){const all=DATA.items,done=all.filter(i=>itemStatus(i)==="done").length,open=all.length-done;
+  const verified=all.filter(i=>itemStatus(i)==="done"&&i.status==="done"&&i.verification==="verified").length;
   const mine=o=>all.filter(i=>itemStatus(i)!=="done"&&i.owners.includes(o)).length;
-  document.getElementById("total").innerHTML=[[`${done} / ${all.length}`,"шагов готово"],[open,"открыто"],[mine("Claude"),"открыто у Claude"],[mine("Кодекс"),"открыто у Кодекса"]]
+  document.getElementById("total").innerHTML=[[`${done} / ${all.length}`,"выполнено"],[`${verified} / ${done}`,"из выполненных подтверждено проверками"],[open,"открыто"],[mine("Claude"),"открыто у Claude"],[mine("Кодекс"),"открыто у Кодекса"]]
     .map(([b,s])=>`<div><b>${b}</b><span class="tag">${s}</span></div>`).join("");}
 function plans(){document.getElementById("plans").innerHTML=DATA.plans.map(p=>{const its=DATA.items.filter(i=>i.plan===p.key),
   done=its.filter(i=>itemStatus(i)==="done").length,pct=its.length?Math.round(done/its.length*100):0,
