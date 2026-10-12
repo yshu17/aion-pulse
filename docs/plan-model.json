@@ -5735,26 +5735,131 @@
       "title": "Страницы планов проверял один автор в одном браузере",
       "who": "Кодекс",
       "text": "P1 · Независимая браузерная проверка всех 12 страниц: чекбоксы, статусы, фильтры, приоритеты, подтверждение выполнения, раскрытие пунктов, ширины 375/768/1280, reduced motion; до и после скрытия нативных списков; отчёт `docs/PLAN_BROWSER_REPORT.md`; задание `docs/TASK_PLAN-BROWSER.md`",
-      "note": "независимая браузерная проверка 12 страниц планов (Codex), до и после скрытия нативных списков; приоритет High; проверяющий Claude Code; ветка `codex/plan-browser-check`, задание `docs/TASK_PLAN-BROWSER.md`. Зарегистрировано 12.10 по решению пользователя.",
-      "status": "planned",
+      "note": "QA-аудит страниц планов закрыт с ограничениями (12.10.2026). Codex: аудит кода, данных, сборки и двух тегов (ветка `codex/plan-browser-check`, отчёт `docs/PLAN_BROWSER_QA_REPORT.md`, найдены QA-01–03); его браузер не открыл локальные страницы, поэтому браузерная часть **не независимая**: её выполнил Claude Code (12 страниц × 375/768/1400 px без горизонтальной прокрутки, чекбокс done/review, счётчик, скрытие и `?native=1`, консоль без ошибок). QA-01 (порядок плана с новой задачей), QA-02 (открытые карточки при перерисовке), QA-03 (`?native=1`) исправлены, коммит `7146f49`. Полная независимая визуальная приёмка НЕ выполнена, статус подтверждения — «ожидает проверки»; остаток — пункт 45.",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 43",
       "stage": "",
       "added_at": "12.10.2026 22:17",
-      "is_latest": true,
+      "is_latest": false,
       "key": "ui:44",
       "parent": "",
       "depends_on": [
         "ui:43"
       ],
-      "changed_at": "12.10.2026 22:17",
+      "changed_at": "12.10.2026 22:46",
       "history": [
         {
           "at": "2026-10-12T22:17+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-12T22:46+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
+      "owners": [
+        "Кодекс"
+      ],
+      "is_new": false,
+      "verification": "pending",
+      "verification_evidence": [
+        {
+          "kind": "report",
+          "ref": "docs/PLAN_BROWSER_QA_REPORT.md"
+        },
+        {
+          "kind": "commit",
+          "ref": "7146f49"
+        }
+      ],
+      "ai": {
+        "category": "UI/UX · тестирование планов",
+        "agent": "codex",
+        "reviewer": "claude",
+        "skills": [
+          {
+            "name": "ui-visual-validator",
+            "role": "primary",
+            "purpose": "независимая визуальная и функциональная проверка страниц, честный отчёт о непроверенном",
+            "role_label": "основной",
+            "title": "UI Visual Validator",
+            "area": "Проверка и ревью",
+            "availability": "user",
+            "available": true,
+            "availability_label": "установлен глобально",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "application-ui-ux-designer",
+            "role": "supporting",
+            "purpose": "сверка с правилами карточки, состояний и адаптивности",
+            "role_label": "дополнительный",
+            "title": "Application UI/UX Designer",
+            "area": "UI/UX",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Codex",
+          "test": "Codex",
+          "approve": "Claude Code"
+        },
+        "done": [
+          "Аудит кода, данных, сборки и двух тегов (Codex), отчёт docs/PLAN_BROWSER_QA_REPORT.md",
+          "Найдены QA-01–03, исправлены Claude Code (7146f49)",
+          "Браузерная часть выполнена Claude Code на изолированном origin; это не независимая приёмка"
+        ],
+        "tests": [
+          "pytest -q"
+        ],
+        "handoff": "n/a",
+        "arch_review": "approved",
+        "files": {
+          "Codex": [
+            "docs/PLAN_BROWSER_REPORT.md",
+            "tools/plan_browser_check.py",
+            "tests/test_plan_browser_check.py"
+          ]
+        },
+        "branch": "codex/plan-browser-check",
+        "note": "Закрыто с ограничениями: браузер Codex не открыл локальные страницы. Остаток — ui:45. Подтверждение: ожидает проверки.",
+        "state": "recommended",
+        "agent_label": "Codex",
+        "handoff_label": "передача не нужна",
+        "arch_label": "архитектура утверждена",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:44 · Страницы планов проверял один автор в одном браузере\nЦель: Страницы планов проверял один автор в одном браузере.\nКонтекст: P1 · Независимая браузерная проверка всех 12 страниц: чекбоксы, статусы, фильтры, приоритеты, подтверждение выполнения, раскрытие пунктов, ширины 375/768/1280, reduced motion; до и после скрытия нативных списков; отчёт `docs/PLAN_BROWSER_REPORT.md`; задание `docs/TASK_PLAN-BROWSER.md`\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:43\nТребования и критерии готовности:\n- Аудит кода, данных, сборки и двух тегов (Codex), отчёт docs/PLAN_BROWSER_QA_REPORT.md\n- Найдены QA-01–03, исправлены Claude Code (7146f49)\n- Браузерная часть выполнена Claude Code на изолированном origin; это не независимая приёмка\nРазрешённые файлы:\n- docs/PLAN_BROWSER_REPORT.md\n- tools/plan_browser_check.py\n- tests/test_plan_browser_check.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- ui-visual-validator (основной): независимая визуальная и функциональная проверка страниц, честный отчёт о непроверенном. Codex читает SKILL.md по AGENTS.md.\n- application-ui-ux-designer (дополнительный): сверка с правилами карточки, состояний и адаптивности. Codex читает SKILL.md по AGENTS.md.\nПримечание: Закрыто с ограничениями: браузер Codex не открыл локальные страницы. Остаток — ui:45. Подтверждение: ожидает проверки.\nТесты:\n- pytest -q\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "ui",
+      "id": "UI #45",
+      "title": "Остаточные проверки планов после ui:44: у Codex браузер не открыл локальные страницы, часть проверок выполнил Claude Code",
+      "who": "Кодекс",
+      "text": "P1 · Независимо (Codex или Claude Code в рабочем браузере): 36 снимков (12 страниц × 375/768/1400 px), реальное поведение `prefers-reduced-motion`, повторный цикл экспорт → очистка → импорт → откат после исправлений QA-01–03; отчёт `docs/PLAN_BROWSER_REPORT.md` (дополнение)",
+      "note": "остаточные проверки планов: 36 снимков (12 страниц × 375/768/1400 px), реальное поведение `prefers-reduced-motion`, повторный цикл экспорт/импорт/откат после исправлений; Codex, если у него заработает браузер, иначе Claude Code; блокирует решение об этапе 4.",
+      "status": "planned",
+      "priority": "High",
+      "dependencies_text": "№ 44",
+      "stage": "",
+      "added_at": "12.10.2026 22:46",
+      "is_latest": true,
+      "key": "ui:45",
+      "parent": "",
+      "depends_on": [
+        "ui:44"
+      ],
+      "changed_at": "",
+      "history": [],
       "owners": [
         "Кодекс"
       ],
@@ -5800,9 +5905,10 @@
           "approve": "Claude Code"
         },
         "done": [
-          "отчёт по всем 12 страницам и 13 пунктам задания",
-          "проверка до и после скрытия нативных списков (теги plan-native-visible и plan-native-hidden)",
-          "каждый дефект: страница, шаги, ожидаемое и фактическое, ширина, браузер; непроверенное помечено NOT VERIFIED"
+          "36 снимков: 12 страниц × 375/768/1400 px, пути и размер окна указаны",
+          "Реальное поведение prefers-reduced-motion измерено в браузере",
+          "Цикл экспорт → очистка → импорт → откат пройден после исправлений QA-01–03",
+          "Непроверенное помечено NOT VERIFIED"
         ],
         "tests": [
           "pytest -q"
@@ -5811,19 +5917,17 @@
         "arch_review": "approved",
         "files": {
           "Codex": [
-            "docs/PLAN_BROWSER_REPORT.md",
-            "tools/plan_browser_check.py",
-            "tests/test_plan_browser_check.py"
+            "docs/PLAN_BROWSER_REPORT.md"
           ]
         },
-        "branch": "codex/plan-browser-check",
-        "note": "Задание: docs/TASK_PLAN-BROWSER.md. Реализацию планов Codex не меняет, только проверяет и документирует. Приоритет High, статус Запланировано.",
+        "branch": "codex/plan-browser-residual",
+        "note": "Остаточные проверки после ui:44: 36 снимков, reduced motion, цикл экспорт/импорт/откат. Если браузер Codex недоступен, выполняет Claude Code.",
         "state": "recommended",
         "agent_label": "Codex",
         "handoff_label": "готово к передаче Codex",
         "arch_label": "архитектура утверждена",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:44 · Страницы планов проверял один автор в одном браузере\nЦель: Страницы планов проверял один автор в одном браузере.\nКонтекст: P1 · Независимая браузерная проверка всех 12 страниц: чекбоксы, статусы, фильтры, приоритеты, подтверждение выполнения, раскрытие пунктов, ширины 375/768/1280, reduced motion; до и после скрытия нативных списков; отчёт `docs/PLAN_BROWSER_REPORT.md`; задание `docs/TASK_PLAN-BROWSER.md`\nПлан: ui · статус: planned · передача: готово к передаче Codex\nЗависимости: ui:43\nТребования и критерии готовности:\n- отчёт по всем 12 страницам и 13 пунктам задания\n- проверка до и после скрытия нативных списков (теги plan-native-visible и plan-native-hidden)\n- каждый дефект: страница, шаги, ожидаемое и фактическое, ширина, браузер; непроверенное помечено NOT VERIFIED\nРазрешённые файлы:\n- docs/PLAN_BROWSER_REPORT.md\n- tools/plan_browser_check.py\n- tests/test_plan_browser_check.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- ui-visual-validator (основной): независимая визуальная и функциональная проверка страниц, честный отчёт о непроверенном. Codex читает SKILL.md по AGENTS.md.\n- application-ui-ux-designer (дополнительный): сверка с правилами карточки, состояний и адаптивности. Codex читает SKILL.md по AGENTS.md.\nПримечание: Задание: docs/TASK_PLAN-BROWSER.md. Реализацию планов Codex не меняет, только проверяет и документирует. Приоритет High, статус Запланировано.\nТесты:\n- pytest -q\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:45 · Остаточные проверки планов после ui:44: у Codex браузер не открыл локальные страницы, часть проверок выполнил Claude Code\nЦель: Остаточные проверки планов после ui:44: у Codex браузер не открыл локальные страницы, часть проверок выполнил Claude Code.\nКонтекст: P1 · Независимо (Codex или Claude Code в рабочем браузере): 36 снимков (12 страниц × 375/768/1400 px), реальное поведение `prefers-reduced-motion`, повторный цикл экспорт → очистка → импорт → откат после исправлений QA-01–03; отчёт `docs/PLAN_BROWSER_REPORT.md` (дополнение)\nПлан: ui · статус: planned · передача: готово к передаче Codex\nЗависимости: ui:44\nТребования и критерии готовности:\n- 36 снимков: 12 страниц × 375/768/1400 px, пути и размер окна указаны\n- Реальное поведение prefers-reduced-motion измерено в браузере\n- Цикл экспорт → очистка → импорт → откат пройден после исправлений QA-01–03\n- Непроверенное помечено NOT VERIFIED\nРазрешённые файлы:\n- docs/PLAN_BROWSER_REPORT.md\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- ui-visual-validator (основной): независимая визуальная и функциональная проверка страниц, честный отчёт о непроверенном. Codex читает SKILL.md по AGENTS.md.\n- application-ui-ux-designer (дополнительный): сверка с правилами карточки, состояний и адаптивности. Codex читает SKILL.md по AGENTS.md.\nПримечание: Остаточные проверки после ui:44: 36 снимков, reduced motion, цикл экспорт/импорт/откат. Если браузер Codex недоступен, выполняет Claude Code.\nТесты:\n- pytest -q\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -8567,7 +8671,7 @@
       "link": ""
     }
   ],
-  "latest": "ui:44",
+  "latest": "ui:45",
   "built": "12.10.2026",
   "states": [
     {

@@ -1,5 +1,5 @@
 {
-  "latest": "ui:44",
+  "latest": "ui:45",
   "tasks": {
     "ui:42": {
       "added_at": "11.10.2026 02:46",
@@ -1266,14 +1266,22 @@
     },
     "ui:44": {
       "added_at": "12.10.2026 22:17",
-      "changed_at": "12.10.2026 22:17",
+      "changed_at": "12.10.2026 22:46",
       "history": [
         {
           "at": "2026-10-12T22:17+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-12T22:46+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ]
+    },
+    "ui:45": {
+      "added_at": "12.10.2026 22:46"
     }
   },
   "known_keys": [
@@ -1398,6 +1406,7 @@
     "ui:42",
     "ui:43",
     "ui:44",
+    "ui:45",
     "ui:5",
     "ui:6",
     "ui:7",
@@ -1530,6 +1539,7 @@
     "draft:DRAFT-06.2": "ccbfe306c083997bcd4daf07fa66ade855328ef869087ecd03e37051bab498fb",
     "draft:DRAFT-06.3": "4e4c50bbec95697c62847911d7b1470e05b1b6d872d7f8c594a4f696ca04718d",
     "draft:DRAFT-06.4": "328c0e93ce3983d3d99d1f9f03b5e3a1c421777d5c7b970ac94653119aa36a35",
-    "ui:44": "0b0010c13621866f4dd79a6ffcabaf31dcf16405b1cfe7e1c4ccebb4eb3739b6"
+    "ui:44": "d3816fa0761781c5c43bf47fdd02b0235c6fe7550d776066499f2b9c40f59a6b",
+    "ui:45": "7596e0a7d2984634b9fb4c13c53735a67ac6d5dd788dc52742a903404d3c98e3"
   }
 }

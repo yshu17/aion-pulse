@@ -2670,14 +2670,14 @@
         "approve": "Claude Code"
       },
       "done": [
-        "отчёт по всем 12 страницам и 13 пунктам задания",
-        "проверка до и после скрытия нативных списков (теги plan-native-visible и plan-native-hidden)",
-        "каждый дефект: страница, шаги, ожидаемое и фактическое, ширина, браузер; непроверенное помечено NOT VERIFIED"
+        "Аудит кода, данных, сборки и двух тегов (Codex), отчёт docs/PLAN_BROWSER_QA_REPORT.md",
+        "Найдены QA-01–03, исправлены Claude Code (7146f49)",
+        "Браузерная часть выполнена Claude Code на изолированном origin; это не независимая приёмка"
       ],
       "tests": [
         "pytest -q"
       ],
-      "handoff": "ready",
+      "handoff": "n/a",
       "arch_review": "approved",
       "files": {
         "Codex": [
@@ -2687,7 +2687,48 @@
         ]
       },
       "branch": "codex/plan-browser-check",
-      "note": "Задание: docs/TASK_PLAN-BROWSER.md. Реализацию планов Codex не меняет, только проверяет и документирует. Приоритет High, статус Запланировано."
+      "note": "Закрыто с ограничениями: браузер Codex не открыл локальные страницы. Остаток — ui:45. Подтверждение: ожидает проверки."
+    },
+    "ui:45": {
+      "category": "UI/UX · тестирование планов",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "ui-visual-validator",
+          "role": "primary",
+          "purpose": "независимая визуальная и функциональная проверка страниц, честный отчёт о непроверенном"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "сверка с правилами карточки, состояний и адаптивности"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "36 снимков: 12 страниц × 375/768/1400 px, пути и размер окна указаны",
+        "Реальное поведение prefers-reduced-motion измерено в браузере",
+        "Цикл экспорт → очистка → импорт → откат пройден после исправлений QA-01–03",
+        "Непроверенное помечено NOT VERIFIED"
+      ],
+      "tests": [
+        "pytest -q"
+      ],
+      "handoff": "ready",
+      "arch_review": "approved",
+      "files": {
+        "Codex": [
+          "docs/PLAN_BROWSER_REPORT.md"
+        ]
+      },
+      "branch": "codex/plan-browser-residual",
+      "note": "Остаточные проверки после ui:44: 36 снимков, reduced motion, цикл экспорт/импорт/откат. Если браузер Codex недоступен, выполняет Claude Code."
     }
   }
 }

@@ -73,6 +73,21 @@
       ],
       "at": "12.10.2026",
       "by": "Claude Code"
+    },
+    "ui:44": {
+      "state": "pending",
+      "evidence": [
+        {
+          "kind": "report",
+          "ref": "docs/PLAN_BROWSER_QA_REPORT.md"
+        },
+        {
+          "kind": "commit",
+          "ref": "7146f49"
+        }
+      ],
+      "at": "12.10.2026",
+      "by": "Claude Code"
     }
   }
 }
