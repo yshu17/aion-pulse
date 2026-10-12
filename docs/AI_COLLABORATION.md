@@ -15,7 +15,7 @@ Claude Code — Lead Developer и владелец архитектурных к
 
 ## Git и передача
 
-1. Для одновременной разработки использовать разные Git worktree и отдельные ветки: `claude/<задача>` и `codex/<задача>` (если ветка Codex создаётся автоматически, соблюдать префикс `codex/`). Общие `config.json`, `build/`, `tmp/`, игровые файлы и личные браузерные статусы не переносить через Git.
+1. Для одновременной разработки использовать разные Git worktree и отдельные ветки. Основная линия Claude — `feat/chat-watcher` (рабочая копия `aion_chat_watcher`). Задачи Codex — ветка `codex/<задача>` в worktree `aion_codex` (сейчас `codex/next`). Задачи Claude при параллельной работе — `claude/<задача>`. Все задачи ветвятся от `feat/chat-watcher`; слияние делает Claude. Общие `config.json`, `build/`, `tmp/`, игровые файлы и личные браузерные статусы не переносить через Git.
 2. Перед правкой сверять `git status --short` и текущий `PAIR.md`; чужой незавершённый файл не перезаписывать и не форматировать целиком. В грязной общей копии ограничивать патчи конкретными строками.
 3. Один разработчик отвечает за контракт источников и ID планов — Claude. Новые ID не переиспользовать; `docs/plan-task-meta.json` менять через генератор. Сгенерированные страницы пересобирать после источника.
 4. Перед передачей: `python tools/check_project.py`, затем маленький коммит только своих файлов и запись в `PAIR.md` с путями, результатом, открытыми вопросами. Если дерево содержит чужие правки, не включать их в коммит и передать diff/описание без смешивания авторства.
@@ -34,9 +34,47 @@ Claude Code — Lead Developer и владелец архитектурных к
 | `split` | кто проектирует, реализует, тестирует, утверждает |
 | `files` | владение файлами по исполнителям — в совместной задаче один файл правит один агент |
 | `contract` | общий API / ключи `config.json`, которые Claude фиксирует до начала работы Codex |
-| `handoff` | `ready` — можно отдавать Codex; `needs-architecture`, `gated`, `blocked`, `user`, `in-progress`, `n/a` |
+| `handoff` | `ready` — можно отдавать Codex; `review`, `integrate` (см. ниже); `needs-architecture`, `gated`, `blocked`, `user`, `in-progress`, `n/a` |
 | `arch_review` | `pending` — ждёт архитектурной проверки Claude |
 
 Задачи, которые трогают один файл (например, `watcher/mapview.py` в map:29, 30, 39 или `watcher/app.py` в ui:36–41),
 выполняются по одной; это записано в `note`. Передача задачи Codex — [AI_HANDOFF_TO_CODEX.md](AI_HANDOFF_TO_CODEX.md),
 сводка по скиллам — [AI_SKILLS_TASK_MAPPING.md](AI_SKILLS_TASK_MAPPING.md) (генерируется).
+
+## Матрица ответственности (с 12.10)
+
+Строки помечены «спорно» — решение за Lead Developer (Claude), подтверждается пользователем.
+
+| Модуль / файлы | Основной ответственный | Второй агент | Правило изменения |
+|---|---|---|---|
+| `watcher/` (код программы), `main.py`, `build_exe.bat` | Claude | Codex по задаче с `handoff: ready` | Codex работает в своей ветке, слияние делает Claude |
+| `watcher/theme.py`, `config.py`, `app.py` | Claude | — | Только Claude. Исключение: пилот `ui:42` (Codex), на время пилота Claude `theme.py` не трогает |
+| `tools/build_ui*.py`, `data/ui/*.png` | Codex (картинки) | Claude (стили в `theme.py`) | Один автор на файл в один момент |
+| `tools/build_*`, `tools/check_*`, `tools/plan_*` (спорно) | Codex | Claude (контракт `docs/plan-ai-tools.json`) | Изменения контракта — сначала запись в `PAIR.md`. Сейчас генераторы планов правил и Claude, и Codex: спорно |
+| `docs/plan-task-meta.json`, `docs/plan-model.json`, `docs/plan-ai-tools.json` | генератор | — | Менять только через генератор или правкой данных владельцем строки, затем пересборка |
+| Статусы задач (`STEPS3`, раздел 9 `UI_UX_IMPROVEMENT_PLAN.md`, `TG` и `SN`) | Claude | Codex сообщает статус в журнале | Статус меняет Claude после проверки |
+| `data/maps/*` (данные карт, POI) | Codex (извлечение) | Claude (подключение) | Один автор на шаг данных |
+| `PAIR.md` | оба | оба | Только добавление записи в начало журнала. Чужие строки не править |
+| `README.md`, `CLAUDE.md`, `AGENTS.md` | Claude | — | — |
+| Опубликованная страница телефона (Artifact) | Claude | — | Публикует только Claude (правило 12 `PAIR.md`) |
+| Основная ветка `feat/chat-watcher`, `master` | Claude | — | Слияние и reset только Claude |
+
+## Состояния передачи (`handoff` в `docs/plan-ai-tools.json`)
+
+`ready` — можно отдавать Codex. `in-progress` — задача у Codex, ветка указана в поле `branch`.
+`review` — Codex сдал результат, ждёт проверки Claude. `integrate` — Claude проверил, готово к слиянию.
+Остальные: `needs-architecture`, `gated`, `blocked`, `user`, `n/a`. Фильтр «Ожидают проверки Claude» и «Готовы к интеграции» — в MASTER PLAN.
+
+## Процедура конфликтов
+
+1. Сгенерированные файлы (`docs/*.html`, `docs/index.html`, `docs/plan-*.json`, `build/plans_site/`) не сливать вручную. При конфликте взять любую версию, затем пересобрать в порядке: `build_ui_ux_plan.py`, `build_telegram_plan.py`, `build_master_plan.py`, `build_plans_site.py` (правило 9 `PAIR.md`).
+2. Исходники планов и код: конфликт разбирает Claude. Строку правит владелец по матрице; при сомнении — вопрос в `PAIR.md`.
+3. `PAIR.md`: обе записи сохранить, порядок — по времени, новее сверху.
+4. После разбора — `python -m pytest -q` и `python tools/check_plans.py`. Без зелёных проверок конфликт не закрывается.
+
+## Стандарт коммитов
+
+- Заголовок: `тип(область): кратко по-русски или по-английски` — `feat`, `fix`, `docs`, `chore`, `test`, `refactor`.
+- Пункт плана указывать в заголовке или теле: `(UI/UX item 42)`, `(map:29)`, `(SN-3)`.
+- Тело — что и зачем, 1–5 строк. Исполнитель: строка `Исполнитель: Codex` или `Co-Authored-By: Claude …` для Claude.
+- Один коммит — одна логическая задача. Смешивать правки двух агентов в одном коммите нельзя.

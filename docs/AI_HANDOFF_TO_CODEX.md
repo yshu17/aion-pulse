@@ -48,3 +48,8 @@ python tools/plan_ai_tools.py codex map:29
 1. Codex: тесты, строка в `PAIR.md`, своя ветка `codex/<задача>`.
 2. Claude: diff, `python tools/check_project.py`, проверка критериев, слияние, статус в исходном плане, пересборка планов.
 3. Расхождение с контрактом — вопрос в `docs/PROJECT_ISSUES.md`, а не правка контракта Codex-ом.
+
+## Пилот ui:42 (12.10.2026)
+
+Первая задача по новой схеме — `docs/TASK_UI-42.md`. Ветка `codex/ui-42-tabs` создаётся от `feat/chat-watcher`
+в worktree `aion_codex`. Состояния передачи: `in-progress` (у Кодекса) → `review` (сдано, ждёт Claude) → `integrate` (проверено).
