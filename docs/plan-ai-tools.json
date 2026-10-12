@@ -2646,6 +2646,48 @@
       },
       "branch": "codex/ui-snapshots",
       "note": "Принято 12.10: ветка codex/ui-snapshots (4d60228, c84763b) влита; база docs/ui/baseline; известный дефект UI-DEF-1 в docs/ui/known_defects.json. Системный DPI 125/150 % не проверен."
+    },
+    "ui:44": {
+      "category": "UI/UX · тестирование планов",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "ui-visual-validator",
+          "role": "primary",
+          "purpose": "независимая визуальная и функциональная проверка страниц, честный отчёт о непроверенном"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "сверка с правилами карточки, состояний и адаптивности"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "отчёт по всем 12 страницам и 13 пунктам задания",
+        "проверка до и после скрытия нативных списков (теги plan-native-visible и plan-native-hidden)",
+        "каждый дефект: страница, шаги, ожидаемое и фактическое, ширина, браузер; непроверенное помечено NOT VERIFIED"
+      ],
+      "tests": [
+        "pytest -q"
+      ],
+      "handoff": "ready",
+      "arch_review": "approved",
+      "files": {
+        "Codex": [
+          "docs/PLAN_BROWSER_REPORT.md",
+          "tools/plan_browser_check.py",
+          "tests/test_plan_browser_check.py"
+        ]
+      },
+      "branch": "codex/plan-browser-check",
+      "note": "Задание: docs/TASK_PLAN-BROWSER.md. Реализацию планов Codex не меняет, только проверяет и документирует. Приоритет High, статус Запланировано."
     }
   }
 }

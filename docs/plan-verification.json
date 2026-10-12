@@ -54,6 +54,25 @@
       ],
       "at": "12.10.2026",
       "by": "Claude Code"
+    },
+    "ui:2": {
+      "state": "verified",
+      "evidence": [
+        {
+          "kind": "commit",
+          "ref": "64f289e"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_theme.py 36 passed on the current code (12.10.2026); contrast pairs and measured values tested"
+        },
+        {
+          "kind": "report",
+          "ref": "independent recomputation 12.10.2026: DANGER on SURFACE_2 5.26, white on DANGER_FILL 5.15 and hover 4.76, BORDER_CONTROL 3.37 on BG and 3.08 on SURFACE; data/ui/danger*.png centre pixels equal DANGER_FILL and DANGER_FILL_HOVER"
+        }
+      ],
+      "at": "12.10.2026",
+      "by": "Claude Code"
     }
   }
 }

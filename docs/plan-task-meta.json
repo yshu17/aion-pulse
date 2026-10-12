@@ -1,5 +1,5 @@
 {
-  "latest": "ui:43",
+  "latest": "ui:44",
   "tasks": {
     "ui:42": {
       "added_at": "11.10.2026 02:46",
@@ -14,10 +14,15 @@
     },
     "ui:43": {
       "added_at": "12.10.2026 19:37",
-      "changed_at": "12.10.2026 20:38",
+      "changed_at": "12.10.2026 22:17",
       "history": [
         {
           "at": "2026-10-12T20:38+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        },
+        {
+          "at": "2026-10-12T22:17+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
         }
@@ -1258,6 +1263,17 @@
           "origin": "decision"
         }
       ]
+    },
+    "ui:44": {
+      "added_at": "12.10.2026 22:17",
+      "changed_at": "12.10.2026 22:17",
+      "history": [
+        {
+          "at": "2026-10-12T22:17+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ]
     }
   },
   "known_keys": [
@@ -1381,6 +1397,7 @@
     "ui:41",
     "ui:42",
     "ui:43",
+    "ui:44",
     "ui:5",
     "ui:6",
     "ui:7",
@@ -1488,7 +1505,7 @@
     "tg:1.6": "ac72147d6a06cd8473bcfb9ae37624de2eac23d306834443e48f556b17226559",
     "tg:2.1": "9138fec8ce398c28d1345cd461f6aed45a7436a91e3f0259481ee6da37701d7d",
     "tg:2.2": "21d78c64fe65b933c4f756b223367ee19f1c0845ecf2abc5d8c52fdf23032cfb",
-    "ui:43": "f0d4e928792ca6428ba219d7850b3d4f15cc70f2fe7e2184f289f15dbe74910f",
+    "ui:43": "1baebe4d794bc33baaac9dcf8d66d8616db1929d120d2f3687d0f0f8758f3900",
     "draft:DRAFT-01.1": "3c47869fd8eb96238900340ca0b71aedf9a58ae4776b4cb49df1df1e2f10fe65",
     "draft:DRAFT-01.2": "b0c87e02f9ec435c5efd874ae6c491afa7d673d60c02fbc67522cc5b45126b31",
     "draft:DRAFT-01.3": "e35381a2e562152be8f89839edc6ddfa34e15cd57c93f28b7503a05db8f49dc9",
@@ -1512,6 +1529,7 @@
     "draft:DRAFT-06.1": "4a0e6704327966c44a1a8216c469a1151b99baf1f30652e3cd7073a21b6b4d9f",
     "draft:DRAFT-06.2": "ccbfe306c083997bcd4daf07fa66ade855328ef869087ecd03e37051bab498fb",
     "draft:DRAFT-06.3": "4e4c50bbec95697c62847911d7b1470e05b1b6d872d7f8c594a4f696ca04718d",
-    "draft:DRAFT-06.4": "328c0e93ce3983d3d99d1f9f03b5e3a1c421777d5c7b970ac94653119aa36a35"
+    "draft:DRAFT-06.4": "328c0e93ce3983d3d99d1f9f03b5e3a1c421777d5c7b970ac94653119aa36a35",
+    "ui:44": "0b0010c13621866f4dd79a6ffcabaf31dcf16405b1cfe7e1c4ccebb4eb3739b6"
   }
 }
