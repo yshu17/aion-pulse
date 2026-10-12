@@ -16,7 +16,7 @@ import plan_verification
 
 # Stage 3 of the migration: hide the old task lists of UI/UX, Telegram and the master plan (they are NOT removed).
 # False shows them again on every page after a rebuild - this switch is the code-level rollback of stage 3.
-HIDE_NATIVE_LISTS = False
+HIDE_NATIVE_LISTS = True
 
 # motion tokens in ms (tools: application-motion-designer contract); CSS reads them as variables, JS as constants
 MOTION = {"fast": 120, "open": 160, "close": 140, "flash": 600}

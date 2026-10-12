@@ -311,7 +311,7 @@ const STATES=MODEL.states, LABEL=Object.fromEntries(STATES.map(s=>[s.key,s.label
 const MOTION={"fast": 120, "open": 160, "close": 140, "flash": 600}, reduced=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let lastChanged=null;
 // the old task lists of UI/UX, Telegram and the master plan are hidden (not removed): ?native=1 shows them again
-const HIDE_NATIVE=false,WANT_NATIVE=new URLSearchParams(location.search).has('native'),HAS_NATIVE=['ui','tg','all'].includes(PAGE)&&HIDE_NATIVE;
+const HIDE_NATIVE=true,WANT_NATIVE=new URLSearchParams(location.search).has('native'),HAS_NATIVE=['ui','tg','all'].includes(PAGE)&&HIDE_NATIVE;
 if(HAS_NATIVE&&!WANT_NATIVE)document.documentElement.classList.add('native-hidden');
 const norm=s=>s==='todo'?'planned':(LABEL[s]?s:'planned');
 const nativeOf=s=>s==='doing'||s==='done'?s:'todo';
