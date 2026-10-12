@@ -53,3 +53,7 @@ python tools/plan_ai_tools.py codex map:29
 
 Первая задача по новой схеме — `docs/TASK_UI-42.md`. Ветка `codex/ui-42-tabs` создаётся от `feat/chat-watcher`
 в worktree `aion_codex`. Состояния передачи: `in-progress` (у Кодекса) → `review` (сдано, ждёт Claude) → `integrate` (проверено).
+
+## Выдача 12.10 (ui:43, map:34)
+
+Единый вход для Codex — `docs/CODEX_HANDOFF_2026-10-12.md`: база (тег `handoff/2026-10-12`), ветки, порядок, команды, формат отчёта.

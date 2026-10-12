@@ -8,3 +8,17 @@ AionChatWatcher_SN23.exe
 client_extract/
 downloads/
 tmp/
+
+# user data and files the program writes next to config.json
+errors.log
+config.json.*
+*.log
+# build outputs (every portable exe)
+AionChatWatcher*.exe
+# secrets and OS junk
+.env
+.env.*
+*.pem
+*.key
+Thumbs.db
+desktop.ini
