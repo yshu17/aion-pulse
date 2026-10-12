@@ -63,3 +63,20 @@ Claude Code обнаруживает проектные навыки в `.claude
 Результат 12.10: **4/4** структуры/frontmatter и **6/6** локальных ссылок прошли; **4/4** статических сценария прошли. Производные планы пересобраны, `python tools/check_plans.py` — **100 задач, 5 страниц, OK**. Штатный `quick_validate.py` из Codex skill-creator потребовал отсутствующий `PyYAML` и не запустился; пакет ради проверки не устанавливался. Поэтому metadata проверены встроенной проверкой обязательных полей и границ frontmatter, а не полноценным YAML-парсером. Поля содержат только простые строковые значения.
 
 После восстановления Claude Code: открыть новый сеанс из корня, убедиться, что четыре команды доступны, пройти четыре примера выше на копии задачи без записи в рабочие файлы, сверить применённые инструкции и разрешить замечания. Затем обновлять навыки только при изменении стека/планового контракта; вносить правки локально, снова проверить ссылки и сценарии, записать результат в `PAIR.md`. Не обновлять внешние плагины автоматически.
+
+## Решения по набору скиллов (12.10.2026, утверждено пользователем)
+
+| Скилл | Решение | Как покрыто |
+|---|---|---|
+| Superpowers | есть (плагин, 6.4.1) | планирование, TDD, отладка |
+| UI/UX Pro Max | есть (`~/.claude/skills`) | дизайн-системы, компоненты |
+| Frontend Design (Anthropic) | **включён** 12.10: `frontend-design@claude-plugins-official` в `~/.claude/settings.json` (резервная копия `settings.json.bak-2026-10-12`) | визуальный дизайн HTML-планов и макетов; Tk-реализация идёт по `application-ui-ux-designer` |
+| Software Architect (общий) | **не ставим** | не нужен: закрыт проектным `application-software-architect` |
+| Enterprise Architecture (C4, ADR) | **не ставим отдельно** | C4, ADR, миграции уже в `application-software-architect` (SKILL.md, шаги 4–5) |
+| Skill Creator (Anthropic) | есть | создание и улучшение скиллов |
+| project-master-planner, application-ui-ux-designer, application-software-architect, application-motion-designer | есть (`aion_chat_watcher/.claude/skills`) | проектные |
+| Motion / Motion AI Kit, GSAP | **не ставим** | `application-motion-designer` покрывает задачи Tk; GSAP нужен только если HTML-планам понадобится сложная анимация, тогда решаем отдельно |
+| Playwright | MCP в корневом проекте `ClaudeWorkspace` | проверка HTML-страниц в браузере |
+
+Скиллы Codex этим решением не затронуты: их состав Codex проверяет сам (NOT VERIFIED со стороны Claude).
+
