@@ -73,12 +73,14 @@ class AllChatView(ttk.Frame):
         on_item_leave: Callable[[], None] | None = None,
         grades: Mapping[str, str] | None = None,
         on_place: Callable[[str, float, float, str], None] | None = None,
+        motion_enabled: Callable[[], bool] | None = None,
     ) -> None:
         super().__init__(parent)
         self.get_path = get_path
         self.get_minutes = get_minutes  # history period, shared with the search tab («История»)
         self.names = names
         self.on_settings = on_settings
+        self.motion_enabled = motion_enabled or (lambda: True)
         self._links = (spec_items, on_item_enter, on_item_leave, grades, on_place)
         self.tailer: LogTailer | None = None
         self.paused = False
@@ -154,7 +156,7 @@ class AllChatView(ttk.Frame):
         self.pause_btn.configure(text="Продолжить" if self.paused else "Пауза")
         if not self.paused and self._held:
             held, self._held = self._held, []
-            self._show(held)
+            self._show(held, live=True)
 
     def _on_settings_changed(self) -> None:
         self.on_settings(show_system=self.system_var.get())
@@ -186,7 +188,7 @@ class AllChatView(ttk.Frame):
             return
         self.tailer = tailer
         self.status_var.set("")
-        self._show(lines)
+        self._show(lines, live=False)
         if self._rows == 0:
             minutes = self.get_minutes() if with_history else 0
             self.empty.show("chat-circle-dots", "Пока тихо",
@@ -217,7 +219,7 @@ class AllChatView(ttk.Frame):
         if self.paused:
             self._held.extend(lines)
         else:
-            self._show(lines)
+            self._show(lines, live=True)
         self._schedule(POLL_MS)
 
     # --- rendering --------------------------------------------------------------------
@@ -228,7 +230,7 @@ class AllChatView(ttk.Frame):
         self._rows = 0
         self.anchor.update()
 
-    def _show(self, raw_lines: list[str]) -> None:
+    def _show(self, raw_lines: list[str], live: bool = False) -> None:
         show_system = self.system_var.get()
         rows = []
         for raw in raw_lines:
@@ -246,7 +248,9 @@ class AllChatView(ttk.Frame):
         self.empty.hide()
         at_bottom = self.text.yview()[1] >= 0.999
         self.text.configure(state="normal")
+        fresh_ranges: list[tuple[str, str]] = []
         for line, kind in rows:
+            start = self.text.index("end-1c")
             parts: list = [f"{line.time[11:]}  ", ("meta",)]
             if kind is not None:
                 label = line.channel if kind == "Поиск группы" and "?" not in (line.channel or "?") else kind
@@ -260,10 +264,20 @@ class AllChatView(ttk.Frame):
                 parts += [line.text, (self._tag_for(theme.MUTED),)]
             parts += ["\n", ()]
             self.text.insert("end", *parts)
+            fresh_ranges.append((start, self.text.index("end-1c")))
         self._rows += len(rows)
         if self._rows > MAX_ROWS:
             self.text.delete("2.0", f"{self._rows - MAX_ROWS + 2}.0")
             self._rows = MAX_ROWS
+        if live and self.motion_enabled():
+            from watcher.motion import tween_color
+            for index, (start, end) in enumerate(fresh_ranges[-10:]):
+                tag = f"fresh_{self._rows}_{index}_{id(self)}"
+                self.text.tag_configure(tag, background=theme.ACCENT_SUBTLE)
+                self.text.tag_add(tag, start, end)
+                tween_color(self.text, lambda color, t=tag: self.text.tag_configure(t, background=color),
+                            theme.ACCENT_SUBTLE, theme.SURFACE, 1200, steps=8,
+                            done=lambda t=tag: self.text.tag_delete(t))
         self.text.configure(state="disabled")
         self.anchor.update()
         if at_bottom:

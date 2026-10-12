@@ -38,9 +38,11 @@ class MatchFeed(ttk.Frame):
         on_item_leave: Callable[[], None] | None = None,
         grades: Mapping[str, str] | None = None,
         on_place: Callable[[str, float, float, str], None] | None = None,
+        motion_enabled: Callable[[], bool] | None = None,
     ) -> None:
         super().__init__(parent, style="Card.TFrame", padding=6)
         self.on_accept = on_accept
+        self.motion_enabled = motion_enabled or (lambda: True)
         self.max_rows = max_rows
         self.boxes: dict[int, ttk.Checkbutton] = {}
         self.countdowns: dict[int, tk.Label] = {}
@@ -49,6 +51,14 @@ class MatchFeed(ttk.Frame):
         self._pending: set[int] = set()
         self._rows = 0
         self._blink_on = False
+        self._blink_color = PENDING_DIM
+        self.ui_icons = IconSet(self, resource_root() / "data" / "ui" / "icons")
+        self.banner = ttk.Frame(self, style="Surface.TFrame", padding=(10, 7))
+        self.banner_label = ttk.Label(self.banner, style="Warn.Chip.TLabel", anchor="w")
+        self.banner_label.pack(side="left", fill="x", expand=True)
+        self.banner_button = ttk.Button(self.banner, style="Ghost.TButton")
+        self.banner_button.pack(side="right", padx=(8, 0))
+        self.banner.pack_forget()
         self.text = tk.Text(self, wrap="word", state="disabled")
         theme.style_text(self.text)
         self._scroll = ttk.Scrollbar(self, command=self._yview)
@@ -77,8 +87,20 @@ class MatchFeed(ttk.Frame):
         if self._rows == 0:
             self.empty.show(icon, title, hint, loading)
 
+    def show_banner(self, text: str, action: str, command: Callable[[], None]) -> None:
+        """Show a compact actionable warning above the search feed."""
+        self.banner_label.configure(text=text, image=self.ui_icons.get("warning", "caution", 16), compound="left")
+        self.banner_button.configure(text=action, command=command)
+        if not self.banner.winfo_manager():
+            self.banner.pack(fill="x", side="top", pady=(0, 6), before=self.text)
+
+    def hide_banner(self) -> None:
+        if self.banner.winfo_manager():
+            self.banner.pack_forget()
+
     # --- public -----------------------------------------------------------------------
-    def add(self, msg: ChatMessage, hits: list[str], alert_id: int | None = None, quiet: bool = False) -> None:
+    def add(self, msg: ChatMessage, hits: list[str], alert_id: int | None = None, quiet: bool = False,
+            animate_new: bool = False) -> None:
         """Append a matched message. With alert_id the row blinks until mark() is called.
 
         quiet: a repeat of an already accepted series — a green row marked «уже принято», no alert.
@@ -97,6 +119,8 @@ class MatchFeed(ttk.Frame):
         self.text.tag_add("hitline" if has_hit else "row", start, "end-1c")
         if quiet:
             self.text.tag_add("accepted", start, "end-1c")
+        if animate_new and alert_id is None and not quiet and self.motion_enabled():
+            self._fade_new_row(start, "end-1c")
         if alert_id is not None:
             # the range includes the newline, so the stripe spans the full width
             for tag in (f"a{alert_id}", "alert", "blink"):
@@ -110,6 +134,15 @@ class MatchFeed(ttk.Frame):
         if at_bottom:
             self.text.see("end")
         self._place_holders()
+
+    def _fade_new_row(self, start: str, end: str) -> None:
+        tag = f"fresh_{self._rows}_{id(self)}"
+        self.text.tag_configure(tag, background=theme.ACCENT_SUBTLE)
+        self.text.tag_add(tag, start, end)
+        from watcher.motion import tween_color
+        tween_color(self.text, lambda color: self.text.tag_configure(tag, background=color),
+                    theme.ACCENT_SUBTLE, theme.SURFACE, 1200, steps=8,
+                    done=lambda: self.text.tag_delete(tag))
 
     def add_note(self, note: str) -> None:
         """A muted centred separator line (e.g. between history and live messages)."""
@@ -156,12 +189,19 @@ class MatchFeed(ttk.Frame):
     def blink(self) -> None:
         self._blink_on = not self._blink_on
         color = PENDING_BRIGHT if self._blink_on else PENDING_DIM
-        self.text.tag_configure("blink", background=color)
+        start = self._blink_color
+        self._blink_color = color
+        from watcher.motion import tween_color
+        tween_color(self.text, lambda value: self.text.tag_configure("blink", background=value),
+                    start, color, 450, enabled=self.motion_enabled(), steps=4)
         style = "PendHot.TCheckbutton" if self._blink_on else "Pend.TCheckbutton"
         for alert_id in self._pending:
             self.boxes[alert_id].configure(style=style)
-            self._holders[alert_id].configure(background=color)
-            self.countdowns[alert_id].configure(background=color)
+            holder, countdown = self._holders[alert_id], self.countdowns[alert_id]
+            tween_color(self.text, lambda value, w=holder: w.configure(background=value),
+                        start, color, 450, enabled=self.motion_enabled(), steps=4)
+            tween_color(self.text, lambda value, w=countdown: w.configure(background=value),
+                        start, color, 450, enabled=self.motion_enabled(), steps=4)
 
     # --- internals ----------------------------------------------------------------------
     def _make_holder(self, alert_id: int) -> None:

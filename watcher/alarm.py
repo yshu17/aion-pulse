@@ -58,6 +58,7 @@ class NagAlarm:
         self.flash = flash or taskbar_flasher(root)
         self.on_ack = on_ack  # the user reacted in the popup (hover, click or OK)
         self.window_icons = window_icons or ()
+        self.reduce_motion = False
         self.window: tk.Toplevel | None = None
         self.text: tk.Text | None = None
         self.sounding = False
@@ -137,7 +138,23 @@ class NagAlarm:
         if not self.sounding:
             return
         self._blink_on = not self._blink_on
-        self._paint(self._blink_on)
+        target = theme.ACCENT if self._blink_on else DIM
+        from watcher.motion import tween_color
+        if self.window is None:
+            # Sound-only mode has no Tk widget to animate.
+            self._blink_after = self.root.after(BLINK_MS, self._blink)
+            return
+        background_start = self.window.cget("background")
+        tween_color(
+            self.window, lambda color: self.window.configure(background=color) if self.window else None,
+            background_start, target, BLINK_MS, enabled=not self.reduce_motion, steps=4,
+        )
+        title_start = self._title.cget("foreground") if self._title is not None else target
+        title_end = theme.ACCENT if self._blink_on else theme.TEXT
+        tween_color(
+            self.window, lambda color: self._title.configure(foreground=color) if self._title else None,
+            title_start, title_end, BLINK_MS, enabled=not self.reduce_motion, steps=4,
+        )
         self._blink_after = self.root.after(BLINK_MS, self._blink)
 
     def _paint(self, bright: bool) -> None:
@@ -192,6 +209,8 @@ class NagAlarm:
         win.geometry(f"+{max(0, x)}+{max(0, y)}")
         theme.dark_title_bar(win)
         self.window = win
+        from watcher.motion import fade_window
+        fade_window(win, 140, enabled=not getattr(self, "reduce_motion", False))
 
     def _add_row(self, msg: ChatMessage, hits: list[str]) -> None:
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]

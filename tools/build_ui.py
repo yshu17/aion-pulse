@@ -39,6 +39,7 @@ def rounded(
     top_only: bool = False,
     stripe: str | None = None,
     top_edge: bool = False,
+    focus_color: str | None = None,
 ) -> None:
     big = SIZE * SCALE
     image = Image.new("RGB", (big, big), outside)
@@ -65,6 +66,15 @@ def rounded(
                 (inset, 0, target - inset - 1, 0),
                 fill=edge_color,
                 width=max(1, round(factor)),
+            )
+        if focus_color:  # UI/UX item 15: visible 2 logical px focus ring at every DPI
+            ring = max(2, round(2 * factor))
+            inset = max(1, ring // 2)
+            draw_rendered.rounded_rectangle(
+                (inset, inset, target - inset - 1, target - inset - 1),
+                radius=max(1, round((radius - 1) * factor)),
+                outline=focus_color,
+                width=ring,
             )
         rendered.save(OUT / f"{name}{suffix}.png", optimize=True)
 
@@ -118,15 +128,19 @@ def main() -> int:
     t = theme
     for outside, prefix in ((t.BG, ""), (t.SURFACE, "card_")):
         rounded(f"{prefix}btn", t.SURFACE_2, outside, RADIUS, top_edge=True)
+        rounded(f"{prefix}btn_focus", t.SURFACE_2, outside, RADIUS, top_edge=True, focus_color=t.ACCENT)
         rounded(f"{prefix}btn_active", t.SURFACE_3, outside, RADIUS, top_edge=True)
         rounded(f"{prefix}btn_disabled", t.SURFACE, outside, RADIUS, border=t.SURFACE_2, top_edge=True)
+    rounded("ghost_focus", t.BG, t.BG, RADIUS, border=t.ACCENT, width=2)
     rounded("accent", t.ACCENT, t.BG, RADIUS, top_edge=True)
+    rounded("accent_focus", t.ACCENT, t.BG, RADIUS, focus_color=t.ACCENT_TEXT)
     rounded("accent_active", t.ACCENT_HOVER, t.BG, RADIUS, top_edge=True)
     rounded("danger", t.DANGER_FILL, t.BG, RADIUS, top_edge=True)
+    rounded("danger_focus", t.DANGER_FILL, t.BG, RADIUS, focus_color=t.ACCENT)
     rounded("danger_active", t.DANGER_FILL_HOVER, t.BG, RADIUS, top_edge=True)
     for outside, prefix in ((t.BG, ""), (t.SURFACE, "card_")):
         rounded(f"{prefix}field", t.SURFACE_2, outside, RADIUS, border=t.BORDER_CONTROL)
-        rounded(f"{prefix}field_focus", t.SURFACE_2, outside, RADIUS, border=t.ACCENT)
+        rounded(f"{prefix}field_focus", t.SURFACE_2, outside, RADIUS, border=t.ACCENT, width=2)
         rounded(f"{prefix}field_disabled", t.SURFACE, outside, RADIUS, border=t.SURFACE_2)
     rounded("card", t.SURFACE, t.BG, CARD_RADIUS, top_edge=True)
     rounded("group", t.SURFACE_2, t.SURFACE, RADIUS)

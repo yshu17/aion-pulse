@@ -26,6 +26,7 @@ ACCENT_TEXT = "#1b1206"
 DISABLED = "#6f7480"  # only for really unavailable controls: 3.56 on SURFACE (WCAG exempts inactive ones; was 2.65)
 DANGER = "#ff6b70"  # danger as text («Пропущено», warnings): 5.26 on SURFACE_2, 6.59 on BG — AA (was 3.72)
 SUCCESS = "#5fd38d"  # «Слежу», «Отреагировал»: 7.75 on SURFACE_2 — AAA
+SUCCESS_PULSE = "#9be8bd"
 WARNING = "#f5b544"  # «Игра не запущена», «Chat.log не найден»: 8.02 on SURFACE_2 — AAA
 DANGER_FILL = "#c9363b"  # Stop button fill: white text 5.15 — AA (was #e5484d, 3.91)
 DANGER_FILL_HOVER = "#d13b40"  # its hover: white text 4.76 — AA (was #f06a6e, 3.00)
@@ -305,13 +306,15 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     )
     style.map("Vertical.TScrollbar", background=[("active", BORDER)])
 
-    off, on, off_dim, on_dim = _check_images(root)
+    off, on, off_dim, on_dim, off_focus, on_focus = _check_images(root)
     style.element_create(
         "Item.indicator",
         "image",
         off,
         ("disabled", "selected", on_dim),
         ("disabled", off_dim),
+        ("focus", "selected", on_focus),
+        ("focus", off_focus),
         ("selected", on),
         border=0,
         sticky="",
@@ -457,7 +460,7 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             name,
             f"{file_prefix}btn",
             [("disabled", f"{file_prefix}btn_disabled"), ("pressed", f"{file_prefix}btn_active"),
-             ("active", f"{file_prefix}btn_active")],
+             ("focus", f"{file_prefix}btn_focus"), ("active", f"{file_prefix}btn_active")],
             edge,
             inner,
         )
@@ -470,9 +473,11 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     style.configure("Card.TButton", background=SURFACE, foreground=TEXT, padding=(14, 6))
     # ghost button: transparent until hovered, then the ordinary button's rounded ground
     hover = img("btn_active")
+    ghost_focus = img("ghost_focus")
     blank = tk.PhotoImage(master=root, width=hover.width(), height=hover.height())  # fully transparent
     _images.append(blank)
-    style.element_create("Ghost.Rounded.border", "image", blank, ("pressed", hover), ("active", hover),
+    style.element_create("Ghost.Rounded.border", "image", blank, ("focus", ghost_focus),
+                         ("pressed", hover), ("active", hover),
                          border=edge, sticky="nswe", padding=inner)
     style.layout(
         "Ghost.TButton",
@@ -482,7 +487,8 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     )
     style.map("Card.TButton", foreground=[("disabled", DISABLED)])
     for name, base, hover in (("Accent", "accent", "accent_active"), ("Danger", "danger", "danger_active")):
-        element(f"{name}.Rounded.border", base, [("pressed", base), ("active", hover)], edge, inner)
+        element(f"{name}.Rounded.border", base,
+                [("focus", f"{base}_focus"), ("pressed", base), ("active", hover)], edge, inner)
         style.layout(
             f"{name}.TButton",
             [(f"{name}.Rounded.border", {"sticky": "nswe", "children": [
@@ -658,9 +664,16 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
             _dot(image, x, 11 + (x - 6), color)
         for x in range(10, 19):
             _dot(image, x, 15 - (x - 10), color)
+    off_focus, on_focus = off.copy(), on.copy()
+    for image in (off_focus, on_focus):
+        image.put(ACCENT, to=(0, 0, size, 2))
+        image.put(ACCENT, to=(0, size - 2, size, size))
+        image.put(ACCENT, to=(0, 0, 2, size))
+        image.put(ACCENT, to=(size - 2, 0, size, size))
+    images.extend((off_focus, on_focus))
     _images.extend(images)
     CHECKS.update(off=off, on=on, off_dim=off_dim, on_dim=on_dim)
-    return off, on, off_dim, on_dim
+    return off, on, off_dim, on_dim, off_focus, on_focus
 
 
 def _pending_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage, tk.PhotoImage]:

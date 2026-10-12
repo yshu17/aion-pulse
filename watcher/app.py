@@ -21,6 +21,8 @@ from watcher.ui_icons import IconSet
 from watcher.hint import Hint
 from watcher.window_icon import load_app_icon
 from watcher.notifier import Notifier, system_sounds
+from watcher.notify_center import Notification, NotificationAction, NotificationCenter
+from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
 from watcher.parser import MAP_NAMES, ChatMessage, display_text, parse_line, places_in
@@ -121,6 +123,15 @@ class App:
             window_icons=self._window_icons,
             icon_for=self._popup_icon,
         )
+        self.alarm.reduce_motion = self.cfg.reduce_motion
+        self.tooltip.reduce_motion = self.cfg.reduce_motion
+        self.notifications = NotificationCenter(sound=lambda _event: self.notifier.play())
+        self.toasts = ToastManager(
+            root, self.notifications, on_open=self._open_notification,
+            on_action=lambda event, _action: self._open_notification(event),
+            reduce_motion=lambda: self.cfg.reduce_motion,
+        )
+        self.toasts.start()
         self._set_status("Остановлен")
         self._update_counters()
         self._feed_empty_state()
@@ -152,6 +163,8 @@ class App:
         self.status_label = ttk.Label(control, textvariable=self.status_short_var, style="Idle.Chip.TLabel", compound="left",
                                       width=STATUS_CHARS)
         self.status_hint = Hint(self.status_label, "")
+        self._status_pulse_after: str | None = None
+        self._status_pulse_generation = 0
         self.status_label.pack(side="left", padx=(12, 0))
         ttk.Label(control, text="Ключевые слова", style="Muted.TLabel").pack(side="left", padx=(20, 8))
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
@@ -181,6 +194,7 @@ class App:
         dir_entry.bind("<FocusOut>", lambda _e: self._apply_game_dir())
         self.browse_btn = ttk.Button(settings, text="Обзор…", style="Card.TButton", command=self._pick_dir)
         self.browse_btn.grid(row=0, column=2, pady=4, sticky="w")
+        Hint(self.browse_btn, "Выбрать папку игры или Chat.log")
         ttk.Label(settings, text="Оповещение", style="CardMuted.TLabel").grid(row=1, column=0, sticky="nw", pady=(10, 0))
         # two lines: the mode, sound and reaction; then the popup and the volume (on a 1000 px window
         # one line does not fit and the volume went off the edge)
@@ -217,6 +231,9 @@ class App:
         )
         play_button.pack(side="left", padx=8)
         Hint(play_button, "Прослушать звук")
+        preview = ttk.Button(alert_row, text="Тест уведомления", style="Card.TButton", command=self._preview_notification)
+        preview.pack(side="left", padx=(0, 8))
+        Hint(preview, "Показать пробное уведомление в углу экрана")
         ttk.Label(alert_row, text="Реакция", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
         self.react_var = tk.StringVar(
             value=next((k for k, v in REACT_CHOICES.items() if v == self.cfg.react_sec), "30 с")
@@ -264,6 +281,11 @@ class App:
         history.pack(side="left")
         history.bind("<<ComboboxSelected>>", lambda _e: self._on_history_changed())
         ttk.Label(history_row, text="поиск при Start и «Весь чат»", style="CardMuted.TLabel").pack(side="left", padx=10)
+        self.reduce_motion_var = tk.BooleanVar(value=self.cfg.reduce_motion)
+        ttk.Checkbutton(
+            settings, text="Отключить анимации", variable=self.reduce_motion_var,
+            style="CardPlain.TCheckbutton", command=self._on_reduce_motion,
+        ).grid(row=3, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=(4, 2))
         settings.columnconfigure(1, weight=1)
         self._show_settings(self.cfg.settings_open)
         self.status_var = tk.StringVar()  # full status text; the folder row shows a short form
@@ -301,6 +323,7 @@ class App:
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
             on_place=self._open_place,
+            motion_enabled=lambda: not self.cfg.reduce_motion,
         )
         self.feed.pack(fill="both", expand=True)
         self.text = self.feed.text
@@ -318,6 +341,7 @@ class App:
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
             on_place=self._open_place,
+            motion_enabled=lambda: not self.cfg.reduce_motion,
         )
         self.all_chat.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.all_chat, text="Весь чат")
@@ -335,6 +359,7 @@ class App:
             side=self.cfg.map_side,
             on_side=self._on_map_side,
         )
+        self.map_view.motion_enabled = lambda: not self.cfg.reduce_motion
         self.map_view.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.map_view, text="Карта")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
@@ -673,6 +698,9 @@ class App:
         self.item_list.set_all(value)
 
     def _set_status(self, text: str) -> None:
+        unchanged = self.status_var.get() == text
+        if not unchanged:
+            self._stop_status_pulse()
         self.status_var.set(text)
         short, style = short_status(text)
         self.status_short_var.set(short)
@@ -682,6 +710,69 @@ class App:
         image = self.ui_icons.get(*icon, 16)
         self.status_label.configure(style=style, image=image)
         self.status_hint.text = text  # the full status (path, error) on hover
+        if hasattr(self, "feed"):
+            if text == GAME_OFF:
+                self.feed.show_banner("Игра не запущена. После запуска Aion нажми «Проверить снова».",
+                                      "Проверить снова", self.start)
+            elif text.startswith("Chat.log не найден"):
+                self.feed.show_banner("Не найден Chat.log. Проверь папку игры или выбери файл вручную.",
+                                      "Обзор…", self._pick_dir)
+            elif text.startswith("Ошибка чтения"):
+                self.feed.show_banner("Не удалось прочитать Chat.log. Проверь путь и доступ к файлу.",
+                                      "Обзор…", self._pick_dir)
+            elif text.startswith("Ошибка:"):
+                self.feed.show_banner("Сбой слежения. Проверь Chat.log и настройки программы.",
+                                      "Обзор…", self._pick_dir)
+            else:
+                self.feed.hide_banner()
+        if style == "Live.Chip.TLabel" and not self.cfg.reduce_motion and not unchanged:
+            self._pulse_status(theme.SUCCESS, theme.SUCCESS_PULSE)
+
+    def _pulse_status(self, start: str, end: str) -> None:
+        from watcher.motion import tween_color
+        generation = self._status_pulse_generation
+
+        def paint(color: str) -> None:
+            if generation == self._status_pulse_generation and self.status_short_var.get().startswith("Слежу"):
+                self.status_label.configure(foreground=color)
+
+        def cycle(color_a: str, color_b: str) -> None:
+            if generation != self._status_pulse_generation or self.cfg.reduce_motion or not self.status_short_var.get().startswith("Слежу"):
+                return
+            tween_color(
+                self.status_label, paint,
+                color_a, color_b, 1000, enabled=True, steps=6,
+                done=lambda: schedule(color_b, color_a),
+            )
+
+        def schedule(a: str, b: str) -> None:
+            if generation != self._status_pulse_generation or self.cfg.reduce_motion or not self.status_short_var.get().startswith("Слежу"):
+                return
+            self._status_pulse_after = self.root.after(1, lambda: cycle(a, b))
+
+        cycle(start, end)
+
+    def _stop_status_pulse(self) -> None:
+        self._status_pulse_generation += 1
+        if self._status_pulse_after is not None:
+            try:
+                self.root.after_cancel(self._status_pulse_after)
+            except tk.TclError:
+                pass
+            self._status_pulse_after = None
+        try:
+            self.status_label.configure(foreground="")
+        except tk.TclError:
+            pass
+
+    def _on_reduce_motion(self) -> None:
+        self.cfg.reduce_motion = self.reduce_motion_var.get()
+        self.alarm.reduce_motion = self.cfg.reduce_motion
+        self.tooltip.reduce_motion = self.cfg.reduce_motion
+        save_config(self.config_path, self.cfg)
+        self._stop_status_pulse()
+        if not self.cfg.reduce_motion and self.status_short_var.get().startswith("Слежу"):
+            self._pulse_status(theme.SUCCESS, theme.SUCCESS_PULSE)
 
     def _pick_dir(self) -> None:
         chosen = filedialog.askdirectory(initialdir=self.cfg.game_dir or None)
@@ -876,17 +967,17 @@ class App:
         for msg, hits in matched:
             if not nag:
                 self.tracker.add(msg, hits, now, nag=False)
-                self.feed.add(msg, hits)
+                self.feed.add(msg, hits, animate_new=True)
                 loud.append((msg, hits))
             elif self.series.is_silent(msg, hits, now):
                 # a repeat of a series the user already accepted: show it, no alarm
                 self.tracker.add(msg, hits, now, nag=False)
                 self.series.record(msg, hits, now)
-                self.feed.add(msg, hits, quiet=True)
+                self.feed.add(msg, hits, quiet=True, animate_new=True)
             else:
                 alert_id = self.tracker.add(msg, hits, now, nag=True)
                 self.series.record(msg, hits, now, alert_id)
-                self.feed.add(msg, hits, alert_id)
+                self.feed.add(msg, hits, alert_id, animate_new=True)
                 self.feed.set_countdown(self.tracker.remaining(now))
                 loud.append((msg, hits))
         if loud and nag:
@@ -895,12 +986,31 @@ class App:
             self.notifier.play()
         self._update_counters()
 
+    def _preview_notification(self) -> None:
+        self.notifications.notify(
+            "preview", "chat", "Уведомления работают",
+            "Наведите мышь, чтобы задержать карточку. Нажмите на неё, чтобы открыть «Поиск».",
+            [NotificationAction("accept", "Принять"), NotificationAction("snooze", "Через 5 мин")],
+        )
+
+    def _open_notification(self, event: Notification) -> None:
+        # Only an explicit user click brings the application to the foreground.
+        tab_name = {"schedule": "Расписание", "map": "Карта"}.get(event.source, "Поиск")
+        for tab in self.tabs.tabs():
+            if self.tabs.tab(tab, "text") == tab_name:
+                self.tabs.select(tab)
+                break
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+
     def _on_close(self) -> None:
         try:
             self._apply_keywords()
             self._apply_game_dir()
         finally:
             self.stop()
+            self.toasts.close()
             self.alarm.close()
             self.all_chat.deactivate()
             if self._ui_after is not None:

@@ -305,7 +305,6 @@ class ItemList(ttk.Frame):
         self.type_box.bind("<<ComboboxSelected>>", lambda _e: self._on_filter_widgets())
         self.reset_btn = ttk.Button(row, image=self.ui_icons.get("x", "muted"), style="Card.TButton",
                                     command=self._reset_filter, padding=(6, 5))
-        self.reset_btn.pack(side="left", padx=(4, 0))
         Hint(self.reset_btn, "Сбросить фильтры")
         self._sync_filter_widgets()
 
@@ -315,6 +314,11 @@ class ItemList(ttk.Frame):
         self.level_min_var.set(str(f.level_min) if f.level_min else ANY_LEVEL)
         self.level_max_var.set(str(f.level_max) if f.level_max else ANY_LEVEL)
         self.type_var.set(f.type or ALL_TYPES)
+        active = bool(f.grades or f.level_min or f.level_max or f.type)
+        if active and not self.reset_btn.winfo_manager():
+            self.reset_btn.pack(side="left", padx=(4, 0))
+        elif not active and self.reset_btn.winfo_manager():
+            self.reset_btn.pack_forget()
 
     def chip_state(self, grade: str) -> str:
         """«on» (the grade is shown), «off» or «disabled» (the item list is not used by the search mode)."""

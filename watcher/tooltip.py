@@ -18,6 +18,7 @@ class SpecTooltip:
     def __init__(self, root: tk.Misc) -> None:
         self.root = root
         self.window: tk.Toplevel | None = None
+        self.reduce_motion = False
 
     def show(self, spec: dict, icon: tk.PhotoImage | None, x: int, y: int) -> None:
         self.hide()
@@ -30,6 +31,8 @@ class SpecTooltip:
         win.update_idletasks()
         self._place(win, x, y)
         self.window = win
+        from watcher.motion import fade_window
+        fade_window(win, 120, enabled=not self.reduce_motion)
 
     def hide(self) -> None:
         if self.window is not None:

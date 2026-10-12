@@ -43,6 +43,7 @@ class Config:
     map_side: str = "dark"  # «Карта»: whose fortress NPCs and quest givers are shown, "dark" / "light"
     game_check: bool = True  # stop watching (and warn) when the game process aion.bin is not running
     filter_type: str = ""  # item list: category («Лата») or «Оружие: Меч», "" = all
+    reduce_motion: bool = False  # disable decorative UI animations
 
     def chat_log_path(self) -> Path:
         if self.chat_log:
