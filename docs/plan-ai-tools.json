@@ -426,7 +426,7 @@
         "pytest tests/test_mapview.py",
         "снимки 3 масштабов после ui:43"
       ],
-      "handoff": "n/a",
+      "handoff": "in-progress",
       "arch_review": "not-needed",
       "files": {
         "Claude": [
@@ -444,7 +444,7 @@
         }
       ],
       "branch": "claude/map-32-cross",
-      "note": "Задание: docs/TASK_MAP-32.md. Исполнитель переназначен с Codex на Claude 12.10 (история в поле reassigned). Приёмка визуальная — после ui:43."
+      "note": "Задание: docs/TASK_MAP-32.md. Исполнитель Claude (переназначено с Codex 12.10, история в reassigned). Код готов в ветке claude/map-32-cross (23976cd), в основную не слит: визуальная приёмка после ui:43."
     },
     "map:33": {
       "category": "Карта · визуал",

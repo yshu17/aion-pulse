@@ -14,6 +14,16 @@
     },
     "ui:43": {
       "added_at": "12.10.2026 19:37"
+    },
+    "map:32": {
+      "changed_at": "12.10.2026 19:45",
+      "history": [
+        {
+          "at": "2026-10-12T19:45+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ]
     }
   },
   "known_keys": [
@@ -151,7 +161,7 @@
     "map:29": "72f6260f70cb754b5fa4cbe5274e01045f3b61f37e3abacc006c7922f9dfe044",
     "map:30": "2212e7ffb30e90dc876cc3def75c1c19ad1617d30f6adb186cbf9745ee14ad38",
     "map:31": "f87c8c54300e2f56842ab4dcd03ded5a27e60dfa2f29eb3ea123e6876ff0a34c",
-    "map:32": "d69b807fd177dd6c246176455259f6a7fce67b5dfca67f3018269e1d05f6ac67",
+    "map:32": "9abe41609be5d7efc01797ea908f31e115bf2813a7b23ba7554e5823406380d9",
     "map:33": "273604f0edb7e8ae7220f29685291313805ad2aafd8bb457e6b5323ebaec9e99",
     "map:34": "8babf512772273a9e069da3471eee843cec4c802f3b71738b023cd92124fd5d2",
     "map:35": "26d92dc98a6f3b875e7414ca31a17c92e40d83079e691c9bc051abf741adcef2",

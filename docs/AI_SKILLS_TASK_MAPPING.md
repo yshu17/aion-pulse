@@ -41,7 +41,7 @@ Claude Code: **18** · Codex: **16** · Совместно: **7** · Польз�
 | `map:29` | Плавное приближение и отдаление карты | Codex | `application-motion-designer` | `application-ui-ux-designer`, `superpowers:test-driven-development` | готово к передаче Codex |
 | `map:30` | Режим курсора и перемещения карты | Codex | `application-ui-ux-designer` | `application-motion-designer`, `superpowers:test-driven-development` | готово к передаче Codex |
 | `map:31` | Кнопка очистки синих меток «Место» | Claude Code | `application-ui-ux-designer` | `superpowers:test-driven-development` | передача не нужна |
-| `map:32` | Уменьшить синие крестики на 35 % | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
+| `map:32` | Уменьшить синие крестики на 35 % | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | в работе |
 | `map:33` | Развести подписи карты и значки | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `superpowers:test-driven-development` | передача не нужна |
 | `map:34` | Убрать несуществующий вход в пещеру Мариссы | Codex | `superpowers:systematic-debugging` | `superpowers:test-driven-development` | готово к передаче Codex |
 | `map:35` | Добавить фильтры карты | Claude Code | `project-master-planner`, `application-ui-ux-designer` | `application-software-architect`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |

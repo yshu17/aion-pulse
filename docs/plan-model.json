@@ -1214,7 +1214,7 @@
       "title": "Уменьшить синие крестики на 35 %",
       "who": "Claude",
       "text": "Снизить текущий размер маркеров места из чата до 65 % от текущего и проверить читаемость на разных масштабах карты",
-      "status": "todo",
+      "status": "doing",
       "added_at": "",
       "is_latest": false,
       "key": "map:32",
@@ -1222,8 +1222,14 @@
       "dependencies_text": "",
       "parent": "",
       "depends_on": [],
-      "changed_at": "",
-      "history": [],
+      "changed_at": "12.10.2026 19:45",
+      "history": [
+        {
+          "at": "2026-10-12T19:45+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ],
       "owners": [
         "Claude"
       ],
@@ -1287,7 +1293,7 @@
           "pytest tests/test_mapview.py",
           "снимки 3 масштабов после ui:43"
         ],
-        "handoff": "n/a",
+        "handoff": "in-progress",
         "arch_review": "not-needed",
         "files": {
           "Claude": [
@@ -1305,10 +1311,10 @@
           }
         ],
         "branch": "claude/map-32-cross",
-        "note": "Задание: docs/TASK_MAP-32.md. Исполнитель переназначен с Codex на Claude 12.10 (история в поле reassigned). Приёмка визуальная — после ui:43.",
+        "note": "Задание: docs/TASK_MAP-32.md. Исполнитель Claude (переназначено с Codex 12.10, история в reassigned). Код готов в ветке claude/map-32-cross (23976cd), в основную не слит: визуальная приёмка после ui:43.",
         "state": "recommended",
         "agent_label": "Claude Code",
-        "handoff_label": "передача не нужна",
+        "handoff_label": "в работе",
         "arch_label": "не требуется",
         "missing_tools": [
           "tool:ui_snapshots"
