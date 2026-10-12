@@ -1,8 +1,10 @@
 """config.json next to the exe (or the project folder when run from source)."""
 
 import json
+import os
 import sys
 from dataclasses import asdict, dataclass, field, fields
+from datetime import datetime
 from pathlib import Path
 
 DEFAULT_GAME_DIR = r"C:\aMain\Games\AION Imperia\Aion Empire"
@@ -52,18 +54,64 @@ class Config:
 
 
 def save_config(path: Path, cfg: Config) -> None:
-    path.write_text(json.dumps(asdict(cfg), ensure_ascii=False, indent=2), encoding="utf-8")
+    """Write through a temporary file, so an interrupted write never leaves half a JSON file."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(asdict(cfg), ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
 
 
-def load_config(path: Path) -> Config:
-    """Load config; a missing or broken file is replaced with defaults."""
+def _valid(value: object, default: object) -> bool:
+    """True when a JSON value has the type of the field's default (bool is not a number here)."""
+    if isinstance(default, bool):
+        return isinstance(value, bool)
+    if isinstance(default, int):
+        return isinstance(value, int) and not isinstance(value, bool)
+    if isinstance(default, float):
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if isinstance(default, list):
+        return isinstance(value, list) and all(isinstance(item, str) for item in value)
+    return isinstance(value, str)
+
+
+def read_config(path: Path) -> tuple[Config, str]:
+    """Load config and say what was repaired (empty string when nothing was).
+
+    A broken file is kept as config.json.broken-<time> before defaults are written.
+    A field of the wrong type takes its default; the other fields are kept.
+    """
+    notice = ""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             raise ValueError("config root is not an object")
-    except (OSError, ValueError):
+    except FileNotFoundError:
         cfg = Config()
         save_config(path, cfg)
-        return cfg
+        return cfg, ""
+    except (OSError, ValueError):
+        backup = path.with_name(f"{path.name}.broken-{datetime.now():%Y%m%d-%H%M%S}")
+        if path.exists():
+            os.replace(path, backup)
+        cfg = Config()
+        save_config(path, cfg)
+        return cfg, f"config.json был повреждён, сохранён как {backup.name}; загружены настройки по умолчанию"
+    defaults = Config()
     names = {f.name for f in fields(Config)}
-    return Config(**{k: v for k, v in data.items() if k in names})
+    kept = {}
+    wrong = []
+    for key, value in data.items():
+        if key not in names:
+            continue
+        default = getattr(defaults, key)
+        if _valid(value, default):
+            kept[key] = value
+        else:
+            wrong.append(key)
+    if wrong:
+        notice = "в config.json неверный тип у настроек: " + ", ".join(sorted(wrong)) + "; взяты значения по умолчанию"
+    return Config(**kept), notice
+
+
+def load_config(path: Path) -> Config:
+    """Load config; a missing or broken file is replaced with defaults."""
+    return read_config(path)[0]

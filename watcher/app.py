@@ -11,7 +11,8 @@ from watcher import theme
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
-from watcher.config import load_config, save_config
+from watcher.config import read_config, save_config
+from watcher.errlog import log_exception
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
@@ -85,7 +86,9 @@ class App:
     def __init__(self, root: tk.Tk, config_path: Path) -> None:
         self.root = root
         self.config_path = config_path
-        self.cfg = load_config(config_path)
+        self.error_log = config_path.with_name("errors.log")
+        self._last_error = ""
+        self.cfg, self._config_notice = read_config(config_path)
         self.ui_icons = IconSet(root, resource_root() / "data" / "ui" / "icons")
         data_dir = resource_root() / "data"
         self.item_names = load_item_names(data_dir / "item_names.tsv")
@@ -132,7 +135,7 @@ class App:
             reduce_motion=lambda: self.cfg.reduce_motion,
         )
         self.toasts.start()
-        self._set_status("Остановлен")
+        self._set_status(self._config_notice or "Остановлен")
         self._update_counters()
         self._feed_empty_state()
         self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
@@ -891,8 +894,11 @@ class App:
                 self._show_history(history)
             self._process(lines)
         except Exception as exc:
+            # the status line shows one line; errors.log keeps the traceback, once per distinct error
+            self._last_error = log_exception(self.error_log, "_tick", self._last_error)
             self._set_status(f"Ошибка: {exc}")
         else:
+            self._last_error = ""
             hint = self._search_hint()
             self._set_status(f"Слежу за {path}" + (f"  ·  {hint}" if hint else ""))
             self._feed_empty_state()

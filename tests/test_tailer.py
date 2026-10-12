@@ -106,3 +106,34 @@ def test_read_backlog_skips_lines_without_time_and_empty_file(tmp_path):
     write(path, "no time here\r\n2026.10.08 18:59:00 : ok\r\n", "wb")
     tailer.start_at_end()
     assert tailer.read_backlog(datetime(2026, 10, 8, 18, 58)) == ["2026.10.08 18:59:00 : ok"]
+
+
+def test_over_long_line_is_dropped_and_reading_resumes_at_next_newline(tmp_path, monkeypatch):
+    import watcher.tailer as tailer_module
+
+    monkeypatch.setattr(tailer_module, "MAX_LINE_BYTES", 100)
+    path = tmp_path / "Chat.log"
+    write(path, "", "wb")
+    tailer = LogTailer(str(path))
+    tailer.start_at_end()
+    write(path, "x" * 150)  # no newline yet: too long, dropped
+    assert tailer.read_new_lines() == []
+    assert tailer.dropped_lines == 1
+    write(path, "y" * 500)  # still the same broken line
+    assert tailer.read_new_lines() == []
+    write(path, "end of it\r\nafter\r\n")
+    assert tailer.read_new_lines() == ["after"]
+    assert tailer.dropped_lines == 1
+
+
+def test_short_lines_never_count_as_dropped(tmp_path, monkeypatch):
+    import watcher.tailer as tailer_module
+
+    monkeypatch.setattr(tailer_module, "MAX_LINE_BYTES", 100)
+    path = tmp_path / "Chat.log"
+    write(path, "", "wb")
+    tailer = LogTailer(str(path))
+    tailer.start_at_end()
+    write(path, "a" * 90 + "\r\n")
+    assert tailer.read_new_lines() == ["a" * 90]
+    assert tailer.dropped_lines == 0

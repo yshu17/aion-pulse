@@ -1,9 +1,12 @@
 """Read lines appended to a growing log file."""
 
+import logging
 import os
 import re
 from datetime import datetime
 
+log = logging.getLogger(__name__)
+MAX_LINE_BYTES = 64 * 1024  # a longer line is dropped; chat lines are a few hundred bytes
 _TIME = re.compile(rb"^(\d{4})\.(\d{2})\.(\d{2}) (\d{2}):(\d{2}):(\d{2})")
 
 
@@ -35,11 +38,14 @@ class LogTailer:
         self.encoding = encoding
         self._pos = 0
         self._buf = b""
+        self._skipping = False  # inside a dropped over-long line: discard bytes up to its newline
+        self.dropped_lines = 0  # diagnostics: over-long lines dropped so far
 
     def start_at_end(self) -> None:
         """Skip everything already in the file."""
         self._pos = os.path.getsize(self.path)
         self._buf = b""
+        self._skipping = False
 
     def read_new_lines(self) -> list[str]:
         """Return complete lines appended since the last call.
@@ -51,13 +57,25 @@ class LogTailer:
         if size < self._pos:
             self._pos = 0
             self._buf = b""
+            self._skipping = False
         if size == self._pos:
             return []
         with open(self.path, "rb") as f:
             f.seek(self._pos)
             data = f.read(size - self._pos)
         self._pos += len(data)
+        if self._skipping:
+            if b"\n" not in data:
+                return []
+            data = data.split(b"\n", 1)[1]
+            self._skipping = False
         *lines, self._buf = (self._buf + data).split(b"\n")
+        if len(self._buf) > MAX_LINE_BYTES:
+            # no newline for too long: a corrupt or binary stream; drop it, resume at the next newline
+            self.dropped_lines += 1
+            log.warning("Chat.log: строка длиннее %d байт пропущена", MAX_LINE_BYTES)
+            self._buf = b""
+            self._skipping = True
         return [_decode_line(line.rstrip(b"\r"), self.encoding) for line in lines]
 
     def read_backlog(self, since: datetime, chunk_size: int = 256 * 1024) -> list[str]:

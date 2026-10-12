@@ -1,3 +1,5 @@
-pytest>=8.0
-pyinstaller>=6.0
-Pillow>=10.0  # zone maps: JPEG and smooth zoom
+# Versions checked on 12.10.2026 (python 3.14, Windows 11). Change only after a full test run and an exe build.
+pytest==9.1.1
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
+pillow==12.3.0  # zone maps: JPEG and smooth zoom
