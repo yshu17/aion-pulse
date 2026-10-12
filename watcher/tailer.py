@@ -17,8 +17,20 @@ def _line_time(line: bytes) -> datetime | None:
         return None
 
 
+def _decode_line(line: bytes, encoding: str) -> str:
+    """Decode a log line, detecting UTF-8 while retaining legacy CP1251 support."""
+    if encoding.lower() in {"auto", "detect"}:
+        if line.startswith(b"\xef\xbb\xbf"):
+            line = line[3:]
+        try:
+            return line.decode("utf-8")
+        except UnicodeDecodeError:
+            return line.decode("cp1251", errors="replace")
+    return line.decode(encoding, errors="replace")
+
+
 class LogTailer:
-    def __init__(self, path: str, encoding: str = "cp1251") -> None:
+    def __init__(self, path: str, encoding: str = "auto") -> None:
         self.path = path
         self.encoding = encoding
         self._pos = 0
@@ -46,7 +58,7 @@ class LogTailer:
             data = f.read(size - self._pos)
         self._pos += len(data)
         *lines, self._buf = (self._buf + data).split(b"\n")
-        return [line.rstrip(b"\r").decode(self.encoding, errors="replace") for line in lines]
+        return [_decode_line(line.rstrip(b"\r"), self.encoding) for line in lines]
 
     def read_backlog(self, since: datetime, chunk_size: int = 256 * 1024) -> list[str]:
         """Return complete lines before the current position whose time is >= since.
@@ -75,6 +87,6 @@ class LogTailer:
             line = line.rstrip(b"\r")
             time = _line_time(line)
             if time is not None and time >= since:
-                result.append(line.decode(self.encoding, errors="replace"))
+                result.append(_decode_line(line, self.encoding))
         return result
 
