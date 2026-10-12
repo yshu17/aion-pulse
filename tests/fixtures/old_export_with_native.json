@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "statuses": {"ui:41": "done", "tg:2.2": "review"},
+  "history": [
+    {"key": "ui:41", "from": "planned", "to": "done", "at": "2026-10-10T09:00:00.000Z", "origin": "страница плана"}
+  ],
+  "native": {
+    "aion-ui-ux-plan-status-v1": {"41": "done", "40": "doing"},
+    "aion-telegram-plan-status-v1": {"2.2": "done"}
+  },
+  "exported_at": "2026-10-10T09:05:00.000Z"
+}
