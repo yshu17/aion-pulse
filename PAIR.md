@@ -105,6 +105,8 @@
 
 ## Журнал (новое — вверху)
 
+- **13.10 Кодекс · S2 schedule_view** — ветка `codex/schedule-view`, коммит `0abee71`; `python -m pytest -q -p no:cacheprovider`: **380 passed, 3 skipped**. Готово: `watcher/schedule_view.py` без Tk (`events_for_day`, `today_events`, `next_events`), 8 тестов, недельная логика через `reminders.week_start/starts_at`, переход через полночь и `end=24:00` из `data/schedule.json`. Не сделано: подключение вкладки в `watcher/app.py`, напоминания/тосты, сборка exe; это следующие задачи Claude/этапов S3–S5.
+
 - **13.10 Claude · S2** — `ui:45` синхронизирована во всех источниках: `done` с ограничениями, подтверждение `pending`, `SN-7` остаётся `planned` (вкладки ещё нет). Сделано: `watcher/reminders.py` (`due_reminders`, ключ события по неделе, без повторов, тесты `tests/test_reminders.py`, 7). Кодекс по S2 ещё не начал: ветки `codex/schedule-view` нет. Задача Кодексу — в записи от 12.10 (`watcher/schedule_view.py`).
 
 - **12.10 Claude · приоритет: приложение, не планы** — решение пользователя. Планы не расширяем, новых QA-циклов не запускаем. Выполнено: `ui:40` (`59605cd`): «Окно поверх игры» неактивно, значение сохраняется, всплывающее окно не показывается (`OVERLAY_POPUP_ENABLED`). Тесты 368.
