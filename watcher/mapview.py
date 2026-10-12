@@ -49,7 +49,7 @@ LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are
 LABELS_ZOOM_WIDTH = 4000  # px before the «zoom» names (camps, gates, small places) are drawn too
 LABEL_LEVELS = ("main", "zoom")
 PIN = theme.ACCENT
-PLACE_ICON = 34  # px of the blue X that marks a place from the chat, as on the game's map
+PLACE_ICON = 22  # px of the blue X that marks a place from the chat: 65 % of the former 34 (map:32)
 # a point found by the search or reached from «Рядом», and a place from the chat, blink this long so the eye
 # finds them; a point picked with a click is ringed at once
 BLINK_MS = 3000

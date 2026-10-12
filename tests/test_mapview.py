@@ -423,3 +423,12 @@ def test_relief_theme_uses_the_radar_map_in_the_same_frame(root):
     relief = MapView(root, all_zones, map_theme="relief")
     relief.open_zone("220070000")
     assert relief.theme_var.get() == "Рельеф" and relief._image.getpixel((1500, 1500)) != game_pixel
+
+
+def test_place_marker_is_65_percent_of_the_former_size(root):
+    """map:32: the blue X of a place from the chat went from 34 px to 22 px (34 * 0.65 = 22.1), scaled from place.png."""
+    from watcher.mapview import PLACE_ICON, load_icon
+
+    assert PLACE_ICON == 22
+    icon = load_icon(resource_root() / "data" / "maps" / "icons" / "place.png", PLACE_ICON, root)
+    assert icon is not None and max(icon.width(), icon.height()) == 22
