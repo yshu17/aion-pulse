@@ -373,7 +373,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         "TNotebook.Tab",
         background=SURFACE_2,
         foreground=MUTED,
-        padding=(22, 8),
+        padding=(16, 8),
         borderwidth=0,
         font=font("body_strong"),
     )

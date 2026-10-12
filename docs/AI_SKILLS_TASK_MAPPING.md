@@ -10,26 +10,26 @@
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 5 |
 | `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 17 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 28 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 27 |
 | `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
-| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 4 |
+| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 3 |
 | `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
 | `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 29 |
 | `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 11 |
 | `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 5 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
-| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 15 |
+| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 14 |
 | `code-review` | Проверка и ревью | встроен в Claude Code | у Codex свой аналог | 1 |
 | `security-review` | Безопасность | встроен в Claude Code | только у Claude | 8 |
 | `run` | Проверка и ревью | встроен в Claude Code | только у Claude | 3 |
 | `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 7 |
 | `tool:check_project` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
-| `tool:ui_snapshots` | Инструменты проекта | не найден — рекомендуется создать или установить | у Codex есть свой экземпляр | 14 |
+| `tool:ui_snapshots` | Инструменты проекта | не найден — рекомендуется создать или установить | у Codex есть свой экземпляр | 13 |
 
 ## Распределение открытых задач
 
-Claude Code: **17** · Codex: **17** · Совместно: **7** · Пользователь: **0**
+Claude Code: **17** · Codex: **16** · Совместно: **7** · Пользователь: **0**
 
 ## Задачи
 
@@ -67,7 +67,6 @@ Claude Code: **17** · Codex: **17** · Совместно: **7** · Польз�
 | `ui:39` | Панель карты прижата к краям строки и визуально не центрирована | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
 | `ui:40` | Настройка «Окно поверх игры» временно должна быть выключена | Claude Code | `application-ui-ux-designer`, `superpowers:test-driven-development` | `superpowers:verification-before-completion` | передача не нужна |
 | `ui:41` | Верхняя часть окна занимает место нерационально | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
-| `ui:42` | У вкладок слишком большие внутренние отступы | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | в работе |
 | `tg:1.1` | Модуль `telegram.py`: `sendMessage` (HTML, экранирование `<>&`), `429`, ошибки сети, `getUpdates` для поиска чатов. | Codex | `superpowers:test-driven-development` | `security-review`, `code-review` | план ждёт «делаем» |
 | `tg:1.2` | Поток-отправщик: группа через `ChatBatcher` (тик 0.5 с), личка — своя очередь, по одному. | Codex | `application-software-architect` | `superpowers:test-driven-development`, `superpowers:systematic-debugging` | план ждёт «делаем» |
 | `tg:1.3` | Отдельный «слушатель» лога для группы (свой tailer, только `3.Поиск группы` через `parse_line`), работает пока включена галочка. | Claude Code | `application-software-architect` | `superpowers:test-driven-development` | передача не нужна |

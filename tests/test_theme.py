@@ -41,6 +41,12 @@ def test_rounded_theme_uses_image_elements(root):
     assert first_element(style, "Ghost.TButton") == "Ghost.Rounded.border"
 
 
+def test_notebook_tab_padding_is_compact(root):
+    theme.apply_dark_theme(root, UI_DIR)
+    padding = ttk.Style(root).configure("TNotebook.Tab")["padding"]
+    assert tuple(map(int, root.tk.splitlist(padding))) == (16, 8)
+
+
 def test_without_images_theme_stays_flat(root, tmp_path):
     theme.apply_dark_theme(root, tmp_path)
     assert "Rounded" not in first_element(ttk.Style(root), "TButton")

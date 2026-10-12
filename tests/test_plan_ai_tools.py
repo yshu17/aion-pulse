@@ -97,12 +97,12 @@ def test_handoff_states_for_review_and_integration_are_known_and_filterable():
     assert "ai.handoff!=='review'" in plan_ai_view.SHARED_JS and "ai.handoff!=='integrate'" in plan_ai_view.SHARED_JS
 
 
-def test_pilot_task_ui_42_is_in_progress_on_its_own_branch():
+def test_pilot_task_ui_42_was_done_by_codex_on_its_own_branch():
     import json
     from pathlib import Path
 
     data = json.loads((Path(plan_ai_tools.__file__).resolve().parent.parent / "docs" / "plan-ai-tools.json")
                       .read_text(encoding="utf-8"))
     task = data["tasks"]["ui:42"]
-    assert task["agent"] == "codex" and task["handoff"] == "in-progress"
+    assert task["agent"] == "codex" and task["handoff"] == "n/a"  # accepted 12.10, nothing left to hand over
     assert task["branch"] == "codex/ui-42-tabs"

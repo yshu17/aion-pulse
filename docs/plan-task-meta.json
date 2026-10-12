@@ -2,7 +2,15 @@
   "latest": "ui:42",
   "tasks": {
     "ui:42": {
-      "added_at": "11.10.2026 02:46"
+      "added_at": "11.10.2026 02:46",
+      "changed_at": "12.10.2026 19:28",
+      "history": [
+        {
+          "at": "2026-10-12T19:28+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ]
     }
   },
   "known_keys": [
@@ -198,7 +206,7 @@
     "ui:39": "58d77d792e871772a87f375845217a947b8b363c6b7eec62d41bf0a976811a2e",
     "ui:40": "4ca654ee2a1a4f33fe2d72c29931e8cb359b7127080bd7eb34b11412824e83ec",
     "ui:41": "5472179d88467611eed2d6efa2c56c567332ace568d0f77a2ae177250bc22e60",
-    "ui:42": "2ead6e1ec408b49cd3932774ab6b36a3c2a73132d7c376ea72d56953e6f315b3",
+    "ui:42": "c65f74c644fd1061533f62cac22931d83312cf74b0638afbde27c794fa0ff1e7",
     "tg:0.1": "40798c25c9a6158f7cd06c4555aa8b2d5293a70477598de2b20b348e7b858d65",
     "tg:1.1": "de2bdde53ff8cad868d959e0ec8e9c51d86a73bff6d000978ae981f28086609a",
     "tg:1.2": "0a2dfa8e145fa936bd1e74df14fbd56600b01022f6a9d3534d8af00d313b49b4",

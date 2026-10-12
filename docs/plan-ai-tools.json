@@ -1523,7 +1523,7 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "in-progress",
+      "handoff": "n/a",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
@@ -1531,7 +1531,7 @@
         ]
       },
       "branch": "codex/ui-42-tabs",
-      "note": "Пилот 12.10: Кодекс сдал 9897c88, приёмка Claude — возврат на доработку: вертикальный padding 6 не меняет высоту вкладки и сдвигает подпись на 2 px вверх. См. docs/TASK_UI-42.md, раздел «Замечания после проверки»."
+      "note": "Интегрировано: код d702783 (Codex), приёмка Claude 12.10. Визуальная проверка на 100 % масштабе; 125/150 % не проверены."
     },
     "tg:1.1": {
       "category": "Telegram · модуль",
