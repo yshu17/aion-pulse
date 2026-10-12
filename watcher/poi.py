@@ -24,6 +24,7 @@ class Poi:
     name: str
     note: str = ""  # extra line for the card, e.g. the quests an NPC gives
     side: str = ""  # "dark" / "light": shown only for that side (fortress NPCs, quest givers); "" = always
+    layer: int | None = None  # optional client map layer (Abyss)
 
 
 class PoiStore:
@@ -38,7 +39,7 @@ class PoiStore:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
             zones = {
                 zone: [Poi(zone, p["t"], p["x"], p["y"], p["gx"], p["gy"], p.get("name", ""), p.get("note", ""),
-                           p.get("side", ""))
+                           p.get("side", ""), p.get("layer"))
                        for p in points]
                 for zone, points in data.get("zones", {}).items()
             }
@@ -54,7 +55,8 @@ class PoiStore:
         zones = {}
         for zone, points in self._zones.items():
             f = to_image.get(zone)
-            zones[zone] = [Poi(p.zone, p.type, *f(p.gx, p.gy), p.gx, p.gy, p.name, p.note, p.side) for p in points] if f else points
+            zones[zone] = [Poi(p.zone, p.type, *f(p.gx, p.gy), p.gx, p.gy, p.name, p.note, p.side, p.layer)
+                           for p in points] if f else points
         return PoiStore(self.types, zones)
 
     def type_name(self, type_: str) -> str:
@@ -67,9 +69,11 @@ class PoiStore:
             out.setdefault(info.get("group", "other"), []).append(type_)
         return out
 
-    def in_zone(self, zone: str, types: set[str], side: str = "") -> list[Poi]:
+    def in_zone(self, zone: str, types: set[str], side: str = "", layer: int | None = None) -> list[Poi]:
         """Points of the given types; with a side, points of the other side are left out."""
-        return [p for p in self._zones.get(zone, []) if p.type in types and (not side or not p.side or p.side == side)]
+        return [p for p in self._zones.get(zone, []) if p.type in types
+                and (not side or not p.side or p.side == side)
+                and (layer is None or p.layer is None or p.layer == layer)]
 
     def counts(self, zone: str) -> dict[str, int]:
         out: dict[str, int] = {}
@@ -77,13 +81,13 @@ class PoiStore:
             out[p.type] = out.get(p.type, 0) + 1
         return out
 
-    def search(self, zone: str, query: str, types: set[str], side: str = "") -> list[Poi]:
+    def search(self, zone: str, query: str, types: set[str], side: str = "", layer: int | None = None) -> list[Poi]:
         """Points of the shown layers whose name or type name holds every word of the query."""
         words = normalize(query).split()
         if not words:
             return []
         found = []
-        for p in self.in_zone(zone, types, side):
+        for p in self.in_zone(zone, types, side, layer):
             text = normalize(f"{p.name} {self.type_name(p.type)}")
             if all(w in text for w in words):
                 found.append(p)

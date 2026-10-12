@@ -77,6 +77,7 @@ class Zone:
     ky: tuple[float, float]
     labels: tuple[tuple[float, float, str, str], ...] = ()  # area names: (image x, image y, text, level)
     relief: Path | None = None  # the «Рельеф» theme: the radar map cut to the same frame (tools/build_relief.py)
+    layers: tuple[tuple[int, str, Path], ...] = ()  # Abyss layer id, display name and map image
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
@@ -115,6 +116,8 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
                 tuple((kx[0] * gy + kx[1], ky[0] * gx + ky[1], text, level)
                       for gx, gy, text, level in labels.get(map_id, [])),
                 relief if (relief := Path(maps_dir) / "relief" / path.name).is_file() else None,
+                tuple((int(layer["id"]), layer.get("name", f"Слой {layer['id']}"), Path(maps_dir) / layer["file"])
+                      for layer in info.get("layers", []) if (Path(maps_dir) / layer["file"]).is_file()),
             )
     return zones
 
@@ -166,6 +169,7 @@ class MapView(ttk.Frame):
         self.on_theme = on_theme or (lambda _theme: None)
         self.side = side if side in SIDES else "dark"
         self.on_side = on_side or (lambda _side: None)
+        self.motion_enabled: Callable[[], bool] = lambda: True
         self.layers: set[str] = set()
         self._set_layers(show_quests)
         self._poi_icons: dict[tuple[str, int], object] = {}
@@ -173,6 +177,7 @@ class MapView(ttk.Frame):
         self._spots: dict[Poi, tuple[float, float]] = {}  # where each single point's icon was drawn
         self.get_places = get_places  # place links seen in the chat (pins)
         self.zone: Zone | None = None
+        self.current_layer: int | None = None
         self.place: Place | None = None
         self.others: list[Place] = []
         self.zoom = 1.0  # screen px per map image px
@@ -222,13 +227,21 @@ class MapView(ttk.Frame):
                                           state="readonly", width=8)
             self.theme_box.pack(side="left", padx=(12, 0))
             self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._on_theme_selected())
+        self.layer_var = tk.StringVar()
+        self.layer_box = ttk.Combobox(bar, textvariable=self.layer_var, state="readonly", width=12)
+        if any(z.layers for z in zones.values()):
+            self.layer_box.pack(side="left", padx=(10, 0))
+            self.layer_box.pack_forget()
+            self.layer_box.bind("<<ComboboxSelected>>", lambda _e: self._on_layer_selected())
+            Hint(self.layer_box, "Слой карты Бездны. Для NPC и подписей правило выбора по высоте в XML клиента не найдено.")
         self.title = ttk.Label(bar, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
+        self.title.pack_forget()
         for name, hint, command in (
-            ("house", "Показать всю карту", self._fit),
-            ("minus", "Уменьшить масштаб", lambda: self._zoom_center(1 / ZOOM_STEP)),
-            ("plus", "Увеличить масштаб", lambda: self._zoom_center(ZOOM_STEP)),
             ("crosshair", "Вернуться к метке из чата", self._back_to_place),
+            ("plus", "Увеличить масштаб", lambda: self._zoom_center(ZOOM_STEP)),
+            ("minus", "Уменьшить масштаб", lambda: self._zoom_center(1 / ZOOM_STEP)),
+            ("house", "Показать всю карту", self._fit),
         ):
             button = ttk.Button(bar, image=self.ui_icons.get(name, "muted"), command=command, padding=(6, 5))
             button.pack(side="right", padx=(6, 0))
@@ -245,7 +258,7 @@ class MapView(ttk.Frame):
         self.point_card.pack(side="right", fill="y", padx=(10, 0))
         card = ttk.Frame(body, style="Card.TFrame", padding=6)
         card.pack(side="left", fill="both", expand=True)
-        self.canvas = tk.Canvas(card, background=theme.SURFACE, highlightthickness=0, borderwidth=0, cursor="fleur")
+        self.canvas = tk.Canvas(card, background=theme.BG, highlightthickness=0, borderwidth=0, cursor="fleur")
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda _e: self._on_resize())
         self.canvas.bind("<MouseWheel>", self._on_wheel)
@@ -281,26 +294,28 @@ class MapView(ttk.Frame):
         zone = self.zones.get(map_id)
         if zone is None:
             return
+        self._cancel_fly()
         self.place = None
         self.selected = None
         self._stop_blink()
         self.point_card.clear()
         self._set_zone(zone)
-        self.title.configure(text="")
+        self._set_title("")
         self._refresh_pins()
         self.update_idletasks()
         self._fit()
 
     def show(self, place: Place, others: Iterable[Place] | None = None) -> None:
+        self._cancel_fly()
         zone = self.zones.get(place.map_id)
         self.place = place
         if zone is None:
-            self.title.configure(text=f"{place.label}  ·  карты этой зоны нет")
+            self._set_title(f"{place.label}  ·  карты этой зоны нет")
             return
         if zone is not self.zone:
             self._set_zone(zone)
         self._refresh_pins(others)
-        self.title.configure(text=place.label)
+        self._set_title(place.label)
         self.selected = None
         self.point_card.show(
             "Место из чата", place.label, place.x, place.y, place.note, self.nearby(zone.map_id, place.x, place.y)
@@ -309,7 +324,16 @@ class MapView(ttk.Frame):
         if self.zoom < self._fit_zoom() * 2:
             self.zoom = min(MAX_ZOOM, self._fit_zoom() * 2)
         self._start_blink("pin")
-        self.center_on(*zone.to_image(place.x, place.y))
+        self.fly_to(*zone.to_image(place.x, place.y))
+
+    def _set_title(self, text: str) -> None:
+        """Only show the map title when it contains useful text (UI/UX item 18)."""
+        self.title.configure(text=text)
+        if text:
+            if not self.title.winfo_manager():
+                self.title.pack(side="left", padx=(14, 0))
+        elif self.title.winfo_manager():
+            self.title.pack_forget()
 
     def center_on(self, image_x: float, image_y: float) -> None:
         width, height = self._canvas_size()
@@ -317,6 +341,46 @@ class MapView(ttk.Frame):
         self.top = image_y - height / 2 / self.zoom
         self._clamp()
         self.render()
+
+    def fly_to(self, image_x: float, image_y: float) -> None:
+        """Move the map by four short frames without changing its zoom."""
+        width, height = self._canvas_size()
+        target_left = image_x - width / 2 / self.zoom
+        target_top = image_y - height / 2 / self.zoom
+        start_left, start_top = self.left, self.top
+        if not self.motion_enabled() or (abs(target_left - start_left) < 2 and abs(target_top - start_top) < 2):
+            self.left, self.top = target_left, target_top
+            self._clamp()
+            self.render()
+            return
+        self._cancel_fly()
+        self._fly_frame = 0
+
+        def step() -> None:
+            if not self.winfo_exists():
+                return
+            self._fly_frame += 1
+            t = self._fly_frame / 4
+            ease = 1 - (1 - t) ** 3
+            self.left = start_left + (target_left - start_left) * ease
+            self.top = start_top + (target_top - start_top) * ease
+            self._clamp()
+            self.render()
+            if self._fly_frame < 4:
+                self._fly_after = self.after(35, step)
+            else:
+                self._fly_after = None
+
+        step()
+
+    def _cancel_fly(self) -> None:
+        after_id = getattr(self, "_fly_after", None)
+        if after_id is not None:
+            try:
+                self.after_cancel(after_id)
+            except tk.TclError:
+                pass
+            self._fly_after = None
 
     def zoom_at(self, factor: float, screen_x: float, screen_y: float) -> None:
         """Zoom keeping the map point under (screen_x, screen_y) in place."""
@@ -338,6 +402,8 @@ class MapView(ttk.Frame):
         from PIL import Image
 
         self.zone = zone
+        self.current_layer = zone.layers[0][0] if zone.layers else None
+        self._sync_layer_box()
         self._load_image()
         self.zone_var.set(zone.name)
         self.zoom = self._fit_zoom()
@@ -346,7 +412,9 @@ class MapView(ttk.Frame):
     def _load_image(self) -> None:
         from PIL import Image
 
-        path = self.zone.relief if self.theme == "relief" and self.zone.relief is not None else self.zone.path
+        layer_path = next((path for layer_id, _name, path in self.zone.layers if layer_id == self.current_layer), None)
+        path = (self.zone.relief if self.theme == "relief" and self.zone.relief is not None else
+                layer_path or self.zone.path)
         with Image.open(path) as image:
             self._image = image.convert("RGB")
 
@@ -357,6 +425,25 @@ class MapView(ttk.Frame):
         if self.zone is not None:
             self._load_image()
             self.render()
+
+    def _sync_layer_box(self) -> None:
+        if self.zone is None or not self.zone.layers:
+            self.layer_box.pack_forget()
+            return
+        self.layer_box.configure(values=[name for _layer_id, name, _path in self.zone.layers])
+        selected = next((name for layer_id, name, _path in self.zone.layers if layer_id == self.current_layer),
+                        self.zone.layers[0][1])
+        self.layer_var.set(selected)
+        if not self.layer_box.winfo_manager():
+            self.layer_box.pack(side="left", padx=(10, 0), after=self.zone_box)
+
+    def _on_layer_selected(self) -> None:
+        if self.zone is None:
+            return
+        self.current_layer = next((layer_id for layer_id, name, _path in self.zone.layers
+                                   if name == self.layer_var.get()), None)
+        self._load_image()
+        self._schedule_render()
 
     # --- geometry ----------------------------------------------------------------------
     def _canvas_size(self) -> tuple[int, int]:
@@ -470,7 +557,7 @@ class MapView(ttk.Frame):
         """Closest teleporter, warehouse, merchant, … around a game position, for the card."""
         out = []
         for type_ in NEARBY_TYPES:
-            candidates = [p for p in self.poi.in_zone(zone, {type_}, self.side) if p != exclude]
+            candidates = [p for p in self.poi.in_zone(zone, {type_}, self.side, self.current_layer) if p != exclude]
             if not candidates:
                 continue
             best = min(candidates, key=lambda p: math.hypot(p.gx - gx, p.gy - gy))
@@ -489,7 +576,7 @@ class MapView(ttk.Frame):
         else:
             self._stop_blink()
         if centre:
-            self.center_on(poi.x, poi.y)
+            self.fly_to(poi.x, poi.y)
         else:
             self._schedule_render()
 
@@ -529,7 +616,7 @@ class MapView(ttk.Frame):
             return ""
         if step == 0 or query != self._match_query:
             words = normalize(query).split()
-            points = self.poi.search(self.zone.map_id, query, self.layers, self.side)
+            points = self.poi.search(self.zone.map_id, query, self.layers, self.side, self.current_layer)
             areas = [(x, y, text) for x, y, text, _level in self.zone.labels
                      if all(w in normalize(text) for w in words)]
             self._matches = list(points) + areas
@@ -548,7 +635,7 @@ class MapView(ttk.Frame):
             self.selected = None
             self.point_card.show("Район", text.replace("\n", " "), 0, 0, "", [])
             self.point_card.coords.configure(text="")
-            self.center_on(x, y)
+            self.fly_to(x, y)
         return f"{self._match_index + 1} / {len(self._matches)}"
 
     def _set_layers(self, show_quests: bool) -> None:
@@ -632,7 +719,7 @@ class MapView(ttk.Frame):
         self._spots = {}
         if self.zone is None or not self.layers:
             return
-        points = self.poi.in_zone(self.zone.map_id, self.layers, self.side)
+        points = self.poi.in_zone(self.zone.map_id, self.layers, self.side, self.current_layer)
         if self.zoom >= SPLIT_ZOOM:
             groups = self._split(points)
         else:
@@ -831,4 +918,4 @@ class MapView(ttk.Frame):
 
     def _back_to_place(self) -> None:
         if self.place is not None and self.zone is not None:
-            self.center_on(*self.zone.to_image(self.place.x, self.place.y))
+            self.fly_to(*self.zone.to_image(self.place.x, self.place.y))
