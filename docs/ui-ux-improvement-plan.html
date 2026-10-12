@@ -271,7 +271,9 @@ $('shared-file').onchange=async e=>{const file=e.target.files[0];if(!file)return
   // the state before the import is kept first, so the import can be undone
   try{localStorage.setItem(BACKUP,JSON.stringify(snapshot()))}catch(_e){throw Error('не удалось сохранить резервную копию, импорт остановлен')}
   let n=0;for(const [key,s] of Object.entries(data.statuses))if(VALID.has(key)&&LABEL[norm(s)]){ledger.statuses[key]=norm(s);n++}
-  ledger.history.push(...data.history.filter(x=>VALID.has(x.key)&&x.at&&x.to));
+  // idempotent: a record already in the journal (same key, time, statuses, origin) is not added twice
+  const seen=new Set(ledger.history.map(h=>[h.key,h.at,h.from,h.to,h.origin].join('|')));
+  for(const x of data.history.filter(x=>VALID.has(x.key)&&x.at&&x.to)){const k=[x.key,x.at,x.from,x.to,x.origin].join('|');if(!seen.has(k)){seen.add(k);ledger.history.push(x)}}
   if(data.native&&typeof data.native==='object'){for(const k of KEYS){const v=data.native[k];if(v&&typeof v==='object'){let cur={};try{cur=JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(_e){}localStorage.setItem(k,JSON.stringify(k.includes('filters')?{...v,...cur}:{...cur,...v}))}}}
   save();draw();window.dispatchEvent(new Event('plan-shared-change'));$('shared-storage-note').textContent=`Импортировано отметок: ${n}. Состояние до импорта сохранено: «Откатить» вернёт его.`}catch(err){$('shared-storage-note').textContent='Импорт не выполнен: '+err.message}e.target.value=''};
 document.addEventListener('change',e=>{const el=e.target;if(!el.matches('.task .status'))return;const card=el.closest('.task'),id=card?.dataset.task||card?.dataset.id;if(id&&['ui','tg'].includes(PAGE))setStatus(`${PAGE}:${id}`,el.value,'страница плана')},true);

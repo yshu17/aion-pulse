@@ -84,3 +84,11 @@ def test_qa_regressions_from_the_browser_audit():
     assert "status(i)==='planned');const order" in script and "status(i)==='todo');const order" not in script  # QA-01
     assert "const OPEN=new Set()" in script and "OPEN.has(" in script  # QA-02
     assert ".get('native')==='1'" in script and ".has('native')" not in script  # QA-03
+
+
+def test_import_is_idempotent_for_history():
+    """UI45-01: importing the same file twice must not duplicate history records."""
+    script = plan_shared.SCRIPT
+    assert "const seen=new Set(ledger.history.map" in script
+    assert "if(!seen.has(k))" in script
+    assert "ledger.history.push(...data.history" not in script
