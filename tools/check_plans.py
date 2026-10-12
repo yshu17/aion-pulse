@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 sys.path.insert(0, str(ROOT / "tools"))
+import plan_states  # noqa: E402
 
 import build_master_plan  # noqa: E402
 import build_feature_drafts  # noqa: E402
@@ -24,8 +25,17 @@ from plan_task_meta import load_task_meta  # noqa: E402
 PAGES = ("index.html", "map-poi-plan.html", "schedule-notify-plan.html",
          "ui-ux-improvement-plan.html", "telegram-bridge-plan.html")
 PAYLOAD = re.compile(r'<script type="application/json" id="shared-plan-data">(.*?)</script>', re.S)
-VALID_STATUSES = {"todo", "doing", "done"}
+VALID_STATUSES = set(plan_states.STATE_KEYS)  # one vocabulary: tools/plan_states.py
 DATE_FORMAT = "%d.%m.%Y %H:%M"
+DATE_ONLY = "%d.%m.%Y"  # the agreed date for old tasks (08.10.2026) has no time
+
+
+def parse_date(value: str) -> datetime:
+    """Accept «ДД.ММ.ГГГГ ЧЧ:ММ» and «ДД.ММ.ГГГГ» (the date only, for old tasks)."""
+    try:
+        return datetime.strptime(value, DATE_FORMAT)
+    except ValueError:
+        return datetime.strptime(value, DATE_ONLY)
 
 
 def validate_model(model: dict, source: list[dict], metadata: dict) -> list[str]:
@@ -66,7 +76,7 @@ def validate_model(model: dict, source: list[dict], metadata: dict) -> list[str]
             value = item.get(field)
             if value:
                 try:
-                    dates[field] = datetime.strptime(value, DATE_FORMAT)
+                    dates[field] = parse_date(value)
                 except ValueError:
                     errors.append(f"invalid {field}: {key}: {value}")
         for field, value in dates.items():
@@ -134,6 +144,10 @@ def validate_pages(model: dict, docs: Path = DOCS) -> list[str]:
 def main() -> int:
     model = json.loads((DOCS / "plan-model.json").read_text(encoding="utf-8"))
     source = build_master_plan.collect()
+    # the same normalisation as the master build: the model holds the vocabulary values, the sources hold the legacy ones
+    for item in source:
+        item["status"] = plan_states.normalize_status(item["status"])
+        item["priority"] = plan_states.normalize_priority(item["priority"])
     errors = validate_model(model, source, load_task_meta()) + validate_pages(model)
     draft = build_feature_drafts.load()
     all_stage_ids = [stage["id"] for plan in draft["plans"] for stage in plan["stages"]]

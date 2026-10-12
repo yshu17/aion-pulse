@@ -84,7 +84,8 @@ def test_built_model_carries_ai_without_changing_ids_or_statuses():
     model = json.loads((ROOT / "docs" / "plan-model.json").read_text(encoding="utf-8"))
     source = {i["key"]: i for i in build_master_plan.collect()}
     assert {i["key"] for i in model["items"]} == source.keys()
-    assert all(i["status"] == source[i["key"]]["status"] for i in model["items"])
+    import plan_states
+    assert all(i["status"] == plan_states.normalize_status(source[i["key"]]["status"]) for i in model["items"])
     assert all(i["ai"]["state"] in {"recommended", "retro"} for i in model["items"])
     assert len(model["ai"]["drafts"]) == 24
 

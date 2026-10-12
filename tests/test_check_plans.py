@@ -13,7 +13,7 @@ import check_plans  # noqa: E402
 
 
 def sample():
-    item = dict(key="map:1", plan="map", title="First", text="", status="todo",
+    item = dict(key="map:1", plan="map", title="First", text="", status="planned",
                 who="Claude", parent="", depends_on=[], added_at="", changed_at="")
     return {"items": [item], "latest": "map:1"}, [item.copy()], {"latest": "map:1", "known_keys": ["map:1"]}
 

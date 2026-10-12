@@ -24,7 +24,8 @@ import build_telegram_plan  # noqa: E402
 import build_ui_ux_plan  # noqa: E402
 import build_feature_drafts  # noqa: E402
 from plan_common import MASTER, PLANS, RESOURCES, nav_html, owners, set_nav  # noqa: E402
-from plan_task_meta import load_task_meta, register_new_tasks, register_source_changes, task_meta  # noqa: E402
+from plan_task_meta import OLD_TASK_DATE, backfill_dates, load_task_meta, remember_known, register_new_tasks, register_source_changes, task_meta  # noqa: E402
+import plan_states  # noqa: E402
 import plan_ai_tools  # noqa: E402
 from plan_ai_view import MASTER_SECTION as AI_SECTION  # noqa: E402
 
@@ -69,6 +70,14 @@ def collect() -> list[dict]:
             who, title = "Claude", task["title"]
         items.append({"plan": "tg", "id": f"TG {task['id']}", "title": title, "who": who, "text": "",
                       "status": task["initial"], **task_meta(metadata, f"tg:{task['id']}")})
+    draft_doc = build_feature_drafts.load()
+    for draft in draft_doc["plans"]:
+        for stage in draft.get("stages", []):
+            # stages of a feature draft: investigation until the user approves the feature (status research)
+            items.append({"plan": "draft", "id": stage["id"], "title": stage["title"], "who": "Claude",
+                          "text": stage.get("result", ""), "status": "research", "priority": "",
+                          "added_at": draft_doc.get("added_at", ""),
+                          "depends_on": [f"draft:{d}" for d in stage.get("depends_on", [])]})
     for item in items:
         item["key"] = f"{item['plan']}:{item['id'].removeprefix('UI #').removeprefix('TG ')}"
         item["priority"] = item.get("priority", "")
@@ -105,12 +114,25 @@ def refresh_task_meta_page(name: str) -> None:
 def main() -> int:
     build_feature_drafts.main()
     items = collect()
-    added = register_new_tasks([item["key"] for item in items])
+    # draft stages are dated by their file, not registered as new tasks (that would move the NEW badge)
+    added = register_new_tasks([item["key"] for item in items if item["plan"] != "draft"])
     changed = register_source_changes(items)
     if added or changed:
         build_ui_ux_plan.main()
         build_telegram_plan.main()
         items = collect()
+    dates = {item["key"]: (OLD_TASK_DATE, "Дата создания не была записана; проставлена 08.10.2026 по решению пользователя (12.10.2026)")
+             for item in items if item["plan"] != "draft"}
+    dates.update({item["key"]: (item["added_at"], "Дата этапа — дата набора черновиков (feature-drafts.json)")
+                  for item in items if item["plan"] == "draft" and item["added_at"]})
+    known = remember_known([item["key"] for item in items if item["plan"] == "draft"])
+    if backfill_dates(dates) or known:
+        items = collect()
+    # normalise only now: the source-change hashes above must see the raw source values
+    for item in items:
+        item["status"] = plan_states.normalize_status(item["status"])
+        item["priority"] = plan_states.normalize_priority(item["priority"])
+        item["is_new"] = item.get("is_latest", False) and item["status"] == "planned"
     plans = [{"key": k, "title": t, "page": p, "gate": g} for k, t, p, g in PLANS]
     needs = [{"plan": key, "title": title, "detail": detail, "link": link}
              for key, *_ in PLANS for kind, title, detail, link in RESOURCES.get(key, []) if kind == "need"]
@@ -119,6 +141,8 @@ def main() -> int:
     plan_ai_tools.annotate(items, ai_data, ai_skills)
     model = {"schema_version": 1, "plans": plans, "items": items, "needs": needs,
              "latest": load_task_meta().get("latest", ""), "built": date.today().strftime("%d.%m.%Y"),
+             "states": [{"key": k, "label": l, "color": c} for k, l, c in plan_states.STATES],
+             "priorities": plan_states.PRIORITIES, "priority_not_set": plan_states.NOT_SET,
              "ai": {"updated_at": ai_data.get("updated_at", ""), "skills": list(ai_skills.values()),
                     "drafts": plan_ai_tools.draft_items(build_feature_drafts.load(), ai_data, ai_skills)}}
     (ROOT / "docs" / "AI_SKILLS_TASK_MAPPING.md").write_text(
@@ -133,15 +157,18 @@ def main() -> int:
     (DOCS / MASTER).write_text(page, encoding="utf-8")
     refresh_task_meta_page("map-poi-plan.html")
     refresh_task_meta_page("schedule-notify-plan.html")
-    for key, _title, name, _gate in PLANS:
-        path = DOCS / name
+    nav_targets = [(key, DOCS / name) for key, _title, name, _gate in PLANS]
+    nav_targets += [("draft", path) for path in sorted(DOCS.glob("feature-*.html")) if path.name != "feature-drafts.html"]
+    for key, path in nav_targets:
         text = path.read_text(encoding="utf-8")
         updated = set_nav(text, key)
         if updated != text:
             path.write_text(updated, encoding="utf-8")
     from plan_shared import inject_shared_explorer
-    for key, _title, name, _gate in PLANS:
-        path = DOCS / name
+    # every plan page and every feature-draft page gets the same shared Task Card (one template, plan_shared.py)
+    targets = [(key, DOCS / name) for key, _title, name, _gate in PLANS]
+    targets += [("draft", path) for path in sorted(DOCS.glob("feature-*.html")) if path.name != "feature-drafts.html"]
+    for key, path in targets:
         path.write_text(inject_shared_explorer(path.read_text(encoding="utf-8"), model, key), encoding="utf-8")
     master_path = DOCS / MASTER
     master_path.write_text(inject_shared_explorer(master_path.read_text(encoding="utf-8"), model, "all"), encoding="utf-8")
@@ -233,7 +260,7 @@ try{Object.assign(f,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(f))}catch(e){}};
 const plan=k=>DATA.plans.find(p=>p.key===k);
 function itemStatus(i){if(window.planState)return window.planState.status(i);try{if(i.plan==="ui")return JSON.parse(localStorage.getItem("aion-ui-ux-plan-status-v1")||"{}")[i.id.replace("UI #","")]||i.status;if(i.plan==="tg")return JSON.parse(localStorage.getItem("aion-telegram-plan-status-v1")||"{}")[i.id.replace("TG ","")]||i.status}catch(e){}return i.status}
-function itemIsNew(i){return i.is_latest&&itemStatus(i)==="todo"}
+function itemIsNew(i){return i.is_latest&&itemStatus(i)==="planned"}
 document.getElementById("built").textContent=DATA.built;
 function totals(){const all=DATA.items,done=all.filter(i=>itemStatus(i)==="done").length,open=all.length-done;
   const mine=o=>all.filter(i=>itemStatus(i)!=="done"&&i.owners.includes(o)).length;
@@ -257,7 +284,7 @@ function chips(){const pc=document.getElementById("planChips"),oc=document.getEl
 function list(){const q=f.q.trim().toLocaleLowerCase("ru");
   const its=DATA.items.filter(i=>(!f.plans.length||f.plans.includes(i.plan))&&(!f.owners.length||i.owners.some(o=>f.owners.includes(o)))
     &&(f.status==="all"||(f.status==="done")===(itemStatus(i)==="done"))&&(!q||`${i.id} ${i.title} ${i.text} ${i.who}`.toLocaleLowerCase("ru").includes(q)))
-    .sort((a,b)=>{const newest=DATA.latest&&DATA.items.find(i=>i.key===DATA.latest&&itemStatus(i)==="todo");
+    .sort((a,b)=>{const newest=DATA.latest&&DATA.items.find(i=>i.key===DATA.latest&&itemStatus(i)==="planned");
       const order=i=>i.plan===newest?.plan?-1:DATA.plans.findIndex(p=>p.key===i.plan);
       const group=order(a)-order(b);if(group)return group;
       const aa=a.id.match(/\d+/g).map(Number),bb=b.id.match(/\d+/g).map(Number);

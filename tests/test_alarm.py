@@ -156,6 +156,9 @@ def test_enter_and_escape_work_as_ok(root):
         alarm.trigger([(msg("Nick", "хил"), ["хил"])])
         alarm.window.focus_force()  # the user clicked into the window: it never takes the keyboard itself
         root.update()
+        if root.focus_get() is None:
+            # Windows may keep the keyboard in another program; then key events cannot reach the window at all
+            pytest.skip("keyboard focus not granted on this desktop; key handling is not checked here")
         alarm.window.event_generate(key, when="tail")
         root.update()
         assert alarm.window is None and acks == [1] and "stop" in notifier.calls

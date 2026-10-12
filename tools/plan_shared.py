@@ -10,6 +10,7 @@ import json
 import re
 
 from plan_ai_view import SHARED_CONTROLS, SHARED_CSS, SHARED_JS
+import plan_states
 
 
 STYLE = r"""<style id="shared-plan-style">
@@ -21,9 +22,12 @@ STYLE = r"""<style id="shared-plan-style">
 .shared-chart{display:flex;height:11px;border-radius:9px;overflow:hidden;background:#353841;margin:9px 0 4px}.shared-chart span{display:block;height:100%}.shared-stats{color:#aeb2ba;font-size:12px}
 .shared-list{max-height:490px;overflow:auto;border:1px solid #343841;border-radius:8px}.shared-task{border-bottom:1px solid #343841;padding:0 9px}.shared-task:last-child{border:0}.shared-task summary{display:flex;gap:7px;align-items:center;padding:8px 0;color:#e9e7e4;font-weight:500}.shared-task summary span:first-child{font:12px Consolas,monospace;color:#ffb05c;flex:none}.shared-task summary .shared-title{flex:1}.shared-task .shared-body{padding:0 0 9px 22px;color:#b8bbc2}.shared-task .shared-body p{margin:4px 0}.shared-task .shared-body a{color:#ffb05c}.shared-task .shared-status{margin-left:auto;max-width:115px}.shared-tag{color:#abb0b8;font-size:11px;border:1px solid #4b505a;border-radius:5px;padding:1px 4px;white-space:nowrap}.shared-new{color:#ffd16b;border-color:#846128;background:#493516}.shared-history{max-height:95px;overflow:auto}.shared-empty{padding:12px;color:#abb0b8}
 .shared-children{margin:0 0 8px 20px;border-left:2px solid #484c58;padding-left:7px}
+.shared-check{width:16px;height:16px;flex:none;cursor:pointer;accent-color:#5fd38d}
+__STATE_CSS__
 __AI_CSS__@media(max-width:620px){.shared-task summary{flex-wrap:wrap}.shared-task summary .shared-title{flex-basis:calc(100% - 65px)}.shared-task .shared-status{margin-left:22px}}
 </style>"""
-STYLE = STYLE.replace("__AI_CSS__", SHARED_CSS)
+STATE_CSS = "".join(f".shared-st-{key}{{color:{color}}}" for key, _label, color in plan_states.STATES)
+STYLE = STYLE.replace("__STATE_CSS__", STATE_CSS).replace("__AI_CSS__", SHARED_CSS)
 
 PANEL = """<details class="shared-plan" id="shared-plan"><summary>Общие задачи пяти планов · поиск, отметки, история</summary>
 <div class="shared-inner"><p class="shared-note">Тексты и исходные статусы берутся из планов проекта. Изменения статусов здесь — личные отметки в этом браузере. Для переноса на телефон сохрани файл через «Экспорт» и загрузи его через «Импорт».</p>
@@ -32,6 +36,15 @@ PANEL = """<details class="shared-plan" id="shared-plan"><summary>Общие з�
 <details><summary>История и структура данных</summary><div id="shared-timeline" class="shared-history"></div><p class="shared-note">Планы карты и расписания (HTML) + планы UI/UX и Telegram (Markdown) → единая собранная модель <code>docs/plan-model.json</code> → пять страниц. Личные отметки и их история хранятся в браузере и переносятся экспортом.</p></details>
 <div class="shared-note" id="shared-storage-note"></div></div></details>"""
 PANEL = PANEL.replace("__AI_CONTROLS__", SHARED_CONTROLS)
+STATUS_OPTIONS = '<option value="all">Все статусы</option>' + "".join(
+    f'<option value="{key}">{label}</option>' for key, label, _color in plan_states.STATES)
+PRIORITY_OPTIONS = ('<option value="all">Любой приоритет</option>' + "".join(
+    f'<option value="{p}">{p}</option>' for p in plan_states.PRIORITIES)
+    + f'<option value="none">{plan_states.NOT_SET}</option>')
+PANEL = re.sub(r'<select id="shared-status-filter".*?</select><select id="shared-priority-filter".*?</select>',
+               lambda _m: '<select id="shared-status-filter" aria-label="Статус">' + STATUS_OPTIONS + '</select>'
+               '<select id="shared-priority-filter" aria-label="Приоритет">' + PRIORITY_OPTIONS + '</select>',
+               PANEL, count=1, flags=re.S)
 
 SCRIPT = r"""<script id="shared-plan-script">
 (()=>{
@@ -41,11 +54,18 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let ledger={schema_version:1,statuses:{},history:[]};
 try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&saved.schema_version===1&&saved.statuses&&Array.isArray(saved.history))ledger=saved}catch(_e){}
 const $=id=>document.getElementById(id), plan=k=>MODEL.plans.find(p=>p.key===k);
+const STATES=MODEL.states, LABEL=Object.fromEntries(STATES.map(s=>[s.key,s.label]));
+const norm=s=>s==='todo'?'planned':(LABEL[s]?s:'planned');
+const nativeOf=s=>s==='doing'||s==='done'?s:'todo';
+const afterCheckbox=(cur,checked)=>checked?'done':(cur==='done'?'review':cur);
 function nativeStatus(i){try{if(i.plan==='ui')return JSON.parse(localStorage.getItem('aion-ui-ux-plan-status-v1')||'{}')[i.id.replace('UI #','')];if(i.plan==='tg')return JSON.parse(localStorage.getItem('aion-telegram-plan-status-v1')||'{}')[i.id.replace('TG ','')]}catch(_e){}return null}
-function status(i){return ledger.statuses[i.key]||nativeStatus(i)||i.status}
-window.planState={status,statusByKey:k=>{const i=MODEL.items.find(x=>x.key===k);return i?status(i):null},model:MODEL};
+function status(i){return norm(ledger.statuses[i.key]||nativeStatus(i)||i.status)}
+window.planState={status,statusByKey:k=>{const i=MODEL.items.find(x=>x.key===k);return i?nativeOf(status(i)):null},model:MODEL};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(ledger));$('shared-storage-note').textContent='Личные отметки сохранены в этом браузере.';return true}catch(_e){$('shared-storage-note').textContent='Браузер запретил сохранение. Экспортируй отметки перед закрытием страницы.';return false}}
-function setStatus(key,next,origin='план'){const i=MODEL.items.find(x=>x.key===key);if(!i||!['todo','doing','done'].includes(next))return;
+function setStatus(key,next,origin='план'){const i=MODEL.items.find(x=>x.key===key);if(!i||!LABEL[next])return;
+  // «Выполнено» only by the checkbox (or by a plan's own checkbox): the status list cannot set it
+  const viaBox=origin==='чекбокс'||origin==='страница плана';
+  if((next==='done'||status(i)==='done')&&!viaBox)return;
   const old=status(i);if(old===next)return;ledger.statuses[key]=next;ledger.history.push({key,from:old,to:next,at:new Date().toISOString(),origin});
   if(i.plan==='ui'||i.plan==='tg'){const legacy=i.plan==='ui'?'aion-ui-ux-plan-status-v1':'aion-telegram-plan-status-v1';try{const obj=JSON.parse(localStorage.getItem(legacy)||'{}');obj[i.id.replace(/^UI #|^TG /,'')]=next;localStorage.setItem(legacy,JSON.stringify(obj))}catch(_e){}}
   save();draw();window.dispatchEvent(new Event('plan-shared-change'));
@@ -54,25 +74,29 @@ window.planSharedChange=setStatus;
 window.planSharedReset=planKey=>{for(const i of MODEL.items)if(i.plan===planKey)delete ledger.statuses[i.key];save();draw();window.dispatchEvent(new Event('plan-shared-change'))};
 __AI_JS__
 const numberSort=(a,b)=>{const aa=a.id.match(/\d+/g).map(Number),bb=b.id.match(/\d+/g).map(Number);for(let x=0;x<Math.max(aa.length,bb.length);x++){const d=(bb[x]||0)-(aa[x]||0);if(d)return d}return 0};
-const human=s=>({todo:'Не начато',doing:'В работе',done:'Готово'}[s]||s);
+const human=s=>LABEL[norm(s)]||s;
 function rows(){const q=$('shared-search').value.trim().toLocaleLowerCase('ru'),p=$('shared-plan-filter').value,s=$('shared-status-filter').value,pr=$('shared-priority-filter').value;
   return MODEL.items.filter(i=>(p==='all'||p===i.plan)&&(s==='all'||status(i)===s)&&(pr==='all'||(pr==='none'?!i.priority:i.priority===pr))&&aiMatch(i)&&(!q||`${i.key} ${i.title} ${i.text} ${i.who}`.toLocaleLowerCase('ru').includes(q))).sort((a,b)=>{const newest=MODEL.items.find(i=>i.key===MODEL.latest&&status(i)==='todo');const order=i=>i.plan===newest?.plan?-1:MODEL.plans.findIndex(x=>x.key===i.plan);return order(a)-order(b)||numberSort(a,b)});}
 function body(i){const hist=[...(i.history||[]),...ledger.history.filter(x=>x.key===i.key)].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
   const child=MODEL.items.filter(x=>x.parent===i.key).map(x=>`<a href="${esc(plan(x.plan).page)}#task-${esc(x.key.replace(':','-'))}">${esc(x.id)}</a>`).join(', ');
-  return `<div class="shared-body"><p>${esc(i.text)}</p><p>Исполнитель: ${esc(i.who||'не указан')}${i.priority?' · приоритет '+esc(i.priority):' · приоритет не указан'}</p>
+  return `<div class="shared-body"><p>${esc(i.text)}</p><p>Исполнитель: ${esc(i.who||'не указан')}${' · приоритет '+esc(i.priority||'Не определён')}</p>
   ${i.added_at?`<p>Добавлено: ${esc(i.added_at)}</p>`:''}${i.changed_at?`<p>Изменено в исходнике: ${esc(i.changed_at)}</p>`:''}
   ${i.dependencies_text?`<p>Зависимости в исходном плане: ${esc(i.dependencies_text)}</p>`:''}${i.depends_on?.length?`<p>Зависит от: ${i.depends_on.map(key=>{const t=MODEL.items.find(x=>x.key===key);return t?`<a href="${esc(plan(t.plan).page)}#task-${esc(key.replace(':','-'))}">${esc(key)}</a>`:esc(key)}).join(', ')}</p>`:''}
   ${i.parent?`<p>Родитель: ${esc(i.parent)}</p>`:''}${child?`<p>Дочерние: ${child}</p>`:''}
   ${aiBlock(i)}<p><a href="${esc(plan(i.plan).page)}#task-${esc(i.key.replace(':','-'))}">Открыть в ${esc(plan(i.plan).title)}</a></p>
   <div class="shared-history">${hist.length?hist.map(h=>`<div>${esc(h.at||'')} · ${h.event?esc(h.event):`${esc(h.from||'')} → ${esc(h.to||'')}`} ${esc(h.origin||'')}</div>`).join(''):'История изменений пока пуста'}</div></div>`}
-function draw(){const all=MODEL.items,c={todo:0,doing:0,done:0};all.forEach(i=>c[status(i)]++);$('shared-chart').innerHTML=[['done','#5fd38d'],['doing','#ff8c1a'],['todo','#69707c']].map(([s,color])=>`<span style="width:${100*c[s]/all.length}%;background:${color}" title="${human(s)}: ${c[s]}"></span>`).join('');$('shared-stats').textContent=`${all.length} задач · ${c.done} готово · ${c.doing} в работе · ${c.todo} не начато`;
+function draw(){const all=MODEL.items,c=Object.fromEntries(STATES.map(s=>[s.key,0]));all.forEach(i=>c[status(i)]++);
+  const counted=all.length-c.cancelled, pct=counted?Math.round(100*c.done/counted):0;
+  $('shared-chart').innerHTML=STATES.filter(s=>c[s.key]).map(s=>`<span style="width:${100*c[s.key]/all.length}%;background:${s.color}" title="${esc(s.label)}: ${c[s.key]}"></span>`).join('');
+  $('shared-stats').textContent=`Выполнено ${c.done} из ${counted} (${pct}%) · в работе ${c.doing} · на проверке ${c.review} · заблокировано ${c.blocked} · запланировано ${c.planned} · исследование ${c.research} · отложено ${c.deferred} · отменено ${c.cancelled}`;
   const timeline=[...MODEL.items.flatMap(i=>(i.history||[]).map(h=>({...h,key:i.key}))),...ledger.history].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).slice(0,12);
   $('shared-timeline').innerHTML=timeline.length?timeline.map(h=>`<div>${esc(h.at)} · ${esc(h.key)} · ${h.event?esc(h.event):`${human(h.from)} → ${human(h.to)}`}</div>`).join(''):'Изменений пока нет.';
   const found=rows(),byKey=new Map(found.map(i=>[i.key,i])),shown=new Set();
   function card(i,path=new Set()){if(path.has(i.key)||shown.has(i.key))return '';shown.add(i.key);const next=new Set(path);next.add(i.key);const children=found.filter(x=>x.parent===i.key).map(x=>card(x,next)).join('');
-    return `<details class="shared-task" id="task-${esc(i.key.replace(':','-'))}"><summary><span>${esc(i.key)}</span><span class="shared-title">${esc(i.title)}</span>${i.key===MODEL.latest&&status(i)==='todo'?'<span class="shared-tag shared-new">НОВОЕ</span>':''}${i.priority?`<span class="shared-tag">${esc(i.priority)}</span>`:''}${aiTag(i)}<select class="shared-status" data-key="${esc(i.key)}" aria-label="Статус ${esc(i.key)}">${['todo','doing','done'].map(s=>`<option value="${s}" ${s===status(i)?'selected':''}>${human(s)}</option>`).join('')}</select></summary>${body(i)}${children?`<div class="shared-children">${children}</div>`:''}</details>`}
+    return `<details class="shared-task" id="task-${esc(i.key.replace(':','-'))}"><summary><input type="checkbox" class="shared-check" data-key="${esc(i.key)}" ${status(i)==='done'?'checked':''} aria-label="Выполнено: ${esc(i.key)}"><span>${esc(i.key)}</span><span class="shared-title">${esc(i.title)}</span>${i.key===MODEL.latest&&status(i)==='planned'?'<span class="shared-tag shared-new">НОВОЕ</span>':''}<span class="shared-tag">${esc(i.priority||'Не определён')}</span>${aiTag(i)}<select class="shared-status shared-st-${status(i)}" data-key="${esc(i.key)}" aria-label="Статус ${esc(i.key)}">${STATES.filter(x=>x.key!=='done'||status(i)==='done').map(x=>`<option value="${x.key}" ${x.key===status(i)?'selected':''} ${x.key==='done'?'disabled':''}>${esc(x.label)}</option>`).join('')}</select></summary>${body(i)}${children?`<div class="shared-children">${children}</div>`:''}</details>`}
   const roots=found.filter(i=>!byKey.has(i.parent)),tree=roots.map(i=>card(i)).join('')+found.filter(i=>!shown.has(i.key)).map(i=>card(i)).join('');$('shared-list').innerHTML=found.length?tree:'<div class="shared-empty">Совпадений нет</div>';
   $('shared-list').querySelectorAll('.shared-status').forEach(el=>{el.onclick=e=>e.stopPropagation();el.onchange=e=>{e.stopPropagation();setStatus(el.dataset.key,el.value,'общий обзор')}});
+  $('shared-list').querySelectorAll('.shared-check').forEach(el=>{el.onclick=e=>e.stopPropagation();el.onchange=e=>{e.stopPropagation();const i=MODEL.items.find(x=>x.key===el.dataset.key);const cur=status(i),next=afterCheckbox(cur,el.checked);if(next!==cur)setStatus(el.dataset.key,next,'чекбокс')}});
 }
 const pf=$('shared-plan-filter');pf.innerHTML='<option value="all">Все планы</option>'+MODEL.plans.map(p=>`<option value="${esc(p.key)}">${esc(p.title)}</option>`).join('');pf.value=PAGE==='all'?'all':PAGE;
 ['shared-search','shared-plan-filter','shared-status-filter','shared-priority-filter'].forEach(id=>$(id).addEventListener(id==='shared-search'?'input':'change',draw));

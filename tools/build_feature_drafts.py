@@ -46,8 +46,7 @@ def esc(value: object) -> str:
 def page(title: str, body: str) -> str:
     return (f'<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" '
             f'content="width=device-width, initial-scale=1"><title>{esc(title)}</title>{STYLE}</head>'
-            f'<body><div class="wrap"><nav><a href="index.html">★ Мастер-план</a>'
-            f'<a href="{HUB}">Шесть черновиков</a><a href="../PAIR.md">PAIR.md</a></nav>{body}</div></body></html>')
+            f'<body><div class="wrap"><!--NAV--><!--/NAV-->{body}</div></body></html>')
 
 
 def load() -> dict:

@@ -58,6 +58,39 @@ def register_new_tasks(keys: list[str]) -> bool:
     return True
 
 
+OLD_TASK_DATE = "08.10.2026"  # the date the user chose for tasks that have no recorded date (12.10.2026)
+
+
+def remember_known(keys: list[str]) -> bool:
+    """Add IDs to the known catalogue without dating them as new and without moving the NEW badge."""
+    data = load_task_meta()
+    known = set(data.get("known_keys", []))
+    missing = set(keys) - known
+    if not missing:
+        return False
+    data["known_keys"] = sorted(known | missing)
+    META_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
+def backfill_dates(dates: dict[str, tuple[str, str]]) -> bool:
+    """Record a date for tasks that have none. dates maps key -> (date text, where it comes from).
+    The old tasks get OLD_TASK_DATE (the user's decision); draft stages get their file's date."""
+    data = load_task_meta()
+    tasks = data.setdefault("tasks", {})
+    touched = False
+    for key, (date_text, origin_note) in dates.items():
+        info = tasks.setdefault(key, {})
+        if not info.get("added_at"):
+            info["added_at"] = date_text
+            info.setdefault("history", []).append({
+                "at": "2026-10-12T00:00+02:00", "event": origin_note, "origin": "decision"})
+            touched = True
+    if touched:
+        META_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return touched
+
+
 def register_source_changes(items: list[dict]) -> bool:
     """Date later source edits, without claiming a date for historical content."""
     data = load_task_meta()

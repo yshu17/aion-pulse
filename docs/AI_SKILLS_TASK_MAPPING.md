@@ -6,30 +6,30 @@
 
 | Скилл / инструмент | Направление | Доступность | Codex | Открытых задач |
 |---|---|---|---|---|
-| `project-master-planner` | Планирование | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 7 |
+| `project-master-planner` | Планирование | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 13 |
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
-| `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 5 |
-| `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 17 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 27 |
+| `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 10 |
+| `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 24 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 31 |
 | `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
 | `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 3 |
 | `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
-| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 29 |
-| `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 11 |
+| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 35 |
+| `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 13 |
 | `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 5 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
 | `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 14 |
 | `code-review` | Проверка и ревью | встроен в Claude Code | у Codex свой аналог | 1 |
-| `security-review` | Безопасность | встроен в Claude Code | только у Claude | 8 |
+| `security-review` | Безопасность | встроен в Claude Code | только у Claude | 12 |
 | `run` | Проверка и ревью | встроен в Claude Code | только у Claude | 3 |
-| `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 7 |
+| `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 13 |
 | `tool:check_project` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
 | `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 13 |
 
 ## Распределение открытых задач
 
-Claude Code: **18** · Codex: **15** · Совместно: **7** · Пользователь: **0**
+Claude Code: **28** · Codex: **18** · Совместно: **18** · Пользователь: **0**
 
 ## Задачи
 
@@ -75,6 +75,30 @@ Claude Code: **18** · Codex: **15** · Совместно: **7** · Польз�
 | `tg:1.6` | Тесты с подменённым HTTP: 429, обрыв сети, в группу не уходит ничего кроме `3.Поиск группы`, личка. | Codex | `superpowers:test-driven-development` | `superpowers:systematic-debugging` | план ждёт «делаем» |
 | `tg:2.1` | Вкладка «Telegram»: токен (скрыт как пароль), «Найти чаты», выбор группы и лички, «Тестовое сообщение». | Claude Code | `application-ui-ux-designer` | `security-review`, `superpowers:test-driven-development` | передача не нужна |
 | `tg:2.2` | Галочки «Чат в группу» и «Уведомления в личку», статус: «отправлено N», «в очереди N», «нет связи», «неверный токен», «бот не в группе». | Claude Code | `application-ui-ux-designer` | `superpowers:test-driven-development` | передача не нужна |
+| `draft:DRAFT-01.1` | Уточнить расчётные сценарии | Claude Code | `project-master-planner` |  | передача не нужна |
+| `draft:DRAFT-01.2` | Проверить игровые правила и источники | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
+| `draft:DRAFT-01.3` | Согласовать модель и макет | Claude Code | `application-software-architect`, `application-ui-ux-designer` |  | передача не нужна |
+| `draft:DRAFT-01.4` | Реализация и сверка примеров | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-02.1` | Инвентаризация доступных полей предметов | Codex | `project-master-planner` | `superpowers:systematic-debugging` | готово к передаче Codex |
+| `draft:DRAFT-02.2` | Сверить игровые механики | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
+| `draft:DRAFT-02.3` | Спроектировать сравнение комплектов | Claude Code | `application-software-architect`, `application-ui-ux-designer` |  | передача не нужна |
+| `draft:DRAFT-02.4` | Реализация и проверка на известных наборах | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-03.1` | Сверить каталог и названия стигм | Codex | `project-master-planner` | `superpowers:systematic-debugging` | готово к передаче Codex |
+| `draft:DRAFT-03.2` | Подтвердить правила набора | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
+| `draft:DRAFT-03.3` | Выбрать редактор набора | Claude Code | `application-software-architect`, `application-ui-ux-designer` |  | передача не нужна |
+| `draft:DRAFT-03.4` | Реализация и игровая сверка | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-04.1` | Определить решение, которое нужен принять | Claude Code | `project-master-planner` |  | передача не нужна |
+| `draft:DRAFT-04.2` | Проверить доступные события и правила | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
+| `draft:DRAFT-04.3` | Оценить прототип без интеграции | Codex | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-04.4` | Только при go: отдельный план реализации | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.1` | Согласовать область лаунчера | Claude Code | `project-master-planner` |  | передача не нужна |
+| `draft:DRAFT-05.2` | Проверить официальный запуск и правила | Совместно | `anthropic-skills:deep-research` | `security-review` | передача не нужна |
+| `draft:DRAFT-05.3` | Спроектировать процесс и UX | Claude Code | `application-software-architect`, `application-ui-ux-designer` | `security-review` | передача не нужна |
+| `draft:DRAFT-05.4` | План безопасной реализации | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.1` | Подтвердить цель, владельца и угрозы | Claude Code | `application-software-architect` | `security-review` | передача не нужна |
+| `draft:DRAFT-06.2` | Проверить полномочия и приватность | Claude Code | `anthropic-skills:deep-research` |  | передача не нужна |
+| `draft:DRAFT-06.3` | Сравнить варианты защиты | Claude Code | `application-software-architect`, `security-review` |  | передача не нужна |
+| `draft:DRAFT-06.4` | Решение владельца и Claude | Совместно | `project-master-planner` |  | ждёт предыдущих этапов |
 | `draft:DRAFT-01.1` | Уточнить расчётные сценарии | Claude Code | `project-master-planner` |  | передача не нужна |
 | `draft:DRAFT-01.2` | Проверить игровые правила и источники | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
 | `draft:DRAFT-01.3` | Согласовать модель и макет | Claude Code | `application-software-architect`, `application-ui-ux-designer` |  | передача не нужна |
