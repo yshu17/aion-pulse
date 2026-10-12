@@ -59,18 +59,23 @@ def collect() -> list[dict]:
     ui_lines = build_ui_ux_plan.SOURCE.read_text(encoding="utf-8").splitlines()
     ui_owners = build_ui_ux_plan.task_owners(ui_lines)
     ui_status = build_ui_ux_plan.task_status(ui_lines)
+    ui_stage: dict[str, str] = {}  # task number -> id of the first stage that lists it (the old list's grouping)
+    for stage in build_ui_ux_plan.stage_rows(ui_lines):
+        for number in stage["tasks"]:
+            ui_stage.setdefault(str(number), str(stage["id"]))
     for task in build_ui_ux_plan.task_rows(ui_lines):
         items.append({"plan": "ui", "id": f"UI #{task['id']}", "title": task["problem"],
                       "who": ui_owners.get(task["id"], ""), "text": f"{task['priority']} · {task['solution']}",
                       "note": ui_status.get(task["id"], ("todo", ""))[1], "status": ui_status.get(task["id"], ("todo", ""))[0], "priority": task["priority"],
-                      "dependencies_text": task["dependencies"], **task_meta(metadata, f"ui:{task['id']}")})
+                      "dependencies_text": task["dependencies"], "stage": ui_stage.get(task["id"], ""),
+                      **task_meta(metadata, f"ui:{task['id']}")})
     tasks, _stages, _deferred = build_telegram_plan.parse_plan(build_telegram_plan.SOURCE.read_text(encoding="utf-8"))
     for task in tasks:
         who, _sep, title = task["title"].partition(" · ")
         if not owners(who):
             who, title = "Claude", task["title"]
         items.append({"plan": "tg", "id": f"TG {task['id']}", "title": title, "who": who, "text": "",
-                      "note": "", "status": task["initial"], **task_meta(metadata, f"tg:{task['id']}")})
+                      "note": "", "stage": str(task.get("stage", "")), "status": task["initial"], **task_meta(metadata, f"tg:{task['id']}")})
     draft_doc = build_feature_drafts.load()
     for draft in draft_doc["plans"]:
         for stage in draft.get("stages", []):
@@ -82,6 +87,7 @@ def collect() -> list[dict]:
     for item in items:
         item["key"] = f"{item['plan']}:{item['id'].removeprefix('UI #').removeprefix('TG ')}"
         item["priority"] = item.get("priority", "")
+        item["stage"] = item.get("stage", "")
         item["dependencies_text"] = item.get("dependencies_text", "")
         item["parent"] = metadata.get("tasks", {}).get(item["key"], {}).get("parent", "")
         item["depends_on"] = metadata.get("tasks", {}).get(item["key"], {}).get("depends_on", [])
@@ -149,6 +155,10 @@ def main() -> int:
              "latest": load_task_meta().get("latest", ""), "built": date.today().strftime("%d.%m.%Y"),
              "states": [{"key": k, "label": l, "color": c} for k, l, c in plan_states.STATES],
              "priorities": plan_states.PRIORITIES, "priority_not_set": plan_states.NOT_SET,
+             "stages": {"ui": [{"id": str(st["id"]), "name": st["name"], "ready": st.get("ready", "")}
+                               for st in build_ui_ux_plan.stage_rows(build_ui_ux_plan.SOURCE.read_text(encoding="utf-8").splitlines())],
+                        "tg": [{"id": str(st["id"]), "name": st["name"]} for st in build_telegram_plan.parse_plan(
+                            build_telegram_plan.SOURCE.read_text(encoding="utf-8"))[1]]},
              "verification": [{"key": k, "label": l, "color": c, "mark": m} for k, l, c, m in plan_verification.STATES],
              "ai": {"updated_at": ai_data.get("updated_at", ""), "skills": list(ai_skills.values()),
                     "drafts": plan_ai_tools.draft_items(build_feature_drafts.load(), ai_data, ai_skills)}}
@@ -245,6 +255,7 @@ __NAV__
   <h2>Ждёт тебя</h2>
   <div class="you" id="you"></div>
 
+  <div class="native-list">
   <h2>Все шаги</h2>
   <div class="tools">
     <span id="planChips"></span>
@@ -254,6 +265,7 @@ __NAV__
   </div>
   <div class="tag" id="shown" style="margin-bottom:6px"></div>
   <div class="list" id="list"></div>
+  </div>
 </div>
 <script>
 const DATA=__DATA__;
