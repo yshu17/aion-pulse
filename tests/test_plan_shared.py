@@ -76,3 +76,11 @@ def test_migration_and_safety_controls_exist_in_the_card():
     assert 'value="keep" checked' in script
     # old storage keys are read, never deleted by the transfer
     assert "removeItem(NATIVE_KEYS" not in script
+
+
+def test_qa_regressions_from_the_browser_audit():
+    """ui:44 findings: the newest-plan order uses the normalized status, the open cards survive a redraw, ?native needs =1."""
+    script = plan_shared.SCRIPT
+    assert "status(i)==='planned');const order" in script and "status(i)==='todo');const order" not in script  # QA-01
+    assert "const OPEN=new Set()" in script and "OPEN.has(" in script  # QA-02
+    assert ".get('native')==='1'" in script and ".has('native')" not in script  # QA-03
