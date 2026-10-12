@@ -1287,7 +1287,15 @@
       ]
     },
     "ui:45": {
-      "added_at": "12.10.2026 22:46"
+      "added_at": "12.10.2026 22:46",
+      "changed_at": "12.10.2026 23:59",
+      "history": [
+        {
+          "at": "2026-10-12T23:59+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ]
     }
   },
   "known_keys": [
@@ -1546,6 +1554,6 @@
     "draft:DRAFT-06.3": "4e4c50bbec95697c62847911d7b1470e05b1b6d872d7f8c594a4f696ca04718d",
     "draft:DRAFT-06.4": "328c0e93ce3983d3d99d1f9f03b5e3a1c421777d5c7b970ac94653119aa36a35",
     "ui:44": "d3816fa0761781c5c43bf47fdd02b0235c6fe7550d776066499f2b9c40f59a6b",
-    "ui:45": "7596e0a7d2984634b9fb4c13c53735a67ac6d5dd788dc52742a903404d3c98e3"
+    "ui:45": "0d1dc305eeb7a80cbcd47f41e0fddd61083b0beafb960bc3603070f875b2bad4"
   }
 }
