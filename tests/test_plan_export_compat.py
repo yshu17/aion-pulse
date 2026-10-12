@@ -95,9 +95,58 @@ def test_old_export_restores_marks_in_a_fresh_browser(page_name, tmp_path):
         raise
 
 
-@pytest.mark.xfail(strict=True, reason="known gap before stage 4: native-only marks (old key, not in the journal) "
-                                        "are written back to the old key only; they are lost once old keys stop being read")
-def test_native_only_marks_become_journal_records():
-    """Target contract for stage 4 readiness: an old export's native-only mark is converted to a journal record."""
-    assert "for(const k of KEYS){const v=data.native[k]" not in SCRIPT
-    assert "nativeToLedger" in SCRIPT
+def test_native_only_marks_enter_the_journal_in_a_browser(tmp_path):
+    """UI45 requirement: a mark that exists only in the old export's native part goes into the journal (with history);
+    a journal value that differs from the old list is NOT overwritten. Fresh isolated browser, file:// origin."""
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    url = (ROOT / "docs" / "ui-ux-improvement-plan.html").as_uri()
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_context().new_page()
+            errors = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(url)
+            page.evaluate("localStorage.clear()")
+            page.reload()
+            page.evaluate("document.getElementById('shared-plan').open=true")
+            page.set_input_files("#shared-file", str(FIXTURE))
+            page.wait_for_timeout(400)
+            ledger = json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')"))
+            # native-only: ui:40 exists only in the native part of the export
+            assert ledger["statuses"].get("ui:40") == "doing"
+            origins = [h["origin"] for h in ledger["history"] if h["key"] == "ui:40"]
+            assert origins == ["импорт старого экспорта (native)"]
+            # conflict: the journal says review for tg:2.2, the native part says done - the journal keeps its value
+            assert ledger["statuses"].get("tg:2.2") == "review"
+            # the old keys are still written (compatibility, nothing is deleted)
+            assert json.loads(page.evaluate("localStorage.getItem('aion-ui-ux-plan-status-v1')"))["40"] == "doing"
+            # a second import adds nothing
+            n = len(ledger["history"])
+            page.set_input_files("#shared-file", str(FIXTURE))
+            page.wait_for_timeout(400)
+            ledger2 = json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')"))
+            assert len(ledger2["history"]) == n
+            # reload keeps the journal
+            page.reload()
+            page.wait_for_timeout(200)
+            after = json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')"))
+            assert after["statuses"].get("ui:40") == "doing"
+            # rollback returns the journal to the state before the last import: one import, one rollback
+            page.evaluate("localStorage.clear()")
+            page.reload()
+            page.evaluate("document.getElementById('shared-plan').open=true")
+            page.set_input_files("#shared-file", str(FIXTURE))
+            page.wait_for_timeout(400)
+            assert "ui:40" in json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')"))["statuses"]
+            page.click("#shared-restore")
+            page.wait_for_timeout(300)
+            rolled = json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')") or "{}")
+            assert "ui:40" not in rolled.get("statuses", {})
+            assert errors == []
+            browser.close()
+    except Exception as exc:
+        if "Executable doesn't exist" in str(exc) or "playwright install" in str(exc):
+            pytest.skip("chromium for playwright not installed")
+        raise
