@@ -1,0 +1,29 @@
+{
+  "utc": "20261012T183148Z",
+  "windows": [
+    [
+      1400,
+      860
+    ],
+    [
+      1000,
+      600
+    ]
+  ],
+  "scenarios": [
+    "tabs-search",
+    "tabs-chat",
+    "tabs-map",
+    "map-100",
+    "map-125",
+    "map-150",
+    "settings-open",
+    "settings-closed",
+    "header-idle",
+    "header-counters"
+  ],
+  "tk_dpi_note": "эмуляция Tk-масштаба; системный DPI 125/150 % не проверен",
+  "masks": {},
+  "pixel_channel_threshold": 16,
+  "max_different_fraction": 0.002
+}

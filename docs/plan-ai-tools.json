@@ -2634,7 +2634,7 @@
         "pytest -q",
         "python tools/ui_snapshots.py check"
       ],
-      "handoff": "ready",
+      "handoff": "n/a",
       "arch_review": "approved",
       "files": {
         "Codex": [
@@ -2645,7 +2645,7 @@
         ]
       },
       "branch": "codex/ui-snapshots",
-      "note": "Задание: docs/TASK_UI-SNAPSHOT.md. Контракт утверждён Claude. Зарегистрировано 12.10 по решению пользователя; в PAIR.md это UI-1."
+      "note": "Принято 12.10: ветка codex/ui-snapshots (4d60228, c84763b) влита; база docs/ui/baseline; известный дефект UI-DEF-1 в docs/ui/known_defects.json. Системный DPI 125/150 % не проверен."
     }
   }
 }

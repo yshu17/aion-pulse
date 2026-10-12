@@ -1,0 +1,1516 @@
+{
+  "1000x600_header-counters": {
+    "scenario": "header-counters",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 437,
+        "y": 12,
+        "width": 547,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 544,
+        "height": 394
+      },
+      "item-list": {
+        "x": 586,
+        "y": 404,
+        "width": 384,
+        "height": 168
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_header-idle": {
+    "scenario": "header-idle",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 544,
+        "height": 394
+      },
+      "item-list": {
+        "x": 586,
+        "y": 404,
+        "width": 384,
+        "height": 168
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_map-100": {
+    "scenario": "map-100",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 250,
+        "width": 683,
+        "height": 326
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_map-125": {
+    "scenario": "map-125",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 150,
+        "width": 968,
+        "height": 434
+      },
+      "start": {
+        "x": 16,
+        "y": 82,
+        "width": 175,
+        "height": 60,
+        "requested_width": 175
+      },
+      "status-chip": {
+        "x": 203,
+        "y": 82,
+        "width": 282,
+        "height": 60
+      },
+      "counters": {
+        "x": 435,
+        "y": 12,
+        "width": 549,
+        "height": 60
+      },
+      "settings-button": {
+        "x": 1197,
+        "y": 82,
+        "width": 187,
+        "height": 60,
+        "requested_width": 187
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 298,
+        "width": 685,
+        "height": 278
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 150,
+        "width": 114,
+        "height": 60,
+        "requested_width": 96
+      },
+      "tab-1": {
+        "x": 130,
+        "y": 150,
+        "width": 136,
+        "height": 60,
+        "requested_width": 118
+      },
+      "tab-2": {
+        "x": 266,
+        "y": 150,
+        "width": 107,
+        "height": 60,
+        "requested_width": 89
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1156,
+      600
+    ]
+  },
+  "1000x600_map-150": {
+    "scenario": "map-150",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 174,
+        "width": 968,
+        "height": 410
+      },
+      "start": {
+        "x": 16,
+        "y": 94,
+        "width": 201,
+        "height": 72,
+        "requested_width": 201
+      },
+      "status-chip": {
+        "x": 229,
+        "y": 94,
+        "width": 326,
+        "height": 72
+      },
+      "counters": {
+        "x": 521,
+        "y": 12,
+        "width": 463,
+        "height": 72
+      },
+      "settings-button": {
+        "x": 1335,
+        "y": 94,
+        "width": 49,
+        "height": 72,
+        "requested_width": 213
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 346,
+        "width": 694,
+        "height": 230
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 174,
+        "width": 131,
+        "height": 72,
+        "requested_width": 109
+      },
+      "tab-1": {
+        "x": 147,
+        "y": 174,
+        "width": 157,
+        "height": 72,
+        "requested_width": 135
+      },
+      "tab-2": {
+        "x": 304,
+        "y": 174,
+        "width": 125,
+        "height": 72,
+        "requested_width": 103
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1338,
+      600
+    ]
+  },
+  "1000x600_settings-closed": {
+    "scenario": "settings-closed",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 544,
+        "height": 394
+      },
+      "item-list": {
+        "x": 586,
+        "y": 404,
+        "width": 384,
+        "height": 168
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_settings-open": {
+    "scenario": "settings-open",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 367,
+        "width": 968,
+        "height": 217
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 429,
+        "width": 544,
+        "height": 153
+      },
+      "settings-card": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 235
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 367,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 367,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 367,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_tabs-chat": {
+    "scenario": "tabs-chat",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_tabs-map": {
+    "scenario": "tabs-map",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 250,
+        "width": 683,
+        "height": 326
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1000x600_tabs-search": {
+    "scenario": "tabs-search",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 968,
+        "height": 458
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 974,
+        "y": 70,
+        "width": 10,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 544,
+        "height": 394
+      },
+      "item-list": {
+        "x": 586,
+        "y": 404,
+        "width": 384,
+        "height": 168
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_header-counters": {
+    "scenario": "header-counters",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 837,
+        "y": 12,
+        "width": 547,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 808,
+        "height": 654
+      },
+      "item-list": {
+        "x": 850,
+        "y": 404,
+        "width": 520,
+        "height": 428
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_header-idle": {
+    "scenario": "header-idle",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 808,
+        "height": 654
+      },
+      "item-list": {
+        "x": 850,
+        "y": 404,
+        "width": 520,
+        "height": 428
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_map-100": {
+    "scenario": "map-100",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 250,
+        "width": 1083,
+        "height": 586
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_map-125": {
+    "scenario": "map-125",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 150,
+        "width": 1368,
+        "height": 694
+      },
+      "start": {
+        "x": 16,
+        "y": 82,
+        "width": 175,
+        "height": 60,
+        "requested_width": 175
+      },
+      "status-chip": {
+        "x": 203,
+        "y": 82,
+        "width": 282,
+        "height": 60
+      },
+      "counters": {
+        "x": 761,
+        "y": 12,
+        "width": 623,
+        "height": 60
+      },
+      "settings-button": {
+        "x": 1197,
+        "y": 82,
+        "width": 187,
+        "height": 60,
+        "requested_width": 187
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 298,
+        "width": 1085,
+        "height": 538
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 150,
+        "width": 114,
+        "height": 60,
+        "requested_width": 96
+      },
+      "tab-1": {
+        "x": 130,
+        "y": 150,
+        "width": 136,
+        "height": 60,
+        "requested_width": 118
+      },
+      "tab-2": {
+        "x": 266,
+        "y": 150,
+        "width": 107,
+        "height": 60,
+        "requested_width": 89
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1156,
+      600
+    ]
+  },
+  "1400x860_map-150": {
+    "scenario": "map-150",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 174,
+        "width": 1368,
+        "height": 670
+      },
+      "start": {
+        "x": 16,
+        "y": 94,
+        "width": 201,
+        "height": 72,
+        "requested_width": 201
+      },
+      "status-chip": {
+        "x": 229,
+        "y": 94,
+        "width": 326,
+        "height": 72
+      },
+      "counters": {
+        "x": 659,
+        "y": 12,
+        "width": 725,
+        "height": 72
+      },
+      "settings-button": {
+        "x": 1335,
+        "y": 94,
+        "width": 49,
+        "height": 72,
+        "requested_width": 213
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 346,
+        "width": 1094,
+        "height": 490
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 174,
+        "width": 131,
+        "height": 72,
+        "requested_width": 109
+      },
+      "tab-1": {
+        "x": 147,
+        "y": 174,
+        "width": 157,
+        "height": 72,
+        "requested_width": 135
+      },
+      "tab-2": {
+        "x": 304,
+        "y": 174,
+        "width": 125,
+        "height": 72,
+        "requested_width": 103
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1338,
+      600
+    ]
+  },
+  "1400x860_settings-closed": {
+    "scenario": "settings-closed",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 808,
+        "height": 654
+      },
+      "item-list": {
+        "x": 850,
+        "y": 404,
+        "width": 520,
+        "height": 428
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_settings-open": {
+    "scenario": "settings-open",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 367,
+        "width": 1368,
+        "height": 477
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 429,
+        "width": 808,
+        "height": 413
+      },
+      "item-list": {
+        "x": 850,
+        "y": 645,
+        "width": 520,
+        "height": 187
+      },
+      "settings-card": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 235
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 367,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 367,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 367,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_tabs-chat": {
+    "scenario": "tabs-chat",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_tabs-map": {
+    "scenario": "tabs-map",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "map-canvas": {
+        "x": 24,
+        "y": 250,
+        "width": 1083,
+        "height": 586
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_tabs-search": {
+    "scenario": "tabs-search",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 126,
+        "width": 1368,
+        "height": 718
+      },
+      "start": {
+        "x": 16,
+        "y": 70,
+        "width": 149,
+        "height": 48,
+        "requested_width": 149
+      },
+      "status-chip": {
+        "x": 177,
+        "y": 70,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 12,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1223,
+        "y": 70,
+        "width": 161,
+        "height": 48,
+        "requested_width": 161
+      },
+      "feed": {
+        "x": 18,
+        "y": 188,
+        "width": 808,
+        "height": 654
+      },
+      "item-list": {
+        "x": 850,
+        "y": 404,
+        "width": 520,
+        "height": 428
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 126,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 126,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 126,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  }
+}
