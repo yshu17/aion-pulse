@@ -1,0 +1,40 @@
+{
+  "reset": {
+    "sprite": "v4_refresh_up@v4_common",
+    "method": "Waifu2x noise=1 x4"
+  },
+  "chat": {
+    "sprite": "v5_chat_menu_up@v5_common_1",
+    "method": "Waifu2x noise=1 x4"
+  },
+  "warning": {
+    "sprite": "v5_item_attr_reduced_warning@v5_common_1",
+    "method": "Waifu2x noise=1 x4"
+  },
+  "event": {
+    "sprite": "v4_radar_event_quest_give_icon_zonemap@v4_common",
+    "method": "Waifu2x noise=1 x4"
+  },
+  "siege": {
+    "source": "client_extract/icons_hd/fortress.png",
+    "original": "client_extract/icons/abyss_fortress.png",
+    "method": "existing Waifu2x x4"
+  },
+  "frame": {
+    "source": "client_extract/raw/textures/ui/ui/v4_common.png",
+    "sprite": "v4_tooltip",
+    "rect": [
+      210,
+      212,
+      34,
+      35
+    ],
+    "borders": [
+      9,
+      10,
+      13,
+      11
+    ],
+    "method": "native nine-slice, @2x Lanczos"
+  }
+}
