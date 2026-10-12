@@ -18,7 +18,7 @@ import plan_task_meta  # noqa: E402
 
 def test_shared_model_has_all_five_views_and_unique_task_keys():
     items = build_master_plan.collect()
-    assert len(items) == 100
+    assert len(items) == 101  # 100 + ui:43 registered 12.10; bump with every new task
     assert len({item["key"] for item in items}) == len(items)
     assert {item["plan"] for item in items} == {"map", "sn", "ui", "tg"}
     assert all(item["status"] in {"todo", "doing", "done"} for item in items)
@@ -59,7 +59,7 @@ def test_source_change_history_starts_only_after_baseline(tmp_path, monkeypatch)
 
 def test_all_five_pages_embed_one_model_and_injection_is_idempotent():
     model = json.loads((ROOT / "docs" / "plan-model.json").read_text(encoding="utf-8"))
-    assert len(model["items"]) == 100
+    assert len(model["items"]) == 101
     for page in ("index", "map-poi-plan", "schedule-notify-plan", "ui-ux-improvement-plan", "telegram-bridge-plan"):
         html = (ROOT / "docs" / f"{page}.html").read_text(encoding="utf-8")
         assert html.count('id="shared-plan-data"') == 1

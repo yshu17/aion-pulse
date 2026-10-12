@@ -1230,7 +1230,7 @@
       "is_new": false,
       "ai": {
         "category": "Карта · визуал",
-        "agent": "codex",
+        "agent": "claude",
         "reviewer": "claude",
         "skills": [
           {
@@ -1275,8 +1275,8 @@
         ],
         "split": {
           "design": "Claude Code",
-          "build": "Codex",
-          "test": "Codex",
+          "build": "Claude Code",
+          "test": "Claude Code",
           "approve": "Claude Code"
         },
         "done": [
@@ -1285,23 +1285,34 @@
         ],
         "tests": [
           "pytest tests/test_mapview.py",
-          "снимки 3 масштабов"
+          "снимки 3 масштабов после ui:43"
         ],
-        "handoff": "ready",
+        "handoff": "n/a",
         "arch_review": "not-needed",
         "files": {
-          "Codex": [
-            "watcher/mapview.py"
+          "Claude": [
+            "watcher/mapview.py",
+            "tests/test_mapview.py"
           ]
         },
+        "reassigned": [
+          {
+            "at": "2026-10-12T19:38+02:00",
+            "from": "codex",
+            "to": "claude",
+            "by": "user",
+            "reason": "решение пользователя 12.10: код программы watcher/ делает Claude; визуальная приёмка после ui:43"
+          }
+        ],
+        "branch": "claude/map-32-cross",
+        "note": "Задание: docs/TASK_MAP-32.md. Исполнитель переназначен с Codex на Claude 12.10 (история в поле reassigned). Приёмка визуальная — после ui:43.",
         "state": "recommended",
-        "agent_label": "Codex",
-        "handoff_label": "готово к передаче Codex",
+        "agent_label": "Claude Code",
+        "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [
           "tool:ui_snapshots"
-        ],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · map:32 · Уменьшить синие крестики на 35 %\nЦель: Уменьшить синие крестики на 35 %.\nКонтекст: Снизить текущий размер маркеров места из чата до 65 % от текущего и проверить читаемость на разных масштабах карты\nПлан: map · статус: todo · передача: готово к передаче Codex\nЗависимости: нет\nТребования и критерии готовности:\n- крестики 65 % от прежнего\n- видны на малом и большом масштабе\nРазрешённые файлы:\n- watcher/mapview.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): размер маркера 65 %. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): читаемость на разных масштабах. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. НЕТ: не найден — рекомендуется создать или установить, сделать вручную.\nТесты:\n- pytest tests/test_mapview.py\n- снимки 3 масштабов\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        ]
       }
     },
     {
@@ -4550,7 +4561,7 @@
       "priority": "P2",
       "dependencies_text": "№ 11",
       "added_at": "11.10.2026 02:46",
-      "is_latest": true,
+      "is_latest": false,
       "key": "ui:42",
       "parent": "",
       "depends_on": [
@@ -4657,6 +4668,106 @@
           "tool:ui_snapshots"
         ],
         "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:42 · У вкладок слишком большие внутренние отступы\nЦель: У вкладок слишком большие внутренние отступы.\nКонтекст: P2 · Сократить горизонтальные и вертикальные поля вкладок до минимальных читаемых; сохранить одинаковую геометрию выбранной и остальных вкладок\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:11\nТребования и критерии готовности:\n- минимальные читаемые поля\n- выбранная и обычная вкладка одной геометрии\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): поля вкладок. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): токены отступов. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. НЕТ: не найден — рекомендуется создать или установить, сделать вручную.\nПримечание: Интегрировано: код d702783 (Codex), приёмка Claude 12.10. Визуальная проверка на 100 % масштабе; 125/150 % не проверены.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "ui",
+      "id": "UI #43",
+      "title": "Нет воспроизводимой визуальной проверки интерфейса: приёмка держится на разовых снимках",
+      "who": "",
+      "text": "P1 · `tools/ui_snapshots.py`: снимки в фиксированном окне и трёх масштабах карты, геометрия виджетов с допуском ±1 px, сравнение с базой, отчёт и артефакты одной командой `check`; контракт — `docs/TASK_UI-SNAPSHOT.md`",
+      "status": "todo",
+      "priority": "P1",
+      "dependencies_text": "№ 42",
+      "added_at": "12.10.2026 19:37",
+      "is_latest": true,
+      "key": "ui:43",
+      "parent": "",
+      "depends_on": [
+        "ui:42"
+      ],
+      "changed_at": "",
+      "history": [],
+      "owners": [],
+      "is_new": true,
+      "ai": {
+        "category": "UI/UX · тестирование",
+        "agent": "codex",
+        "reviewer": "claude",
+        "skills": [
+          {
+            "name": "application-ui-ux-designer",
+            "role": "primary",
+            "purpose": "сценарии, именованные виджеты и допуски по реальной раскладке Tk",
+            "role_label": "основной",
+            "title": "Application UI/UX Designer",
+            "area": "UI/UX",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "ui-visual-validator",
+            "role": "supporting",
+            "purpose": "правила визуальной проверки и честный отчёт о непроверенном",
+            "role_label": "дополнительный",
+            "title": "UI Visual Validator",
+            "area": "Проверка и ревью",
+            "availability": "user",
+            "available": true,
+            "availability_label": "установлен глобально",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "superpowers:test-driven-development",
+            "role": "supporting",
+            "purpose": "тесты сравнения геометрии и порога пикселей на синтетических данных",
+            "role_label": "дополнительный",
+            "title": "Test-Driven Development",
+            "area": "Разработка и тесты",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Codex",
+          "test": "Codex",
+          "approve": "Claude Code"
+        },
+        "done": [
+          "python tools/ui_snapshots.py check проходит на базе, два прогона одного коммита дают 0 различий",
+          "отрицательный тест (padding вкладок 22x8) даёт код выхода 1 и diff вкладок",
+          "системный DPI 125/150 % явно помечен как не проверенный в отчёте"
+        ],
+        "tests": [
+          "pytest -q",
+          "python tools/ui_snapshots.py check"
+        ],
+        "handoff": "ready",
+        "arch_review": "approved",
+        "files": {
+          "Codex": [
+            "tools/ui_snapshots.py",
+            "tests/test_ui_snapshots.py",
+            "docs/UI_SNAPSHOTS.md",
+            "docs/ui/baseline/"
+          ]
+        },
+        "branch": "codex/ui-snapshots",
+        "note": "Задание: docs/TASK_UI-SNAPSHOT.md. Контракт утверждён Claude. Зарегистрировано 12.10 по решению пользователя; в PAIR.md это UI-1.",
+        "state": "recommended",
+        "agent_label": "Codex",
+        "handoff_label": "готово к передаче Codex",
+        "arch_label": "архитектура утверждена",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:43 · Нет воспроизводимой визуальной проверки интерфейса: приёмка держится на разовых снимках\nЦель: Нет воспроизводимой визуальной проверки интерфейса: приёмка держится на разовых снимках.\nКонтекст: P1 · `tools/ui_snapshots.py`: снимки в фиксированном окне и трёх масштабах карты, геометрия виджетов с допуском ±1 px, сравнение с базой, отчёт и артефакты одной командой `check`; контракт — `docs/TASK_UI-SNAPSHOT.md`\nПлан: ui · статус: todo · передача: готово к передаче Codex\nЗависимости: ui:42\nТребования и критерии готовности:\n- python tools/ui_snapshots.py check проходит на базе, два прогона одного коммита дают 0 различий\n- отрицательный тест (padding вкладок 22x8) даёт код выхода 1 и diff вкладок\n- системный DPI 125/150 % явно помечен как не проверенный в отчёте\nРазрешённые файлы:\n- tools/ui_snapshots.py\n- tests/test_ui_snapshots.py\n- docs/UI_SNAPSHOTS.md\n- docs/ui/baseline/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): сценарии, именованные виджеты и допуски по реальной раскладке Tk. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): правила визуальной проверки и честный отчёт о непроверенном. Codex читает SKILL.md по AGENTS.md.\n- superpowers:test-driven-development (дополнительный): тесты сравнения геометрии и порога пикселей на синтетических данных. у Codex есть свой экземпляр.\nПримечание: Задание: docs/TASK_UI-SNAPSHOT.md. Контракт утверждён Claude. Зарегистрировано 12.10 по решению пользователя; в PAIR.md это UI-1.\nТесты:\n- pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -5378,7 +5489,7 @@
       "link": ""
     }
   ],
-  "latest": "ui:42",
+  "latest": "ui:43",
   "built": "12.10.2026",
   "ai": {
     "updated_at": "12.10.2026 18:00",

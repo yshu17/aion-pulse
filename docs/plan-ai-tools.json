@@ -393,7 +393,7 @@
     },
     "map:32": {
       "category": "Карта · визуал",
-      "agent": "codex",
+      "agent": "claude",
       "reviewer": "claude",
       "skills": [
         {
@@ -414,8 +414,8 @@
       ],
       "split": {
         "design": "Claude Code",
-        "build": "Codex",
-        "test": "Codex",
+        "build": "Claude Code",
+        "test": "Claude Code",
         "approve": "Claude Code"
       },
       "done": [
@@ -424,15 +424,27 @@
       ],
       "tests": [
         "pytest tests/test_mapview.py",
-        "снимки 3 масштабов"
+        "снимки 3 масштабов после ui:43"
       ],
-      "handoff": "ready",
+      "handoff": "n/a",
       "arch_review": "not-needed",
       "files": {
-        "Codex": [
-          "watcher/mapview.py"
+        "Claude": [
+          "watcher/mapview.py",
+          "tests/test_mapview.py"
         ]
-      }
+      },
+      "reassigned": [
+        {
+          "at": "2026-10-12T19:38+02:00",
+          "from": "codex",
+          "to": "claude",
+          "by": "user",
+          "reason": "решение пользователя 12.10: код программы watcher/ делает Claude; визуальная приёмка после ui:43"
+        }
+      ],
+      "branch": "claude/map-32-cross",
+      "note": "Задание: docs/TASK_MAP-32.md. Исполнитель переназначен с Codex на Claude 12.10 (история в поле reassigned). Приёмка визуальная — после ui:43."
     },
     "map:33": {
       "category": "Карта · визуал",
@@ -2585,6 +2597,55 @@
       "handoff": "blocked",
       "arch_review": "not-needed",
       "note": "Черновик DRAFT: разработка не утверждена."
+    },
+    "ui:43": {
+      "category": "UI/UX · тестирование",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "сценарии, именованные виджеты и допуски по реальной раскладке Tk"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "правила визуальной проверки и честный отчёт о непроверенном"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тесты сравнения геометрии и порога пикселей на синтетических данных"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "python tools/ui_snapshots.py check проходит на базе, два прогона одного коммита дают 0 различий",
+        "отрицательный тест (padding вкладок 22x8) даёт код выхода 1 и diff вкладок",
+        "системный DPI 125/150 % явно помечен как не проверенный в отчёте"
+      ],
+      "tests": [
+        "pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "approved",
+      "files": {
+        "Codex": [
+          "tools/ui_snapshots.py",
+          "tests/test_ui_snapshots.py",
+          "docs/UI_SNAPSHOTS.md",
+          "docs/ui/baseline/"
+        ]
+      },
+      "branch": "codex/ui-snapshots",
+      "note": "Задание: docs/TASK_UI-SNAPSHOT.md. Контракт утверждён Claude. Зарегистрировано 12.10 по решению пользователя; в PAIR.md это UI-1."
     }
   }
 }
