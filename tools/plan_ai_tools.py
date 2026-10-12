@@ -26,7 +26,8 @@ AGENTS = {"claude": "Claude Code", "codex": "Codex", "joint": "Совместн�
 ROLES = {"primary": "основной", "supporting": "дополнительный"}
 HANDOFF = {"ready": "готово к передаче Codex", "needs-architecture": "ждёт архитектурного решения Claude",
            "in-progress": "в работе", "gated": "план ждёт «делаем»", "blocked": "ждёт предыдущих этапов",
-           "user": "нужен пользователь", "n/a": "передача не нужна"}
+           "user": "нужен пользователь", "n/a": "передача не нужна",
+           "review": "ждёт проверки Claude", "integrate": "проверено, готово к интеграции"}
 ARCH = {"pending": "ожидает архитектурной проверки Claude", "approved": "архитектура утверждена", "not-needed": "не требуется"}
 REVIEWERS = {"claude", "codex", "user"}
 CODEX_ACCESS = {"native": "у Codex есть свой экземпляр", "read-file": "Codex читает SKILL.md по AGENTS.md",

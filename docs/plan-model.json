@@ -4634,21 +4634,23 @@
           "pytest tests/test_theme.py tests/test_app.py",
           "снимки"
         ],
-        "handoff": "ready",
+        "handoff": "in-progress",
         "arch_review": "not-needed",
         "files": {
           "Codex": [
             "watcher/theme.py"
           ]
         },
+        "branch": "codex/ui-42-tabs",
+        "note": "Пилот совместной работы 12.10: задание в docs/TASK_UI-42.md. Claude не трогает watcher/theme.py до приёмки.",
         "state": "recommended",
         "agent_label": "Codex",
-        "handoff_label": "готово к передаче Codex",
+        "handoff_label": "в работе",
         "arch_label": "не требуется",
         "missing_tools": [
           "tool:ui_snapshots"
         ],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:42 · У вкладок слишком большие внутренние отступы\nЦель: У вкладок слишком большие внутренние отступы.\nКонтекст: P2 · Сократить горизонтальные и вертикальные поля вкладок до минимальных читаемых; сохранить одинаковую геометрию выбранной и остальных вкладок\nПлан: ui · статус: todo · передача: готово к передаче Codex\nЗависимости: ui:11\nТребования и критерии готовности:\n- минимальные читаемые поля\n- выбранная и обычная вкладка одной геометрии\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): поля вкладок. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): токены отступов. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. НЕТ: не найден — рекомендуется создать или установить, сделать вручную.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:42 · У вкладок слишком большие внутренние отступы\nЦель: У вкладок слишком большие внутренние отступы.\nКонтекст: P2 · Сократить горизонтальные и вертикальные поля вкладок до минимальных читаемых; сохранить одинаковую геометрию выбранной и остальных вкладок\nПлан: ui · статус: todo · передача: в работе\nЗависимости: ui:11\nТребования и критерии готовности:\n- минимальные читаемые поля\n- выбранная и обычная вкладка одной геометрии\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): поля вкладок. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): токены отступов. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. НЕТ: не найден — рекомендуется создать или установить, сделать вручную.\nПримечание: Пилот совместной работы 12.10: задание в docs/TASK_UI-42.md. Claude не трогает watcher/theme.py до приёмки.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {

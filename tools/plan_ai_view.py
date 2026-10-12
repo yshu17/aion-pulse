@@ -19,6 +19,7 @@ SHARED_CSS = r"""
 SHARED_CONTROLS = ('<select id="shared-agent-filter" aria-label="Исполнитель"><option value="all">Любой исполнитель</option>'
                    '<option value="claude">Claude Code</option><option value="codex">Codex</option><option value="joint">Совместно</option>'
                    '<option value="user">Пользователь</option><option value="codex-ready">Задачи для Codex · готовы</option>'
+                   '<option value="review">Ожидают проверки Claude</option><option value="integrate">Готовы к интеграции</option>'
                    '<option value="missing">Без рекомендации</option></select>'
                    '<select id="shared-skill-filter" aria-label="Скилл"><option value="all">Любой скилл</option></select>')
 
@@ -27,6 +28,8 @@ const AI_SHORT={claude:'Claude',codex:'Codex',joint:'Совместно',user:'�
 function aiMatch(i){const a=$('shared-agent-filter').value,k=$('shared-skill-filter').value,ai=i.ai||{};
   if(a==='missing'&&ai.state!=='missing')return false;
   if(a==='codex-ready'&&!(ai.state==='recommended'&&ai.handoff==='ready'&&status(i)!=='done'))return false;
+  if(a==='review'&&ai.handoff!=='review')return false;
+  if(a==='integrate'&&ai.handoff!=='integrate')return false;
   if(['claude','codex','joint','user'].includes(a)&&ai.agent!==a)return false;
   if(k!=='all'&&!(ai.skills||[]).some(r=>r.name===k))return false;return true}
 function aiTag(i){const ai=i.ai||{};return ai.state==='recommended'?`<span class="shared-tag shared-agent" title="Рекомендуемый исполнитель">${esc(AI_SHORT[ai.agent])}</span>`:''}

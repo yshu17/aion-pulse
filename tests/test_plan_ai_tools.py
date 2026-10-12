@@ -87,3 +87,22 @@ def test_built_model_carries_ai_without_changing_ids_or_statuses():
     assert all(i["status"] == source[i["key"]]["status"] for i in model["items"])
     assert all(i["ai"]["state"] in {"recommended", "retro"} for i in model["items"])
     assert len(model["ai"]["drafts"]) == 24
+
+
+def test_handoff_states_for_review_and_integration_are_known_and_filterable():
+    import plan_ai_view
+
+    assert "review" in plan_ai_tools.HANDOFF and "integrate" in plan_ai_tools.HANDOFF
+    assert 'value="review"' in plan_ai_view.SHARED_CONTROLS and 'value="integrate"' in plan_ai_view.SHARED_CONTROLS
+    assert "ai.handoff!=='review'" in plan_ai_view.SHARED_JS and "ai.handoff!=='integrate'" in plan_ai_view.SHARED_JS
+
+
+def test_pilot_task_ui_42_is_in_progress_on_its_own_branch():
+    import json
+    from pathlib import Path
+
+    data = json.loads((Path(plan_ai_tools.__file__).resolve().parent.parent / "docs" / "plan-ai-tools.json")
+                      .read_text(encoding="utf-8"))
+    task = data["tasks"]["ui:42"]
+    assert task["agent"] == "codex" and task["handoff"] == "in-progress"
+    assert task["branch"] == "codex/ui-42-tabs"

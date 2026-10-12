@@ -1523,13 +1523,15 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "ready",
+      "handoff": "in-progress",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
           "watcher/theme.py"
         ]
-      }
+      },
+      "branch": "codex/ui-42-tabs",
+      "note": "Пилот совместной работы 12.10: задание в docs/TASK_UI-42.md. Claude не трогает watcher/theme.py до приёмки."
     },
     "tg:1.1": {
       "category": "Telegram · модуль",
