@@ -44,7 +44,7 @@ def test_rounded_theme_uses_image_elements(root):
 def test_notebook_tab_padding_is_compact(root):
     theme.apply_dark_theme(root, UI_DIR)
     padding = ttk.Style(root).configure("TNotebook.Tab")["padding"]
-    assert tuple(map(int, root.tk.splitlist(padding))) == (16, 6)
+    assert tuple(map(int, root.tk.splitlist(padding))) == (16, 8)
 
 
 def test_without_images_theme_stays_flat(root, tmp_path):
