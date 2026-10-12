@@ -135,8 +135,15 @@ def safe_storage(html: str) -> str:
                   r"try{localStorage.setItem(\1)}catch(e){};", html)
 
 
+def drop_export(html: str) -> str:
+    """The phone page cannot save a file for the viewer: no export button, no download script.
+    Import (read a file the viewer picks) still works."""
+    html = re.sub(r'<button[^>]*id="shared-export"[^>]*>.*?</button>', "", html, flags=re.S)
+    return re.sub(r"\$\('shared-export'\)\.onclick=[^\n]*\n", "", html, count=1)
+
+
 def phone_page(html: str) -> str:
-    html = rewrite_links(no_confirm(safe_storage(html)))
+    html = rewrite_links(drop_export(no_confirm(safe_storage(html))))
     html = re.sub(r'<meta name="viewport"[^>]*>',
                   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">', html, count=1)
     return html.replace("</head>", PHONE_CSS + "\n</head>", 1)
