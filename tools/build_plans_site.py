@@ -6,25 +6,34 @@ published as one private claude.ai artifact so they open on a phone. This tool:
 - renders the Markdown they link to (PAIR.md, UI_UX_IMPROVEMENT_PLAN.md, docs/telegram-bridge-plan.md) as pages;
 - rewrites links so every page points inside the site (no «../»);
 - writes main.html: the master plan without its document skeleton — the artifact's own page (the publish adds one).
+- writes Планы_Aion_Chat_Watcher_Telegram.html: all plan pages embedded in one offline-friendly mobile reader.
 Publish: Artifact tool, file_path build/plans_site/main.html, files = every other file in the folder.
 Dev tool (needs the markdown package). Usage: python tools/build_plans_site.py
 """
 
+import base64
+import json
 import re
 import shutil
 import sys
 from pathlib import Path
 
-import markdown
-
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 OUT = ROOT / "build" / "plans_site"
+VENDOR = ROOT / "downloads" / "phosphor_icons_2.1.1" / "vendor"
+if str(VENDOR) not in sys.path:
+    sys.path.insert(0, str(VENDOR))
+
+import markdown  # noqa: E402
+from build_feature_drafts import HUB, filename, load  # noqa: E402
+
 MAIN_TITLE = "Планы Aion Chat Watcher"
 PAGES = ["index.html", "map-poi-plan.html", "ui-ux-improvement-plan.html", "telegram-bridge-plan.html",
-         "schedule-notify-plan.html"]
+         "schedule-notify-plan.html", HUB] + [filename(plan) for plan in load()["plans"]]
 # Markdown the pages link to -> (source, page name, title)
 SOURCES = {
+    "../REPORT_SN23.md": (ROOT / "REPORT_SN23.md", "notifications-report.html", "Уведомления: отчёт SN-2/SN-3"),
     "../PAIR.md": (ROOT / "PAIR.md", "pair.html", "Задачи и журнал"),
     "../UI_UX_IMPROVEMENT_PLAN.md": (ROOT / "UI_UX_IMPROVEMENT_PLAN.md", "ui-ux-source.html", "UI/UX: полный план"),
     "telegram-bridge-plan.md": (DOCS / "telegram-bridge-plan.md", "telegram-source.html", "Telegram: исходный план"),
@@ -122,7 +131,7 @@ def no_confirm(html: str) -> str:
 
 def safe_storage(html: str) -> str:
     """localStorage can throw inside the artifact frame (blocked site data): wrap the bare writes."""
-    return re.sub(r"(?<!try\{)localStorage\.setItem\(([^;]*?)\);",
+    return re.sub(r"(?<!try\{)localStorage\.setItem\(([^;\n{}]*?)\);",
                   r"try{localStorage.setItem(\1)}catch(e){};", html)
 
 
@@ -147,6 +156,81 @@ def main_page(html: str) -> str:
     return f"{title}\n{styles}\n{body.strip()}\n"
 
 
+def telegram_reader() -> str:
+    """Pack every phone-ready plan page into one self-contained, tabbed HTML file."""
+    titles = {
+        "index.html": "Мастер-план",
+        "map-poi-plan.html": "Карта",
+        "schedule-notify-plan.html": "Расписание",
+        "ui-ux-improvement-plan.html": "UI/UX",
+        "telegram-bridge-plan.html": "Telegram",
+        "pair.html": "Журнал PAIR",
+        "ui-ux-source.html": "UI/UX — полный план",
+        "telegram-source.html": "Telegram — полный план",
+        "notifications-report.html": "Уведомления — отчёт",
+    }
+    titles[HUB] = "Новые планы"
+    titles.update({filename(plan): plan["title"] for plan in load()["plans"]})
+    encoded = {
+        name: base64.b64encode((OUT / name).read_bytes()).decode("ascii")
+        for name in titles
+    }
+    payload = json.dumps(encoded, ensure_ascii=True)
+    nav = "".join(
+        f'<button type="button" data-page="{name}">{title}</button>'
+        for name, title in titles.items()
+    )
+    return f'''<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Планы Aion Chat Watcher — Telegram</title>
+<style>
+:root{{color-scheme:dark;--bg:#141519;--surface:#1c1e24;--line:#363a45;--text:#e9e7e4;--muted:#a1a5ae;--accent:#ff8c1a}}
+*{{box-sizing:border-box}}html,body{{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font:15px/1.45 "Segoe UI",system-ui,sans-serif}}
+body{{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}}
+header{{padding:9px 12px 7px;border-bottom:1px solid var(--line);background:var(--surface)}}
+h1{{font-size:16px;line-height:1.25;margin:0 0 8px;font-weight:650}}
+nav{{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:3px}}
+button{{flex:none;min-height:40px;padding:7px 12px;border:1px solid var(--line);border-radius:9px;background:#262931;color:var(--text);font:inherit;white-space:nowrap}}
+button.active{{border-color:var(--accent);color:#ffb05c;background:#30271d}}
+main{{flex:1;min-height:0}}iframe{{display:block;width:100%;height:100%;border:0;background:var(--bg)}}
+#hint{{padding:4px 12px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header><h1>Планы Aion Chat Watcher</h1><nav aria-label="Разделы планов">{nav}</nav></header>
+<main><iframe id="viewer" title="Планы проекта"></iframe></main>
+<div id="hint">Один файл · работает без интернета · разделы переключаются сверху</div>
+<script>
+const FILES={payload};
+const frame=document.getElementById("viewer");
+const buttons=[...document.querySelectorAll("[data-page]")];
+function decodePage(value){{const bytes=Uint8Array.from(atob(value),c=>c.charCodeAt(0));return new TextDecoder("utf-8").decode(bytes)}}
+function showPage(name,hash=""){{
+  if(!FILES[name])return;
+  frame.srcdoc=decodePage(FILES[name]);
+  buttons.forEach(b=>b.classList.toggle("active",b.dataset.page===name));
+  if(hash)frame.addEventListener("load",()=>{{try{{frame.contentWindow.location.hash=hash}}catch(_e){{}}}},{{once:true}});
+}}
+buttons.forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+frame.addEventListener("load",()=>{{
+  try{{frame.contentDocument.addEventListener("click",event=>{{
+    const link=event.target.closest("a[href]");if(!link)return;
+    const href=link.getAttribute("href");if(!href||href.startsWith("http:")||href.startsWith("https:")||href.startsWith("#"))return;
+    const parts=href.split("#");const file=parts[0].split("/").pop();
+    if(FILES[file]){{event.preventDefault();showPage(file,parts[1]||"")}}
+  }},true)}}catch(_e){{}}
+}});
+showPage("index.html");
+</script>
+</body>
+</html>
+'''
+
+
 def main() -> int:
     if OUT.exists():
         shutil.rmtree(OUT)
@@ -158,6 +242,8 @@ def main() -> int:
             (OUT / "main.html").write_text(main_page(page), encoding="utf-8")
     for _href, (source, page, title) in SOURCES.items():
         (OUT / page).write_text(markdown_page(source, title), encoding="utf-8")
+    reader = OUT / "Планы_Aion_Chat_Watcher_Telegram.html"
+    reader.write_text(telegram_reader(), encoding="utf-8")
     files = sorted(p.name for p in OUT.iterdir())
     print(f"{len(files)} files in {OUT}: {', '.join(files)}")
     return 0

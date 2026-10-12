@@ -22,7 +22,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import build_telegram_plan  # noqa: E402
 import build_ui_ux_plan  # noqa: E402
+import build_feature_drafts  # noqa: E402
 from plan_common import MASTER, PLANS, RESOURCES, nav_html, owners, set_nav  # noqa: E402
+from plan_task_meta import load_task_meta, register_new_tasks, register_source_changes, task_meta  # noqa: E402
+import plan_ai_tools  # noqa: E402
+from plan_ai_view import MASTER_SECTION as AI_SECTION  # noqa: E402
 
 FIELD = re.compile(r'(\w+):"((?:[^"\\]|\\.)*)"')
 
@@ -41,48 +45,106 @@ def js_steps(page: str, name: str) -> list[dict[str, str]]:
 
 def collect() -> list[dict]:
     items: list[dict] = []
+    metadata = load_task_meta()
     map_page = (DOCS / "map-poi-plan.html").read_text(encoding="utf-8")
     for i, st in enumerate(js_steps(map_page, "STEPS3"), 1):
         items.append({"plan": "map", "id": str(i), "title": st["t"], "who": st.get("who", ""), "text": st.get("d", ""),
-                      "status": st.get("s", "todo")})
+                      "status": st.get("s", "todo"), **task_meta(metadata, f"map:{i}")})
     sn_page = (DOCS / "schedule-notify-plan.html").read_text(encoding="utf-8")
     for i, st in enumerate(js_steps(sn_page, "STEPS"), 1):
         items.append({"plan": "sn", "id": f"SN-{i}", "title": st["t"], "who": st.get("who", ""),
-                      "text": st.get("d", ""), "status": st.get("s", "todo")})
+                      "text": st.get("d", ""), "status": st.get("s", "todo"), **task_meta(metadata, f"sn:SN-{i}")})
     ui_lines = build_ui_ux_plan.SOURCE.read_text(encoding="utf-8").splitlines()
     ui_owners = build_ui_ux_plan.task_owners(ui_lines)
     ui_status = build_ui_ux_plan.task_status(ui_lines)
     for task in build_ui_ux_plan.task_rows(ui_lines):
         items.append({"plan": "ui", "id": f"UI #{task['id']}", "title": task["problem"],
                       "who": ui_owners.get(task["id"], ""), "text": f"{task['priority']} · {task['solution']}",
-                      "status": ui_status.get(task["id"], ("todo", ""))[0]})
+                      "status": ui_status.get(task["id"], ("todo", ""))[0], "priority": task["priority"],
+                      "dependencies_text": task["dependencies"], **task_meta(metadata, f"ui:{task['id']}")})
     tasks, _stages, _deferred = build_telegram_plan.parse_plan(build_telegram_plan.SOURCE.read_text(encoding="utf-8"))
     for task in tasks:
         who, _sep, title = task["title"].partition(" · ")
         if not owners(who):
             who, title = "Claude", task["title"]
         items.append({"plan": "tg", "id": f"TG {task['id']}", "title": title, "who": who, "text": "",
-                      "status": task["initial"]})
+                      "status": task["initial"], **task_meta(metadata, f"tg:{task['id']}")})
     for item in items:
+        item["key"] = f"{item['plan']}:{item['id'].removeprefix('UI #').removeprefix('TG ')}"
+        item["priority"] = item.get("priority", "")
+        item["dependencies_text"] = item.get("dependencies_text", "")
+        item["parent"] = metadata.get("tasks", {}).get(item["key"], {}).get("parent", "")
+        item["depends_on"] = metadata.get("tasks", {}).get(item["key"], {}).get("depends_on", [])
+        if item["plan"] == "ui" and not item["depends_on"]:
+            match = re.fullmatch(r"№\s*([\d, ]+)", item["dependencies_text"])
+            if match:
+                item["depends_on"] = [f"ui:{number}" for number in re.findall(r"\d+", match.group(1))]
+        item["changed_at"] = metadata.get("tasks", {}).get(item["key"], {}).get("changed_at", "")
+        item["history"] = metadata.get("tasks", {}).get(item["key"], {}).get("history", [])
         item["owners"] = owners(item["who"])
+        item["is_new"] = item.get("is_latest", False) and item["status"] == "todo"
+    keys = [item["key"] for item in items]
+    if len(keys) != len(set(keys)):
+        raise SystemExit("Duplicate task IDs in plan sources")
     return items
 
 
+def refresh_task_meta_page(name: str) -> None:
+    path = DOCS / name
+    text = path.read_text(encoding="utf-8")
+    meta = load_task_meta()
+    payload = json.dumps({"latest": meta.get("latest", ""), "tasks": meta.get("tasks", {})},
+                         ensure_ascii=False).replace("</", "<\\/")
+    pattern = r"/\*TASK_META_START\*/.*?/\*TASK_META_END\*/"
+    updated, count = re.subn(pattern, lambda _m: "/*TASK_META_START*/" + payload + "/*TASK_META_END*/", text, count=1, flags=re.S)
+    if count != 1:
+        raise SystemExit(f"missing task metadata markers in {path}")
+    path.write_text(updated, encoding="utf-8")
+
+
 def main() -> int:
+    build_feature_drafts.main()
     items = collect()
+    added = register_new_tasks([item["key"] for item in items])
+    changed = register_source_changes(items)
+    if added or changed:
+        build_ui_ux_plan.main()
+        build_telegram_plan.main()
+        items = collect()
     plans = [{"key": k, "title": t, "page": p, "gate": g} for k, t, p, g in PLANS]
     needs = [{"plan": key, "title": title, "detail": detail, "link": link}
              for key, *_ in PLANS for kind, title, detail, link in RESOURCES.get(key, []) if kind == "need"]
-    data = json.dumps({"plans": plans, "items": items, "needs": needs, "built": date.today().strftime("%d.%m.%Y")},
+    ai_data = plan_ai_tools.load()
+    ai_skills = plan_ai_tools.resolve_skills(ai_data)
+    plan_ai_tools.annotate(items, ai_data, ai_skills)
+    model = {"schema_version": 1, "plans": plans, "items": items, "needs": needs,
+             "latest": load_task_meta().get("latest", ""), "built": date.today().strftime("%d.%m.%Y"),
+             "ai": {"updated_at": ai_data.get("updated_at", ""), "skills": list(ai_skills.values()),
+                    "drafts": plan_ai_tools.draft_items(build_feature_drafts.load(), ai_data, ai_skills)}}
+    (ROOT / "docs" / "AI_SKILLS_TASK_MAPPING.md").write_text(
+        plan_ai_tools.mapping_markdown(items, ai_skills, model["ai"]["drafts"]), encoding="utf-8")
+    (DOCS / "plan-model.json").write_text(json.dumps(model, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    data = json.dumps(model,
                       ensure_ascii=False).replace("</", "<\\/")
-    page = TEMPLATE.replace("__NAV__", f"<!--NAV-->{nav_html('master')}<!--/NAV-->").replace("__DATA__", data)
+    page = (TEMPLATE.replace("__NAV__", f"<!--NAV-->{nav_html('master')}<!--/NAV-->")
+            .replace("__DRAFTS__", build_feature_drafts.master_section(build_feature_drafts.load()))
+            .replace("__AI__", AI_SECTION)
+            .replace("__DATA__", data))
     (DOCS / MASTER).write_text(page, encoding="utf-8")
+    refresh_task_meta_page("map-poi-plan.html")
+    refresh_task_meta_page("schedule-notify-plan.html")
     for key, _title, name, _gate in PLANS:
         path = DOCS / name
         text = path.read_text(encoding="utf-8")
         updated = set_nav(text, key)
         if updated != text:
             path.write_text(updated, encoding="utf-8")
+    from plan_shared import inject_shared_explorer
+    for key, _title, name, _gate in PLANS:
+        path = DOCS / name
+        path.write_text(inject_shared_explorer(path.read_text(encoding="utf-8"), model, key), encoding="utf-8")
+    master_path = DOCS / MASTER
+    master_path.write_text(inject_shared_explorer(master_path.read_text(encoding="utf-8"), model, "all"), encoding="utf-8")
     counts = {k: sum(1 for i in items if i["plan"] == k) for k, *_ in PLANS}
     print(f"{DOCS / MASTER}: {len(items)} steps {counts}")
     return 0
@@ -128,7 +190,7 @@ input[type=search]{flex:1;min-width:180px}
 .who span{font-size:12px;padding:1px 7px;border-radius:7px;background:var(--surface2);border:1px solid var(--border)}
 .who .c{border-color:#5a4024}.who .k{border-color:#24425a}.who .y{border-color:#375b48}
 @media(max-width:640px){.item{grid-template-columns:22px minmax(0,1fr)}.item .id{display:none}.who{grid-column:2;justify-content:flex-start}}
-.empty{padding:20px;text-align:center;color:var(--muted)}
+.empty{padding:20px;text-align:center;color:var(--muted)}.new-badge{display:inline-block;border-radius:999px;padding:1px 8px;background:#493516;color:#ffd16b;border:1px solid #846128;font-size:10px;font-weight:800;letter-spacing:.04em}
 code{background:var(--surface2);border-radius:4px;padding:0 4px;font-size:13px}
 </style>
 </head>
@@ -141,6 +203,10 @@ __NAV__
 
   <h2>Планы</h2>
   <div class="plans" id="plans"></div>
+
+  __DRAFTS__
+
+  __AI__
 
   <h2>Ждёт тебя</h2>
   <div class="you" id="you"></div>
@@ -166,19 +232,21 @@ let f={plans:[],owners:[],status:"open",q:""};
 try{Object.assign(f,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(f))}catch(e){}};
 const plan=k=>DATA.plans.find(p=>p.key===k);
+function itemStatus(i){if(window.planState)return window.planState.status(i);try{if(i.plan==="ui")return JSON.parse(localStorage.getItem("aion-ui-ux-plan-status-v1")||"{}")[i.id.replace("UI #","")]||i.status;if(i.plan==="tg")return JSON.parse(localStorage.getItem("aion-telegram-plan-status-v1")||"{}")[i.id.replace("TG ","")]||i.status}catch(e){}return i.status}
+function itemIsNew(i){return i.is_latest&&itemStatus(i)==="todo"}
 document.getElementById("built").textContent=DATA.built;
-function totals(){const all=DATA.items,done=all.filter(i=>i.status==="done").length,open=all.length-done;
-  const mine=o=>all.filter(i=>i.status!=="done"&&i.owners.includes(o)).length;
+function totals(){const all=DATA.items,done=all.filter(i=>itemStatus(i)==="done").length,open=all.length-done;
+  const mine=o=>all.filter(i=>itemStatus(i)!=="done"&&i.owners.includes(o)).length;
   document.getElementById("total").innerHTML=[[`${done} / ${all.length}`,"шагов готово"],[open,"открыто"],[mine("Claude"),"открыто у Claude"],[mine("Кодекс"),"открыто у Кодекса"]]
     .map(([b,s])=>`<div><b>${b}</b><span class="tag">${s}</span></div>`).join("");}
 function plans(){document.getElementById("plans").innerHTML=DATA.plans.map(p=>{const its=DATA.items.filter(i=>i.plan===p.key),
-  done=its.filter(i=>i.status==="done").length,pct=its.length?Math.round(done/its.length*100):0,
-  open=o=>its.filter(i=>i.status!=="done"&&i.owners.includes(o)).length,doing=its.filter(i=>i.status==="doing");
+  done=its.filter(i=>itemStatus(i)==="done").length,pct=its.length?Math.round(done/its.length*100):0,
+  open=o=>its.filter(i=>itemStatus(i)!=="done"&&i.owners.includes(o)).length,doing=its.filter(i=>itemStatus(i)==="doing");
   return `<div class="plan"><h3><a href="${p.page}">${esc(p.title)} →</a></h3><span class="gate ${p.gate==="в работе"?"go":""}">${esc(p.gate)}</span>
   <div class="bar"><i style="width:${pct}%"></i></div><div class="split"><span><b>${done}</b> из ${its.length} готово</span><span>Claude <b>${open("Claude")}</b></span><span>Кодекс <b>${open("Кодекс")}</b></span><span>ты <b>${open("Ты")}</b></span></div>
   ${doing.length?`<div class="tag">в работе: ${doing.map(i=>esc(i.id+". "+i.title)).join("; ")}</div>`:""}</div>`}).join("");}
 function you(){const gates=DATA.plans.filter(p=>p.gate!=="в работе").map(p=>`<div><b>${esc(p.title)}</b> — ${esc(p.gate)} · <a href="${p.page}">открыть план</a></div>`);
-  const steps=DATA.items.filter(i=>i.status!=="done"&&i.owners.includes("Ты")).map(i=>`<div><b>${esc(plan(i.plan).title)} · ${esc(i.id)}.</b> ${md(i.title)}</div>`);
+  const steps=DATA.items.filter(i=>itemStatus(i)!=="done"&&i.owners.includes("Ты")).map(i=>`<div><b>${esc(plan(i.plan).title)} · ${esc(i.id)}.</b> ${md(i.title)}</div>`);
   const needs=DATA.needs.map(n=>`<div style="border-color:#4aa3ff"><b>${esc(plan(n.plan).title)} · файл / ресурс:</b> ${n.link?`<a href="${esc(n.link)}">${esc(n.title)}</a>`:esc(n.title)} — <span class="tag">${esc(n.detail)}</span></div>`);
   document.getElementById("you").innerHTML=gates.concat(steps,needs).join("")||'<div>Ничего — всё у Claude и Кодекса.</div>';}
 function chips(){const pc=document.getElementById("planChips"),oc=document.getElementById("ownerChips");
@@ -188,14 +256,19 @@ function chips(){const pc=document.getElementById("planChips"),oc=document.getEl
   oc.querySelectorAll("[data-o]").forEach(c=>c.onclick=()=>{const k=c.dataset.o;f.owners=f.owners.includes(k)?f.owners.filter(x=>x!==k):[...f.owners,k];save();render()});}
 function list(){const q=f.q.trim().toLocaleLowerCase("ru");
   const its=DATA.items.filter(i=>(!f.plans.length||f.plans.includes(i.plan))&&(!f.owners.length||i.owners.some(o=>f.owners.includes(o)))
-    &&(f.status==="all"||(f.status==="done")===(i.status==="done"))&&(!q||`${i.id} ${i.title} ${i.text} ${i.who}`.toLocaleLowerCase("ru").includes(q)));
+    &&(f.status==="all"||(f.status==="done")===(itemStatus(i)==="done"))&&(!q||`${i.id} ${i.title} ${i.text} ${i.who}`.toLocaleLowerCase("ru").includes(q)))
+    .sort((a,b)=>{const newest=DATA.latest&&DATA.items.find(i=>i.key===DATA.latest&&itemStatus(i)==="todo");
+      const order=i=>i.plan===newest?.plan?-1:DATA.plans.findIndex(p=>p.key===i.plan);
+      const group=order(a)-order(b);if(group)return group;
+      const aa=a.id.match(/\d+/g).map(Number),bb=b.id.match(/\d+/g).map(Number);
+      for(let j=0;j<Math.max(aa.length,bb.length);j++){const delta=(bb[j]||0)-(aa[j]||0);if(delta)return delta}return 0});
   document.getElementById("shown").textContent=`Показано ${its.length} из ${DATA.items.length}`;
   if(!its.length){document.getElementById("list").innerHTML='<div class="empty">Ничего не найдено</div>';return}
   let html="",cur="";
   its.forEach(i=>{if(i.plan!==cur){cur=i.plan;const p=plan(cur);html+=`<div class="group"><a href="${p.page}">${esc(p.title)}</a></div>`}
-    const m=MARK[i.status]||MARK.todo;
-    html+=`<div class="item ${i.status==="done"?"done":""}"><div class="mark" style="color:${m[1]}">${m[0]}</div><div class="id">${esc(i.id)}</div>
-      <div><div class="t">${md(i.title)}</div>${i.text?`<div class="d">${md(i.text)}</div>`:""}</div>
+    const active=itemStatus(i),m=MARK[active]||MARK.todo;
+    html+=`<div class="item ${active==="done"?"done":""}"><div class="mark" style="color:${m[1]}">${m[0]}</div><div class="id">${esc(i.id)}</div>
+      <div><div class="t">${md(i.title)} ${itemIsNew(i)?'<span class="new-badge">НОВОЕ</span>':""}</div>${i.added_at?`<div class="d">Добавлено: ${esc(i.added_at)}</div>`:""}${i.text?`<div class="d">${md(i.text)}</div>`:""}</div>
       <div class="who">${(i.owners.length?i.owners:["—"]).map(o=>`<span class="${OWN[o]||""}">${o}</span>`).join("")}</div></div>`});
   document.getElementById("list").innerHTML=html;}
 const st=document.getElementById("status"),qi=document.getElementById("q");st.value=f.status;qi.value=f.q;

@@ -1,0 +1,2588 @@
+{
+  "schema_version": 1,
+  "updated_at": "12.10.2026 18:00",
+  "author": "Claude Code",
+  "about": "Рекомендации Claude по инструментам и исполнителям. Источник правды — этот файл; доступность скиллов проверяет tools/plan_ai_tools.py по файлам на диске.",
+  "skills": {
+    "project-master-planner": {
+      "title": "Project Master Planner",
+      "area": "Планирование",
+      "source": "project:.claude/skills/project-master-planner",
+      "codex": "read-file"
+    },
+    "superpowers:brainstorming": {
+      "title": "Brainstorming",
+      "area": "Планирование",
+      "source": "plugin:superpowers:brainstorming",
+      "codex": "native"
+    },
+    "superpowers:writing-plans": {
+      "title": "Writing Plans",
+      "area": "Планирование",
+      "source": "plugin:superpowers:writing-plans",
+      "codex": "native"
+    },
+    "application-software-architect": {
+      "title": "Application Software Architect",
+      "area": "Архитектура",
+      "source": "project:.claude/skills/application-software-architect",
+      "codex": "read-file"
+    },
+    "application-ui-ux-designer": {
+      "title": "Application UI/UX Designer",
+      "area": "UI/UX",
+      "source": "project:.claude/skills/application-ui-ux-designer",
+      "codex": "read-file"
+    },
+    "ui-ux-pro-max": {
+      "title": "UI/UX Pro Max",
+      "area": "UI/UX",
+      "source": "user:ui-ux-pro-max",
+      "codex": "read-file"
+    },
+    "design-theme-guide": {
+      "title": "Design Theme Guide",
+      "area": "UI/UX",
+      "source": "user:design-theme-guide",
+      "codex": "read-file"
+    },
+    "application-motion-designer": {
+      "title": "Application Motion Designer",
+      "area": "Motion",
+      "source": "project:.claude/skills/application-motion-designer",
+      "codex": "read-file"
+    },
+    "superpowers:test-driven-development": {
+      "title": "Test-Driven Development",
+      "area": "Разработка и тесты",
+      "source": "plugin:superpowers:test-driven-development",
+      "codex": "native"
+    },
+    "superpowers:systematic-debugging": {
+      "title": "Systematic Debugging",
+      "area": "Отладка",
+      "source": "plugin:superpowers:systematic-debugging",
+      "codex": "native"
+    },
+    "superpowers:verification-before-completion": {
+      "title": "Verification Before Completion",
+      "area": "Проверка и ревью",
+      "source": "plugin:superpowers:verification-before-completion",
+      "codex": "native"
+    },
+    "superpowers:requesting-code-review": {
+      "title": "Requesting Code Review",
+      "area": "Проверка и ревью",
+      "source": "plugin:superpowers:requesting-code-review",
+      "codex": "native"
+    },
+    "superpowers:using-git-worktrees": {
+      "title": "Git Worktrees",
+      "area": "Совместная работа",
+      "source": "plugin:superpowers:using-git-worktrees",
+      "codex": "native"
+    },
+    "ui-visual-validator": {
+      "title": "UI Visual Validator",
+      "area": "Проверка и ревью",
+      "source": "user:ui-visual-validator",
+      "codex": "read-file"
+    },
+    "code-review": {
+      "title": "/code-review",
+      "area": "Проверка и ревью",
+      "source": "builtin:code-review",
+      "codex": "analogue",
+      "note": "У Codex свой плагин code-review."
+    },
+    "security-review": {
+      "title": "/security-review",
+      "area": "Безопасность",
+      "source": "builtin:security-review",
+      "codex": "none"
+    },
+    "run": {
+      "title": "/run — запуск программы",
+      "area": "Проверка и ревью",
+      "source": "builtin:run",
+      "codex": "none"
+    },
+    "anthropic-skills:deep-research": {
+      "title": "Deep Research",
+      "area": "Исследование",
+      "source": "synced:deep-research",
+      "codex": "none",
+      "note": "Скилл claude.ai; в Claude Code — через синхронизацию."
+    },
+    "tool:check_project": {
+      "title": "tools/check_project.py",
+      "area": "Инструменты проекта",
+      "source": "tool:tools/check_project.py",
+      "codex": "native"
+    },
+    "tool:ui_snapshots": {
+      "title": "tools/ui_snapshots.py — снимки до/после",
+      "area": "Инструменты проекта",
+      "source": "tool:tools/ui_snapshots.py",
+      "codex": "native",
+      "note": "Этап 0 плана UI/UX; скрипта пока нет — снимки делаются вручную."
+    }
+  },
+  "tasks": {
+    "map:20": {
+      "category": "Проверка и сборка",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "superpowers:verification-before-completion",
+          "role": "primary",
+          "purpose": "доказать результат командами до «готово»"
+        },
+        {
+          "name": "run",
+          "role": "supporting",
+          "purpose": "запустить программу и сверить ссылки «Место»"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "если точка в игре и на карте расходится"
+        },
+        {
+          "name": "tool:check_project",
+          "role": "supporting",
+          "purpose": "297 тестов и целостность планов одной командой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Пользователь (игра) + Claude Code (тесты)",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "2–3 зоны, включая Пандемониум, совпадают с игрой по ссылкам «Место»",
+        "тесты проходят, exe пересобран",
+        "README обновлён"
+      ],
+      "tests": [
+        "python tools/check_project.py",
+        "ручная сверка в игре"
+      ],
+      "handoff": "user",
+      "arch_review": "not-needed"
+    },
+    "map:24": {
+      "category": "Карта · данные и функция",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "контракт выбора слоя по высоте и хранение слоёв"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тесты привязки точки к слою"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "расхождения высот и слоёв"
+        },
+        {
+          "name": "tool:check_project",
+          "role": "supporting",
+          "purpose": "297 тестов и целостность планов одной командой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex (данные слоёв) + Claude Code (mapview)",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "три слоя переключаются, точки и подписи своего слоя",
+        "«Место» открывает слой по высоте",
+        "значки крепостей и артефактов Бездны"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py tests/test_poi.py"
+      ],
+      "handoff": "in-progress",
+      "arch_review": "pending",
+      "files": {
+        "Codex": [
+          "tools/export_zone_data.py",
+          "data/maps/poi.json"
+        ],
+        "Claude Code": [
+          "watcher/mapview.py",
+          "watcher/poi.py"
+        ]
+      },
+      "contract": "Границы слоёв по высоте — в данных зоны (maps.json); mapview выбирает слой только по ним.",
+      "note": "Блокер из PAIR.md: нужны высотные границы слоёв."
+    },
+    "map:27": {
+      "category": "Проверка и сборка",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "superpowers:verification-before-completion",
+          "role": "primary",
+          "purpose": "доказать результат до «готово»"
+        },
+        {
+          "name": "run",
+          "role": "supporting",
+          "purpose": "запуск и сверка ссылок «Место» для Бездны и элийских зон"
+        },
+        {
+          "name": "tool:check_project",
+          "role": "supporting",
+          "purpose": "297 тестов и целостность планов одной командой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Пользователь (игра)",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "слои Бездны, крепости и артефакты совпадают с игрой",
+        "элийские зоны по ссылкам «Место» совпадают",
+        "exe собран"
+      ],
+      "tests": [
+        "python tools/check_project.py",
+        "ручная сверка в игре"
+      ],
+      "handoff": "user",
+      "arch_review": "not-needed"
+    },
+    "map:29": {
+      "category": "Карта · движение",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "плавный zoom: длительность, кривая, отмена таймера, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "точка под курсором не сдвигается"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест: координата под курсором сохраняется после zoom"
+        }
+      ],
+      "split": {
+        "design": "Claude Code (контракт)",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "нет рывков на колесе и «+ / −»",
+        "точка под курсором остаётся на месте",
+        "при reduce_motion масштаб меняется сразу"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/mapview.py",
+          "tests/test_mapview.py"
+        ]
+      },
+      "contract": "Анимация через watcher/motion.py; новый zoom отменяет незавершённый.",
+      "note": "Не параллельно с map:30 и map:39 — тот же файл."
+    },
+    "map:30": {
+      "category": "Карта · взаимодействие",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "понятный переключатель «курсор / рука», видимое состояние"
+        },
+        {
+          "name": "application-motion-designer",
+          "role": "supporting",
+          "purpose": "смена курсора без задержки"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "клик по точке не тащит карту в режиме курсора"
+        }
+      ],
+      "split": {
+        "design": "Claude Code (UX-решение)",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "в режиме курсора клик выбирает точку",
+        "в режиме «рука» перетаскивание без выбора",
+        "режим виден на панели"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/mapview.py",
+          "tests/test_mapview.py"
+        ]
+      },
+      "note": "После map:29."
+    },
+    "map:31": {
+      "category": "Карта · взаимодействие",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "одна метка или все: выбор и место кнопки"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест очистки меток"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "понятно, что очищается",
+        "после очистки новые «Место» снова ставят метку"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "Нужно решение владельца: одна или все метки."
+    },
+    "map:32": {
+      "category": "Карта · визуал",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "размер маркера 65 %"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "читаемость на разных масштабах"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "крестики 65 % от прежнего",
+        "видны на малом и большом масштабе"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py",
+        "снимки 3 масштабов"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/mapview.py"
+        ]
+      }
+    },
+    "map:33": {
+      "category": "Карта · визуал",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "правило смещения подписи относительно значка"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "проверка перекрытий"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест: прямоугольник подписи не пересекает значок"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "подпись не закрывает свой POI",
+        "текст читаем"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "Вместе с map:36 — один алгоритм раскладки подписей."
+    },
+    "map:34": {
+      "category": "Карта · игровые данные",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "primary",
+          "purpose": "найти источник точки и подписи"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест: точки нет в poi.json"
+        }
+      ],
+      "split": {
+        "design": "Codex",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "если входа нет в клиенте — точка и подпись убраны",
+        "источник проверки записан в PAIR.md"
+      ],
+      "tests": [
+        "pytest tests/test_build_poi.py tests/test_poi.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "tools/build_poi.py",
+          "data/maps/poi.json",
+          "data/maps/labels.tsv"
+        ]
+      }
+    },
+    "map:35": {
+      "category": "Карта · функция",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "состав категорий фильтров и порядок"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "расположение фильтров на панели"
+        },
+        {
+          "name": "application-software-architect",
+          "role": "supporting",
+          "purpose": "хранение выбора в config.json"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест фильтрации"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "категории утверждены",
+        "выбор сохраняется после перезапуска",
+        "панель не шире окна 1000 px"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py tests/test_config.py"
+      ],
+      "handoff": "needs-architecture",
+      "arch_review": "pending",
+      "note": "Состав категорий уточнить у владельца."
+    },
+    "map:36": {
+      "category": "Карта · визуал",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "размер подписей зон +15 %"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "подписи не перекрывают POI"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "шрифт названий зон +15 %",
+        "нет новых перекрытий"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/mapview.py"
+        ]
+      },
+      "note": "После map:33."
+    },
+    "map:37": {
+      "category": "Карта · игровые данные",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "primary",
+          "purpose": "почему проход в тоннель Силентера повторяется"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест на дубликаты одноимённых точек"
+        }
+      ],
+      "split": {
+        "design": "Codex",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "одна точка и одна подпись прохода",
+        "тест не даёт дубликатам вернуться"
+      ],
+      "tests": [
+        "pytest tests/test_build_poi.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "tools/build_poi.py",
+          "data/maps/poi.json"
+        ]
+      }
+    },
+    "map:38": {
+      "category": "Чат · формат",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "примеры входа и текста метки"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "откуда берётся дубль названия"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "текст «<Метка Келькмарос>» вместо дубля",
+        "старые сообщения не ломаются"
+      ],
+      "tests": [
+        "pytest tests/test_parser.py tests/test_feed.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "map:39": {
+      "category": "Карта · компоновка",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "перетаскиваемый разделитель, предел 60/40"
+        },
+        {
+          "name": "application-software-architect",
+          "role": "supporting",
+          "purpose": "ключ доли в config.json"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест ограничения долей"
+        }
+      ],
+      "split": {
+        "design": "Claude Code (ключ config)",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "доли не выходят за 60/40",
+        "доля сохраняется после перезапуска"
+      ],
+      "tests": [
+        "pytest tests/test_mapview.py tests/test_config.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Claude Code": [
+          "watcher/config.py"
+        ],
+        "Codex": [
+          "watcher/app.py (только разделитель)",
+          "tests/"
+        ]
+      },
+      "contract": "config.json: map_split — доля карты 0.40…0.60, по умолчанию текущая.",
+      "note": "После map:29–30."
+    },
+    "sn:SN-4": {
+      "category": "Уведомления · архитектура",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "маршрут всех оповещений через notify_center"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тесты: совпадение, «назойливый», «игра не запущена» → центр"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "регрессии звука"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "три источника идут через центр",
+        "старый попап заменён тостом «Принять»",
+        "звук «назойливого» режима как раньше"
+      ],
+      "tests": [
+        "pytest tests/test_notify_center.py tests/test_alarm.py tests/test_toasts.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending"
+    },
+    "sn:SN-5": {
+      "category": "Уведомления · интерфейс",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "вкладка «Уведомления»: группы, состояния, «Проверить»"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "порядок Tab, видимые состояния переключателей"
+        },
+        {
+          "name": "application-software-architect",
+          "role": "supporting",
+          "purpose": "схема настроек в config.json"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тесты сохранения настроек"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex (вкладка) + Claude Code (config)",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "все настройки в config.json",
+        "«Проверить» показывает тест-тост",
+        "вкладка помещается в 1000×600"
+      ],
+      "tests": [
+        "pytest tests/test_config.py tests/test_notify_center.py"
+      ],
+      "handoff": "needs-architecture",
+      "arch_review": "pending",
+      "files": {
+        "Claude Code": [
+          "watcher/config.py",
+          "watcher/notify_center.py"
+        ],
+        "Codex": [
+          "новый модуль вкладки",
+          "tests/"
+        ]
+      },
+      "contract": "Claude фиксирует ключи config и API notify_center до начала работы Codex.",
+      "note": "После SN-4."
+    },
+    "sn:SN-6": {
+      "category": "Расписание · данные",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "superpowers:verification-before-completion",
+          "role": "primary",
+          "purpose": "сверить 79 записей со статьёй"
+        },
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "supporting",
+          "purpose": "уточнить перекрытие 16–18 «Дер» и 17–18"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "открытый вопрос о перекрытии решён",
+        "data/schedule.json совпадает со статьёй"
+      ],
+      "tests": [
+        "pytest tests/test_specs.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "Ждёт ответа владельца по перекрытию."
+    },
+    "sn:SN-7": {
+      "category": "Расписание · интерфейс",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "вкладка «Сегодня / неделя», фильтр, колокольчик"
+        },
+        {
+          "name": "application-motion-designer",
+          "role": "supporting",
+          "purpose": "таймер без скачков, reduce_motion"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тесты расчёта «до начала»"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex (виджеты) + Claude Code (данные/правка событий)",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "таймер верен по МСК",
+        "добавить / изменить / удалить событие",
+        "«На карте» открывает место"
+      ],
+      "tests": [
+        "pytest tests/test_specs.py"
+      ],
+      "handoff": "needs-architecture",
+      "arch_review": "pending",
+      "note": "После SN-6."
+    },
+    "sn:SN-8": {
+      "category": "Расписание · логика",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "таймеры, повтор, пропущенные за время закрытия"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "тесты с подменённым временем"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "гонки таймеров"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "напоминание за N минут и в начале",
+        "«отложить на 5 мин»",
+        "пропущенные — одним тостом"
+      ],
+      "tests": [
+        "pytest tests/test_notify_center.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending",
+      "note": "После SN-4 и SN-7."
+    },
+    "sn:SN-9": {
+      "category": "Расписание · обновление",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "граница: только сверка, без авто-замены данных"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "сетевой запрос, никакого исполнения загруженного"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тесты с сохранённой копией страницы"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "показывает «Расписание обновилось» только при изменении",
+        "обновление — по согласию пользователя",
+        "без сети программа работает"
+      ],
+      "tests": [
+        "pytest (новый тест модуля проверки)"
+      ],
+      "handoff": "needs-architecture",
+      "arch_review": "pending",
+      "note": "Задача на будущее."
+    },
+    "sn:SN-10": {
+      "category": "Проверка и сборка",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "ui-visual-validator",
+          "role": "primary",
+          "purpose": "тосты на 100/125/150 % и двух мониторах"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        },
+        {
+          "name": "run",
+          "role": "supporting",
+          "purpose": "запуск программы для проверки"
+        },
+        {
+          "name": "superpowers:verification-before-completion",
+          "role": "supporting",
+          "purpose": "доказательства перед «готово»"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Пользователь + Codex (снимки)",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "тосты видны поверх игры в оконном без рамки и полном экране",
+        "масштабы 100/125/150 %",
+        "exe собран"
+      ],
+      "tests": [
+        "ручная проверка в игре",
+        "снимки до/после"
+      ],
+      "handoff": "user",
+      "arch_review": "not-needed"
+    },
+    "ui:31": {
+      "category": "UI/UX · фон",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "решить, нужен ли градиент шапки"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "контраст по токенам theme.py"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "градиент едва заметен",
+        "контраст текста не ниже прежнего"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/theme.py",
+          "tools/build_ui.py",
+          "data/ui/"
+        ]
+      },
+      "note": "P3 — делать последним."
+    },
+    "ui:32": {
+      "category": "UI/UX · отступы",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "сетка отступов строк"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "равные внутренние поля",
+        "текст не касается края на узкой ширине"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/theme.py",
+          "watcher/feed.py"
+        ]
+      }
+    },
+    "ui:33": {
+      "category": "UI/UX · наложения",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "развести подпись и графику"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "подпись не перекрывает картинку",
+        "порядок слоёв верен на 125/150 %"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/theme.py"
+        ]
+      }
+    },
+    "ui:34": {
+      "category": "UI/UX · комбобокс",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "единая геометрия поля и стрелки"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "токены рамок BORDER_CONTROL"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "одна рамка",
+        "стрелка выровнена"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/theme.py",
+          "tools/build_ui.py",
+          "data/ui/"
+        ]
+      }
+    },
+    "ui:35": {
+      "category": "UI/UX · кнопки",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "геометрия кнопок"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "токены радиуса и тени"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "высота, поля и радиус как у соседних контролов",
+        "мягкая глубина без тяжёлой тени"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/theme.py",
+          "tools/build_ui.py",
+          "data/ui/"
+        ]
+      }
+    },
+    "ui:36": {
+      "category": "UI/UX · компоновка",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "пересборка сетки «Что искать»"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "плотность и выравнивание фишек"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "фильтры в сетке без пустот",
+        "читаемо на 1000×600"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:37": {
+      "category": "UI/UX · компоновка",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "гибкие строки настроек"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "путь к логу растягивается",
+        "короткие контролы фиксированы"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:38": {
+      "category": "UI/UX · статус",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "центрирование плашки статуса"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "значок и текст по центру плашки",
+        "ширина статуса постоянна"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/app.py (только плашка статуса)"
+        ]
+      },
+      "note": "Не параллельно с ui:36, 37, 41 — тот же app.py."
+    },
+    "ui:39": {
+      "category": "UI/UX · компоновка",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "центрирование панели карты"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "группа контролов карты по центру",
+        "узкое и широкое окно"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "После ui:37."
+    },
+    "ui:40": {
+      "category": "UI/UX · поведение",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "понятное неактивное состояние"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "тесты: настройка не действует, контрол серый"
+        },
+        {
+          "name": "superpowers:verification-before-completion",
+          "role": "supporting",
+          "purpose": "полный прогон тестов"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "«Окно поверх игры» неактивно и серое",
+        "связанные тесты отключены с пояснением",
+        "остальные тесты проходят"
+      ],
+      "tests": [
+        "python tools/check_project.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "P1 — первым из открытых UI."
+    },
+    "ui:41": {
+      "category": "UI/UX · шапка",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "уплотнение шапки"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "шапка ниже без потери читаемости",
+        "статус и контролы видны"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "После ui:37."
+    },
+    "ui:42": {
+      "category": "UI/UX · вкладки",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "поля вкладок"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "токены отступов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после для визуальной сверки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "минимальные читаемые поля",
+        "выбранная и обычная вкладка одной геометрии"
+      ],
+      "tests": [
+        "pytest tests/test_theme.py tests/test_app.py",
+        "снимки"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/theme.py"
+        ]
+      }
+    },
+    "tg:1.1": {
+      "category": "Telegram · модуль",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "sendMessage, 429, ошибки сети"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "токен не попадает в лог, экранирование <>&"
+        },
+        {
+          "name": "code-review",
+          "role": "supporting",
+          "purpose": "ревью Claude перед слиянием"
+        }
+      ],
+      "split": {
+        "design": "Claude Code (API модуля)",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "HTML экранирован",
+        "429 и обрыв сети обработаны",
+        "токен не логируется"
+      ],
+      "tests": [
+        "pytest (новый tests/test_telegram.py)"
+      ],
+      "handoff": "gated",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "watcher/telegram.py",
+          "tests/test_telegram.py"
+        ]
+      },
+      "contract": "Публичный API: send(chat_id, text) и get_updates(); без глобального состояния.",
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "tg:1.2": {
+      "category": "Telegram · поток",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "поток-отправщик и связь с ChatBatcher"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "очереди группы и лички"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "гонки потоков"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "группа — пачками раз в 0.5 с",
+        "личка — по одному",
+        "остановка потока без зависаний"
+      ],
+      "tests": [
+        "pytest tests/test_tgbatch.py"
+      ],
+      "handoff": "gated",
+      "arch_review": "pending",
+      "files": {
+        "Codex": [
+          "watcher/telegram.py",
+          "watcher/tgbatch.py"
+        ]
+      },
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md). После tg:1.1."
+    },
+    "tg:1.3": {
+      "category": "Telegram · интеграция",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "отдельный tailer только для «3.Поиск группы»"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "в группу не уходит ничего лишнего"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "свой tailer",
+        "только канал «3.Поиск группы»"
+      ],
+      "tests": [
+        "pytest tests/test_tailer.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending",
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "tg:1.4": {
+      "category": "Telegram · интеграция",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "совпадения поиска → личка, история не шлётся"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "совпадение уходит в личку один раз",
+        "история не отправляется"
+      ],
+      "tests": [
+        "pytest tests/test_alerts.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "tg:1.5": {
+      "category": "Telegram · настройки",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "security-review",
+          "role": "primary",
+          "purpose": "хранение токена в config.json"
+        },
+        {
+          "name": "application-software-architect",
+          "role": "supporting",
+          "purpose": "ключи tg_* и значения по умолчанию"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "ключи tg_* с безопасными умолчаниями",
+        "без токена отправка выключена"
+      ],
+      "tests": [
+        "pytest tests/test_config.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "tg:1.6": {
+      "category": "Telegram · тесты",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "подменённый HTTP: 429, обрыв сети"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "нестабильные тесты"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "тесты не ходят в сеть",
+        "в группу — только «3.Поиск группы»"
+      ],
+      "tests": [
+        "pytest tests/test_telegram.py"
+      ],
+      "handoff": "gated",
+      "arch_review": "not-needed",
+      "files": {
+        "Codex": [
+          "tests/test_telegram.py"
+        ]
+      },
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "tg:2.1": {
+      "category": "Telegram · интерфейс",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "вкладка: токен, «Найти чаты», выбор, «Тестовое»"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "токен скрыт как пароль"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "сохранение выбора"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "токен скрыт",
+        "«Найти чаты» показывает группы и личку",
+        "тестовое сообщение уходит"
+      ],
+      "tests": [
+        "pytest tests/test_config.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "tg:2.2": {
+      "category": "Telegram · интерфейс",
+      "agent": "claude",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "галочки и строка статуса"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "счётчики «отправлено / в очереди / ошибка»"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "галочки работают раздельно",
+        "статус обновляется"
+      ],
+      "tests": [
+        "pytest"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed",
+      "note": "План ждёт «делаем» пользователя (правило 7 PAIR.md)."
+    },
+    "draft:DRAFT-01.1": {
+      "category": "Черновик · сценарии",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "входы, выходы, неизвестные правила"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-01.2": {
+      "category": "Черновик · игровые правила",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "primary",
+          "purpose": "правила сервера и источники с датой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-01.3": {
+      "category": "Черновик · модель и макет",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "контракт расчёта отдельно от UI"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "макет, пустые и ошибочные состояния"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-01.4": {
+      "category": "Черновик · реализация",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:writing-plans",
+          "role": "primary",
+          "purpose": "отдельный план реализации"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "примеры с ожидаемым результатом"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "not-needed",
+      "note": "Черновик DRAFT: разработка не утверждена."
+    },
+    "draft:DRAFT-02.1": {
+      "category": "Черновик · сценарии",
+      "agent": "codex",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "инвентаризация полей каталога"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "расхождения с игрой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-02.2": {
+      "category": "Черновик · игровые правила",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "primary",
+          "purpose": "правила сервера и источники с датой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-02.3": {
+      "category": "Черновик · модель и макет",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "контракт расчёта отдельно от UI"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "макет, пустые и ошибочные состояния"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-02.4": {
+      "category": "Черновик · реализация",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:writing-plans",
+          "role": "primary",
+          "purpose": "отдельный план реализации"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "примеры с ожидаемым результатом"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "not-needed",
+      "note": "Черновик DRAFT: разработка не утверждена."
+    },
+    "draft:DRAFT-03.1": {
+      "category": "Черновик · сценарии",
+      "agent": "codex",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "инвентаризация полей каталога"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "расхождения с игрой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-03.2": {
+      "category": "Черновик · игровые правила",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "primary",
+          "purpose": "правила сервера и источники с датой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-03.3": {
+      "category": "Черновик · модель и макет",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "контракт расчёта отдельно от UI"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "макет, пустые и ошибочные состояния"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-03.4": {
+      "category": "Черновик · реализация",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:writing-plans",
+          "role": "primary",
+          "purpose": "отдельный план реализации"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "примеры с ожидаемым результатом"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "not-needed",
+      "note": "Черновик DRAFT: разработка не утверждена."
+    },
+    "draft:DRAFT-04.1": {
+      "category": "Черновик · сценарии",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "входы, выходы, неизвестные правила"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-04.2": {
+      "category": "Черновик · игровые правила",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "primary",
+          "purpose": "правила сервера и источники с датой"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-04.3": {
+      "category": "Черновик · модель и макет",
+      "agent": "codex",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "прототип на обезличенном локальном логе, без интеграции"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "точность на известных примерах"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-04.4": {
+      "category": "Черновик · реализация",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:writing-plans",
+          "role": "primary",
+          "purpose": "отдельный план реализации"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "примеры с ожидаемым результатом"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "not-needed",
+      "note": "Черновик DRAFT: разработка не утверждена."
+    },
+    "draft:DRAFT-05.1": {
+      "category": "Черновик · сценарии",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "входы, выходы, неизвестные правила"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-05.2": {
+      "category": "Черновик · игровые правила",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "primary",
+          "purpose": "правила сервера и источники с датой"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "запуск клиента без вмешательства в файлы игры"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-05.3": {
+      "category": "Черновик · модель и макет",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "контракт расчёта отдельно от UI"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "макет, пустые и ошибочные состояния"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "запуск клиента без вмешательства в файлы игры"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-05.4": {
+      "category": "Черновик · реализация",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:writing-plans",
+          "role": "primary",
+          "purpose": "отдельный план реализации"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "примеры с ожидаемым результатом"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "not-needed",
+      "note": "Черновик DRAFT: разработка не утверждена."
+    },
+    "draft:DRAFT-06.1": {
+      "category": "Черновик · сценарии",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "модель угроз верхнего уровня"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "угрозы и приватность"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-06.2": {
+      "category": "Черновик · игровые правила",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "anthropic-skills:deep-research",
+          "role": "primary",
+          "purpose": "полномочия владельца сервера и приватность"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "draft:DRAFT-06.3": {
+      "category": "Черновик · модель и макет",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "серверные меры против клиентских"
+        },
+        {
+          "name": "security-review",
+          "role": "primary",
+          "purpose": "ограничения клиентских мер"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "n/a",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-06.4": {
+      "category": "Черновик · реализация",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "go/no-go и проверяемый план"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex + Claude Code",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "результат этапа из черновика записан",
+        "неизвестное помечено, не угадано"
+      ],
+      "tests": [
+        "рецензия Claude",
+        "python tools/check_plans.py"
+      ],
+      "handoff": "blocked",
+      "arch_review": "not-needed",
+      "note": "Черновик DRAFT: разработка не утверждена."
+    }
+  }
+}

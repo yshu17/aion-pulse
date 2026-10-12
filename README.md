@@ -181,6 +181,7 @@ python tools/build_catalog.py cache.jsonl                                  # csv
 ```
 pip install -r requirements.txt
 python -m pytest
+python tools/check_project.py                          # все тесты и целостность пяти планов
 python tools/fake_chat.py <тестовый лог> "текст" [ник]   # ручная проверка; не на настоящий Chat.log
 build_exe.bat                                            # сборка exe
 ```
