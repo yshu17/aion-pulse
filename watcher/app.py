@@ -11,7 +11,7 @@ from watcher import theme
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
-from watcher.config import read_config, save_config
+from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
 from watcher.errlog import log_exception
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
@@ -247,13 +247,16 @@ class App:
         react.pack(side="left")
         react.bind("<<ComboboxSelected>>", lambda _e: self._on_react_selected())
         self.popup_var = tk.BooleanVar(value=self.cfg.nag_popup)
-        ttk.Checkbutton(
+        # ui:40: temporarily unavailable, shown disabled so the user sees why it does nothing
+        self.popup_check = ttk.Checkbutton(
             alert_row2,
-            text="Окно поверх игры",
+            text="Окно поверх игры (пока недоступно)",
             variable=self.popup_var,
             style="CardPlain.TCheckbutton",
             command=self._on_popup_toggled,
-        ).pack(side="left", padx=(18, 0))
+            state="normal" if OVERLAY_POPUP_ENABLED else "disabled",
+        )
+        self.popup_check.pack(side="left", padx=(18, 0))
         ttk.Label(alert_row2, text="Громкость", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
         self.volume_var = tk.IntVar(value=self.notifier.volume)
         volume = ttk.Scale(
@@ -987,7 +990,7 @@ class App:
                 self.feed.set_countdown(self.tracker.remaining(now))
                 loud.append((msg, hits))
         if loud and nag:
-            self.alarm.trigger(loud, popup=self.cfg.nag_popup)
+            self.alarm.trigger(loud, popup=self.cfg.nag_popup and OVERLAY_POPUP_ENABLED)
         elif loud:
             self.notifier.play()
         self._update_counters()

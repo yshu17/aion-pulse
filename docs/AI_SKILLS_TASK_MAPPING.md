@@ -10,13 +10,13 @@
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 10 |
 | `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 24 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 32 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 31 |
 | `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
 | `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 3 |
 | `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
-| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 35 |
+| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 34 |
 | `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 13 |
-| `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 5 |
+| `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 4 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
 | `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 15 |
@@ -29,7 +29,7 @@
 
 ## Распределение открытых задач
 
-Claude Code: **28** · Codex: **19** · Совместно: **18** · Пользователь: **0**
+Claude Code: **27** · Codex: **19** · Совместно: **18** · Пользователь: **0**
 
 ## Задачи
 
@@ -65,7 +65,6 @@ Claude Code: **28** · Codex: **19** · Совместно: **18** · Польз
 | `ui:37` | Строки настроек используют ширину негибко | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
 | `ui:38` | Текст статусной плашки «Игра не запущена» не центрирован | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:39` | Панель карты прижата к краям строки и визуально не центрирована | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
-| `ui:40` | Настройка «Окно поверх игры» временно должна быть выключена | Claude Code | `application-ui-ux-designer`, `superpowers:test-driven-development` | `superpowers:verification-before-completion` | передача не нужна |
 | `ui:41` | Верхняя часть окна занимает место нерационально | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
 | `ui:45` | Остаточные проверки планов после ui:44: у Codex браузер не открыл локальные страницы, часть проверок выполнил Claude Code | Codex | `ui-visual-validator` | `application-ui-ux-designer` | передача не нужна |
 | `tg:1.1` | Модуль `telegram.py`: `sendMessage` (HTML, экранирование `<>&`), `429`, ошибки сети, `getUpdates` для поиска чатов. | Codex | `superpowers:test-driven-development` | `security-review`, `code-review` | план ждёт «делаем» |

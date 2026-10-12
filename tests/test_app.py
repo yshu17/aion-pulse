@@ -433,7 +433,7 @@ def test_popup_ack_accepts_all_and_settings_saved(tmp_path):
         assert app.react_var.get() == "30 с"
         app.start()
         say("A", "B")
-        assert calls[0] == ("ring", True, 2)
+        assert calls[0] == ("ring", False, 2)  # ui:40: the overlay popup is off, so the alarm does not show it
         app._on_popup_ack()
         assert counters(app) == (2, 2, 0)
         app.react_var.set("60 с")
@@ -890,5 +890,25 @@ def test_start_refused_and_watching_stopped_when_game_not_running(tmp_path, monk
         app.start()
         assert app.running
         app.stop()
+    finally:
+        root.destroy()
+
+
+def test_overlay_setting_is_disabled_and_does_not_show_a_popup(tmp_path):
+    """ui:40: the always-on-top setting is shown disabled and has no effect; the saved value is kept."""
+    import json
+
+    from watcher.config import OVERLAY_POPUP_ENABLED
+
+    assert OVERLAY_POPUP_ENABLED is False
+    root, app, calls, say = _nag_app(tmp_path, nag_popup=True)
+    try:
+        assert "disabled" in app.popup_check.state()
+        assert app.cfg.nag_popup is True  # the user's saved choice stays in config.json
+        app.start()
+        say("A")
+        assert calls[0] == ("ring", False, 1)
+        app.stop()
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["nag_popup"] is True
     finally:
         root.destroy()

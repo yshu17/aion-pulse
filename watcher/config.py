@@ -16,6 +16,10 @@ def app_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+# ui:40: the always-on-top popup is temporarily off. The setting stays in config.json and shows as disabled in the UI.
+OVERLAY_POPUP_ENABLED = False
+
+
 @dataclass
 class Config:
     game_dir: str = DEFAULT_GAME_DIR
