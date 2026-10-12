@@ -3,6 +3,7 @@ __pycache__/
 build/
 config.json
 AionChatWatcher.exe
+AionChatWatcher_SN23.exe
 .superpowers/
 client_extract/
 downloads/
