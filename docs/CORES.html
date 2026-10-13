@@ -1,0 +1,119 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ядра Aion Chat Watcher</title>
+<style>
+:root{--bg:#14161b;--card:#1e2128;--text:#e9e7e4;--muted:#8c919c;--acc:#ff8c1a;--line:#2e323c}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",system-ui,sans-serif;padding:16px}
+h1{font-size:22px;margin:4px 0} h2{font-size:18px;margin:24px 0 8px;color:var(--acc)} h3{font-size:16px;margin:0 0 6px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+nav a{color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:3px 8px;text-decoration:none;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.pill{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-left:4px;font-weight:normal}
+code{color:var(--acc)} details{margin-top:6px;font-size:13px} summary{cursor:pointer;color:var(--muted)}
+ul{padding-left:18px;margin:6px 0} li{margin:3px 0}
+canvas{max-height:320px}
+@media (max-width:600px){body{padding:10px} .grid{grid-template-columns:1fr}}
+</style></head><body>
+<h1>Ядра Aion Chat Watcher</h1>
+<p style="color:var(--muted)">Измерено 13.10.2026 по коду: 20 модулей без Tk (переносимы в лаунчер). Блок-схемы — Mermaid, графики — Chart.js.</p>
+<nav><a href="#parser">parser</a><a href="#catalog">catalog</a><a href="#matcher">matcher</a><a href="#poi">poi</a><a href="#series">series</a><a href="#alerts">alerts</a><a href="#reminders">reminders</a><a href="#schedule_view">schedule_view</a><a href="#schedule_custom">schedule_custom</a><a href="#notify_center">notify_center</a><a href="#alert_bridge">alert_bridge</a><a href="#notify_settings">notify_settings</a><a href="#schedule_update">schedule_update</a><a href="#config">config</a><a href="#gamecheck">gamecheck</a><a href="#tailer">tailer</a><a href="#notifier">notifier</a><a href="#specs">specs</a><a href="#errlog">errlog</a><a href="#tgbatch">tgbatch</a></nav>
+
+<h2>Общая схема: от лога до уведомления</h2>
+<section class="card"><div class="mermaid">flowchart LR
+  LOG[Chat.log] --> TAIL[tailer] --> PARSE[parser] --> MATCH[matcher]
+  MATCH --> ALERTS[alerts: тревоги]
+  MATCH --> BRIDGE[alert_bridge]
+  BRIDGE --> CENTER[notify_center]
+  SETTINGS[notify_settings] --> CENTER
+  CENTER --> UI[toasts + лента: Tk]
+  SCHED[schedule_view / schedule_custom / reminders] --> UI
+  UPD[schedule_update] --> UI
+  CFG[config] --> SETTINGS
+  CFG --> MATCH
+  UI -->|Принять| BRIDGE
+  BRIDGE -->|id| ALERTS</div></section>
+
+<h2>Графики</h2>
+<div class="grid">
+<section class="card"><h3>Размер модулей, строк</h3><canvas id="c1"></canvas></section>
+<section class="card"><h3>Тесты на модуль</h3><canvas id="c2"></canvas></section>
+</div>
+
+<h2>Ядра: схема, функции, описание</h2>
+<div class="grid"><section class="card" id="parser"><h3>parser <span class="pill">186 стр.</span><span class="pill">тестов: 25</span></h3><p>Разбор строк Chat.log: канал, ник, текст, ссылки «Место» и «Задание». Вход — строка, выход — ChatLine / ChatMessage.</p><div class="mermaid">flowchart LR
+  L[строка лога] --&gt; R{regex канала}
+  R --&gt;|ChatLine| C[ник, текст]
+  R --&gt;|нет| N[None]
+  C --&gt; P{ссылка Место/Задание}
+  P --&gt; O[ChatMessage]</div><details><summary>Функции и классы</summary><ul><li><code>split_place(link)</code> — «Место · Келькмарос¦220070000 2010.1 1315.8» -&gt; (&quot;Место · Келькмарос&quot;, (&quot;220070000&quot;, 2010.1, 1315.8)).</li><li><code>places_in(text)</code> — Place links of a cleaned message: [(label, (map id, x, y)), ...].</li><li><code>display_text(text)</code> — Message text as the user sees it: links as &lt;…&gt;, place coordinates hidden.</li><li><code>clean_text(text, names)</code> — Drop [cmd:...] markup and make links readable.</li><li><code>parse_any_line(line, names)</code> — Split a timestamped log line into channel, nick and text. None for lines without a time.</li><li><code>parse_line(line, names)</code> — Return the message for a player line in «Поиск группы», else None.</li></ul><ul><li><b>ChatMessage</b>:  — </li><li><b>ChatLine</b>: is_player — </li></ul></details></section><section class="card" id="catalog"><h3>catalog <span class="pill">93 стр.</span><span class="pill">тестов: 4</span></h3><p>Данные предметов (id → имя) и список предметов, выбранных пользователем для поиска.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li><code>resource_root()</code> — Folder holding data/: inside the PyInstaller bundle when frozen, else the project.</li><li><code>category_for(item_type, name)</code> — Group for the item list, from the site&#x27;s «Тип» field (shields and wings have none).</li><li><code>is_listed(item)</code> — Shown in the «Что искать» list: no white/green items, no materials, supplies or misc.</li><li><code>load_item_names(path)</code> — Read `id&lt;TAB&gt;name` lines. A missing file gives an empty catalog.</li><li><code>load_watch_items(path)</code> — Read watch_items.csv (id,name,level[,category,grade,icon,kind]). A missing file gives an empty list.</li></ul><ul><li><b>WatchItem</b>:  — </li></ul></details></section><section class="card" id="matcher"><h3>matcher <span class="pill">106 стр.</span><span class="pill">тестов: 21</span></h3><p>Поиск ключевых слов и предметов в сообщении, антиспам-пауза (cooldown) по игроку.</p><div class="mermaid">flowchart LR
+  M[ChatMessage] --&gt; K{слова/предметы}
+  K --&gt;|совпало| CD{cooldown по игроку}
+  CD --&gt;|прошло| H[hits]
+  CD --&gt;|рано| X[пусто]
+  K --&gt;|нет| X</div><details><summary>Функции и классы</summary><ul><li><code>normalize(text)</code> — Lowercase and treat «ё» as «е». Keeps string length.</li><li><code>highlight_segments(text, keywords)</code> — Split text into (chunk, is_match) pieces for highlighting.</li></ul><ul><li><b>Matcher</b>: set_mode, set_watch_items, keywords, set_keywords, check — </li></ul></details></section><section class="card" id="poi"><h3>poi <span class="pill">127 стр.</span><span class="pill">тестов: 20</span></h3><p>Точки интереса для карты (poi.json): телепорты, торговцы, крепости. Поиск по зоне и типу.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li><code>cluster(points, to_screen, radius_px, key)</code> — Group points with the same key (default: the type) that fall into one screen cell of radius_px.</li></ul><ul><li><b>Poi</b>:  — </li><li><b>PoiStore</b>: load, projected, type_name, groups, in_zone, counts, search, nearest — </li></ul></details></section><section class="card" id="series"><h3>series <span class="pill">71 стр.</span><span class="pill">тестов: 8</span></h3><p>Серия повторов для «назойливого» режима: один игрок повторяет то же — не звонить заново.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li>только классы</li></ul><ul><li><b>Series</b>:  — </li><li><b>SeriesTracker</b>: keys, is_silent, record, accept, reset — </li></ul></details></section><section class="card" id="alerts"><h3>alerts <span class="pill">68 стр.</span><span class="pill">тестов: 7</span></h3><p>Учёт тревог: найдено / отреагировал / пропущено, ожидающие подтверждения, истечение срока.</p><div class="mermaid">flowchart LR
+  A[add: nag?] --&gt; P[pending]
+  P --&gt;|accept| AC[accepted]
+  P --&gt;|срок react_sec| MS[missed]
+  P --&gt;|accept_all| AC</div><details><summary>Функции и классы</summary><ul><li>только классы</li></ul><ul><li><b>Alert</b>:  — </li><li><b>AlertTracker</b>: pending_ids, add, accept, accept_all, expire, remaining, reset — </li></ul></details></section><section class="card" id="reminders"><h3>reminders <span class="pill">61 стр.</span><span class="pill">тестов: 8</span></h3><p>Напоминания расписания: какие события скоро начнутся и ещё не объявлены.</p><div class="mermaid">flowchart LR
+  EV[события + occurrences] --&gt; DR[due_reminders]
+  DR --&gt; ST{до начала ≤ lead?}
+  ST --&gt;|да, ещё не объявлено| RM[напоминание]</div><details><summary>Функции и классы</summary><ul><li><code>starts_at(event, day_start)</code> — Start of the event in the week that begins at day_start (a Monday, 00:00).</li><li><code>week_start(now)</code> — Monday 00:00 of the week that contains now.</li><li><code>reminder_key(event, at)</code> — Stable id of one occurrence: the same event in the same week is announced once.</li><li><code>due_reminders(events, now, lead_min, sent)</code> — Events that start within lead_min minutes from now (not in the past), not yet in sent.</li><li><code>occurrences_between(events, after, until)</code> — Weekly occurrences that started in (after, until], earliest first (SN-8: missed while the program was closed).</li></ul><ul></ul></details></section><section class="card" id="schedule_view"><h3>schedule_view <span class="pill">147 стр.</span><span class="pill">тестов: 17</span></h3><p>Чистые представления расписания: next_events, day_blocks, group_of, day_label, clock_pair, map_for.</p><div class="mermaid">flowchart LR
+  E[события сетки + свои] --&gt; NX[next_events]
+  E --&gt; DY[events_for_day]
+  DY --&gt; DB[day_blocks: минуты, дорожки]
+  DY --&gt; GR[group_of → groups]
+  NX --&gt; BD[until_text / day_label]</div><details><summary>Функции и классы</summary><ul><li><code>events_for_day(events, day)</code> — Events starting on ``day``, ordered by their start time.</li><li><code>today_events(events, now)</code> — Events whose listed start day is today in MSK.</li><li><code>next_events(events, now, limit)</code> — Next weekly occurrences, including events running at ``now``.</li><li><code>kind_of(event)</code> — SN-7: the event&#x27;s kind for the filter («Арены» groups the arena brackets); without one, its own name.</li><li><code>kinds(events)</code> — Each kind once, in the order of the data.</li><li><code>visible(events, hidden)</code> — The events whose kind is not hidden by the filter.</li><li><code>map_for(event, side)</code> — SN-7 «На карте»: the zone map id of an event (field «maps»); of two zones, the one of the player&#x27;s side —</li><li><code>day_blocks(events)</code> — Day strip: ``(event, start, end, lane)`` in minutes from midnight, sorted by start; an event that runs past</li><li><code>groups(events)</code> — The groups present in ``events``, in the menu order (Прочее goes last, «Свои» is the own events).</li><li><code>group_hidden(events, hidden_groups)</code> — Events whose group is not hidden by the group filter.</li><li><code>group_of(event)</code> — Section of the schedule for an event: by its kind (or name when it has none).</li><li><code>day_label(day, now, today)</code> — «Сегодня» for the current weekday, else «ВТ 13.10» — the date of that weekday in this week.</li><li><code>clock_pair(utc_now, local_tz)</code> — Server time (MSK, UTC+3) and this computer&#x27;s time, both as HH:MM:SS.</li></ul><ul></ul></details></section><section class="card" id="schedule_custom"><h3>schedule_custom <span class="pill">126 стр.</span><span class="pill">тестов: 6</span></h3><p>Свои правки расписания (schedule_custom.json): добавить, изменить, удалить, на все дни, текст.</p><div class="mermaid">flowchart LR
+  F[schedule_custom.json] --&gt; MG[merge: сетка − removed + added]
+  AD[add / add_days] --&gt; SV[save]
+  RM[remove] --&gt;|свой| DEL[убрать из added]
+  RM --&gt;|сетка| RV[в removed]
+  TX[parse_text] --&gt; CHK{check по строкам}
+  CHK --&gt;|ок| SV</div><details><summary>Функции и классы</summary><ul><li><code>event_key(event)</code> — </li><li><code>check(event)</code> — </li><li><code>to_text(events)</code> — Every event as a text line: «пн 20:00-21:00 Название», Monday first, times as in the data.</li><li><code>parse_text(text)</code> — Text lines back to events; returns (events, problems) — a bad line is reported, not dropped silently.</li></ul><ul><li><b>Custom</b>: load, save, merge, add, add_days, remove, edit — </li></ul></details></section><section class="card" id="notify_center"><h3>notify_center <span class="pill">221 стр.</span><span class="pill">тестов: 6</span></h3><p>Центр уведомлений: очередь, источники вкл/звук, «не беспокоить», подтверждение, повтор, отложить.</p><div class="mermaid">flowchart LR
+  N[notify] --&gt; E{источник вкл?}
+  E --&gt;|нет| X[отброшено]
+  E --&gt;|да| R[record + звук]
+  R --&gt; D{DND?}
+  D --&gt;|нет| Q[очередь]
+  Q --&gt; PN[pop_next → тост]
+  PN --&gt;|accept/закрыть| AK[acknowledge]
+  PN --&gt;|отложить| SN[snooze]
+  T[tick] --&gt; RP[повтор / отложенное]</div><details><summary>Функции и классы</summary><ul><li>только классы</li></ul><ul><li><b>NotificationAction</b>:  — An action offered by a future toast or notification list.</li><li><b>Notification</b>:  — A normalized notification ready for presentation.</li><li><b>SourceRule</b>:  — </li><li><b>NotificationCenter</b>: queued, unread, count, set_source, notify, pop_next, is_active, acknowledge, snooze, tick — Pure notification lifecycle and policy manager; it creates no windows.</li></ul></details></section><section class="card" id="alert_bridge"><h3>alert_bridge <span class="pill">66 стр.</span><span class="pill">тестов: 6</span></h3><p>Мост: совпадения чата и «игра не запущена» → карточки центра; «Принять» возвращает id тревог.</p><div class="mermaid">flowchart LR
+  CM[chat_match] --&gt; NO{nag?}
+  NO --&gt;|да| NT[notify + Принять, без звука]
+  NO --&gt;|нет| NS[notify, звук центра]
+  NT --&gt;|Принять| TA[toast_accepted → id тревог]
+  GO[game_running False] --&gt; GN[notify Проверить снова, один раз]</div><details><summary>Функции и классы</summary><ul><li>только классы</li></ul><ul><li><b>AlertBridge</b>: chat_match, toast_accepted, alerts_done, game_running — </li></ul></details></section><section class="card" id="notify_settings"><h3>notify_settings <span class="pill">27 стр.</span><span class="pill">тестов: 5</span></h3><p>Настройки уведомлений из config.json → центр и окно тостов (источники, где, сколько держать, стек).</p><div class="mermaid">flowchart LR
+  CFG[config notify_*] --&gt; AP[apply]
+  AP --&gt; RL[rules источников: вкл, звук]
+  AP --&gt; DN[do_not_disturb]
+  AP --&gt; TW[окно тостов: угол, длительность, стек]</div><details><summary>Функции и классы</summary><ul><li><code>apply(cfg, center, manager)</code> — </li></ul><ul></ul></details></section><section class="card" id="schedule_update"><h3>schedule_update <span class="pill">58 стр.</span><span class="pill">тестов: 5</span></h3><p>Проверка картинки сетки на сайте: отпечаток (имя + ETag + Last-Modified), решение «изменилось / как было».</p><div class="mermaid">flowchart LR
+  PG[страница статьи] --&gt; IU[image_url]
+  IU --&gt; HD[HEAD картинки: ETag, Last-Modified]
+  HD --&gt; FP[отпечаток]
+  FP --&gt; DC{decide}
+  DC --&gt;|отличается| CH[changed]
+  DC --&gt;|как было| SM[same / ничего]</div><details><summary>Функции и классы</summary><ul><li><code>image_url(html)</code> — </li><li><code>fingerprint(name, etag, modified)</code> — </li><li><code>known_fingerprint(data)</code> — </li><li><code>site_fingerprint(fetch)</code> — </li><li><code>decide(known, current, seen, manual)</code> — </li><li><code>http_fetch(url, method, timeout)</code> — The real fetch: HTTPS only, a short timeout, nothing sent but the request itself; Russian page version.</li></ul><ul></ul></details></section><section class="card" id="config"><h3>config <span class="pill">133 стр.</span><span class="pill">тестов: 8</span></h3><p>Чтение и запись config.json с проверкой типов полей; битый файл сохраняется копией.</p><div class="mermaid">flowchart LR
+  FL[config.json] --&gt; RC[read_config]
+  RC --&gt;|битый| BK[копия .broken + дефолт]
+  RC --&gt;|тип не тот| DF[поле → дефолт]
+  RC --&gt; CF[Config]
+  CF --&gt; SC[save_config: tmp → replace]</div><details><summary>Функции и классы</summary><ul><li><code>app_root()</code> — </li><li><code>save_config(path, cfg)</code> — Write through a temporary file, so an interrupted write never leaves half a JSON file.</li><li><code>read_config(path)</code> — Load config and say what was repaired (empty string when nothing was).</li><li><code>load_config(path)</code> — Load config; a missing or broken file is replaced with defaults.</li></ul><ul><li><b>Config</b>: chat_log_path — </li></ul></details></section><section class="card" id="gamecheck"><h3>gamecheck <span class="pill">59 стр.</span><span class="pill">тестов: 1</span></h3><p>Запущена ли игра: ищет процесс aion.bin.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li><code>process_names()</code> — Executable names of all running processes (lower case), None if the list can&#x27;t be read.</li><li><code>game_running(names)</code> — True / False, or None when the process list is unavailable (then the caller should not stop).</li></ul><ul><li><b>_ProcessEntry</b>:  — </li></ul></details></section><section class="card" id="tailer"><h3>tailer <span class="pill">110 стр.</span><span class="pill">тестов: 11</span></h3><p>Читает дописываемый файл лога построчно, не теряя строк при росте.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li>только классы</li></ul><ul><li><b>LogTailer</b>: start_at_end, read_new_lines, read_backlog — </li></ul></details></section><section class="card" id="notifier"><h3>notifier <span class="pill">84 стр.</span><span class="pill">тестов: 10</span></h3><p>Звук тревоги: системные звуки или свой файл, громкость.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li><code>default_media_dir()</code> — </li><li><code>system_sounds(media_dir)</code> — WAV files shipped with Windows (Alarm01.wav, Ring01.wav, ...), sorted by name.</li><li><code>default_beep_path(media_dir)</code> — WAV used for «Системный сигнал»: a file (unlike MessageBeep) follows the volume slider.</li></ul><ul><li><b>Notifier</b>: set_volume, play, start_loop, stop — </li></ul></details></section><section class="card" id="specs"><h3>specs <span class="pill">211 стр.</span><span class="pill">тестов: 5</span></h3><p>Характеристики предмета для подсказки: парсинг страниц и хранение.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li><code>parse_spec(page_html)</code> — Parse the tooltip block of a kb.aionempire.com item page.</li><li><code>load_specs(path)</code> — Item id -&gt; spec from JSON, or gzip-compressed JSON for a .gz file. Missing or broken gives {}.</li></ul><ul><li><b>_SpecParser</b>: handle_starttag, handle_endtag, handle_data — </li><li><b>SpecStore</b>:  — Item id -&gt; spec. Values may be stored as JSON text and are parsed on first access.</li></ul></details></section><section class="card" id="errlog"><h3>errlog <span class="pill">28 стр.</span><span class="pill">тестов: 4</span></h3><p>errors.log рядом с config.json: трассировка ошибки, которую окно не показало.</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li><code>log_exception(path, where, previous)</code> — Append the current exception with its traceback. Returns its one-line text (for `previous`).</li></ul><ul></ul></details></section><section class="card" id="tgbatch"><h3>tgbatch <span class="pill">110 стр.</span><span class="pill">тестов: 9</span></h3><p>Упаковка строк чата в сообщения Telegram без превышения лимита (план, не подключён).</p><div class="mermaid">flowchart LR
+  A[функции ниже]</div><details><summary>Функции и классы</summary><ul><li>только классы</li></ul><ul><li><b>ChatBatcher</b>: batch_size, queued, sent_last_window, add, poll, next_slot_in — </li></ul></details></section></div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script>
+mermaid.initialize({startOnLoad:true,theme:"dark",securityLevel:"loose"});
+const labels=["parser", "catalog", "matcher", "poi", "series", "alerts", "reminders", "schedule_view", "schedule_custom", "notify_center", "alert_bridge", "notify_settings", "schedule_update", "config", "gamecheck", "tailer", "notifier", "specs", "errlog", "tgbatch"],lines=[186, 93, 106, 127, 71, 68, 61, 147, 126, 221, 66, 27, 58, 133, 59, 110, 84, 211, 28, 110],tests=[25, 4, 21, 20, 8, 7, 8, 17, 6, 6, 6, 5, 5, 8, 1, 11, 10, 5, 4, 9];
+new Chart(document.getElementById("c1"),{type:"bar",data:{labels:labels,datasets:[{label:"строк",data:lines,backgroundColor:"#ff8c1a"}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8c919c",font:{size:10}}},y:{ticks:{color:"#8c919c"}}}}});
+new Chart(document.getElementById("c2"),{type:"doughnut",data:{labels:labels,datasets:[{data:tests,backgroundColor:labels.map(function(_,i){return "hsl("+(i*360/labels.length)+" 70% 60%)";})}]},options:{plugins:{legend:{position:"right",labels:{color:"#8c919c",font:{size:10}}}}}});
+</script></body></html>
