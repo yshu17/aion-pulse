@@ -67,8 +67,8 @@ def test_tab_shows_running_next_and_the_day():
         theme.apply_dark_theme(root)
         tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
         rows = _labels(tab.next_box)
-        assert rows[0] == ["20:00–21:00", "Арена", "идёт · ещё 30 мин"]  # today: no date, it is the header
-        assert rows[1] == ["22:00–00:00", "Поздно", "через 1 ч 30 мин"]
+        assert rows[0] == ["20:00–21:00", "идёт · ещё 30 мин", "Арена"]  # today: no date; the badge is packed first
+        assert rows[1] == ["22:00–00:00", "через 1 ч 30 мин", "Поздно"]
         assert tab.day_var.get() == "Среда"
         assert [r[-1] for r in _labels(tab.day_list)] == ["Арена", "Поздно"]
         tab.day_var.set("Четверг")
@@ -134,13 +134,13 @@ def test_kind_filter_hides_events_and_reports_the_choice():
         theme.apply_dark_theme(root)
         saved = []
         tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK, hidden={"Арена"}, on_filter=saved.append)
-        assert "Арена" not in [r[1] for r in _labels(tab.next_box)]
+        assert "Арена" not in [name for r in _labels(tab.next_box) for name in r]
         assert tab.kind_vars["Арена"].get() is False
         tab.kind_vars["Арена"].set(True)
         tab.kind_vars["Поздно"].set(False)
         tab.filter_changed()
         assert saved[-1] == {"Поздно"}
-        names = [r[1] for r in _labels(tab.next_box)]
+        names = [name for r in _labels(tab.next_box) for name in r]
         assert "Арена" in names and "Поздно" not in names
         assert "1 скрыт" in tab.kinds_button.cget("text")
         tab.destroy()
@@ -395,6 +395,28 @@ def test_name_is_cut_before_the_badge_and_date_when_the_row_is_narrow():
         badge = next(w for w in row.winfo_children() if w.winfo_class() == "Label" and "идёт" in w.cget("text"))
         assert name.winfo_width() < len("Ингисон / Келькмарос очень длинное имя") * 9  # it was cut
         assert badge.winfo_x() + badge.winfo_width() <= row.winfo_width() + 1  # badge fully inside
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_badge_keeps_its_full_text_in_the_next_list():
+    """The «идёт · ещё 30 мин» badge is never cut: the name gives way, the badge and «на карте» keep their width."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.geometry("1000x600")
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        events = [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Ингисон / Келькмарос", "maps": ["220070000"]}]
+        tab = st.ScheduleTab(root, events, clock=lambda: WED_2030, tz=MSK, on_map=lambda _z: None)
+        tab.pack(fill="both", expand=True)
+        root.deiconify()
+        root.update()
+        row = next(r for r in tab.next_box.winfo_children() if r.winfo_class() == "Frame")
+        badge = next(w for w in row.winfo_children() if w.winfo_class() == "Label" and "идёт" in w.cget("text"))
+        assert badge.winfo_reqwidth() <= badge.winfo_width()  # the full text fits without cutting
         tab.destroy()
     finally:
         root.destroy()

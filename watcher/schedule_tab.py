@@ -311,7 +311,7 @@ class ScheduleTab(ttk.Frame):
             end = end_of(event, start)
             past = day == today and end <= now
             self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event,
-                      date=day_label(day, now, now))
+                      date="" if day == today else day_label(day, now, now))
         self._strip_day = (day, day == today, now, monday + timedelta(days=DAYS.index(day)))
         self._show_clocks(now)
         self.after_idle(self._trim_next)
@@ -429,18 +429,18 @@ class ScheduleTab(ttk.Frame):
                             image=self.icons.get("map-pin", "muted", 16))
             link.pack(side="right", padx=(8, 0))
             link.bind("<Button-1>", lambda _e, z=zone: self.on_map(z))
-        label = tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
-                         font=theme.font("small" if compact else "body"))
-        label.pack(side="left", fill="x", expand=True)
-        if bell is not None:  # a day row: a click on the name edits or removes the event (SN-7)
-            label.configure(cursor="hand2")
-            label.bind("<Button-1>", lambda _e, ev=bell: self.open_form(ev))
         if badge:
             tk.Label(row, text=badge, background=theme.SURFACE, foreground=accent or theme.MUTED,
                      font=scaled_font("small")).pack(side="right")
         if date:  # «Сегодня» / «ВТ 13.10» in the middle, between the name and the bell (user request 13.10)
             tk.Label(row, text=date, background=theme.SURFACE, foreground=theme.MUTED,
                      font=scaled_font("small")).pack(side="right", padx=(0, 10))
+        label = tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
+                         font=theme.font("small" if compact else "body"))
+        label.pack(side="left", fill="x", expand=True)
+        if bell is not None:  # a day row: a click on the name edits or removes the event (SN-7)
+            label.configure(cursor="hand2")
+            label.bind("<Button-1>", lambda _e, ev=bell: self.open_form(ev))
         row.bind("<Enter>", lambda _e, r=row: self._hover(r, theme.SURFACE_2))
         row.bind("<Leave>", lambda _e, r=row: None if self._pointer_in(r) else self._hover(r, theme.SURFACE))
 
