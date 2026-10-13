@@ -8,28 +8,28 @@
 |---|---|---|---|---|
 | `project-master-planner` | Планирование | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 13 |
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
-| `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 10 |
-| `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 23 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 20 |
+| `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 8 |
+| `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 29 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 22 |
 | `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 0 |
-| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 0 |
+| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
 | `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
-| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 33 |
-| `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 12 |
-| `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 4 |
+| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 41 |
+| `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 14 |
+| `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 6 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
 | `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 4 |
 | `code-review` | Проверка и ревью | встроен в Claude Code | у Codex свой аналог | 1 |
-| `security-review` | Безопасность | встроен в Claude Code | только у Claude | 12 |
+| `security-review` | Безопасность | встроен в Claude Code | только у Claude | 16 |
 | `run` | Проверка и ревью | встроен в Claude Code | только у Claude | 3 |
-| `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 13 |
+| `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 11 |
 | `tool:check_project` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
 | `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
 
 ## Распределение открытых задач
 
-Claude Code: **22** · Codex: **12** · Совместно: **18** · Пользователь: **0**
+Claude Code: **21** · Codex: **13** · Совместно: **20** · Пользователь: **2**
 
 ## Задачи
 
@@ -79,14 +79,18 @@ Claude Code: **22** · Codex: **12** · Совместно: **18** · Польз
 | `draft:DRAFT-04.2` | Проверить доступные события и правила | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
 | `draft:DRAFT-04.3` | Оценить прототип без интеграции | Codex | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
 | `draft:DRAFT-04.4` | Только при go: отдельный план реализации | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
-| `draft:DRAFT-05.1` | Согласовать область лаунчера | Claude Code | `project-master-planner` |  | передача не нужна |
-| `draft:DRAFT-05.2` | Проверить официальный запуск и правила | Совместно | `anthropic-skills:deep-research` | `security-review` | передача не нужна |
-| `draft:DRAFT-05.3` | Спроектировать процесс и UX | Claude Code | `application-software-architect`, `application-ui-ux-designer` | `security-review` | передача не нужна |
-| `draft:DRAFT-05.4` | План безопасной реализации | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
-| `draft:DRAFT-06.1` | Подтвердить цель, владельца и угрозы | Claude Code | `application-software-architect` | `security-review` | передача не нужна |
-| `draft:DRAFT-06.2` | Проверить полномочия и приватность | Claude Code | `anthropic-skills:deep-research` |  | передача не нужна |
-| `draft:DRAFT-06.3` | Сравнить варианты защиты | Claude Code | `application-software-architect`, `security-review` |  | передача не нужна |
-| `draft:DRAFT-06.4` | Решение владельца и Claude | Совместно | `project-master-planner` |  | ждёт предыдущих этапов |
+| `draft:DRAFT-05.1` | Дизайн-система и макеты основных экранов | Claude Code | `application-ui-ux-designer`, `design-theme-guide` |  | ждёт предыдущих этапов |
+| `draft:DRAFT-05.2` | Общий API: вход и статус серверов | Claude Code | `application-software-architect` | `security-review`, `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.3` | Лаунчер-MVP на Tauri 2 | Совместно | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.4` | Патчер и CDN | Совместно | `application-software-architect`, `superpowers:test-driven-development` | `superpowers:systematic-debugging` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.5` | Самообновление, установщик и подпись кода | Совместно | `security-review` | `superpowers:verification-before-completion` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.6` | Сайт на Next.js | Claude Code | `application-ui-ux-designer` | `application-software-architect` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.7` | Функции Chat Watcher во вкладках лаунчера | Совместно | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.8` | Магазин и донат (в будущем) | Пользователь | `project-master-planner` | `security-review` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.1` | Модель угроз своего сервера | Claude Code | `anthropic-skills:deep-research` | `security-review` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.2` | Серверные проверки и журнал | Совместно | `application-software-architect`, `security-review` |  | ждёт предыдущих этапов |
+| `draft:DRAFT-06.3` | Целостность клиента по хешам | Codex | `superpowers:test-driven-development` | `security-review` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.4` | Решение по клиентскому античиту | Пользователь | `project-master-planner` |  | ждёт предыдущих этапов |
 | `draft:DRAFT-01.1` | Уточнить расчётные сценарии | Claude Code | `project-master-planner` |  | передача не нужна |
 | `draft:DRAFT-01.2` | Проверить игровые правила и источники | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
 | `draft:DRAFT-01.3` | Согласовать модель и макет | Claude Code | `application-software-architect`, `application-ui-ux-designer` |  | передача не нужна |
@@ -103,11 +107,15 @@ Claude Code: **22** · Codex: **12** · Совместно: **18** · Польз
 | `draft:DRAFT-04.2` | Проверить доступные события и правила | Совместно | `anthropic-skills:deep-research` |  | передача не нужна |
 | `draft:DRAFT-04.3` | Оценить прототип без интеграции | Codex | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
 | `draft:DRAFT-04.4` | Только при go: отдельный план реализации | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
-| `draft:DRAFT-05.1` | Согласовать область лаунчера | Claude Code | `project-master-planner` |  | передача не нужна |
-| `draft:DRAFT-05.2` | Проверить официальный запуск и правила | Совместно | `anthropic-skills:deep-research` | `security-review` | передача не нужна |
-| `draft:DRAFT-05.3` | Спроектировать процесс и UX | Claude Code | `application-software-architect`, `application-ui-ux-designer` | `security-review` | передача не нужна |
-| `draft:DRAFT-05.4` | План безопасной реализации | Совместно | `superpowers:writing-plans` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
-| `draft:DRAFT-06.1` | Подтвердить цель, владельца и угрозы | Claude Code | `application-software-architect` | `security-review` | передача не нужна |
-| `draft:DRAFT-06.2` | Проверить полномочия и приватность | Claude Code | `anthropic-skills:deep-research` |  | передача не нужна |
-| `draft:DRAFT-06.3` | Сравнить варианты защиты | Claude Code | `application-software-architect`, `security-review` |  | передача не нужна |
-| `draft:DRAFT-06.4` | Решение владельца и Claude | Совместно | `project-master-planner` |  | ждёт предыдущих этапов |
+| `draft:DRAFT-05.1` | Дизайн-система и макеты основных экранов | Claude Code | `application-ui-ux-designer`, `design-theme-guide` |  | ждёт предыдущих этапов |
+| `draft:DRAFT-05.2` | Общий API: вход и статус серверов | Claude Code | `application-software-architect` | `security-review`, `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.3` | Лаунчер-MVP на Tauri 2 | Совместно | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.4` | Патчер и CDN | Совместно | `application-software-architect`, `superpowers:test-driven-development` | `superpowers:systematic-debugging` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.5` | Самообновление, установщик и подпись кода | Совместно | `security-review` | `superpowers:verification-before-completion` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.6` | Сайт на Next.js | Claude Code | `application-ui-ux-designer` | `application-software-architect` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.7` | Функции Chat Watcher во вкладках лаунчера | Совместно | `application-software-architect` | `superpowers:test-driven-development` | ждёт предыдущих этапов |
+| `draft:DRAFT-05.8` | Магазин и донат (в будущем) | Пользователь | `project-master-planner` | `security-review` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.1` | Модель угроз своего сервера | Claude Code | `anthropic-skills:deep-research` | `security-review` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.2` | Серверные проверки и журнал | Совместно | `application-software-architect`, `security-review` |  | ждёт предыдущих этапов |
+| `draft:DRAFT-06.3` | Целостность клиента по хешам | Codex | `superpowers:test-driven-development` | `security-review` | ждёт предыдущих этапов |
+| `draft:DRAFT-06.4` | Решение по клиентскому античиту | Пользователь | `project-master-planner` |  | ждёт предыдущих этапов |

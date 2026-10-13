@@ -1625,8 +1625,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-05.2": {
       "added_at": "12.10.2026 01:44",
@@ -1635,8 +1641,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-05.3": {
       "added_at": "12.10.2026 01:44",
@@ -1645,8 +1657,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-05.4": {
       "added_at": "12.10.2026 01:44",
@@ -1655,8 +1673,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-06.1": {
       "added_at": "12.10.2026 01:44",
@@ -1665,8 +1689,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-06.2": {
       "added_at": "12.10.2026 01:44",
@@ -1675,8 +1705,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-06.3": {
       "added_at": "12.10.2026 01:44",
@@ -1685,8 +1721,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "draft:DRAFT-06.4": {
       "added_at": "12.10.2026 01:44",
@@ -1695,8 +1737,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 15:37"
     },
     "ui:44": {
       "added_at": "12.10.2026 22:17",
@@ -1724,6 +1772,46 @@
           "origin": "source"
         }
       ]
+    },
+    "draft:DRAFT-05.5": {
+      "added_at": "12.10.2026 01:44",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ]
+    },
+    "draft:DRAFT-05.6": {
+      "added_at": "12.10.2026 01:44",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ]
+    },
+    "draft:DRAFT-05.7": {
+      "added_at": "12.10.2026 01:44",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ]
+    },
+    "draft:DRAFT-05.8": {
+      "added_at": "12.10.2026 01:44",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ]
     }
   },
   "known_keys": [
@@ -1747,6 +1835,10 @@
     "draft:DRAFT-05.2",
     "draft:DRAFT-05.3",
     "draft:DRAFT-05.4",
+    "draft:DRAFT-05.5",
+    "draft:DRAFT-05.6",
+    "draft:DRAFT-05.7",
+    "draft:DRAFT-05.8",
     "draft:DRAFT-06.1",
     "draft:DRAFT-06.2",
     "draft:DRAFT-06.3",
@@ -1973,15 +2065,19 @@
     "draft:DRAFT-04.2": "789ade35321fae381db19f9f88be07489181695a1a05ee92bf4ebdfb143ef1e5",
     "draft:DRAFT-04.3": "fa9b9fd103df5ccd007a1ae6d40a6fb827b1aae8af6d0b2470672cde86f561e6",
     "draft:DRAFT-04.4": "c17d21b5a962c5af97de0761fc8c33359367e3244b9d4d967a5f50f245232d3b",
-    "draft:DRAFT-05.1": "92475755dc35b1374e40a5e3c92b2d83f5afc8686f24ff0afbb512d0d52c5dec",
-    "draft:DRAFT-05.2": "0badb6d023fa52571260f3b3bd817d070597bdd4d64052d9aaf83a166576a403",
-    "draft:DRAFT-05.3": "3a208f9e3f937f91b449bceeb3af5ec3add81b1947c82ff33004ea56a29a53f2",
-    "draft:DRAFT-05.4": "2b3b8a13f8de94319bd1818b6b23c7fbec04c8511e6dc2e4e5d52672ea1b7624",
-    "draft:DRAFT-06.1": "4a0e6704327966c44a1a8216c469a1151b99baf1f30652e3cd7073a21b6b4d9f",
-    "draft:DRAFT-06.2": "ccbfe306c083997bcd4daf07fa66ade855328ef869087ecd03e37051bab498fb",
-    "draft:DRAFT-06.3": "4e4c50bbec95697c62847911d7b1470e05b1b6d872d7f8c594a4f696ca04718d",
-    "draft:DRAFT-06.4": "328c0e93ce3983d3d99d1f9f03b5e3a1c421777d5c7b970ac94653119aa36a35",
+    "draft:DRAFT-05.1": "c096acb19c6a7329bfea60e3110d44135c35c4617c6b4b84f260cd59305394ef",
+    "draft:DRAFT-05.2": "b0b2dd2c0acad58a1b1d257dc7ab3603422216f64556475e2a18b12269919edb",
+    "draft:DRAFT-05.3": "ff9aa44b28d3818ed2e8bc951650fbfc6b53def8d76f56a8b76245a30731d32b",
+    "draft:DRAFT-05.4": "57a2c5fe9bd904f274483cee66790dc55ea81c5ee4dcef4afacc5b313ec597a6",
+    "draft:DRAFT-06.1": "7ff6a9c0f65ff4361f3b2fff5b62d4cf53c14d22953e2a5e2015b78521a7e834",
+    "draft:DRAFT-06.2": "807d4401ca34deec172b3b77a87e4984369f58cd4cdde3dbd72c08f95ac11098",
+    "draft:DRAFT-06.3": "587ede9035257c83c8d1a4d516b0acf0e97fb3fd989aa333311bca5f1dfbea40",
+    "draft:DRAFT-06.4": "7c40e3182ccc806b635bcd284b74aaed11b76b735cbd3df7bcbc9bc646957081",
     "ui:44": "d3816fa0761781c5c43bf47fdd02b0235c6fe7550d776066499f2b9c40f59a6b",
-    "ui:45": "0d1dc305eeb7a80cbcd47f41e0fddd61083b0beafb960bc3603070f875b2bad4"
+    "ui:45": "0d1dc305eeb7a80cbcd47f41e0fddd61083b0beafb960bc3603070f875b2bad4",
+    "draft:DRAFT-05.5": "7ae20afdbf0f4b9bfd5e87c09e84da2d18d039f13319de169f5a032c24a3b1fd",
+    "draft:DRAFT-05.6": "5b54c849c71a880f1bdebcc69e44a42a926f545aa017e264d096442a09f6c173",
+    "draft:DRAFT-05.7": "3dabbbbea83e5be3cca44084822ac16ea302e2b6e3685633be07d217fb37181e",
+    "draft:DRAFT-05.8": "e7fc0a076cd1946167d1162b4ccf11c8e7fff06686ebfd8660f80f0f82767f25"
   }
 }

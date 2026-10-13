@@ -87,7 +87,9 @@ def test_built_model_carries_ai_without_changing_ids_or_statuses():
     import plan_states
     assert all(i["status"] == plan_states.normalize_status(source[i["key"]]["status"]) for i in model["items"])
     assert all(i["ai"]["state"] in {"recommended", "retro"} for i in model["items"])
-    assert len(model["ai"]["drafts"]) == 24
+    import build_feature_drafts
+    stages = sum(len(plan["stages"]) for plan in build_feature_drafts.load()["plans"])
+    assert len(model["ai"]["drafts"]) == stages  # every DRAFT stage carries its recommendation (DRAFT-05 has 8 since 13.10)
 
 
 def test_handoff_states_for_review_and_integration_are_known_and_filterable():

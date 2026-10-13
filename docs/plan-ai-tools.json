@@ -2313,14 +2313,19 @@
       "note": "Черновик DRAFT: разработка не утверждена."
     },
     "draft:DRAFT-05.1": {
-      "category": "Черновик · сценарии",
+      "category": "Лаунчер · дизайн-система",
       "agent": "claude",
       "reviewer": "user",
       "skills": [
         {
-          "name": "project-master-planner",
+          "name": "application-ui-ux-designer",
           "role": "primary",
-          "purpose": "входы, выходы, неизвестные правила"
+          "purpose": "макеты экранов лаунчера"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены бренда и замер контраста стекла и свечения"
         }
       ],
       "split": {
@@ -2330,135 +2335,34 @@
         "approve": "Пользователь"
       },
       "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
+        "токены и компоненты описаны",
+        "макеты четырёх экранов согласованы пользователем"
       ],
       "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
+        "просмотр макетов пользователем"
       ],
-      "handoff": "n/a",
-      "arch_review": "not-needed"
+      "handoff": "blocked",
+      "arch_review": "pending"
     },
     "draft:DRAFT-05.2": {
-      "category": "Черновик · игровые правила",
-      "agent": "joint",
-      "reviewer": "user",
-      "skills": [
-        {
-          "name": "anthropic-skills:deep-research",
-          "role": "primary",
-          "purpose": "правила сервера и источники с датой"
-        },
-        {
-          "name": "security-review",
-          "role": "supporting",
-          "purpose": "запуск клиента без вмешательства в файлы игры"
-        }
-      ],
-      "split": {
-        "design": "Claude Code",
-        "build": "Codex + Claude Code",
-        "test": "Claude Code",
-        "approve": "Пользователь"
-      },
-      "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
-      ],
-      "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
-      ],
-      "handoff": "n/a",
-      "arch_review": "not-needed"
-    },
-    "draft:DRAFT-05.3": {
-      "category": "Черновик · модель и макет",
+      "category": "Лаунчер · API",
       "agent": "claude",
       "reviewer": "user",
       "skills": [
         {
           "name": "application-software-architect",
           "role": "primary",
-          "purpose": "контракт расчёта отдельно от UI"
-        },
-        {
-          "name": "application-ui-ux-designer",
-          "role": "primary",
-          "purpose": "макет, пустые и ошибочные состояния"
+          "purpose": "контракт API, токен запуска, границы с базой логин-сервера"
         },
         {
           "name": "security-review",
           "role": "supporting",
-          "purpose": "запуск клиента без вмешательства в файлы игры"
-        }
-      ],
-      "split": {
-        "design": "Claude Code",
-        "build": "Claude Code",
-        "test": "Claude Code",
-        "approve": "Пользователь"
-      },
-      "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
-      ],
-      "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
-      ],
-      "handoff": "n/a",
-      "arch_review": "pending"
-    },
-    "draft:DRAFT-05.4": {
-      "category": "Черновик · реализация",
-      "agent": "joint",
-      "reviewer": "claude",
-      "skills": [
-        {
-          "name": "superpowers:writing-plans",
-          "role": "primary",
-          "purpose": "отдельный план реализации"
+          "purpose": "хранение паролей, токены, доступ к базе"
         },
         {
           "name": "superpowers:test-driven-development",
           "role": "supporting",
-          "purpose": "примеры с ожидаемым результатом"
-        }
-      ],
-      "split": {
-        "design": "Claude Code",
-        "build": "Codex + Claude Code",
-        "test": "Codex",
-        "approve": "Claude Code"
-      },
-      "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
-      ],
-      "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
-      ],
-      "handoff": "blocked",
-      "arch_review": "not-needed",
-      "note": "Черновик DRAFT: разработка не утверждена."
-    },
-    "draft:DRAFT-06.1": {
-      "category": "Черновик · сценарии",
-      "agent": "claude",
-      "reviewer": "user",
-      "skills": [
-        {
-          "name": "application-software-architect",
-          "role": "primary",
-          "purpose": "модель угроз верхнего уровня"
-        },
-        {
-          "name": "security-review",
-          "role": "supporting",
-          "purpose": "угрозы и приватность"
+          "purpose": "тесты входа и токена"
         }
       ],
       "split": {
@@ -2468,58 +2372,98 @@
         "approve": "Пользователь"
       },
       "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
+        "вход и токен работают на тестовой базе",
+        "пароль не уходит в аргументы клиента"
       ],
       "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
+        "тесты API"
       ],
-      "handoff": "n/a",
-      "arch_review": "not-needed"
+      "handoff": "blocked",
+      "arch_review": "pending"
     },
-    "draft:DRAFT-06.2": {
-      "category": "Черновик · игровые правила",
+    "draft:DRAFT-05.3": {
+      "category": "Лаунчер · MVP",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "структура Tauri 2 + React, запуск и отслеживание процесса"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "логика проверки файлов и запуска"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Codex",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "вход, проверка файлов и «Играть» работают с тестовым сервером"
+      ],
+      "tests": [
+        "тесты",
+        "ручной запуск клиента"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-05.4": {
+      "category": "Лаунчер · патчер",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "манифест, докачка, многопоточность, выкладка"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "сверка хешей и докачка на подменённых файлах"
+        },
+        {
+          "name": "superpowers:systematic-debugging",
+          "role": "supporting",
+          "purpose": "обрывы загрузки"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Codex",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "меняется один файл — качается только он",
+        "прерванная загрузка продолжается"
+      ],
+      "tests": [
+        "тесты патчера"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-06.1": {
+      "category": "Защита · угрозы",
       "agent": "claude",
       "reviewer": "user",
       "skills": [
         {
           "name": "anthropic-skills:deep-research",
           "role": "primary",
-          "purpose": "полномочия владельца сервера и приватность"
-        }
-      ],
-      "split": {
-        "design": "Claude Code",
-        "build": "Claude Code",
-        "test": "Claude Code",
-        "approve": "Пользователь"
-      },
-      "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
-      ],
-      "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
-      ],
-      "handoff": "n/a",
-      "arch_review": "not-needed"
-    },
-    "draft:DRAFT-06.3": {
-      "category": "Черновик · модель и макет",
-      "agent": "claude",
-      "reviewer": "user",
-      "skills": [
-        {
-          "name": "application-software-architect",
-          "role": "primary",
-          "purpose": "серверные меры против клиентских"
+          "purpose": "что ломают на приватных серверах Aion, что умеет эмулятор"
         },
         {
           "name": "security-review",
-          "role": "primary",
-          "purpose": "ограничения клиентских мер"
+          "role": "supporting",
+          "purpose": "модель угроз"
         }
       ],
       "split": {
@@ -2529,44 +2473,101 @@
         "approve": "Пользователь"
       },
       "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
+        "список угроз и что из них закрывает эмулятор"
       ],
       "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
+        "рецензия пользователя"
       ],
-      "handoff": "n/a",
+      "handoff": "blocked",
       "arch_review": "pending"
     },
-    "draft:DRAFT-06.4": {
-      "category": "Черновик · реализация",
+    "draft:DRAFT-06.2": {
+      "category": "Защита · сервер",
       "agent": "joint",
       "reviewer": "claude",
       "skills": [
         {
-          "name": "project-master-planner",
+          "name": "application-software-architect",
           "role": "primary",
-          "purpose": "go/no-go и проверяемый план"
+          "purpose": "где в эмуляторе ставить проверки и журнал"
+        },
+        {
+          "name": "security-review",
+          "role": "primary",
+          "purpose": "ложные срабатывания и разбор нарушений"
         }
       ],
       "split": {
         "design": "Claude Code",
-        "build": "Codex + Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "проверки включены, события пишутся в журнал"
+      ],
+      "tests": [
+        "тесты на тестовом сервере"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-06.3": {
+      "category": "Защита · хеши клиента",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "primary",
+          "purpose": "сверка с манифестом на подменённых файлах"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "только папка клиента"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
         "test": "Codex",
         "approve": "Claude Code"
       },
       "done": [
-        "результат этапа из черновика записан",
-        "неизвестное помечено, не угадано"
+        "изменённый файл находится и перекачивается"
       ],
       "tests": [
-        "рецензия Claude",
-        "python tools/check_plans.py"
+        "тесты патчера"
       ],
       "handoff": "blocked",
-      "arch_review": "not-needed",
-      "note": "Черновик DRAFT: разработка не утверждена."
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-06.4": {
+      "category": "Защита · решение",
+      "agent": "user",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "go/no-go и объём клиентских мер"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "решение владельца записано"
+      ],
+      "tests": [
+        "решение пользователя"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
     },
     "ui:43": {
       "category": "UI/UX · тестирование",
@@ -3875,6 +3876,133 @@
       ],
       "handoff": "n/a",
       "arch_review": "not-needed"
+    },
+    "draft:DRAFT-05.5": {
+      "category": "Лаунчер · распространение",
+      "agent": "joint",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "security-review",
+          "role": "primary",
+          "purpose": "подпись кода и безопасное самообновление"
+        },
+        {
+          "name": "superpowers:verification-before-completion",
+          "role": "supporting",
+          "purpose": "проверка установщика на чистой Windows"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "подписанный установщик ставится без предупреждений",
+        "лаунчер обновляет сам себя"
+      ],
+      "tests": [
+        "установка на чистой машине",
+        "тест на игроках"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-05.6": {
+      "category": "Сайт · Next.js",
+      "agent": "claude",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "страницы на компонентах лаунчера"
+        },
+        {
+          "name": "application-software-architect",
+          "role": "supporting",
+          "purpose": "общие компоненты и API"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "регистрация и новости работают через общий API"
+      ],
+      "tests": [
+        "тесты",
+        "просмотр на телефоне и компьютере"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-05.7": {
+      "category": "Лаунчер · вкладки Chat Watcher",
+      "agent": "joint",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-software-architect",
+          "role": "primary",
+          "purpose": "перенос ядер: переписать или запускать отдельным процессом"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "одинаковые результаты ядра до и после переноса"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Codex",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "оповещения, карта и расписание работают во вкладках"
+      ],
+      "tests": [
+        "тесты на одних данных JSON"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
+    },
+    "draft:DRAFT-05.8": {
+      "category": "Лаунчер · магазин",
+      "agent": "user",
+      "reviewer": "user",
+      "skills": [
+        {
+          "name": "project-master-planner",
+          "role": "primary",
+          "purpose": "объём и порядок, когда пользователь решит начать"
+        },
+        {
+          "name": "security-review",
+          "role": "supporting",
+          "purpose": "платежи и данные игроков"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Пользователь"
+      },
+      "done": [
+        "решение пользователя о начале и объёме"
+      ],
+      "tests": [
+        "решение пользователя"
+      ],
+      "handoff": "blocked",
+      "arch_review": "pending"
     }
   }
 }

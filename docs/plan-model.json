@@ -10644,9 +10644,9 @@
     {
       "plan": "draft",
       "id": "DRAFT-05.1",
-      "title": "Согласовать область лаунчера",
+      "title": "Дизайн-система и макеты основных экранов",
       "who": "Claude",
-      "text": "Разделение простого запуска, обновления, диагностики и античита.",
+      "text": "Токены (цвета, стекло, свечение, типографика), кнопки и карточки; макеты «Вход», «Главная» (новости, статус, «Играть»), «Загрузка и проверка», «Настройки». Тёмный фиолетовый glassmorphism, адаптированный под игру: арт мира, крупная «Играть».",
       "note": "",
       "status": "research",
       "priority": "",
@@ -10656,12 +10656,17 @@
       "stage": "",
       "dependencies_text": "",
       "parent": "",
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:37",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
@@ -10671,183 +10676,14 @@
       "verification": "",
       "verification_evidence": [],
       "ai": {
-        "category": "Черновик · сценарии",
+        "category": "Лаунчер · дизайн-система",
         "agent": "claude",
         "reviewer": "user",
         "skills": [
-          {
-            "name": "project-master-planner",
-            "role": "primary",
-            "purpose": "входы, выходы, неизвестные правила",
-            "role_label": "основной",
-            "title": "Project Master Planner",
-            "area": "Планирование",
-            "availability": "project",
-            "available": true,
-            "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          }
-        ],
-        "split": {
-          "design": "Claude Code",
-          "build": "Claude Code",
-          "test": "Claude Code",
-          "approve": "Пользователь"
-        },
-        "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
-        ],
-        "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
-        ],
-        "handoff": "n/a",
-        "arch_review": "not-needed",
-        "state": "recommended",
-        "agent_label": "Claude Code",
-        "handoff_label": "передача не нужна",
-        "arch_label": "не требуется",
-        "missing_tools": []
-      }
-    },
-    {
-      "plan": "draft",
-      "id": "DRAFT-05.2",
-      "title": "Проверить официальный запуск и правила",
-      "who": "Claude",
-      "text": "Подтверждённый пользовательский путь либо решение не делать.",
-      "note": "",
-      "status": "research",
-      "priority": "",
-      "added_at": "12.10.2026 01:44",
-      "depends_on": [],
-      "key": "draft:DRAFT-05.2",
-      "stage": "",
-      "dependencies_text": "",
-      "parent": "",
-      "changed_at": "",
-      "history": [
-        {
-          "at": "2026-10-12T00:00+02:00",
-          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
-          "origin": "decision"
-        }
-      ],
-      "owners": [
-        "Claude"
-      ],
-      "is_new": false,
-      "verification": "",
-      "verification_evidence": [],
-      "ai": {
-        "category": "Черновик · игровые правила",
-        "agent": "joint",
-        "reviewer": "user",
-        "skills": [
-          {
-            "name": "anthropic-skills:deep-research",
-            "role": "primary",
-            "purpose": "правила сервера и источники с датой",
-            "role_label": "основной",
-            "title": "Deep Research",
-            "area": "Исследование",
-            "availability": "synced",
-            "available": true,
-            "availability_label": "из claude.ai",
-            "codex": "none",
-            "codex_label": "только у Claude"
-          },
-          {
-            "name": "security-review",
-            "role": "supporting",
-            "purpose": "запуск клиента без вмешательства в файлы игры",
-            "role_label": "дополнительный",
-            "title": "/security-review",
-            "area": "Безопасность",
-            "availability": "builtin",
-            "available": true,
-            "availability_label": "встроен в Claude Code",
-            "codex": "none",
-            "codex_label": "только у Claude"
-          }
-        ],
-        "split": {
-          "design": "Claude Code",
-          "build": "Codex + Claude Code",
-          "test": "Claude Code",
-          "approve": "Пользователь"
-        },
-        "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
-        ],
-        "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
-        ],
-        "handoff": "n/a",
-        "arch_review": "not-needed",
-        "state": "recommended",
-        "agent_label": "Совместно",
-        "handoff_label": "передача не нужна",
-        "arch_label": "не требуется",
-        "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-05.2 · Проверить официальный запуск и правила\nЦель: Проверить официальный запуск и правила.\nКонтекст: Подтверждённый пользовательский путь либо решение не делать.\nПлан: draft · статус: research · передача: передача не нужна\nЗависимости: нет\nТребования и критерии готовности:\n- результат этапа из черновика записан\n- неизвестное помечено, не угадано\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- anthropic-skills:deep-research (основной): правила сервера и источники с датой. только у Claude.\n- security-review (дополнительный): запуск клиента без вмешательства в файлы игры. только у Claude.\nТесты:\n- рецензия Claude\n- python tools/check_plans.py\n- python tools/check_project.py\nПроверяет и принимает: Пользователь.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
-      }
-    },
-    {
-      "plan": "draft",
-      "id": "DRAFT-05.3",
-      "title": "Спроектировать процесс и UX",
-      "who": "Claude",
-      "text": "Контракт запуска/ошибок/закрытия и макет без вмешательства в клиент.",
-      "note": "",
-      "status": "research",
-      "priority": "",
-      "added_at": "12.10.2026 01:44",
-      "depends_on": [],
-      "key": "draft:DRAFT-05.3",
-      "stage": "",
-      "dependencies_text": "",
-      "parent": "",
-      "changed_at": "",
-      "history": [
-        {
-          "at": "2026-10-12T00:00+02:00",
-          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
-          "origin": "decision"
-        }
-      ],
-      "owners": [
-        "Claude"
-      ],
-      "is_new": false,
-      "verification": "",
-      "verification_evidence": [],
-      "ai": {
-        "category": "Черновик · модель и макет",
-        "agent": "claude",
-        "reviewer": "user",
-        "skills": [
-          {
-            "name": "application-software-architect",
-            "role": "primary",
-            "purpose": "контракт расчёта отдельно от UI",
-            "role_label": "основной",
-            "title": "Application Software Architect",
-            "area": "Архитектура",
-            "availability": "project",
-            "available": true,
-            "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
           {
             "name": "application-ui-ux-designer",
             "role": "primary",
-            "purpose": "макет, пустые и ошибочные состояния",
+            "purpose": "макеты экранов лаунчера",
             "role_label": "основной",
             "title": "Application UI/UX Designer",
             "area": "UI/UX",
@@ -10858,17 +10694,17 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
-            "name": "security-review",
-            "role": "supporting",
-            "purpose": "запуск клиента без вмешательства в файлы игры",
-            "role_label": "дополнительный",
-            "title": "/security-review",
-            "area": "Безопасность",
-            "availability": "builtin",
+            "name": "design-theme-guide",
+            "role": "primary",
+            "purpose": "токены бренда и замер контраста стекла и свечения",
+            "role_label": "основной",
+            "title": "Design Theme Guide",
+            "area": "UI/UX",
+            "availability": "user",
             "available": true,
-            "availability_label": "встроен в Claude Code",
-            "codex": "none",
-            "codex_label": "только у Claude"
+            "availability_label": "установлен глобально",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
           }
         ],
         "split": {
@@ -10878,43 +10714,47 @@
           "approve": "Пользователь"
         },
         "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
+          "токены и компоненты описаны",
+          "макеты четырёх экранов согласованы пользователем"
         ],
         "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
+          "просмотр макетов пользователем"
         ],
-        "handoff": "n/a",
+        "handoff": "blocked",
         "arch_review": "pending",
         "state": "recommended",
         "agent_label": "Claude Code",
-        "handoff_label": "передача не нужна",
+        "handoff_label": "ждёт предыдущих этапов",
         "arch_label": "ожидает архитектурной проверки Claude",
         "missing_tools": []
       }
     },
     {
       "plan": "draft",
-      "id": "DRAFT-05.4",
-      "title": "План безопасной реализации",
+      "id": "DRAFT-05.2",
+      "title": "Общий API: вход и статус серверов",
       "who": "Claude",
-      "text": "Отдельная утверждённая задача разработки с откатом.",
+      "text": "FastAPI или Fastify на VPS: вход по базе логин-сервера, одноразовый токен запуска, новости, статус и онлайн. Блокер: эмулятор и версия клиента.",
       "note": "",
       "status": "research",
       "priority": "",
       "added_at": "12.10.2026 01:44",
       "depends_on": [],
-      "key": "draft:DRAFT-05.4",
+      "key": "draft:DRAFT-05.2",
       "stage": "",
       "dependencies_text": "",
       "parent": "",
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:37",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
@@ -10924,27 +10764,40 @@
       "verification": "",
       "verification_evidence": [],
       "ai": {
-        "category": "Черновик · реализация",
-        "agent": "joint",
-        "reviewer": "claude",
+        "category": "Лаунчер · API",
+        "agent": "claude",
+        "reviewer": "user",
         "skills": [
           {
-            "name": "superpowers:writing-plans",
+            "name": "application-software-architect",
             "role": "primary",
-            "purpose": "отдельный план реализации",
+            "purpose": "контракт API, токен запуска, границы с базой логин-сервера",
             "role_label": "основной",
-            "title": "Writing Plans",
-            "area": "Планирование",
-            "availability": "plugin",
+            "title": "Application Software Architect",
+            "area": "Архитектура",
+            "availability": "project",
             "available": true,
-            "availability_label": "плагин",
-            "codex": "native",
-            "codex_label": "у Codex есть свой экземпляр"
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "security-review",
+            "role": "supporting",
+            "purpose": "хранение паролей, токены, доступ к базе",
+            "role_label": "дополнительный",
+            "title": "/security-review",
+            "area": "Безопасность",
+            "availability": "builtin",
+            "available": true,
+            "availability_label": "встроен в Claude Code",
+            "codex": "none",
+            "codex_label": "только у Claude"
           },
           {
             "name": "superpowers:test-driven-development",
             "role": "supporting",
-            "purpose": "примеры с ожидаемым результатом",
+            "purpose": "тесты входа и токена",
             "role_label": "дополнительный",
             "title": "Test-Driven Development",
             "area": "Разработка и тесты",
@@ -10957,41 +10810,229 @@
         ],
         "split": {
           "design": "Claude Code",
-          "build": "Codex + Claude Code",
-          "test": "Codex",
-          "approve": "Claude Code"
+          "build": "Claude Code",
+          "test": "Claude Code",
+          "approve": "Пользователь"
         },
         "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
+          "вход и токен работают на тестовой базе",
+          "пароль не уходит в аргументы клиента"
         ],
         "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
+          "тесты API"
         ],
         "handoff": "blocked",
-        "arch_review": "not-needed",
-        "note": "Черновик DRAFT: разработка не утверждена.",
+        "arch_review": "pending",
         "state": "recommended",
-        "agent_label": "Совместно",
+        "agent_label": "Claude Code",
         "handoff_label": "ждёт предыдущих этапов",
-        "arch_label": "не требуется",
-        "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-05.4 · План безопасной реализации\nЦель: План безопасной реализации.\nКонтекст: Отдельная утверждённая задача разработки с откатом.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- результат этапа из черновика записан\n- неизвестное помечено, не угадано\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- superpowers:writing-plans (основной): отдельный план реализации. у Codex есть свой экземпляр.\n- superpowers:test-driven-development (дополнительный): примеры с ожидаемым результатом. у Codex есть свой экземпляр.\nПримечание: Черновик DRAFT: разработка не утверждена.\nТесты:\n- рецензия Claude\n- python tools/check_plans.py\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": []
       }
     },
     {
       "plan": "draft",
-      "id": "DRAFT-06.1",
-      "title": "Подтвердить цель, владельца и угрозы",
+      "id": "DRAFT-05.3",
+      "title": "Лаунчер-MVP на Tauri 2",
       "who": "Claude",
-      "text": "Решение, нужен ли подплан вообще; модель угроз верхнего уровня.",
+      "text": "Вход, проверка файлов, «Играть»: запуск aion.bin с адресом логин-сервера и токеном, отслеживание процесса (перенос проверки aion.bin из Chat Watcher), настройки (папка игры, язык).",
       "note": "",
       "status": "research",
       "priority": "",
       "added_at": "12.10.2026 01:44",
       "depends_on": [],
-      "key": "draft:DRAFT-06.1",
+      "key": "draft:DRAFT-05.3",
+      "stage": "",
+      "dependencies_text": "",
+      "parent": "",
+      "changed_at": "13.10.2026 15:37",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ],
+      "owners": [
+        "Claude"
+      ],
+      "is_new": false,
+      "verification": "",
+      "verification_evidence": [],
+      "ai": {
+        "category": "Лаунчер · MVP",
+        "agent": "joint",
+        "reviewer": "claude",
+        "skills": [
+          {
+            "name": "application-software-architect",
+            "role": "primary",
+            "purpose": "структура Tauri 2 + React, запуск и отслеживание процесса",
+            "role_label": "основной",
+            "title": "Application Software Architect",
+            "area": "Архитектура",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "superpowers:test-driven-development",
+            "role": "supporting",
+            "purpose": "логика проверки файлов и запуска",
+            "role_label": "дополнительный",
+            "title": "Test-Driven Development",
+            "area": "Разработка и тесты",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Claude Code",
+          "test": "Codex",
+          "approve": "Пользователь"
+        },
+        "done": [
+          "вход, проверка файлов и «Играть» работают с тестовым сервером"
+        ],
+        "tests": [
+          "тесты",
+          "ручной запуск клиента"
+        ],
+        "handoff": "blocked",
+        "arch_review": "pending",
+        "state": "recommended",
+        "agent_label": "Совместно",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-05.3 · Лаунчер-MVP на Tauri 2\nЦель: Лаунчер-MVP на Tauri 2.\nКонтекст: Вход, проверка файлов, «Играть»: запуск aion.bin с адресом логин-сервера и токеном, отслеживание процесса (перенос проверки aion.bin из Chat Watcher), настройки (папка игры, язык).\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- вход, проверка файлов и «Играть» работают с тестовым сервером\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-software-architect (основной): структура Tauri 2 + React, запуск и отслеживание процесса. Codex читает SKILL.md по AGENTS.md.\n- superpowers:test-driven-development (дополнительный): логика проверки файлов и запуска. у Codex есть свой экземпляр.\nТесты:\n- тесты\n- ручной запуск клиента\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "draft",
+      "id": "DRAFT-05.4",
+      "title": "Патчер и CDN",
+      "who": "Claude",
+      "text": "Манифест (путь, размер, хеш), сверка и загрузка только изменённого, докачка и несколько потоков; скрипт выкладки патча одной командой; клиент на Cloudflare R2 или BunnyCDN.",
+      "note": "",
+      "status": "research",
+      "priority": "",
+      "added_at": "12.10.2026 01:44",
+      "depends_on": [],
+      "key": "draft:DRAFT-05.4",
+      "stage": "",
+      "dependencies_text": "",
+      "parent": "",
+      "changed_at": "13.10.2026 15:37",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ],
+      "owners": [
+        "Claude"
+      ],
+      "is_new": false,
+      "verification": "",
+      "verification_evidence": [],
+      "ai": {
+        "category": "Лаунчер · патчер",
+        "agent": "joint",
+        "reviewer": "claude",
+        "skills": [
+          {
+            "name": "application-software-architect",
+            "role": "primary",
+            "purpose": "манифест, докачка, многопоточность, выкладка",
+            "role_label": "основной",
+            "title": "Application Software Architect",
+            "area": "Архитектура",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "superpowers:test-driven-development",
+            "role": "primary",
+            "purpose": "сверка хешей и докачка на подменённых файлах",
+            "role_label": "основной",
+            "title": "Test-Driven Development",
+            "area": "Разработка и тесты",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          },
+          {
+            "name": "superpowers:systematic-debugging",
+            "role": "supporting",
+            "purpose": "обрывы загрузки",
+            "role_label": "дополнительный",
+            "title": "Systematic Debugging",
+            "area": "Отладка",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Claude Code",
+          "test": "Codex",
+          "approve": "Пользователь"
+        },
+        "done": [
+          "меняется один файл — качается только он",
+          "прерванная загрузка продолжается"
+        ],
+        "tests": [
+          "тесты патчера"
+        ],
+        "handoff": "blocked",
+        "arch_review": "pending",
+        "state": "recommended",
+        "agent_label": "Совместно",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-05.4 · Патчер и CDN\nЦель: Патчер и CDN.\nКонтекст: Манифест (путь, размер, хеш), сверка и загрузка только изменённого, докачка и несколько потоков; скрипт выкладки патча одной командой; клиент на Cloudflare R2 или BunnyCDN.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- меняется один файл — качается только он\n- прерванная загрузка продолжается\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-software-architect (основной): манифест, докачка, многопоточность, выкладка. Codex читает SKILL.md по AGENTS.md.\n- superpowers:test-driven-development (основной): сверка хешей и докачка на подменённых файлах. у Codex есть свой экземпляр.\n- superpowers:systematic-debugging (дополнительный): обрывы загрузки. у Codex есть свой экземпляр.\nТесты:\n- тесты патчера\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "draft",
+      "id": "DRAFT-05.5",
+      "title": "Самообновление, установщик и подпись кода",
+      "who": "Claude",
+      "text": "Самообновление лаунчера отдельно от патча клиента, установщик NSIS или MSI, подпись кода OV; тест на нескольких игроках.",
+      "note": "",
+      "status": "research",
+      "priority": "",
+      "added_at": "12.10.2026 01:44",
+      "depends_on": [],
+      "key": "draft:DRAFT-05.5",
       "stage": "",
       "dependencies_text": "",
       "parent": "",
@@ -11010,14 +11051,182 @@
       "verification": "",
       "verification_evidence": [],
       "ai": {
-        "category": "Черновик · сценарии",
+        "category": "Лаунчер · распространение",
+        "agent": "joint",
+        "reviewer": "user",
+        "skills": [
+          {
+            "name": "security-review",
+            "role": "primary",
+            "purpose": "подпись кода и безопасное самообновление",
+            "role_label": "основной",
+            "title": "/security-review",
+            "area": "Безопасность",
+            "availability": "builtin",
+            "available": true,
+            "availability_label": "встроен в Claude Code",
+            "codex": "none",
+            "codex_label": "только у Claude"
+          },
+          {
+            "name": "superpowers:verification-before-completion",
+            "role": "supporting",
+            "purpose": "проверка установщика на чистой Windows",
+            "role_label": "дополнительный",
+            "title": "Verification Before Completion",
+            "area": "Проверка и ревью",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Claude Code",
+          "test": "Claude Code",
+          "approve": "Пользователь"
+        },
+        "done": [
+          "подписанный установщик ставится без предупреждений",
+          "лаунчер обновляет сам себя"
+        ],
+        "tests": [
+          "установка на чистой машине",
+          "тест на игроках"
+        ],
+        "handoff": "blocked",
+        "arch_review": "pending",
+        "state": "recommended",
+        "agent_label": "Совместно",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-05.5 · Самообновление, установщик и подпись кода\nЦель: Самообновление, установщик и подпись кода.\nКонтекст: Самообновление лаунчера отдельно от патча клиента, установщик NSIS или MSI, подпись кода OV; тест на нескольких игроках.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- подписанный установщик ставится без предупреждений\n- лаунчер обновляет сам себя\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- security-review (основной): подпись кода и безопасное самообновление. только у Claude.\n- superpowers:verification-before-completion (дополнительный): проверка установщика на чистой Windows. у Codex есть свой экземпляр.\nТесты:\n- установка на чистой машине\n- тест на игроках\n- python tools/check_project.py\nПроверяет и принимает: Пользователь.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "draft",
+      "id": "DRAFT-05.6",
+      "title": "Сайт на Next.js",
+      "who": "Claude",
+      "text": "Регистрация, новости, рейтинги на тех же компонентах и токенах, что лаунчер; данные — из общего API.",
+      "note": "",
+      "status": "research",
+      "priority": "",
+      "added_at": "12.10.2026 01:44",
+      "depends_on": [],
+      "key": "draft:DRAFT-05.6",
+      "stage": "",
+      "dependencies_text": "",
+      "parent": "",
+      "changed_at": "",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ],
+      "owners": [
+        "Claude"
+      ],
+      "is_new": false,
+      "verification": "",
+      "verification_evidence": [],
+      "ai": {
+        "category": "Сайт · Next.js",
         "agent": "claude",
         "reviewer": "user",
         "skills": [
           {
+            "name": "application-ui-ux-designer",
+            "role": "primary",
+            "purpose": "страницы на компонентах лаунчера",
+            "role_label": "основной",
+            "title": "Application UI/UX Designer",
+            "area": "UI/UX",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
+            "name": "application-software-architect",
+            "role": "supporting",
+            "purpose": "общие компоненты и API",
+            "role_label": "дополнительный",
+            "title": "Application Software Architect",
+            "area": "Архитектура",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Claude Code",
+          "test": "Claude Code",
+          "approve": "Пользователь"
+        },
+        "done": [
+          "регистрация и новости работают через общий API"
+        ],
+        "tests": [
+          "тесты",
+          "просмотр на телефоне и компьютере"
+        ],
+        "handoff": "blocked",
+        "arch_review": "pending",
+        "state": "recommended",
+        "agent_label": "Claude Code",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": []
+      }
+    },
+    {
+      "plan": "draft",
+      "id": "DRAFT-05.7",
+      "title": "Функции Chat Watcher во вкладках лаунчера",
+      "who": "Claude",
+      "text": "Оповещения из чата, карта, расписание — ядра Chat Watcher переписаны на TypeScript/Rust или запускаются отдельным процессом; данные — переносимый JSON.",
+      "note": "",
+      "status": "research",
+      "priority": "",
+      "added_at": "12.10.2026 01:44",
+      "depends_on": [],
+      "key": "draft:DRAFT-05.7",
+      "stage": "",
+      "dependencies_text": "",
+      "parent": "",
+      "changed_at": "",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ],
+      "owners": [
+        "Claude"
+      ],
+      "is_new": false,
+      "verification": "",
+      "verification_evidence": [],
+      "ai": {
+        "category": "Лаунчер · вкладки Chat Watcher",
+        "agent": "joint",
+        "reviewer": "claude",
+        "skills": [
+          {
             "name": "application-software-architect",
             "role": "primary",
-            "purpose": "модель угроз верхнего уровня",
+            "purpose": "перенос ядер: переписать или запускать отдельным процессом",
             "role_label": "основной",
             "title": "Application Software Architect",
             "area": "Архитектура",
@@ -11028,9 +11237,92 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
+            "name": "superpowers:test-driven-development",
+            "role": "supporting",
+            "purpose": "одинаковые результаты ядра до и после переноса",
+            "role_label": "дополнительный",
+            "title": "Test-Driven Development",
+            "area": "Разработка и тесты",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Claude Code",
+          "test": "Codex",
+          "approve": "Пользователь"
+        },
+        "done": [
+          "оповещения, карта и расписание работают во вкладках"
+        ],
+        "tests": [
+          "тесты на одних данных JSON"
+        ],
+        "handoff": "blocked",
+        "arch_review": "pending",
+        "state": "recommended",
+        "agent_label": "Совместно",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-05.7 · Функции Chat Watcher во вкладках лаунчера\nЦель: Функции Chat Watcher во вкладках лаунчера.\nКонтекст: Оповещения из чата, карта, расписание — ядра Chat Watcher переписаны на TypeScript/Rust или запускаются отдельным процессом; данные — переносимый JSON.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- оповещения, карта и расписание работают во вкладках\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-software-architect (основной): перенос ядер: переписать или запускать отдельным процессом. Codex читает SKILL.md по AGENTS.md.\n- superpowers:test-driven-development (дополнительный): одинаковые результаты ядра до и после переноса. у Codex есть свой экземпляр.\nТесты:\n- тесты на одних данных JSON\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "draft",
+      "id": "DRAFT-05.8",
+      "title": "Магазин и донат (в будущем)",
+      "who": "Claude",
+      "text": "Решение пользователя 13.10: да, но позже. Планировать осознанно: монетизация резко повышает риск со стороны правообладателя.",
+      "note": "",
+      "status": "research",
+      "priority": "",
+      "added_at": "12.10.2026 01:44",
+      "depends_on": [],
+      "key": "draft:DRAFT-05.8",
+      "stage": "",
+      "dependencies_text": "",
+      "parent": "",
+      "changed_at": "",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        }
+      ],
+      "owners": [
+        "Claude"
+      ],
+      "is_new": false,
+      "verification": "",
+      "verification_evidence": [],
+      "ai": {
+        "category": "Лаунчер · магазин",
+        "agent": "user",
+        "reviewer": "user",
+        "skills": [
+          {
+            "name": "project-master-planner",
+            "role": "primary",
+            "purpose": "объём и порядок, когда пользователь решит начать",
+            "role_label": "основной",
+            "title": "Project Master Planner",
+            "area": "Планирование",
+            "availability": "project",
+            "available": true,
+            "availability_label": "установлен в проекте",
+            "codex": "read-file",
+            "codex_label": "Codex читает SKILL.md по AGENTS.md"
+          },
+          {
             "name": "security-review",
             "role": "supporting",
-            "purpose": "угрозы и приватность",
+            "purpose": "платежи и данные игроков",
             "role_label": "дополнительный",
             "title": "/security-review",
             "area": "Безопасность",
@@ -11048,43 +11340,46 @@
           "approve": "Пользователь"
         },
         "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
+          "решение пользователя о начале и объёме"
         ],
         "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
+          "решение пользователя"
         ],
-        "handoff": "n/a",
-        "arch_review": "not-needed",
+        "handoff": "blocked",
+        "arch_review": "pending",
         "state": "recommended",
-        "agent_label": "Claude Code",
-        "handoff_label": "передача не нужна",
-        "arch_label": "не требуется",
+        "agent_label": "Пользователь",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
         "missing_tools": []
       }
     },
     {
       "plan": "draft",
-      "id": "DRAFT-06.2",
-      "title": "Проверить полномочия и приватность",
+      "id": "DRAFT-06.1",
+      "title": "Модель угроз своего сервера",
       "who": "Claude",
-      "text": "Письменные рамки разрешённых проверок и данных либо stop.",
+      "text": "Что ломают на приватных серверах Aion (скорость, телепорт, урон, дюпы, боты) и что уже проверяет выбранный эмулятор.",
       "note": "",
       "status": "research",
       "priority": "",
       "added_at": "12.10.2026 01:44",
       "depends_on": [],
-      "key": "draft:DRAFT-06.2",
+      "key": "draft:DRAFT-06.1",
       "stage": "",
       "dependencies_text": "",
       "parent": "",
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:37",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
@@ -11094,20 +11389,33 @@
       "verification": "",
       "verification_evidence": [],
       "ai": {
-        "category": "Черновик · игровые правила",
+        "category": "Защита · угрозы",
         "agent": "claude",
         "reviewer": "user",
         "skills": [
           {
             "name": "anthropic-skills:deep-research",
             "role": "primary",
-            "purpose": "полномочия владельца сервера и приватность",
+            "purpose": "что ломают на приватных серверах Aion, что умеет эмулятор",
             "role_label": "основной",
             "title": "Deep Research",
             "area": "Исследование",
             "availability": "synced",
             "available": true,
             "availability_label": "из claude.ai",
+            "codex": "none",
+            "codex_label": "только у Claude"
+          },
+          {
+            "name": "security-review",
+            "role": "supporting",
+            "purpose": "модель угроз",
+            "role_label": "дополнительный",
+            "title": "/security-review",
+            "area": "Безопасность",
+            "availability": "builtin",
+            "available": true,
+            "availability_label": "встроен в Claude Code",
             "codex": "none",
             "codex_label": "только у Claude"
           }
@@ -11119,43 +11427,46 @@
           "approve": "Пользователь"
         },
         "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
+          "список угроз и что из них закрывает эмулятор"
         ],
         "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
+          "рецензия пользователя"
         ],
-        "handoff": "n/a",
-        "arch_review": "not-needed",
+        "handoff": "blocked",
+        "arch_review": "pending",
         "state": "recommended",
         "agent_label": "Claude Code",
-        "handoff_label": "передача не нужна",
-        "arch_label": "не требуется",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
         "missing_tools": []
       }
     },
     {
       "plan": "draft",
-      "id": "DRAFT-06.3",
-      "title": "Сравнить варианты защиты",
+      "id": "DRAFT-06.2",
+      "title": "Серверные проверки и журнал",
       "who": "Claude",
-      "text": "Предпочтение серверных мер, ограничения клиентских мер, процесс апелляции.",
+      "text": "Проверки скорости, телепортов, урона, дюпов и журнал событий на сервере.",
       "note": "",
       "status": "research",
       "priority": "",
       "added_at": "12.10.2026 01:44",
       "depends_on": [],
-      "key": "draft:DRAFT-06.3",
+      "key": "draft:DRAFT-06.2",
       "stage": "",
       "dependencies_text": "",
       "parent": "",
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:37",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
@@ -11165,14 +11476,14 @@
       "verification": "",
       "verification_evidence": [],
       "ai": {
-        "category": "Черновик · модель и макет",
-        "agent": "claude",
-        "reviewer": "user",
+        "category": "Защита · сервер",
+        "agent": "joint",
+        "reviewer": "claude",
         "skills": [
           {
             "name": "application-software-architect",
             "role": "primary",
-            "purpose": "серверные меры против клиентских",
+            "purpose": "где в эмуляторе ставить проверки и журнал",
             "role_label": "основной",
             "title": "Application Software Architect",
             "area": "Архитектура",
@@ -11185,7 +11496,7 @@
           {
             "name": "security-review",
             "role": "primary",
-            "purpose": "ограничения клиентских мер",
+            "purpose": "ложные срабатывания и разбор нарушений",
             "role_label": "основной",
             "title": "/security-review",
             "area": "Безопасность",
@@ -11203,43 +11514,47 @@
           "approve": "Пользователь"
         },
         "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
+          "проверки включены, события пишутся в журнал"
         ],
         "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
+          "тесты на тестовом сервере"
         ],
-        "handoff": "n/a",
+        "handoff": "blocked",
         "arch_review": "pending",
         "state": "recommended",
-        "agent_label": "Claude Code",
-        "handoff_label": "передача не нужна",
+        "agent_label": "Совместно",
+        "handoff_label": "ждёт предыдущих этапов",
         "arch_label": "ожидает архитектурной проверки Claude",
-        "missing_tools": []
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-06.2 · Серверные проверки и журнал\nЦель: Серверные проверки и журнал.\nКонтекст: Проверки скорости, телепортов, урона, дюпов и журнал событий на сервере.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- проверки включены, события пишутся в журнал\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-software-architect (основной): где в эмуляторе ставить проверки и журнал. Codex читает SKILL.md по AGENTS.md.\n- security-review (основной): ложные срабатывания и разбор нарушений. только у Claude.\nТесты:\n- тесты на тестовом сервере\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
       "plan": "draft",
-      "id": "DRAFT-06.4",
-      "title": "Решение владельца и Claude",
+      "id": "DRAFT-06.3",
+      "title": "Целостность клиента по хешам",
       "who": "Claude",
-      "text": "Go/no-go; при go — отдельный проверяемый технический план.",
+      "text": "Лаунчер сверяет файлы клиента с манифестом перед запуском и перекачивает изменённые — часть патчера.",
       "note": "",
       "status": "research",
       "priority": "",
       "added_at": "12.10.2026 01:44",
       "depends_on": [],
-      "key": "draft:DRAFT-06.4",
+      "key": "draft:DRAFT-06.3",
       "stage": "",
       "dependencies_text": "",
       "parent": "",
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:37",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
@@ -11249,14 +11564,102 @@
       "verification": "",
       "verification_evidence": [],
       "ai": {
-        "category": "Черновик · реализация",
-        "agent": "joint",
+        "category": "Защита · хеши клиента",
+        "agent": "codex",
         "reviewer": "claude",
+        "skills": [
+          {
+            "name": "superpowers:test-driven-development",
+            "role": "primary",
+            "purpose": "сверка с манифестом на подменённых файлах",
+            "role_label": "основной",
+            "title": "Test-Driven Development",
+            "area": "Разработка и тесты",
+            "availability": "plugin",
+            "available": true,
+            "availability_label": "плагин",
+            "codex": "native",
+            "codex_label": "у Codex есть свой экземпляр"
+          },
+          {
+            "name": "security-review",
+            "role": "supporting",
+            "purpose": "только папка клиента",
+            "role_label": "дополнительный",
+            "title": "/security-review",
+            "area": "Безопасность",
+            "availability": "builtin",
+            "available": true,
+            "availability_label": "встроен в Claude Code",
+            "codex": "none",
+            "codex_label": "только у Claude"
+          }
+        ],
+        "split": {
+          "design": "Claude Code",
+          "build": "Codex",
+          "test": "Codex",
+          "approve": "Claude Code"
+        },
+        "done": [
+          "изменённый файл находится и перекачивается"
+        ],
+        "tests": [
+          "тесты патчера"
+        ],
+        "handoff": "blocked",
+        "arch_review": "pending",
+        "state": "recommended",
+        "agent_label": "Codex",
+        "handoff_label": "ждёт предыдущих этапов",
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": [],
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-06.3 · Целостность клиента по хешам\nЦель: Целостность клиента по хешам.\nКонтекст: Лаунчер сверяет файлы клиента с манифестом перед запуском и перекачивает изменённые — часть патчера.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- изменённый файл находится и перекачивается\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- superpowers:test-driven-development (основной): сверка с манифестом на подменённых файлах. у Codex есть свой экземпляр.\n- security-review (дополнительный): только папка клиента. только у Claude.\nТесты:\n- тесты патчера\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+      }
+    },
+    {
+      "plan": "draft",
+      "id": "DRAFT-06.4",
+      "title": "Решение по клиентскому античиту",
+      "who": "Claude",
+      "text": "Go/no-go владельца: нужен ли клиентский античит как дополнительная мера и в каких рамках.",
+      "note": "",
+      "status": "research",
+      "priority": "",
+      "added_at": "12.10.2026 01:44",
+      "depends_on": [],
+      "key": "draft:DRAFT-06.4",
+      "stage": "",
+      "dependencies_text": "",
+      "parent": "",
+      "changed_at": "13.10.2026 15:37",
+      "history": [
+        {
+          "at": "2026-10-12T00:00+02:00",
+          "event": "Дата этапа — дата набора черновиков (feature-drafts.json)",
+          "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:37+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
+        }
+      ],
+      "owners": [
+        "Claude"
+      ],
+      "is_new": false,
+      "verification": "",
+      "verification_evidence": [],
+      "ai": {
+        "category": "Защита · решение",
+        "agent": "user",
+        "reviewer": "user",
         "skills": [
           {
             "name": "project-master-planner",
             "role": "primary",
-            "purpose": "go/no-go и проверяемый план",
+            "purpose": "go/no-go и объём клиентских мер",
             "role_label": "основной",
             "title": "Project Master Planner",
             "area": "Планирование",
@@ -11269,27 +11672,23 @@
         ],
         "split": {
           "design": "Claude Code",
-          "build": "Codex + Claude Code",
-          "test": "Codex",
-          "approve": "Claude Code"
+          "build": "Claude Code",
+          "test": "Claude Code",
+          "approve": "Пользователь"
         },
         "done": [
-          "результат этапа из черновика записан",
-          "неизвестное помечено, не угадано"
+          "решение владельца записано"
         ],
         "tests": [
-          "рецензия Claude",
-          "python tools/check_plans.py"
+          "решение пользователя"
         ],
         "handoff": "blocked",
-        "arch_review": "not-needed",
-        "note": "Черновик DRAFT: разработка не утверждена.",
+        "arch_review": "pending",
         "state": "recommended",
-        "agent_label": "Совместно",
+        "agent_label": "Пользователь",
         "handoff_label": "ждёт предыдущих этапов",
-        "arch_label": "не требуется",
-        "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · draft:DRAFT-06.4 · Решение владельца и Claude\nЦель: Решение владельца и Claude.\nКонтекст: Go/no-go; при go — отдельный проверяемый технический план.\nПлан: draft · статус: research · передача: ждёт предыдущих этапов\nЗависимости: нет\nТребования и критерии готовности:\n- результат этапа из черновика записан\n- неизвестное помечено, не угадано\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- project-master-planner (основной): go/no-go и проверяемый план. Codex читает SKILL.md по AGENTS.md.\nПримечание: Черновик DRAFT: разработка не утверждена.\nТесты:\n- рецензия Claude\n- python tools/check_plans.py\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "arch_label": "ожидает архитектурной проверки Claude",
+        "missing_tools": []
       }
     }
   ],
@@ -12666,145 +13065,17 @@
         "id": "DRAFT-05.1",
         "plan_id": "DRAFT-05",
         "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
-        "title": "Согласовать область лаунчера",
+        "title": "Дизайн-система и макеты основных экранов",
         "depends_on": [],
         "ai": {
-          "category": "Черновик · сценарии",
+          "category": "Лаунчер · дизайн-система",
           "agent": "claude",
           "reviewer": "user",
           "skills": [
-            {
-              "name": "project-master-planner",
-              "role": "primary",
-              "purpose": "входы, выходы, неизвестные правила",
-              "role_label": "основной",
-              "title": "Project Master Planner",
-              "area": "Планирование",
-              "availability": "project",
-              "available": true,
-              "availability_label": "установлен в проекте",
-              "codex": "read-file",
-              "codex_label": "Codex читает SKILL.md по AGENTS.md"
-            }
-          ],
-          "split": {
-            "design": "Claude Code",
-            "build": "Claude Code",
-            "test": "Claude Code",
-            "approve": "Пользователь"
-          },
-          "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
-          ],
-          "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
-          ],
-          "handoff": "n/a",
-          "arch_review": "not-needed",
-          "state": "recommended",
-          "agent_label": "Claude Code",
-          "handoff_label": "передача не нужна",
-          "arch_label": "не требуется",
-          "missing_tools": []
-        }
-      },
-      {
-        "key": "draft:DRAFT-05.2",
-        "id": "DRAFT-05.2",
-        "plan_id": "DRAFT-05",
-        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
-        "title": "Проверить официальный запуск и правила",
-        "depends_on": [
-          "draft:DRAFT-05.1"
-        ],
-        "ai": {
-          "category": "Черновик · игровые правила",
-          "agent": "joint",
-          "reviewer": "user",
-          "skills": [
-            {
-              "name": "anthropic-skills:deep-research",
-              "role": "primary",
-              "purpose": "правила сервера и источники с датой",
-              "role_label": "основной",
-              "title": "Deep Research",
-              "area": "Исследование",
-              "availability": "synced",
-              "available": true,
-              "availability_label": "из claude.ai",
-              "codex": "none",
-              "codex_label": "только у Claude"
-            },
-            {
-              "name": "security-review",
-              "role": "supporting",
-              "purpose": "запуск клиента без вмешательства в файлы игры",
-              "role_label": "дополнительный",
-              "title": "/security-review",
-              "area": "Безопасность",
-              "availability": "builtin",
-              "available": true,
-              "availability_label": "встроен в Claude Code",
-              "codex": "none",
-              "codex_label": "только у Claude"
-            }
-          ],
-          "split": {
-            "design": "Claude Code",
-            "build": "Codex + Claude Code",
-            "test": "Claude Code",
-            "approve": "Пользователь"
-          },
-          "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
-          ],
-          "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
-          ],
-          "handoff": "n/a",
-          "arch_review": "not-needed",
-          "state": "recommended",
-          "agent_label": "Совместно",
-          "handoff_label": "передача не нужна",
-          "arch_label": "не требуется",
-          "missing_tools": []
-        }
-      },
-      {
-        "key": "draft:DRAFT-05.3",
-        "id": "DRAFT-05.3",
-        "plan_id": "DRAFT-05",
-        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
-        "title": "Спроектировать процесс и UX",
-        "depends_on": [
-          "draft:DRAFT-05.2"
-        ],
-        "ai": {
-          "category": "Черновик · модель и макет",
-          "agent": "claude",
-          "reviewer": "user",
-          "skills": [
-            {
-              "name": "application-software-architect",
-              "role": "primary",
-              "purpose": "контракт расчёта отдельно от UI",
-              "role_label": "основной",
-              "title": "Application Software Architect",
-              "area": "Архитектура",
-              "availability": "project",
-              "available": true,
-              "availability_label": "установлен в проекте",
-              "codex": "read-file",
-              "codex_label": "Codex читает SKILL.md по AGENTS.md"
-            },
             {
               "name": "application-ui-ux-designer",
               "role": "primary",
-              "purpose": "макет, пустые и ошибочные состояния",
+              "purpose": "макеты экранов лаунчера",
               "role_label": "основной",
               "title": "Application UI/UX Designer",
               "area": "UI/UX",
@@ -12815,17 +13086,17 @@
               "codex_label": "Codex читает SKILL.md по AGENTS.md"
             },
             {
-              "name": "security-review",
-              "role": "supporting",
-              "purpose": "запуск клиента без вмешательства в файлы игры",
-              "role_label": "дополнительный",
-              "title": "/security-review",
-              "area": "Безопасность",
-              "availability": "builtin",
+              "name": "design-theme-guide",
+              "role": "primary",
+              "purpose": "токены бренда и замер контраста стекла и свечения",
+              "role_label": "основной",
+              "title": "Design Theme Guide",
+              "area": "UI/UX",
+              "availability": "user",
               "available": true,
-              "availability_label": "встроен в Claude Code",
-              "codex": "none",
-              "codex_label": "только у Claude"
+              "availability_label": "установлен глобально",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
             }
           ],
           "split": {
@@ -12835,53 +13106,65 @@
             "approve": "Пользователь"
           },
           "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
+            "токены и компоненты описаны",
+            "макеты четырёх экранов согласованы пользователем"
           ],
           "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
+            "просмотр макетов пользователем"
           ],
-          "handoff": "n/a",
+          "handoff": "blocked",
           "arch_review": "pending",
           "state": "recommended",
           "agent_label": "Claude Code",
-          "handoff_label": "передача не нужна",
+          "handoff_label": "ждёт предыдущих этапов",
           "arch_label": "ожидает архитектурной проверки Claude",
           "missing_tools": []
         }
       },
       {
-        "key": "draft:DRAFT-05.4",
-        "id": "DRAFT-05.4",
+        "key": "draft:DRAFT-05.2",
+        "id": "DRAFT-05.2",
         "plan_id": "DRAFT-05",
         "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
-        "title": "План безопасной реализации",
+        "title": "Общий API: вход и статус серверов",
         "depends_on": [
-          "draft:DRAFT-05.3"
+          "draft:DRAFT-05.1"
         ],
         "ai": {
-          "category": "Черновик · реализация",
-          "agent": "joint",
-          "reviewer": "claude",
+          "category": "Лаунчер · API",
+          "agent": "claude",
+          "reviewer": "user",
           "skills": [
             {
-              "name": "superpowers:writing-plans",
+              "name": "application-software-architect",
               "role": "primary",
-              "purpose": "отдельный план реализации",
+              "purpose": "контракт API, токен запуска, границы с базой логин-сервера",
               "role_label": "основной",
-              "title": "Writing Plans",
-              "area": "Планирование",
-              "availability": "plugin",
+              "title": "Application Software Architect",
+              "area": "Архитектура",
+              "availability": "project",
               "available": true,
-              "availability_label": "плагин",
-              "codex": "native",
-              "codex_label": "у Codex есть свой экземпляр"
+              "availability_label": "установлен в проекте",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
+            },
+            {
+              "name": "security-review",
+              "role": "supporting",
+              "purpose": "хранение паролей, токены, доступ к базе",
+              "role_label": "дополнительный",
+              "title": "/security-review",
+              "area": "Безопасность",
+              "availability": "builtin",
+              "available": true,
+              "availability_label": "встроен в Claude Code",
+              "codex": "none",
+              "codex_label": "только у Claude"
             },
             {
               "name": "superpowers:test-driven-development",
               "role": "supporting",
-              "purpose": "примеры с ожидаемым результатом",
+              "purpose": "тесты входа и токена",
               "role_label": "дополнительный",
               "title": "Test-Driven Development",
               "area": "Разработка и тесты",
@@ -12894,46 +13177,45 @@
           ],
           "split": {
             "design": "Claude Code",
-            "build": "Codex + Claude Code",
-            "test": "Codex",
-            "approve": "Claude Code"
+            "build": "Claude Code",
+            "test": "Claude Code",
+            "approve": "Пользователь"
           },
           "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
+            "вход и токен работают на тестовой базе",
+            "пароль не уходит в аргументы клиента"
           ],
           "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
+            "тесты API"
           ],
           "handoff": "blocked",
-          "arch_review": "not-needed",
-          "note": "Черновик DRAFT: разработка не утверждена.",
+          "arch_review": "pending",
           "state": "recommended",
-          "agent_label": "Совместно",
+          "agent_label": "Claude Code",
           "handoff_label": "ждёт предыдущих этапов",
-          "arch_label": "не требуется",
+          "arch_label": "ожидает архитектурной проверки Claude",
           "missing_tools": []
         }
       },
       {
-        "key": "draft:DRAFT-06.1",
-        "id": "DRAFT-06.1",
-        "plan_id": "DRAFT-06",
-        "plan_title": "Античит — подплан игрового лаунчера",
-        "title": "Подтвердить цель, владельца и угрозы",
+        "key": "draft:DRAFT-05.3",
+        "id": "DRAFT-05.3",
+        "plan_id": "DRAFT-05",
+        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
+        "title": "Лаунчер-MVP на Tauri 2",
         "depends_on": [
-          "draft:DRAFT-05.1"
+          "draft:DRAFT-05.1",
+          "draft:DRAFT-05.2"
         ],
         "ai": {
-          "category": "Черновик · сценарии",
-          "agent": "claude",
-          "reviewer": "user",
+          "category": "Лаунчер · MVP",
+          "agent": "joint",
+          "reviewer": "claude",
           "skills": [
             {
               "name": "application-software-architect",
               "role": "primary",
-              "purpose": "модель угроз верхнего уровня",
+              "purpose": "структура Tauri 2 + React, запуск и отслеживание процесса",
               "role_label": "основной",
               "title": "Application Software Architect",
               "area": "Архитектура",
@@ -12944,9 +13226,338 @@
               "codex_label": "Codex читает SKILL.md по AGENTS.md"
             },
             {
+              "name": "superpowers:test-driven-development",
+              "role": "supporting",
+              "purpose": "логика проверки файлов и запуска",
+              "role_label": "дополнительный",
+              "title": "Test-Driven Development",
+              "area": "Разработка и тесты",
+              "availability": "plugin",
+              "available": true,
+              "availability_label": "плагин",
+              "codex": "native",
+              "codex_label": "у Codex есть свой экземпляр"
+            }
+          ],
+          "split": {
+            "design": "Claude Code",
+            "build": "Claude Code",
+            "test": "Codex",
+            "approve": "Пользователь"
+          },
+          "done": [
+            "вход, проверка файлов и «Играть» работают с тестовым сервером"
+          ],
+          "tests": [
+            "тесты",
+            "ручной запуск клиента"
+          ],
+          "handoff": "blocked",
+          "arch_review": "pending",
+          "state": "recommended",
+          "agent_label": "Совместно",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
+          "missing_tools": []
+        }
+      },
+      {
+        "key": "draft:DRAFT-05.4",
+        "id": "DRAFT-05.4",
+        "plan_id": "DRAFT-05",
+        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
+        "title": "Патчер и CDN",
+        "depends_on": [
+          "draft:DRAFT-05.3"
+        ],
+        "ai": {
+          "category": "Лаунчер · патчер",
+          "agent": "joint",
+          "reviewer": "claude",
+          "skills": [
+            {
+              "name": "application-software-architect",
+              "role": "primary",
+              "purpose": "манифест, докачка, многопоточность, выкладка",
+              "role_label": "основной",
+              "title": "Application Software Architect",
+              "area": "Архитектура",
+              "availability": "project",
+              "available": true,
+              "availability_label": "установлен в проекте",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
+            },
+            {
+              "name": "superpowers:test-driven-development",
+              "role": "primary",
+              "purpose": "сверка хешей и докачка на подменённых файлах",
+              "role_label": "основной",
+              "title": "Test-Driven Development",
+              "area": "Разработка и тесты",
+              "availability": "plugin",
+              "available": true,
+              "availability_label": "плагин",
+              "codex": "native",
+              "codex_label": "у Codex есть свой экземпляр"
+            },
+            {
+              "name": "superpowers:systematic-debugging",
+              "role": "supporting",
+              "purpose": "обрывы загрузки",
+              "role_label": "дополнительный",
+              "title": "Systematic Debugging",
+              "area": "Отладка",
+              "availability": "plugin",
+              "available": true,
+              "availability_label": "плагин",
+              "codex": "native",
+              "codex_label": "у Codex есть свой экземпляр"
+            }
+          ],
+          "split": {
+            "design": "Claude Code",
+            "build": "Claude Code",
+            "test": "Codex",
+            "approve": "Пользователь"
+          },
+          "done": [
+            "меняется один файл — качается только он",
+            "прерванная загрузка продолжается"
+          ],
+          "tests": [
+            "тесты патчера"
+          ],
+          "handoff": "blocked",
+          "arch_review": "pending",
+          "state": "recommended",
+          "agent_label": "Совместно",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
+          "missing_tools": []
+        }
+      },
+      {
+        "key": "draft:DRAFT-05.5",
+        "id": "DRAFT-05.5",
+        "plan_id": "DRAFT-05",
+        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
+        "title": "Самообновление, установщик и подпись кода",
+        "depends_on": [
+          "draft:DRAFT-05.4"
+        ],
+        "ai": {
+          "category": "Лаунчер · распространение",
+          "agent": "joint",
+          "reviewer": "user",
+          "skills": [
+            {
+              "name": "security-review",
+              "role": "primary",
+              "purpose": "подпись кода и безопасное самообновление",
+              "role_label": "основной",
+              "title": "/security-review",
+              "area": "Безопасность",
+              "availability": "builtin",
+              "available": true,
+              "availability_label": "встроен в Claude Code",
+              "codex": "none",
+              "codex_label": "только у Claude"
+            },
+            {
+              "name": "superpowers:verification-before-completion",
+              "role": "supporting",
+              "purpose": "проверка установщика на чистой Windows",
+              "role_label": "дополнительный",
+              "title": "Verification Before Completion",
+              "area": "Проверка и ревью",
+              "availability": "plugin",
+              "available": true,
+              "availability_label": "плагин",
+              "codex": "native",
+              "codex_label": "у Codex есть свой экземпляр"
+            }
+          ],
+          "split": {
+            "design": "Claude Code",
+            "build": "Claude Code",
+            "test": "Claude Code",
+            "approve": "Пользователь"
+          },
+          "done": [
+            "подписанный установщик ставится без предупреждений",
+            "лаунчер обновляет сам себя"
+          ],
+          "tests": [
+            "установка на чистой машине",
+            "тест на игроках"
+          ],
+          "handoff": "blocked",
+          "arch_review": "pending",
+          "state": "recommended",
+          "agent_label": "Совместно",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
+          "missing_tools": []
+        }
+      },
+      {
+        "key": "draft:DRAFT-05.6",
+        "id": "DRAFT-05.6",
+        "plan_id": "DRAFT-05",
+        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
+        "title": "Сайт на Next.js",
+        "depends_on": [
+          "draft:DRAFT-05.1",
+          "draft:DRAFT-05.2"
+        ],
+        "ai": {
+          "category": "Сайт · Next.js",
+          "agent": "claude",
+          "reviewer": "user",
+          "skills": [
+            {
+              "name": "application-ui-ux-designer",
+              "role": "primary",
+              "purpose": "страницы на компонентах лаунчера",
+              "role_label": "основной",
+              "title": "Application UI/UX Designer",
+              "area": "UI/UX",
+              "availability": "project",
+              "available": true,
+              "availability_label": "установлен в проекте",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
+            },
+            {
+              "name": "application-software-architect",
+              "role": "supporting",
+              "purpose": "общие компоненты и API",
+              "role_label": "дополнительный",
+              "title": "Application Software Architect",
+              "area": "Архитектура",
+              "availability": "project",
+              "available": true,
+              "availability_label": "установлен в проекте",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
+            }
+          ],
+          "split": {
+            "design": "Claude Code",
+            "build": "Claude Code",
+            "test": "Claude Code",
+            "approve": "Пользователь"
+          },
+          "done": [
+            "регистрация и новости работают через общий API"
+          ],
+          "tests": [
+            "тесты",
+            "просмотр на телефоне и компьютере"
+          ],
+          "handoff": "blocked",
+          "arch_review": "pending",
+          "state": "recommended",
+          "agent_label": "Claude Code",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
+          "missing_tools": []
+        }
+      },
+      {
+        "key": "draft:DRAFT-05.7",
+        "id": "DRAFT-05.7",
+        "plan_id": "DRAFT-05",
+        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
+        "title": "Функции Chat Watcher во вкладках лаунчера",
+        "depends_on": [
+          "draft:DRAFT-05.3"
+        ],
+        "ai": {
+          "category": "Лаунчер · вкладки Chat Watcher",
+          "agent": "joint",
+          "reviewer": "claude",
+          "skills": [
+            {
+              "name": "application-software-architect",
+              "role": "primary",
+              "purpose": "перенос ядер: переписать или запускать отдельным процессом",
+              "role_label": "основной",
+              "title": "Application Software Architect",
+              "area": "Архитектура",
+              "availability": "project",
+              "available": true,
+              "availability_label": "установлен в проекте",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
+            },
+            {
+              "name": "superpowers:test-driven-development",
+              "role": "supporting",
+              "purpose": "одинаковые результаты ядра до и после переноса",
+              "role_label": "дополнительный",
+              "title": "Test-Driven Development",
+              "area": "Разработка и тесты",
+              "availability": "plugin",
+              "available": true,
+              "availability_label": "плагин",
+              "codex": "native",
+              "codex_label": "у Codex есть свой экземпляр"
+            }
+          ],
+          "split": {
+            "design": "Claude Code",
+            "build": "Claude Code",
+            "test": "Codex",
+            "approve": "Пользователь"
+          },
+          "done": [
+            "оповещения, карта и расписание работают во вкладках"
+          ],
+          "tests": [
+            "тесты на одних данных JSON"
+          ],
+          "handoff": "blocked",
+          "arch_review": "pending",
+          "state": "recommended",
+          "agent_label": "Совместно",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
+          "missing_tools": []
+        }
+      },
+      {
+        "key": "draft:DRAFT-05.8",
+        "id": "DRAFT-05.8",
+        "plan_id": "DRAFT-05",
+        "plan_title": "Лаунчер и сайт для своего сервера — отдельный проект",
+        "title": "Магазин и донат (в будущем)",
+        "depends_on": [
+          "draft:DRAFT-05.6"
+        ],
+        "ai": {
+          "category": "Лаунчер · магазин",
+          "agent": "user",
+          "reviewer": "user",
+          "skills": [
+            {
+              "name": "project-master-planner",
+              "role": "primary",
+              "purpose": "объём и порядок, когда пользователь решит начать",
+              "role_label": "основной",
+              "title": "Project Master Planner",
+              "area": "Планирование",
+              "availability": "project",
+              "available": true,
+              "availability_label": "установлен в проекте",
+              "codex": "read-file",
+              "codex_label": "Codex читает SKILL.md по AGENTS.md"
+            },
+            {
               "name": "security-review",
               "role": "supporting",
-              "purpose": "угрозы и приватность",
+              "purpose": "платежи и данные игроков",
               "role_label": "дополнительный",
               "title": "/security-review",
               "area": "Безопасность",
@@ -12964,46 +13575,55 @@
             "approve": "Пользователь"
           },
           "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
+            "решение пользователя о начале и объёме"
           ],
           "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
+            "решение пользователя"
           ],
-          "handoff": "n/a",
-          "arch_review": "not-needed",
+          "handoff": "blocked",
+          "arch_review": "pending",
           "state": "recommended",
-          "agent_label": "Claude Code",
-          "handoff_label": "передача не нужна",
-          "arch_label": "не требуется",
+          "agent_label": "Пользователь",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
           "missing_tools": []
         }
       },
       {
-        "key": "draft:DRAFT-06.2",
-        "id": "DRAFT-06.2",
+        "key": "draft:DRAFT-06.1",
+        "id": "DRAFT-06.1",
         "plan_id": "DRAFT-06",
-        "plan_title": "Античит — подплан игрового лаунчера",
-        "title": "Проверить полномочия и приватность",
-        "depends_on": [
-          "draft:DRAFT-06.1"
-        ],
+        "plan_title": "Защита сервера — подплан лаунчера",
+        "title": "Модель угроз своего сервера",
+        "depends_on": [],
         "ai": {
-          "category": "Черновик · игровые правила",
+          "category": "Защита · угрозы",
           "agent": "claude",
           "reviewer": "user",
           "skills": [
             {
               "name": "anthropic-skills:deep-research",
               "role": "primary",
-              "purpose": "полномочия владельца сервера и приватность",
+              "purpose": "что ломают на приватных серверах Aion, что умеет эмулятор",
               "role_label": "основной",
               "title": "Deep Research",
               "area": "Исследование",
               "availability": "synced",
               "available": true,
               "availability_label": "из claude.ai",
+              "codex": "none",
+              "codex_label": "только у Claude"
+            },
+            {
+              "name": "security-review",
+              "role": "supporting",
+              "purpose": "модель угроз",
+              "role_label": "дополнительный",
+              "title": "/security-review",
+              "area": "Безопасность",
+              "availability": "builtin",
+              "available": true,
+              "availability_label": "встроен в Claude Code",
               "codex": "none",
               "codex_label": "только у Claude"
             }
@@ -13015,40 +13635,38 @@
             "approve": "Пользователь"
           },
           "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
+            "список угроз и что из них закрывает эмулятор"
           ],
           "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
+            "рецензия пользователя"
           ],
-          "handoff": "n/a",
-          "arch_review": "not-needed",
+          "handoff": "blocked",
+          "arch_review": "pending",
           "state": "recommended",
           "agent_label": "Claude Code",
-          "handoff_label": "передача не нужна",
-          "arch_label": "не требуется",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
           "missing_tools": []
         }
       },
       {
-        "key": "draft:DRAFT-06.3",
-        "id": "DRAFT-06.3",
+        "key": "draft:DRAFT-06.2",
+        "id": "DRAFT-06.2",
         "plan_id": "DRAFT-06",
-        "plan_title": "Античит — подплан игрового лаунчера",
-        "title": "Сравнить варианты защиты",
+        "plan_title": "Защита сервера — подплан лаунчера",
+        "title": "Серверные проверки и журнал",
         "depends_on": [
-          "draft:DRAFT-06.2"
+          "draft:DRAFT-06.1"
         ],
         "ai": {
-          "category": "Черновик · модель и макет",
-          "agent": "claude",
-          "reviewer": "user",
+          "category": "Защита · сервер",
+          "agent": "joint",
+          "reviewer": "claude",
           "skills": [
             {
               "name": "application-software-architect",
               "role": "primary",
-              "purpose": "серверные меры против клиентских",
+              "purpose": "где в эмуляторе ставить проверки и журнал",
               "role_label": "основной",
               "title": "Application Software Architect",
               "area": "Архитектура",
@@ -13061,7 +13679,7 @@
             {
               "name": "security-review",
               "role": "primary",
-              "purpose": "ограничения клиентских мер",
+              "purpose": "ложные срабатывания и разбор нарушений",
               "role_label": "основной",
               "title": "/security-review",
               "area": "Безопасность",
@@ -13079,18 +13697,78 @@
             "approve": "Пользователь"
           },
           "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
+            "проверки включены, события пишутся в журнал"
           ],
           "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
+            "тесты на тестовом сервере"
           ],
-          "handoff": "n/a",
+          "handoff": "blocked",
           "arch_review": "pending",
           "state": "recommended",
-          "agent_label": "Claude Code",
-          "handoff_label": "передача не нужна",
+          "agent_label": "Совместно",
+          "handoff_label": "ждёт предыдущих этапов",
+          "arch_label": "ожидает архитектурной проверки Claude",
+          "missing_tools": []
+        }
+      },
+      {
+        "key": "draft:DRAFT-06.3",
+        "id": "DRAFT-06.3",
+        "plan_id": "DRAFT-06",
+        "plan_title": "Защита сервера — подплан лаунчера",
+        "title": "Целостность клиента по хешам",
+        "depends_on": [
+          "draft:DRAFT-05.4"
+        ],
+        "ai": {
+          "category": "Защита · хеши клиента",
+          "agent": "codex",
+          "reviewer": "claude",
+          "skills": [
+            {
+              "name": "superpowers:test-driven-development",
+              "role": "primary",
+              "purpose": "сверка с манифестом на подменённых файлах",
+              "role_label": "основной",
+              "title": "Test-Driven Development",
+              "area": "Разработка и тесты",
+              "availability": "plugin",
+              "available": true,
+              "availability_label": "плагин",
+              "codex": "native",
+              "codex_label": "у Codex есть свой экземпляр"
+            },
+            {
+              "name": "security-review",
+              "role": "supporting",
+              "purpose": "только папка клиента",
+              "role_label": "дополнительный",
+              "title": "/security-review",
+              "area": "Безопасность",
+              "availability": "builtin",
+              "available": true,
+              "availability_label": "встроен в Claude Code",
+              "codex": "none",
+              "codex_label": "только у Claude"
+            }
+          ],
+          "split": {
+            "design": "Claude Code",
+            "build": "Codex",
+            "test": "Codex",
+            "approve": "Claude Code"
+          },
+          "done": [
+            "изменённый файл находится и перекачивается"
+          ],
+          "tests": [
+            "тесты патчера"
+          ],
+          "handoff": "blocked",
+          "arch_review": "pending",
+          "state": "recommended",
+          "agent_label": "Codex",
+          "handoff_label": "ждёт предыдущих этапов",
           "arch_label": "ожидает архитектурной проверки Claude",
           "missing_tools": []
         }
@@ -13099,20 +13777,21 @@
         "key": "draft:DRAFT-06.4",
         "id": "DRAFT-06.4",
         "plan_id": "DRAFT-06",
-        "plan_title": "Античит — подплан игрового лаунчера",
-        "title": "Решение владельца и Claude",
+        "plan_title": "Защита сервера — подплан лаунчера",
+        "title": "Решение по клиентскому античиту",
         "depends_on": [
+          "draft:DRAFT-06.2",
           "draft:DRAFT-06.3"
         ],
         "ai": {
-          "category": "Черновик · реализация",
-          "agent": "joint",
-          "reviewer": "claude",
+          "category": "Защита · решение",
+          "agent": "user",
+          "reviewer": "user",
           "skills": [
             {
               "name": "project-master-planner",
               "role": "primary",
-              "purpose": "go/no-go и проверяемый план",
+              "purpose": "go/no-go и объём клиентских мер",
               "role_label": "основной",
               "title": "Project Master Planner",
               "area": "Планирование",
@@ -13125,25 +13804,22 @@
           ],
           "split": {
             "design": "Claude Code",
-            "build": "Codex + Claude Code",
-            "test": "Codex",
-            "approve": "Claude Code"
+            "build": "Claude Code",
+            "test": "Claude Code",
+            "approve": "Пользователь"
           },
           "done": [
-            "результат этапа из черновика записан",
-            "неизвестное помечено, не угадано"
+            "решение владельца записано"
           ],
           "tests": [
-            "рецензия Claude",
-            "python tools/check_plans.py"
+            "решение пользователя"
           ],
           "handoff": "blocked",
-          "arch_review": "not-needed",
-          "note": "Черновик DRAFT: разработка не утверждена.",
+          "arch_review": "pending",
           "state": "recommended",
-          "agent_label": "Совместно",
+          "agent_label": "Пользователь",
           "handoff_label": "ждёт предыдущих этапов",
-          "arch_label": "не требуется",
+          "arch_label": "ожидает архитектурной проверки Claude",
           "missing_tools": []
         }
       }
