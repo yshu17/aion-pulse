@@ -331,6 +331,7 @@ class App:
         self.split.bind("<ButtonRelease-1>", lambda _e: self._on_split_moved(), add="+")
         root.after_idle(self._init_split)
         self._build_counters(header)
+        self._header_gradient = theme.install_header_gradient(header)  # ui:31: quiet title-row gradient
         spec_items = {item.name: item.id for item in self.watch_items if item.id in self.specs}
         grades = {item.id: item.grade for item in self.watch_items}
         self.feed = MatchFeed(

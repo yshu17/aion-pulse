@@ -514,8 +514,8 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     # bundled borderless UI arrow so the whole combobox has one outline.
     arrow_size = 20 if scale >= 1.25 else 16
     arrow_dir = ui_dir / "icons"
-    arrow_path = arrow_dir / f"arrow-down_{arrow_size}_muted.png"
-    arrow_hot_path = arrow_dir / f"arrow-down_{arrow_size}_text.png"
+    arrow_path = arrow_dir / f"caret-down_{arrow_size}_muted.png"
+    arrow_hot_path = arrow_dir / f"caret-down_{arrow_size}_text.png"
     downarrow = "Combobox.downarrow"
     if arrow_path.is_file() and arrow_hot_path.is_file():
         arrow = load_png(root, arrow_path)
@@ -771,6 +771,24 @@ def _solid_button(style: ttk.Style, name: str, color: str, hover: str, text: str
         darkcolor=[("active", hover)],
         bordercolor=[("active", hover)],
     )
+
+
+def install_header_gradient(header: ttk.Frame) -> tk.Canvas:
+    """Subtle vertical tint behind the title row; redraw only when its size changes."""
+    backdrop = tk.Canvas(header, background=BG, borderwidth=0, highlightthickness=0)
+    backdrop.place(x=0, y=0, relwidth=1, relheight=1)
+    backdrop.tk.call("lower", backdrop._w)
+    end = mix(SURFACE_2, BG, 0.30)
+
+    def redraw(event: tk.Event) -> None:
+        backdrop.delete("gradient")
+        height = max(1, event.height)
+        for y in range(height):
+            shade = mix(end, BG, y / max(1, height - 1))
+            backdrop.create_line(0, y, event.width, y, fill=shade, tags="gradient")
+
+    backdrop.bind("<Configure>", redraw)
+    return backdrop
 
 
 def style_text(widget: tk.Text) -> None:
