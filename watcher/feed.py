@@ -5,6 +5,7 @@ red when missed. Each has a countdown and a checkbox pinned to the right edge.
 """
 
 import math
+import tkinter.font as tkfont
 import tkinter as tk
 from collections.abc import Callable, Mapping
 from tkinter import ttk
@@ -58,7 +59,7 @@ class MatchFeed(ttk.Frame):
         self.banner_button.pack(side="right", padx=(8, 0))
         self.banner_label = ttk.Label(self.banner, style="Warn.Chip.TLabel", anchor="w", width=1)
         self.banner_label.pack(side="left", fill="x", expand=True)
-        self.banner.bind("<Configure>", self._fit_banner_text)
+        self.banner_label.bind("<Configure>", self._fit_banner_text)
         self.banner.pack_forget()
         self.text = tk.Text(self, wrap="word", state="disabled")
         theme.style_text(self.text)
@@ -96,8 +97,13 @@ class MatchFeed(ttk.Frame):
             self.banner.pack(fill="x", side="top", pady=(0, 6), before=self.text)
 
     def _fit_banner_text(self, event: tk.Event) -> None:
-        """Reserve the action button first and wrap warning text into the remaining width."""
-        width = max(60, event.width - self.banner_button.winfo_reqwidth() - 42)
+        """Wrap the warning inside the label's own width, less its padding, border and icon (ui:27: a fixed
+        guess of 42 px cut «Aion» at 1000 px). With width=1 the label asks for one character plus that overhead."""
+        if event.widget is not self.banner_label:
+            return
+        font = tkfont.Font(font=str(self.banner_label.cget("font")) or "TkDefaultFont")
+        overhead = self.banner_label.winfo_reqwidth() - font.measure("0")
+        width = max(60, event.width - overhead)
         if str(self.banner_label.cget("wraplength")) != str(width):
             self.banner_label.configure(wraplength=width)
 

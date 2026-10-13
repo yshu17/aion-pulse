@@ -121,6 +121,23 @@ def test_marking_mid_blink_keeps_the_final_colour(root):
     assert str(feed.countdowns[1].cget("background")) == ACCEPTED_BG
 
 
+@pytest.mark.parametrize("width", [400, 520, 700])
+def test_banner_text_wraps_inside_its_label(root, width):
+    """ui:27 / ui:35 recheck: the warning wraps before the label's edge — «Aion» was cut at 1000 px."""
+    import tkinter.font as tkfont
+    from watcher import theme
+    theme.apply_dark_theme(root)
+    root.geometry(f"{width}x300")
+    feed = make(root)
+    feed.show_banner("Игра не запущена. После запуска Aion нажми «Проверить снова».", "Проверить снова", lambda: None)
+    for _ in range(5):
+        root.update()
+    label = feed.banner_label
+    font = tkfont.Font(font=str(label.cget("font")) or "TkDefaultFont")
+    overhead = label.winfo_reqwidth() - font.measure("0")  # padding, border and icon of a one-character label
+    assert int(str(label.cget("wraplength"))) + overhead <= label.winfo_width()
+
+
 def test_old_rows_are_trimmed(root):
     feed = make(root, max_rows=3)
     for i in range(5):

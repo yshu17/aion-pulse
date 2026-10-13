@@ -77,6 +77,40 @@ def test_watching_status_breathes_smoothly_and_stops(tmp_path):
         app._on_close()
 
 
+def test_every_icon_only_button_has_a_hint(tmp_path):
+    """ui:26 recheck: a button that shows only a picture explains itself on hover (watcher.hint.Hint)."""
+    import json
+    import tkinter as tk
+    from tkinter import ttk
+
+    from watcher.app import App
+
+    log = tmp_path / "fake_chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(log), "keywords": ["хил"], "game_check": False}), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        app._show_settings(True)
+        root.update()
+        missing, found = [], 0
+        stack = [root]
+        while stack:
+            widget = stack.pop()
+            stack.extend(widget.winfo_children())
+            if isinstance(widget, (ttk.Button, tk.Button)) and str(widget.cget("image")) \
+                    and not str(widget.cget("text")).strip():
+                found += 1
+                if "_schedule" not in widget.bind("<Enter>"):
+                    missing.append(str(widget))
+        assert found >= 8  # map: whole map, −, +, to the mark; list: search up/down, reset filter; header button
+        assert missing == []
+    finally:
+        app._on_close()
+
+
 def test_tick_keeps_polling_when_processing_fails(tmp_path):
     import json
     import tkinter as tk

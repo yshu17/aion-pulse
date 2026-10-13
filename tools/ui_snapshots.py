@@ -341,6 +341,9 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
                 app.schedule_tab.day_var.set("Среда")
                 app.schedule_tab.refresh()
                 app.tabs.select(app.schedule_tab)
+            elif scenario == "banner-game-off":  # evidence only (ui:27), not in SCENARIOS
+                from watcher.app import GAME_OFF
+                app._set_status(GAME_OFF)
             elif scenario == "settings-open":
                 app._show_settings(True)
             elif scenario == "header-counters":
