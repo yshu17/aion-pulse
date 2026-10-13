@@ -1,0 +1,110 @@
+{
+  "index-375": {
+    "panel_open_default": false,
+    "advanced_open_default": false,
+    "export_visible": true,
+    "restore_visible": true,
+    "all_count": "Показано 63 из 127",
+    "doing_count": "Показано 4 из 127",
+    "pressed": [
+      "doing"
+    ],
+    "chips_sample": [
+      "application-ui-ux-designer · установлен в проекте",
+      "application-software-architect · установлен в проекте"
+    ],
+    "owner_tag": true,
+    "overflow": 0,
+    "errors": []
+  },
+  "index-1400": {
+    "panel_open_default": false,
+    "advanced_open_default": false,
+    "export_visible": true,
+    "restore_visible": true,
+    "all_count": "Показано 63 из 127",
+    "doing_count": "Показано 4 из 127",
+    "pressed": [
+      "doing"
+    ],
+    "chips_sample": [
+      "application-ui-ux-designer · установлен в проекте",
+      "application-software-architect · установлен в проекте"
+    ],
+    "owner_tag": true,
+    "overflow": 0,
+    "errors": []
+  },
+  "ui-ux-improvement-plan-375": {
+    "panel_open_default": false,
+    "advanced_open_default": false,
+    "export_visible": true,
+    "restore_visible": true,
+    "all_count": "Показано 45 из 45",
+    "doing_count": "Показано 0 из 45",
+    "pressed": [
+      "doing"
+    ],
+    "chips_sample": [
+      "ui-visual-validator · установлен глобально",
+      "application-ui-ux-designer · установлен в проекте"
+    ],
+    "owner_tag": true,
+    "overflow": 0,
+    "errors": []
+  },
+  "ui-ux-improvement-plan-1400": {
+    "panel_open_default": false,
+    "advanced_open_default": false,
+    "export_visible": true,
+    "restore_visible": true,
+    "all_count": "Показано 45 из 45",
+    "doing_count": "Показано 0 из 45",
+    "pressed": [
+      "doing"
+    ],
+    "chips_sample": [
+      "ui-visual-validator · установлен глобально",
+      "application-ui-ux-designer · установлен в проекте"
+    ],
+    "owner_tag": true,
+    "overflow": 0,
+    "errors": []
+  },
+  "feature-drafts-375": {
+    "panel_open_default": false,
+    "advanced_open_default": false,
+    "export_visible": true,
+    "restore_visible": true,
+    "all_count": "Показано 24 из 24",
+    "doing_count": "Показано 0 из 24",
+    "pressed": [
+      "doing"
+    ],
+    "chips_sample": [
+      "project-master-planner · установлен в проекте",
+      "application-software-architect · установлен в проекте"
+    ],
+    "owner_tag": true,
+    "overflow": 0,
+    "errors": []
+  },
+  "feature-drafts-1400": {
+    "panel_open_default": false,
+    "advanced_open_default": false,
+    "export_visible": true,
+    "restore_visible": true,
+    "all_count": "Показано 24 из 24",
+    "doing_count": "Показано 0 из 24",
+    "pressed": [
+      "doing"
+    ],
+    "chips_sample": [
+      "project-master-planner · установлен в проекте",
+      "application-software-architect · установлен в проекте"
+    ],
+    "owner_tag": true,
+    "overflow": 0,
+    "errors": []
+  }
+}

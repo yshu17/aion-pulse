@@ -33,6 +33,7 @@ function aiMatch(i){const a=$('shared-agent-filter').value,k=$('shared-skill-fil
   if(['claude','codex','joint','user'].includes(a)&&ai.agent!==a)return false;
   if(k!=='all'&&!(ai.skills||[]).some(r=>r.name===k))return false;return true}
 function aiTag(i){const ai=i.ai||{};return ai.state==='recommended'?`<span class="shared-tag shared-agent" title="Рекомендуемый исполнитель">${esc(AI_SHORT[ai.agent])}</span>`:''}
+function skillChips(i){return ((i.ai||{}).skills||[]).slice(0,3).map(r=>`<span class="shared-tag shared-skill ${r.available?'ai-ok':'ai-miss'}" title="${esc(r.purpose||'')}">${esc(r.name)} · ${esc(r.availability_label)}</span>`).join('')}
 function aiBlock(i){const ai=i.ai||{};
   if(ai.state==='retro')return `<details class="shared-ai"><summary>AI Tools &amp; Skills / Инструменты разработки</summary><p>Задача выполнена. Исполнитель по факту: ${esc(i.who||'не указан')}. Рекомендация не требуется.</p></details>`;
   if(ai.state!=='recommended')return `<details class="shared-ai"><summary>AI Tools &amp; Skills / Инструменты разработки</summary><p class="ai-miss">Рекомендации ещё нет — Claude добавит её в docs/plan-ai-tools.json (скилл project-master-planner).</p></details>`;
