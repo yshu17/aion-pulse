@@ -206,13 +206,17 @@ def collect_geometry(root, app, scenario: str) -> dict:
             "widgets": widgets, "overlaps": overlaps}
 
 
-def print_client_window(root) -> Image.Image:
-    """Capture Tk client area with PrintWindow(PW_CLIENTONLY | PW_RENDERFULLCONTENT)."""
+def print_client_window(root, frame: bool = False) -> Image.Image:
+    """Capture Tk client area with PrintWindow(PW_CLIENTONLY | PW_RENDERFULLCONTENT); with ``frame`` the whole
+    top-level window, title bar and its icon included (evidence for window-chrome tasks such as ui:17)."""
     if os.name != "nt":
         raise RuntimeError("PrintWindow capture requires Windows")
     hwnd = root.winfo_id()
     user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+    if frame:
+        hwnd = int(root.wm_frame(), 16)
     user32.GetClientRect.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.RECT))
+    user32.GetWindowRect.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.RECT))
     user32.GetDC.argtypes = (wintypes.HWND,)
     user32.GetDC.restype = wintypes.HDC
     user32.ReleaseDC.argtypes = (wintypes.HWND, wintypes.HDC)
@@ -228,9 +232,14 @@ def print_client_window(root) -> Image.Image:
     gdi32.DeleteObject.argtypes = (wintypes.HGDIOBJ,)
     gdi32.DeleteDC.argtypes = (wintypes.HDC,)
     rect = wintypes.RECT()
-    if not user32.GetClientRect(hwnd, ctypes.byref(rect)):
+    if frame:
+        if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+            raise OSError("GetWindowRect failed")
+        width, height = rect.right - rect.left, rect.bottom - rect.top
+    elif not user32.GetClientRect(hwnd, ctypes.byref(rect)):
         raise OSError("GetClientRect failed")
-    width, height = rect.right, rect.bottom
+    else:
+        width, height = rect.right, rect.bottom
     if width < 1 or height < 1:
         raise RuntimeError("Window has an empty client area")
     window_dc = user32.GetDC(hwnd)
@@ -240,7 +249,7 @@ def print_client_window(root) -> Image.Image:
         raise OSError("Cannot allocate PrintWindow bitmap")
     old = gdi32.SelectObject(memory_dc, bitmap)
     try:
-        if not user32.PrintWindow(hwnd, memory_dc, 3):
+        if not user32.PrintWindow(hwnd, memory_dc, 2 if frame else 3):
             raise OSError("PrintWindow(PW_CLIENTONLY) failed")
         class BITMAPINFOHEADER(ctypes.Structure):
             _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG),
@@ -291,6 +300,9 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
     import tkinter as tk
     from watcher.app import App
     key = f"{width}x{height}_{scenario}"
+    frame = scenario.startswith("frame-")  # evidence only: whole window with its title bar, not in SCENARIOS
+    if frame:
+        scenario = scenario[len("frame-"):]
     with tempfile.TemporaryDirectory(prefix="inputs-", dir=run_dir) as temporary:
         input_dir = Path(temporary)
         config = make_fixture(input_dir)
@@ -305,7 +317,8 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
             root.tk.call("tk", "scaling", base * factor)
             app = App(root, config)
             app.game_dir_var.set(r"C:\Snapshot\Chat.log")  # fixed display; cfg still points to temporary log
-            app.toasts.close()  # no notifications or toast windows in the fixture
+            if hasattr(app, "toasts"):  # older commits (evidence shots) have no toast centre
+                app.toasts.close()  # no notifications or toast windows in the fixture
             root.update_idletasks()
             root.update()  # run App._init_split, which may raise the normal minimum width
             native_minimum = list(root.minsize())
@@ -336,10 +349,10 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
             _settle(root, app)
             freeze_dynamic_state(app)
             root.update_idletasks()
-            shot = print_client_window(root)
-            geometry = collect_geometry(root, app, scenario)
+            shot = print_client_window(root, frame=frame)
+            geometry = {"scenario": scenario, "window": [width, height]} if frame else collect_geometry(root, app, scenario)
             geometry["native_minimum"] = native_minimum
-            if geometry["window"] != [width, height]:
+            if not frame and geometry["window"] != [width, height]:
                 raise RuntimeError(f"Requested {width}x{height}, got {geometry['window']}")
             (run_dir / "shots").mkdir(exist_ok=True)
             shot.save(run_dir / "shots" / f"{key}.png")

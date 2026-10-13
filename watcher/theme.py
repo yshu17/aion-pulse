@@ -642,7 +642,9 @@ def _apply_scale(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     thumb = load_png(root, ui_dir / "scale_thumb.png")
     thumb_hover = load_png(root, ui_dir / "scale_thumb_hover.png")
     _images.extend((track, thumb, thumb_hover))
-    style.element_create("Slim.Horizontal.Scale.trough", "image", track, border=0, sticky="we")
+    # rounded ends stay whole, only the flat middle repeats (border=0 tiled the whole pill: a dashed track, ui:19)
+    end = track.height() // 2
+    style.element_create("Slim.Horizontal.Scale.trough", "image", track, border=(end, 0, end, 0), sticky="we")
     style.element_create(
         "Round.Horizontal.Scale.slider",
         "image",
