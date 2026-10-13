@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import tkinter as tk
+import tkinter.font as tkfont
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tkinter import ttk
@@ -15,7 +16,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.reminders import DAYS
 from watcher.schedule_custom import Custom, check
-from watcher.schedule_view import events_for_day, kinds, map_for, next_events, visible
+from watcher.schedule_view import day_blocks, events_for_day, kind_of, kinds, map_for, next_events, visible
 
 MSK = timezone(timedelta(hours=3))
 DAY_NAMES = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
@@ -24,6 +25,9 @@ NEXT_LIMIT = 8
 LEADS = {"5 мин": 5, "15 мин": 15, "30 мин": 30, "1 час": 60}  # SN-8: how early to remind (user choice 13.10)
 DEFAULT_LEAD = 5
 REFRESH_MS = 30_000
+# day strip: one colour per kind, in the order of the data (existing theme roles, no new colours)
+KIND_COLORS = (theme.ACCENT, theme.PLACE, theme.NICK, theme.SUCCESS, theme.WARNING)  # no red: it reads as an error
+LANE_H, AXIS_H = 18, 14
 
 
 def load_events(path: Path) -> list[dict]:
@@ -95,6 +99,15 @@ def time_range(start: datetime, end: datetime, tz: timezone | None = None) -> st
     return f"{to_local(start, tz):%H:%M}–{to_local(end, tz):%H:%M}"
 
 
+def _fit(text: str, width: float, font: tkfont.Font) -> str:
+    """The longest start of ``text`` (with «…» when cut) that fits ``width`` pixels; "" when not even «…» fits."""
+    if font.measure(text) <= width:
+        return text
+    while text and font.measure(text + "…") > width:
+        text = text[:-1]
+    return text.rstrip() + "…" if text else ""
+
+
 class ScheduleTab(ttk.Frame):
     """Two cards: «Ближайшие» (running and next events) and «По дням» (a weekday picker and its events)."""
 
@@ -130,6 +143,16 @@ class ScheduleTab(ttk.Frame):
             ttk.Button(bar, text="Проверить обновление", style="Ghost.TButton", command=on_check).pack(
                 side="right", padx=(0, 4))
         self._label_kinds()
+        # the chosen day at a glance: hours 00–24, events as blocks by kind, a «now» line on today
+        strip_card = ttk.Frame(self, style="Card.TFrame", padding=(16, 6))
+        strip_card.pack(fill="x", pady=(0, 8))
+        self.strip = tk.Canvas(strip_card, height=AXIS_H + 2 * LANE_H + 4, background=theme.SURFACE,
+                               highlightthickness=0, borderwidth=0)
+        self.strip.pack(fill="x")
+        self._strip_font = tkfont.Font(root=self, font=theme.font("small"))
+        self.strip.bind("<Configure>", lambda _e: self._draw_strip())
+        self.strip.bind("<Button-1>", self._on_strip_click)
+        self._strip_hits: list[tuple[float, float, float, float, dict]] = []
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         body.columnconfigure(0, weight=3, uniform="cards")
@@ -149,6 +172,7 @@ class ScheduleTab(ttk.Frame):
         ttk.Label(near_head, text="Напоминать за", style="CardMuted.TLabel").pack(side="right", padx=(0, 8))
         self.next_box = tk.Frame(nearest, background=theme.SURFACE)
         self.next_box.pack(fill="both", expand=True, pady=(8, 0))
+        self.next_box.bind("<Configure>", lambda _e: self._trim_next())
 
         by_day = ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
         by_day.grid(row=0, column=1, sticky="nsew")
@@ -240,9 +264,68 @@ class ScheduleTab(ttk.Frame):
             end = end_of(event, start)
             past = day == today and end <= now
             self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event)
+        self._strip_day = (day, day == today, now, monday + timedelta(days=DAYS.index(day)))
+        self.after_idle(self._trim_next)
+        self._draw_strip()
         if self._after:
             self.after_cancel(self._after)
         self._after = self.after(REFRESH_MS, self.refresh)
+
+    def _trim_next(self) -> None:
+        """Only whole rows in «Ближайшие»: a row that does not fit the card's height is hidden, not cut in half."""
+        box = self.next_box
+        if not box.winfo_exists():
+            return
+        height = box.winfo_height()
+        for row in box.winfo_children():
+            if row.winfo_y() + row.winfo_reqheight() > height and height > 1:
+                row.pack_forget()
+
+    def _draw_strip(self) -> None:
+        canvas = self.strip
+        if not hasattr(self, "_strip_day"):
+            return
+        day, today, now, date = self._strip_day
+        canvas.delete("all")
+        self._strip_hits = []
+        width = max(canvas.winfo_width(), 240)
+        # local time of this MSK day: the strip shows the hours the user lives in
+        midnight = datetime.combine(date, datetime.min.time())
+        offset = round((to_local(midnight, self.tz).replace(tzinfo=None) - midnight).total_seconds() / 60)
+        scale = width / 1440
+        for hour in range(0, 25, 3):
+            x = min(width - 1, hour * 60 * scale)
+            canvas.create_line(x, AXIS_H, x, AXIS_H + 2 * LANE_H, fill=theme.SURFACE_3)
+            if hour < 24:
+                canvas.create_text(x + 2, 1, text=f"{hour:02d}", anchor="nw", fill=theme.MUTED,
+                                   font=theme.font("small"))
+        palette = {kind: KIND_COLORS[i % len(KIND_COLORS)] for i, kind in enumerate(kinds(self.events))}
+        for event, start, end, lane in day_blocks(events_for_day(visible(self.events, self.hidden()), day)):
+            start, end = max(0, start + offset), min(1440, end + offset)
+            if end <= start:
+                continue
+            x0, x1 = start * scale + 1, end * scale - 1
+            y0 = AXIS_H + min(lane, 1) * LANE_H + 2
+            y1 = y0 + LANE_H - 4
+            color = palette.get(kind_of(event), theme.ACCENT)
+            past = today and end <= now.hour * 60 + now.minute + offset
+            canvas.create_rectangle(x0, y0, x1, y1, fill=theme.mix(color, theme.SURFACE, 0.25 if past else 0.45),
+                                    outline=theme.mix(color, theme.SURFACE, 0.5 if past else 1.0), tags="block")
+            label = _fit(event["name"], x1 - x0 - 8, self._strip_font)
+            if label:  # cut to the block, never over its neighbour
+                canvas.create_text(x0 + 4, (y0 + y1) / 2, text=label, anchor="w", fill=theme.TEXT,
+                                   font=self._strip_font, tags="label")
+            self._strip_hits.append((x0, y0, x1, y1, event))
+        canvas.tag_raise("label")
+        if today:
+            x = (now.hour * 60 + now.minute + offset) % 1440 * scale
+            canvas.create_line(x, AXIS_H - 2, x, AXIS_H + 2 * LANE_H, fill=theme.TEXT, width=2, tags="now")
+
+    def _on_strip_click(self, event: tk.Event) -> None:
+        for x0, y0, x1, y1, item in self._strip_hits:
+            if x0 <= event.x <= x1 and y0 <= event.y <= y1:
+                self.open_form(item)
+                return
 
     def _row(self, box: tk.Frame, when: str, name: str, badge: str, accent: str | None = None, dim: bool = False,
              bell: dict | None = None, place: dict | None = None) -> None:

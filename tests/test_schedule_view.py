@@ -119,3 +119,19 @@ def test_map_for_picks_the_zone_of_the_side():
     assert map_for(both, "light") == "210050000"  # Elyos: Ингисон
     assert map_for({"name": "РУ", "maps": ["400010000"]}, "dark") == "400010000"
     assert map_for({"name": "Дер"}, "dark") is None
+
+
+def test_day_blocks_put_overlaps_on_separate_lanes():
+    """Day strip: minutes from midnight (24:00 = 1440) and a lane per overlap; the next free lane is reused."""
+    from watcher.schedule_view import day_blocks
+    events = [{"day": "wed", "start": "16:00", "end": "18:00", "name": "Дер"},
+              {"day": "wed", "start": "17:00", "end": "18:00", "name": "2x2"},
+              {"day": "wed", "start": "18:00", "end": "19:00", "name": "3x3"},
+              {"day": "wed", "start": "22:00", "end": "24:00", "name": "Поздно"}]
+    blocks = day_blocks(events)
+    assert [(b[1], b[2], b[3]) for b in blocks] == [(960, 1080, 0), (1020, 1080, 1), (1080, 1140, 0), (1320, 1440, 0)]
+
+
+def test_day_blocks_cut_an_event_past_midnight_at_the_day_end():
+    from watcher.schedule_view import day_blocks
+    assert day_blocks([{"day": "wed", "start": "23:00", "end": "01:00", "name": "Ночь"}])[0][1:] == (1380, 1440, 0)

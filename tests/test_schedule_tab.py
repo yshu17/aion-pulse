@@ -203,3 +203,32 @@ def test_event_with_a_place_opens_the_map():
         tab.destroy()
     finally:
         root.destroy()
+
+
+def test_day_strip_shows_the_day_and_now():
+    """Day strip: a block per event of the chosen day, a «now» line only on today, a click on a block edits it."""
+    import tkinter as tk
+    root = tk.Tk()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
+        tab.pack(fill="both", expand=True)
+        root.geometry("1000x600")
+        root.update()
+        strip = tab.strip
+        assert len(strip.find_withtag("block")) == 2  # Wednesday: Арена and Поздно
+        assert strip.find_withtag("now")
+        tab.day_var.set("Четверг")
+        tab.refresh()
+        root.update()
+        assert len(strip.find_withtag("block")) == 1 and not strip.find_withtag("now")
+        opened = []
+        tab.open_form = lambda event=None: opened.append(event)
+        block = strip.find_withtag("block")[0]
+        x0, y0, x1, y1 = strip.coords(block)
+        strip.event_generate("<Button-1>", x=int((x0 + x1) / 2), y=int((y0 + y1) / 2))
+        assert opened and opened[0]["name"] == "Дер"
+        tab.destroy()
+    finally:
+        root.destroy()

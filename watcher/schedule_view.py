@@ -70,3 +70,26 @@ def map_for(event: dict, side: str) -> str | None:
         return None
     prefix = "220" if side == "dark" else "210"
     return next((m for m in maps if m.startswith(prefix)), maps[0])
+
+
+def _minutes(text: str) -> int:
+    hour, minute = map(int, text.split(":"))
+    return hour * 60 + minute
+
+
+def day_blocks(events: list[dict]) -> list[tuple[dict, int, int, int]]:
+    """Day strip: ``(event, start, end, lane)`` in minutes from midnight, sorted by start; an event that runs past
+    midnight is cut at 1440; overlapping events go to the next free lane."""
+    blocks: list[tuple[dict, int, int, int]] = []
+    lane_ends: list[int] = []
+    for event in sorted(events, key=lambda e: _minutes(e["start"])):
+        start, end = _minutes(event["start"]), _minutes(event["end"])
+        if end <= start:
+            end = 1440
+        lane = next((i for i, busy_until in enumerate(lane_ends) if busy_until <= start), len(lane_ends))
+        if lane == len(lane_ends):
+            lane_ends.append(end)
+        else:
+            lane_ends[lane] = end
+        blocks.append((event, start, end, lane))
+    return blocks
