@@ -19,8 +19,8 @@ from watcher.hint import Hint
 from watcher.ui_icons import IconSet
 from watcher.reminders import DAYS
 from watcher.schedule_custom import Custom, check
-from watcher.schedule_view import (GROUPS, clock_pair, day_blocks, day_label, events_for_day, group_of, kind_of, kinds,
-                                   map_for, next_events, visible)
+from watcher.schedule_view import (GROUPS, clock_pair, day_label, events_for_day, group_hidden, group_of, groups,
+                                   kind_of, kinds, map_for, next_events)
 
 MSK = timezone(timedelta(hours=3))
 DAY_NAMES = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
@@ -154,7 +154,7 @@ class ScheduleTab(ttk.Frame):
         # SN-7: «Виды» — hide kinds of events from both lists (reminders of belled events still come)
         self.on_filter = on_filter
         hidden = hidden or set()
-        self.kind_vars = {kind: tk.BooleanVar(value=kind not in hidden) for kind in kinds(events)}
+        self.kind_vars = {group: tk.BooleanVar(value=group not in hidden) for group in groups(self.events)}  # groups
         bar = ttk.Frame(self)  # the bottom line: the time note and «Виды» (no extra height above the cards)
         self.kinds_menu = tk.Menu(self, tearoff=False, background=theme.SURFACE_2, foreground=theme.TEXT,
                                   activebackground=theme.SURFACE_3, activeforeground=theme.TEXT,
@@ -163,6 +163,8 @@ class ScheduleTab(ttk.Frame):
         self.kinds_button = ttk.Button(bar, style="Card.TButton", command=self._show_kinds, compound="left",
                                        image=self.icons.get("funnel", "muted", 16))
         self.kinds_button.pack(side="right")
+        ttk.Button(bar, text="Текстом", style="Card.TButton", command=lambda: TextEditor(self)).pack(
+            side="right", padx=(0, 8))
         ttk.Button(bar, text="Добавить событие", style="Card.TButton", command=self.open_form, compound="left",
                    image=self.icons.get("plus", "muted", 16)).pack(side="right", padx=(0, 8))
         if on_check:  # SN-9: compare with the knowledge base article
@@ -179,15 +181,6 @@ class ScheduleTab(ttk.Frame):
         self.local_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("caption_strong"))
         self.local_clock.pack(side="left", padx=(8, 0))
         # the chosen day at a glance: hours 00–24, events as blocks by kind, a «now» line on today
-        strip_card = ttk.Frame(self, style="Card.TFrame", padding=(16, 6))
-        strip_card.pack(fill="x", pady=(0, 8))
-        self.strip = tk.Canvas(strip_card, height=AXIS_H + 2 * LANE_H + 4, background=theme.SURFACE,
-                               highlightthickness=0, borderwidth=0)
-        self.strip.pack(fill="x")
-        self._strip_font = tkfont.Font(root=self, font=scaled_font("small"))
-        self.strip.bind("<Configure>", lambda _e: self._draw_strip())
-        self.strip.bind("<Button-1>", self._on_strip_click)
-        self._strip_hits: list[tuple[float, float, float, float, dict]] = []
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         body.columnconfigure(0, weight=3, uniform="cards")
@@ -240,8 +233,8 @@ class ScheduleTab(ttk.Frame):
     def _changed_events(self) -> None:
         """After the user's own change: merge again, offer a new kind in «Виды», redraw."""
         self.events = self.custom.merge(self.base)
-        for kind in kinds(self.events):
-            self.kind_vars.setdefault(kind, tk.BooleanVar(value=True))
+        for group in groups(self.events):
+            self.kind_vars.setdefault(group, tk.BooleanVar(value=True))
         self._fill_kinds_menu()
         self.refresh()
 
@@ -260,7 +253,7 @@ class ScheduleTab(ttk.Frame):
 
     def _label_kinds(self) -> None:
         count = len(self.hidden())
-        self.kinds_button.configure(text=f" Виды: {count} скрыт{'о' if count > 1 else ''}" if count else " Виды: все")
+        self.kinds_button.configure(text=f" Группы: {count} скрыт{'о' if count > 1 else ''}" if count else " Группы: все")
 
     def _show_kinds(self) -> None:
         button = self.kinds_button
@@ -269,8 +262,8 @@ class ScheduleTab(ttk.Frame):
     def refresh(self) -> None:
         """Rebuild both lists from the clock; called every REFRESH_MS while the tab exists."""
         now = self.clock()
-        shown = visible(self.events, self.hidden())
-        self.note.configure(text=f"Время — твоё локальное ({zone_name(now, self.tz)}).")
+        shown = group_hidden(self.events, self.hidden())
+        self.note.configure(text="")  # the clocks at the top show both times; no note needed
         for box in (self.next_box, self.day_list):
             for child in box.winfo_children():
                 child.destroy()
@@ -315,10 +308,8 @@ class ScheduleTab(ttk.Frame):
             past = day == today and end <= now
             self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event,
                       date="" if day == today else day_label(day, now, now))
-        self._strip_day = (day, day == today, now, monday + timedelta(days=DAYS.index(day)))
         self._show_clocks(now)
         self.after_idle(self._trim_next)
-        self._draw_strip()
         if self._after:
             self.after_cancel(self._after)
         self._after = self.after(REFRESH_MS, self.refresh)
@@ -330,10 +321,6 @@ class ScheduleTab(ttk.Frame):
         self._now_after = None
         now = self.clock()
         self._show_clocks(now)
-        if hasattr(self, "_strip_day"):
-            day, today, _old, date = self._strip_day
-            self._strip_day = (day, today, now, date)
-            self._draw_strip()
         self._move_progress(now)
         if self.winfo_exists():
             self._now_after = self.after(NOW_TICK_MS, self.tick_now)
@@ -359,52 +346,6 @@ class ScheduleTab(ttk.Frame):
         for row in box.winfo_children():
             if row.winfo_y() + row.winfo_reqheight() > height and height > 1:
                 row.pack_forget()
-
-    def _draw_strip(self) -> None:
-        canvas = self.strip
-        if not hasattr(self, "_strip_day"):
-            return
-        day, today, now, date = self._strip_day
-        canvas.delete("all")
-        self._strip_hits = []
-        width = max(canvas.winfo_width(), 240)
-        # local time of this MSK day: the strip shows the hours the user lives in
-        midnight = datetime.combine(date, datetime.min.time())
-        offset = round((to_local(midnight, self.tz).replace(tzinfo=None) - midnight).total_seconds() / 60)
-        scale = width / 1440
-        for hour in range(0, 25, 3):
-            x = min(width - 1, hour * 60 * scale)
-            canvas.create_line(x, AXIS_H, x, AXIS_H + 2 * LANE_H, fill=theme.SURFACE_3)
-            if hour < 24:
-                canvas.create_text(x + 2, 1, text=f"{hour:02d}", anchor="nw", fill=theme.MUTED,
-                                   font=scaled_font("small"))
-        palette = {kind: KIND_COLORS[i % len(KIND_COLORS)] for i, kind in enumerate(kinds(self.events))}
-        for event, start, end, lane in day_blocks(events_for_day(visible(self.events, self.hidden()), day)):
-            start, end = max(0, start + offset), min(1440, end + offset)
-            if end <= start:
-                continue
-            x0, x1 = start * scale + 1, end * scale - 1
-            y0 = AXIS_H + min(lane, 1) * LANE_H + 2
-            y1 = y0 + LANE_H - 4
-            color = palette.get(kind_of(event), theme.ACCENT)
-            past = today and end <= now.hour * 60 + now.minute + offset
-            canvas.create_rectangle(x0, y0, x1, y1, fill=theme.mix(color, theme.SURFACE, 0.25 if past else 0.45),
-                                    outline=theme.mix(color, theme.SURFACE, 0.5 if past else 1.0), tags="block")
-            label = _fit(event["name"], x1 - x0 - 8, self._strip_font)
-            if label:  # cut to the block, never over its neighbour
-                canvas.create_text(x0 + 4, (y0 + y1) / 2, text=label, anchor="w", fill=theme.TEXT,
-                                   font=self._strip_font, tags="label")
-            self._strip_hits.append((x0, y0, x1, y1, event))
-        canvas.tag_raise("label")
-        if today:
-            x = (now.hour * 60 + now.minute + offset) % 1440 * scale
-            canvas.create_line(x, AXIS_H - 2, x, AXIS_H + 2 * LANE_H, fill=theme.TEXT, width=2, tags="now")
-
-    def _on_strip_click(self, event: tk.Event) -> None:
-        for x0, y0, x1, y1, item in self._strip_hits:
-            if x0 <= event.x <= x1 and y0 <= event.y <= y1:
-                self.open_form(item)
-                return
 
     def _row(self, box: tk.Frame, when: str, name: str, badge: str, accent: str | None = None, dim: bool = False,
              bell: dict | None = None, place: dict | None = None, date: str = "") -> None:
@@ -577,4 +518,45 @@ class EventForm(tk.Toplevel):
         if self.event:
             self.tab.custom.remove(self.event)
             self.tab._changed_events()
+        self.destroy()
+
+
+class TextEditor(tk.Toplevel):
+    """The whole schedule as text, one event per line; «Сохранить» replaces the user's own changes with the text (the
+    server's grid is not touched: a line that matches a data event is kept as a removal + an own copy)."""
+
+    def __init__(self, tab: ScheduleTab) -> None:
+        from watcher.schedule_custom import parse_text, to_text
+        super().__init__(tab, background=theme.SURFACE, padx=16, pady=12)
+        self.tab = tab
+        self.title("Расписание текстом")
+        self.transient(tab.winfo_toplevel())
+        ttk.Label(self, text="Одна строка — одно событие: пн 20:00-21:00 Название", style="CardMuted.TLabel").pack(
+            anchor="w")
+        self.text = tk.Text(self, width=60, height=22, background=theme.SURFACE_2, foreground=theme.TEXT,
+                            insertbackground=theme.TEXT, relief="flat", font=scaled_font("body"), wrap="none")
+        self.text.pack(fill="both", expand=True, pady=(6, 6))
+        self.text.insert("1.0", to_text(tab.events))
+        self.error = ttk.Label(self, style="CardMuted.TLabel", foreground=theme.DANGER)
+        self.error.pack(anchor="w")
+        buttons = ttk.Frame(self, style="Surface.TFrame")
+        buttons.pack(anchor="e", pady=(8, 0))
+        ttk.Button(buttons, text="Отмена", style="Card.TButton", command=self.destroy).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Сохранить", style="Accent.TButton", command=self.save).pack(side="left")
+
+    def save(self) -> None:
+        from watcher.schedule_custom import parse_text
+        events, problems = parse_text(self.text.get("1.0", "end"))
+        if problems:
+            self.error.configure(text="; ".join(problems[:3]))
+            return
+        custom = self.tab.custom
+        from watcher.schedule_custom import event_key
+        text_keys = {event_key(e) for e in events}
+        base_keys = {event_key(e) for e in self.tab.base}
+        # server events present in the text stay (no removal); those missing from it are removed; the rest are own
+        custom.data["removed"] = sorted(base_keys - text_keys)
+        custom.data["added"] = [e for e in events if event_key(e) not in base_keys]
+        custom.save()
+        self.tab._changed_events()
         self.destroy()

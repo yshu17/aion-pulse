@@ -133,13 +133,14 @@ def test_kind_filter_hides_events_and_reports_the_choice():
         from watcher import theme
         theme.apply_dark_theme(root)
         saved = []
-        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK, hidden={"Арена"}, on_filter=saved.append)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK,
+                             hidden={"Арены Хаоса и Доблести"}, on_filter=saved.append)
         assert "Арена" not in [name for r in _labels(tab.next_box) for name in r]
-        assert tab.kind_vars["Арена"].get() is False
-        tab.kind_vars["Арена"].set(True)
-        tab.kind_vars["Поздно"].set(False)
+        assert tab.kind_vars["Арены Хаоса и Доблести"].get() is False
+        tab.kind_vars["Арены Хаоса и Доблести"].set(True)
+        tab.kind_vars["Прочее"].set(False)  # «Поздно» is not a known group → «Прочее»
         tab.filter_changed()
-        assert saved[-1] == {"Поздно"}
+        assert saved[-1] == {"Прочее"}
         names = [name for r in _labels(tab.next_box) for name in r]
         assert "Арена" in names and "Поздно" not in names
         assert "1 скрыт" in tab.kinds_button.cget("text")
@@ -170,7 +171,7 @@ def test_own_events_can_be_added_edited_and_removed(tmp_path):
         form.name_var.set("Рейд гильдии")
         form.save()
         assert "Рейд гильдии" in [r[-1] for r in _labels(tab.day_list)]
-        assert "Свои" in tab.kind_vars
+        assert "Прочее" in tab.kind_vars  # own events fall into the group of their name
         mine = next(e for e in tab.events if e["name"] == "Рейд гильдии")
         form = tab.open_form(mine)
         assert form.name_var.get() == "Рейд гильдии"
@@ -207,35 +208,6 @@ def test_event_with_a_place_opens_the_map():
         assert links  # this week and the next one when the schedule is short
         links[0].event_generate("<Button-1>")
         assert opened == ["220070000"]
-        tab.destroy()
-    finally:
-        root.destroy()
-
-
-def test_day_strip_shows_the_day_and_now():
-    """Day strip: a block per event of the chosen day, a «now» line only on today, a click on a block edits it."""
-    import tkinter as tk
-    root = tk.Tk()
-    try:
-        from watcher import theme
-        theme.apply_dark_theme(root)
-        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
-        tab.pack(fill="both", expand=True)
-        root.geometry("1000x600")
-        root.update()
-        strip = tab.strip
-        assert len(strip.find_withtag("block")) == 2  # Wednesday: Арена and Поздно
-        assert strip.find_withtag("now")
-        tab.day_var.set("Четверг")
-        tab.refresh()
-        root.update()
-        assert len(strip.find_withtag("block")) == 1 and not strip.find_withtag("now")
-        opened = []
-        tab.open_form = lambda event=None: opened.append(event)
-        block = strip.find_withtag("block")[0]
-        x0, y0, x1, y1 = strip.coords(block)
-        strip.event_generate("<Button-1>", x=int((x0 + x1) / 2), y=int((y0 + y1) / 2))
-        assert opened and opened[0]["name"] == "Дер"
         tab.destroy()
     finally:
         root.destroy()
@@ -279,10 +251,8 @@ def test_running_event_shows_its_progress_and_the_now_line_moves():
         x0, _y0, x1, _y1 = bar.coords("fill")
         assert abs((x1 - x0) / bar.winfo_width() - 0.5) < 0.05
         rows = tab.next_box.winfo_children()
-        before = tab.strip.coords("now")[0]
         clock[0] = WED_2030 + timedelta(minutes=15)
         tab.tick_now()
-        assert tab.strip.coords("now")[0] > before
         _x0, _y0, x1b, _y1 = bar.coords("fill")
         assert x1b > x1
         assert tab.next_box.winfo_children() == rows  # the lists were not rebuilt

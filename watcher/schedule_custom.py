@@ -91,3 +91,36 @@ class Custom:
     def edit(self, old: dict, new: dict) -> None:
         self.remove(old)
         self.add(new)
+
+
+DAY_BY_RU = {"пн": "mon", "вт": "tue", "ср": "wed", "чт": "thu", "пт": "fri", "сб": "sat", "вс": "sun"}
+DAY_RU = {v: k for k, v in DAY_BY_RU.items()}
+_LINE = re.compile(r"^\s*(пн|вт|ср|чт|пт|сб|вс)\s+(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+?)\s*$", re.I)
+
+
+def to_text(events: list[dict]) -> str:
+    """Every event as a text line: «пн 20:00-21:00 Название», Monday first, times as in the data."""
+    order = {d: i for i, d in enumerate(DAYS)}
+    lines = [f"{DAY_RU[e['day']]} {e['start']}-{e['end']} {e['name']}"
+             for e in sorted(events, key=lambda e: (order.get(e["day"], 9), e["start"]))]
+    return "\n".join(lines)
+
+
+def parse_text(text: str) -> tuple[list[dict], list[str]]:
+    """Text lines back to events; returns (events, problems) — a bad line is reported, not dropped silently."""
+    events, problems = [], []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        match = _LINE.match(line)
+        if not match:
+            problems.append(f"строка {number}: нужен вид «пн 20:00-21:00 Название»")
+            continue
+        event = {"day": DAY_BY_RU[match.group(1).lower()], "start": match.group(2), "end": match.group(3),
+                 "name": match.group(4)}
+        problem = check(event)
+        if problem:
+            problems.append(f"строка {number}: {problem}")
+        else:
+            events.append(event)
+    return events, problems

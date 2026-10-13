@@ -95,7 +95,18 @@ def day_blocks(events: list[dict]) -> list[tuple[dict, int, int, int]]:
     return blocks
 
 
-GROUPS = ("PVP арена", "Арены Хаоса и Доблести", "Осады", "Дерадиконы", "Прочее")
+GROUPS = ("Дерадиконы", "PVP арена", "Арены Хаоса и Доблести", "Осады", "Прочее")  # menu order, as on the screenshot
+
+
+def groups(events: list[dict]) -> list[str]:
+    """The groups present in ``events``, in the menu order (Прочее goes last, «Свои» is the own events)."""
+    present = {group_of(event) for event in events}
+    return [g for g in GROUPS if g in present]
+
+
+def group_hidden(events: list[dict], hidden_groups: set[str]) -> list[dict]:
+    """Events whose group is not hidden by the group filter."""
+    return [event for event in events if group_of(event) not in hidden_groups]
 
 
 def group_of(event: dict) -> str:
