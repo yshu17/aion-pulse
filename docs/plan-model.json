@@ -2599,19 +2599,6 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "порядок Tab, видимые состояния переключателей",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
             "name": "application-software-architect",
             "role": "supporting",
             "purpose": "схема настроек в config.json",
@@ -2671,7 +2658,7 @@
         "handoff_label": "ждёт архитектурного решения Claude",
         "arch_label": "ожидает архитектурной проверки Claude",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · sn:SN-5 · Вкладка «Уведомления» (настройки)\nЦель: Вкладка «Уведомления» (настройки).\nКонтекст: источники вкл/выкл и звук у каждого, угол, длительность, стопка, «не беспокоить», кнопка «Проверить»; всё в config.json\nПлан: sn · статус: planned · передача: ждёт архитектурного решения Claude\nЗависимости: нет\nТребования и критерии готовности:\n- все настройки в config.json\n- «Проверить» показывает тест-тост\n- вкладка помещается в 1000×600\nРазрешённые файлы:\n- новый модуль вкладки\n- tests/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): вкладка «Уведомления»: группы, состояния, «Проверить». Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): порядок Tab, видимые состояния переключателей. Codex читает SKILL.md по AGENTS.md.\n- application-software-architect (дополнительный): схема настроек в config.json. Codex читает SKILL.md по AGENTS.md.\n- superpowers:test-driven-development (дополнительный): тесты сохранения настроек. у Codex есть свой экземпляр.\nКонтракт: Claude фиксирует ключи config и API notify_center до начала работы Codex.\nПримечание: После SN-4.\nТесты:\n- pytest tests/test_config.py tests/test_notify_center.py\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · sn:SN-5 · Вкладка «Уведомления» (настройки)\nЦель: Вкладка «Уведомления» (настройки).\nКонтекст: источники вкл/выкл и звук у каждого, угол, длительность, стопка, «не беспокоить», кнопка «Проверить»; всё в config.json\nПлан: sn · статус: planned · передача: ждёт архитектурного решения Claude\nЗависимости: нет\nТребования и критерии готовности:\n- все настройки в config.json\n- «Проверить» показывает тест-тост\n- вкладка помещается в 1000×600\nРазрешённые файлы:\n- новый модуль вкладки\n- tests/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): вкладка «Уведомления»: группы, состояния, «Проверить». Codex читает SKILL.md по AGENTS.md.\n- application-software-architect (дополнительный): схема настроек в config.json. Codex читает SKILL.md по AGENTS.md.\n- superpowers:test-driven-development (дополнительный): тесты сохранения настроек. у Codex есть свой экземпляр.\nКонтракт: Claude фиксирует ключи config и API notify_center до начала работы Codex.\nПримечание: После SN-4.\nТесты:\n- pytest tests/test_config.py tests/test_notify_center.py\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3213,8 +3200,8 @@
       "title": "На 1000×600 строка настроек обрезана, громкость пропадает",
       "who": "Claude",
       "text": "P0 · Перенос строки «Оповещение» по ширине (grid в 2 ряда) **или** поднять `minsize` до 1200×700 до появления панели настроек (№ 3)",
-      "note": "строка «Оповещение» в две строки: громкость видна на 1000×600 (`6fe8fcc`). Нижний ряд фильтра при высоте 600 обрезан по высоте — решит пункт 3. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "строка «Оповещение» в две строки: громкость видна на 1000×600 (`6fe8fcc`). Нижний ряд фильтра при высоте 600 обрезан по высоте — решит пункт 3. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "Critical",
       "dependencies_text": "—",
       "stage": "5",
@@ -3223,7 +3210,7 @@
       "key": "ui:1",
       "parent": "",
       "depends_on": [],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3234,13 +3221,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -3257,19 +3249,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -3321,7 +3300,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:1 · На 1000×600 строка настроек обрезана, громкость пропадает\nЦель: На 1000×600 строка настроек обрезана, громкость пропадает.\nКонтекст: P0 · Перенос строки «Оповещение» по ширине (grid в 2 ряда) **или** поднять `minsize` до 1200×700 до появления панели настроек (№ 3)\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: —\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:1 · На 1000×600 строка настроек обрезана, громкость пропадает\nЦель: На 1000×600 строка настроек обрезана, громкость пропадает.\nКонтекст: P0 · Перенос строки «Оповещение» по ширине (grid в 2 ряда) **или** поднять `minsize` до 1200×700 до появления панели настроек (№ 3)\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: —\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3330,8 +3309,8 @@
       "title": "Контраст ниже 4.5:1: «Пропущено», Stop, выключенные фишки; границы полей 1.5:1",
       "who": "Claude",
       "text": "P0 · Токены `danger`, `text.disabled`, `border.control` из палитры; пересчитать и записать контраст рядом с токеном",
-      "note": "контраст по `design-theme-guide`: `DANGER` #ff6b70 5.26, Stop `DANGER_FILL` #c9363b 5.15 / наведение #d13b40 4.76, `BORDER_CONTROL` #646a7a 3.37, `DISABLED` #6f7480 3.56; вариант #4a505e — 2.26, провал; тест `tests/test_theme.py`; проверено снимками по `ui-visual-validator` (`64f289e`). **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "контраст по `design-theme-guide`: `DANGER` #ff6b70 5.26, Stop `DANGER_FILL` #c9363b 5.15 / наведение #d13b40 4.76, `BORDER_CONTROL` #646a7a 3.37, `DISABLED` #6f7480 3.56; вариант #4a505e — 2.26, провал; тест `tests/test_theme.py`; проверено снимками по `ui-visual-validator` (`64f289e`). **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "Critical",
       "dependencies_text": "№ 5",
       "stage": "1",
@@ -3342,7 +3321,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3353,13 +3332,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "verified",
       "verification_evidence": [
         {
           "kind": "commit",
@@ -3376,6 +3360,10 @@
         {
           "kind": "report",
           "ref": "reopened 13.10.2026 for a skill-based re-check (user decision); verified again after the re-check"
+        },
+        {
+          "kind": "report",
+          "ref": "re-check withdrawn 13.10.2026 (user: focus on features); the 12.10 verification stands"
         }
       ],
       "ai": {
@@ -3457,7 +3445,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:2 · Контраст ниже 4.5:1: «Пропущено», Stop, выключенные фишки; границы полей 1.5:1\nЦель: Контраст ниже 4.5:1: «Пропущено», Stop, выключенные фишки; границы полей 1.5:1.\nКонтекст: P0 · Токены `danger`, `text.disabled`, `border.control` из палитры; пересчитать и записать контраст рядом с токеном\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:2 · Контраст ниже 4.5:1: «Пропущено», Stop, выключенные фишки; границы полей 1.5:1\nЦель: Контраст ниже 4.5:1: «Пропущено», Stop, выключенные фишки; границы полей 1.5:1.\nКонтекст: P0 · Токены `danger`, `text.disabled`, `border.control` из палитры; пересчитать и записать контраст рядом с токеном\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3466,8 +3454,8 @@
       "title": "Настройки занимают ≈ 45 % высоты",
       "who": "Claude",
       "text": "P1 · Компактная **панель управления** (Start/Stop + статус + ключевые слова + режим поиска + счётчики) и сворачиваемая карточка **«Настройки»** (папка игры, звук, реакция, громкость, окно поверх, история), запоминается свёрнутость",
-      "note": "панель управления (Start, статус, ключевые слова, режим поиска, «Настройки ▴/▾») всегда видна; папка игры, оповещение и история — в сворачиваемой карточке «Настройки», открыта при первом запуске, состояние в `config.json` (`settings_open`). Порядок Tab — слева направо по экрану (`ui-ux-pro-max`). Снимки (`ui-visual-validator`), 1400×860: лента 51 % высоты с открытыми настройками (было 51 %), 76 % со свёрнутыми — цель 60 % выполнена в свёрнутом виде. 1000×600 с открытыми настройками: низ фильтра «Что искать» обрезан — свернуть настройки. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "панель управления (Start, статус, ключевые слова, режим поиска, «Настройки ▴/▾») всегда видна; папка игры, оповещение и история — в сворачиваемой карточке «Настройки», открыта при первом запуске, состояние в `config.json` (`settings_open`). Порядок Tab — слева направо по экрану (`ui-ux-pro-max`). Снимки (`ui-visual-validator`), 1400×860: лента 51 % высоты с открытыми настройками (было 51 %), 76 % со свёрнутыми — цель 60 % выполнена в свёрнутом виде. 1000×600 с открытыми настройками: низ фильтра «Что искать» обрезан — свернуть настройки. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5, 6",
       "stage": "5",
@@ -3479,7 +3467,7 @@
         "ui:5",
         "ui:6"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3490,13 +3478,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -3513,19 +3506,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -3577,7 +3557,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:3 · Настройки занимают ≈ 45 % высоты\nЦель: Настройки занимают ≈ 45 % высоты.\nКонтекст: P1 · Компактная **панель управления** (Start/Stop + статус + ключевые слова + режим поиска + счётчики) и сворачиваемая карточка **«Настройки»** (папка игры, звук, реакция, громкость, окно поверх, история), запоминается свёрнутость\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5, ui:6\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:3 · Настройки занимают ≈ 45 % высоты\nЦель: Настройки занимают ≈ 45 % высоты.\nКонтекст: P1 · Компактная **панель управления** (Start/Stop + статус + ключевые слова + режим поиска + счётчики) и сворачиваемая карточка **«Настройки»** (папка игры, звук, реакция, громкость, окно поверх, история), запоминается свёрнутость\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5, ui:6\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3586,8 +3566,8 @@
       "title": "Статус слежения мелкий и далеко от Start",
       "who": "Claude",
       "text": "P1 · **Статус-чип** справа от Start: иконка + текст («Слежу», «Не слежу», «Игра не запущена», «Chat.log не найден») в цветах `success/secondary/warning/danger`; при «Слежу» — мягкая «пульсация» точки (№ 21)",
-      "note": "статус-плашка справа от Start: значок + текст + цвет (`ui-ux-pro-max`: цвет не единственный признак) — «Не слежу» серый, «Слежу» `SUCCESS` #5fd38d (7.75), «Игра не запущена» / «Chat.log не найден» `WARNING` #f5b544 (8.02), «Ошибка» `DANGER` (5.26) — замеры на фоне плашки (`design-theme-guide`). Постоянная ширина (20 знаков), полный текст — в подсказке: поле ключевых слов больше не прыгает (провал «content jumping», найден снимками `ui-visual-validator`). Значки — из набора Кодекса (пункт 8), жёлтые `caution` перекрашены из готовых. Пульсация «Слежу» — пункт 21. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "статус-плашка справа от Start: значок + текст + цвет (`ui-ux-pro-max`: цвет не единственный признак) — «Не слежу» серый, «Слежу» `SUCCESS` #5fd38d (7.75), «Игра не запущена» / «Chat.log не найден» `WARNING` #f5b544 (8.02), «Ошибка» `DANGER` (5.26) — замеры на фоне плашки (`design-theme-guide`). Постоянная ширина (20 знаков), полный текст — в подсказке: поле ключевых слов больше не прыгает (провал «content jumping», найден снимками `ui-visual-validator`). Значки — из набора Кодекса (пункт 8), жёлтые `caution` перекрашены из готовых. Пульсация «Слежу» — пункт 21. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5, 8",
       "stage": "3",
@@ -3599,7 +3579,7 @@
         "ui:5",
         "ui:8"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3610,13 +3590,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -3633,19 +3618,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -3697,7 +3669,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:4 · Статус слежения мелкий и далеко от Start\nЦель: Статус слежения мелкий и далеко от Start.\nКонтекст: P1 · **Статус-чип** справа от Start: иконка + текст («Слежу», «Не слежу», «Игра не запущена», «Chat.log не найден») в цветах `success/secondary/warning/danger`; при «Слежу» — мягкая «пульсация» точки (№ 21)\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5, ui:8\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:4 · Статус слежения мелкий и далеко от Start\nЦель: Статус слежения мелкий и далеко от Start.\nКонтекст: P1 · **Статус-чип** справа от Start: иконка + текст («Слежу», «Не слежу», «Игра не запущена», «Chat.log не найден») в цветах `success/secondary/warning/danger`; при «Слежу» — мягкая «пульсация» точки (№ 21)\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5, ui:8\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3706,8 +3678,8 @@
       "title": "Нет токенов: 25 цветов и 14 шрифтов прописаны на месте",
       "who": "Claude",
       "text": "P1 · Реестр токенов в `watcher/theme.py`: `COLOR`, `TYPE`, `SPACE`, `RADIUS`, `MOTION`; все модули берут значения только оттуда; тест, запрещающий `#rrggbb` вне `theme.py`",
-      "note": "реестр в `watcher/theme.py` (`design-theme-guide`): все 32 цвета из 8 модулей перенесены и названы по назначению (`PLACE`, `COUNTDOWN`, `MATCH_BG`, `TOOLTIP_*`, игровые `CHAT_COLORS`…), у текстовых — замер контраста; `COLOR` (все цвета), `TYPE` + `font(role)` (роли шрифтов, размеры пока прежние — шкала в пункте 6), `SPACE`, `RADII`, `MOTION`. Тест `test_colours_live_only_in_the_theme` запрещает `#rrggbb` вне темы; тест пар AA для реестра. Найден и исправлен провал: последние секунды отсчёта (красный на яркой фазе мигания) 2.45 → `COUNTDOWN_URGENT` #ffd0d1, 4.90. Снимки `ui-visual-validator`: главное окно и карта совпадают пиксель в пиксель. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "реестр в `watcher/theme.py` (`design-theme-guide`): все 32 цвета из 8 модулей перенесены и названы по назначению (`PLACE`, `COUNTDOWN`, `MATCH_BG`, `TOOLTIP_*`, игровые `CHAT_COLORS`…), у текстовых — замер контраста; `COLOR` (все цвета), `TYPE` + `font(role)` (роли шрифтов, размеры пока прежние — шкала в пункте 6), `SPACE`, `RADII`, `MOTION`. Тест `test_colours_live_only_in_the_theme` запрещает `#rrggbb` вне темы; тест пар AA для реестра. Найден и исправлен провал: последние секунды отсчёта (красный на яркой фазе мигания) 2.45 → `COUNTDOWN_URGENT` #ffd0d1, 4.90. Снимки `ui-visual-validator`: главное окно и карта совпадают пиксель в пиксель. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "—",
       "stage": "1",
@@ -3716,7 +3688,7 @@
       "key": "ui:5",
       "parent": "",
       "depends_on": [],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3727,13 +3699,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -3814,7 +3791,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:5 · Нет токенов: 25 цветов и 14 шрифтов прописаны на месте\nЦель: Нет токенов: 25 цветов и 14 шрифтов прописаны на месте.\nКонтекст: P1 · Реестр токенов в `watcher/theme.py`: `COLOR`, `TYPE`, `SPACE`, `RADIUS`, `MOTION`; все модули берут значения только оттуда; тест, запрещающий `#rrggbb` вне `theme.py`\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: —\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:5 · Нет токенов: 25 цветов и 14 шрифтов прописаны на месте\nЦель: Нет токенов: 25 цветов и 14 шрифтов прописаны на месте.\nКонтекст: P1 · Реестр токенов в `watcher/theme.py`: `COLOR`, `TYPE`, `SPACE`, `RADIUS`, `MOTION`; все модули берут значения только оттуда; тест, запрещающий `#rrggbb` вне `theme.py`\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: —\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3823,8 +3800,8 @@
       "title": "Шрифты: один кегль на всё, нет иерархии",
       "who": "Claude",
       "text": "P1 · Типографическая шкала (раздел 2), Segoe UI Variable с откатом на Segoe UI, моноширинное время",
-      "note": "шкала шрифтов (раздел 2) в реестре: display 18 / title 14 / body 13 / control 12 / caption 11 / micro 10 + mono 11; семейства Segoe UI Variable (Display/Text/Small, Semibold-начертания) с откатом на Segoe UI для Windows 10, время — Cascadia Mono (откат Consolas): ровная колонка. `theme.font(role)`, `resolve_fonts`; тест — все роли в установленных семействах, размеры по плану. Отступление от плана: окно «Найдено в чате!» оставлено 18 (не 14) — оно над игрой и должно бросаться в глаза. Снимки (`ui-visual-validator`): иерархия читается, раскладка не поехала. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "шкала шрифтов (раздел 2) в реестре: display 18 / title 14 / body 13 / control 12 / caption 11 / micro 10 + mono 11; семейства Segoe UI Variable (Display/Text/Small, Semibold-начертания) с откатом на Segoe UI для Windows 10, время — Cascadia Mono (откат Consolas): ровная колонка. `theme.font(role)`, `resolve_fonts`; тест — все роли в установленных семействах, размеры по плану. Отступление от плана: окно «Найдено в чате!» оставлено 18 (не 14) — оно над игрой и должно бросаться в глаза. Снимки (`ui-visual-validator`): иерархия читается, раскладка не поехала. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "2",
@@ -3835,7 +3812,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3846,13 +3823,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -3933,7 +3915,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:6 · Шрифты: один кегль на всё, нет иерархии\nЦель: Шрифты: один кегль на всё, нет иерархии.\nКонтекст: P1 · Типографическая шкала (раздел 2), Segoe UI Variable с откатом на Segoe UI, моноширинное время\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:6 · Шрифты: один кегль на всё, нет иерархии\nЦель: Шрифты: один кегль на всё, нет иерархии.\nКонтекст: P1 · Типографическая шкала (раздел 2), Segoe UI Variable с откатом на Segoe UI, моноширинное время\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -3942,8 +3924,8 @@
       "title": "Оранжевый везде — акцент не работает",
       "who": "Claude",
       "text": "P1 · Заголовки карточек → `text.primary`; стрелки комбобоксов → `text.secondary`; акцент оставить для Start, выбранного, живых совпадений",
-      "note": "оранжевый только для «важно / выбрано» (`ui-ux-pro-max`): заголовки карточек («Что искать», «Рядом», имя точки) — `TEXT`; стрелки списков — `MUTED`, при наведении `TEXT`. Остались оранжевыми: Start, выбранная вкладка, отмеченные галочки, живые совпадения, метка и выбор на карте, эпические предметы (игровой цвет). Проверка (`ui-visual-validator`) — подсчёт оранжевых пикселей: стрелки 25 → 0, «Что искать» 287 → 28 (сосед). **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "оранжевый только для «важно / выбрано» (`ui-ux-pro-max`): заголовки карточек («Что искать», «Рядом», имя точки) — `TEXT`; стрелки списков — `MUTED`, при наведении `TEXT`. Остались оранжевыми: Start, выбранная вкладка, отмеченные галочки, живые совпадения, метка и выбор на карте, эпические предметы (игровой цвет). Проверка (`ui-visual-validator`) — подсчёт оранжевых пикселей: стрелки 25 → 0, «Что искать» 287 → 28 (сосед). **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "2",
@@ -3954,7 +3936,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -3965,13 +3947,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4052,7 +4039,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:7 · Оранжевый везде — акцент не работает\nЦель: Оранжевый везде — акцент не работает.\nКонтекст: P1 · Заголовки карточек → `text.primary`; стрелки комбобоксов → `text.secondary`; акцент оставить для Start, выбранного, живых совпадений\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:7 · Оранжевый везде — акцент не работает\nЦель: Оранжевый везде — акцент не работает.\nКонтекст: P1 · Заголовки карточек → `text.primary`; стрелки комбобоксов → `text.secondary`; акцент оставить для Start, выбранного, живых совпадений\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4061,8 +4048,8 @@
       "title": "Разнородные Юникод-символы вместо иконок",
       "who": "Кодекс",
       "text": "P1 · Набор Phosphor Regular → PNG 16/20 px; заменить ▶ ▲ ▼ ✕ ⌂ ◎ − + ★ ✓ ● ○ ⚠ ▸ ▾; у кнопок-иконок — подсказка при наведении",
-      "note": "Phosphor Regular: 16 SVG собраны `tools/build_ui_icons.py` в 160 PNG 16/20 px; заменены значки статуса, прослушивания, поиска, сброса фильтра, групп и карты. Для кнопок только со значком добавлены подсказки с задержкой 500 мс. Источники и локальный растеризатор зарегистрированы в `downloads/`. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "Phosphor Regular: 16 SVG собраны `tools/build_ui_icons.py` в 160 PNG 16/20 px; заменены значки статуса, прослушивания, поиска, сброса фильтра, групп и карты. Для кнопок только со значком добавлены подсказки с задержкой 500 мс. Источники и локальный растеризатор зарегистрированы в `downloads/`. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "4",
@@ -4073,7 +4060,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4084,13 +4071,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Кодекс"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4107,19 +4099,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "цвета картинок из токенов",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -4171,7 +4150,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:8 · Разнородные Юникод-символы вместо иконок\nЦель: Разнородные Юникод-символы вместо иконок.\nКонтекст: P1 · Набор Phosphor Regular → PNG 16/20 px; заменить ▶ ▲ ▼ ✕ ⌂ ◎ − + ★ ✓ ● ○ ⚠ ▸ ▾; у кнопок-иконок — подсказка при наведении\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): цвета картинок из токенов. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:8 · Разнородные Юникод-символы вместо иконок\nЦель: Разнородные Юникод-символы вместо иконок.\nКонтекст: P1 · Набор Phosphor Regular → PNG 16/20 px; заменить ▶ ▲ ▼ ✕ ⌂ ◎ − + ★ ✓ ● ○ ⚠ ▸ ▾; у кнопок-иконок — подсказка при наведении\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4180,8 +4159,8 @@
       "title": "Совпадения — сплошные оранжевые плашки",
       "who": "Claude",
       "text": "P1 · Подсветка = фон `accent.subtle` + текст `accent` полужирный + 2 px полоса слева у строки с совпадением; соседние совпадения не сливаются (отступ 1 px)",
-      "note": "совпадение в ленте: оранжевый полужирный текст на тихом фоне `ACCENT_SUBTLE` #3a2810 (контраст 6.05) и 3 px оранжевая полоса слева у строки (`lmargincolor`); у всех строк одинаковое левое поле — обычные строки не сдвигаются. Окно «Найдено в чате!» получает новый цвет подсветки через общую тему. Снимки (`ui-visual-validator`): совпадение заметно, слово читается, колонка времени на месте. Отступ 1 px между соседними совпадениями в Tk Text невозможен — с тихим фоном они и так не сливаются в плашку. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "совпадение в ленте: оранжевый полужирный текст на тихом фоне `ACCENT_SUBTLE` #3a2810 (контраст 6.05) и 3 px оранжевая полоса слева у строки (`lmargincolor`); у всех строк одинаковое левое поле — обычные строки не сдвигаются. Окно «Найдено в чате!» получает новый цвет подсветки через общую тему. Снимки (`ui-visual-validator`): совпадение заметно, слово читается, колонка времени на месте. Отступ 1 px между соседними совпадениями в Tk Text невозможен — с тихим фоном они и так не сливаются в плашку. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "3",
@@ -4192,7 +4171,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4203,13 +4182,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4290,7 +4274,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:9 · Совпадения — сплошные оранжевые плашки\nЦель: Совпадения — сплошные оранжевые плашки.\nКонтекст: P1 · Подсветка = фон `accent.subtle` + текст `accent` полужирный + 2 px полоса слева у строки с совпадением; соседние совпадения не сливаются (отступ 1 px)\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:9 · Совпадения — сплошные оранжевые плашки\nЦель: Совпадения — сплошные оранжевые плашки.\nКонтекст: P1 · Подсветка = фон `accent.subtle` + текст `accent` полужирный + 2 px полоса слева у строки с совпадением; соседние совпадения не сливаются (отступ 1 px)\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4299,8 +4283,8 @@
       "title": "Счётчики похожи на кнопки",
       "who": "Claude",
       "text": "P1 · Счётчики — «статистика»: без подложки-кнопки, цветная точка + число крупно + подпись `caption`; «Сбросить» — кнопка-призрак с иконкой",
-      "note": "счётчики стали статистикой (`ui-ux-pro-max`: нажимается только то, что выглядит нажимаемым): без подложки, цветная точка 8 px + число `title` 14 в цвете (`TEXT` / `SUCCESS` 9.72 / `DANGER` 6.59 на `BG`) + подпись `caption` `MUTED`; «Сбросить» — кнопка-призрак `Ghost.TButton` со значком ✕ Phosphor и подсказкой, фон появляется только при наведении. Блок стал уже на ≈ 120 px. Снимок «было/стало» (`ui-visual-validator`). **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "счётчики стали статистикой (`ui-ux-pro-max`: нажимается только то, что выглядит нажимаемым): без подложки, цветная точка 8 px + число `title` 14 в цвете (`TEXT` / `SUCCESS` 9.72 / `DANGER` 6.59 на `BG`) + подпись `caption` `MUTED`; «Сбросить» — кнопка-призрак `Ghost.TButton` со значком ✕ Phosphor и подсказкой, фон появляется только при наведении. Блок стал уже на ≈ 120 px. Снимок «было/стало» (`ui-visual-validator`). **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5, 8",
       "stage": "3",
@@ -4312,7 +4296,7 @@
         "ui:5",
         "ui:8"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4323,13 +4307,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4346,19 +4335,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -4410,7 +4386,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:10 · Счётчики похожи на кнопки\nЦель: Счётчики похожи на кнопки.\nКонтекст: P1 · Счётчики — «статистика»: без подложки-кнопки, цветная точка + число крупно + подпись `caption`; «Сбросить» — кнопка-призрак с иконкой\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5, ui:8\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:10 · Счётчики похожи на кнопки\nЦель: Счётчики похожи на кнопки.\nКонтекст: P1 · Счётчики — «статистика»: без подложки-кнопки, цветная точка + число крупно + подпись `caption`; «Сбросить» — кнопка-призрак с иконкой\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5, ui:8\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4419,8 +4395,8 @@
       "title": "Подпись выбранной вкладки смещена на ~4 px",
       "who": "Claude",
       "text": "P1 · Выровнять `padding` выбранной/невыбранной вкладки; выбранная — фон карточки + 2 px полоса акцента снизу (активная вкладка по `ui-ux-pro-max`)",
-      "note": "вкладки: причина сдвига — тема clam уменьшает отступы выбранной вкладки до `6 4 6 2`, подпись прыгала вверх и влево; карта `padding` очищена, все подписи на одной линии. Выбранная вкладка — фон карточки + полоса `ACCENT` 2 px снизу (рисуется в `tab_selected.png` после уменьшения, чёткая); текст выбранной — `TEXT`, остальных — `MUTED`, при наведении `TEXT`: оранжевым остаётся только полоса (`ui-ux-pro-max`, активная вкладка). Тест на отступы и полосу, снимок «было/стало». **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "вкладки: причина сдвига — тема clam уменьшает отступы выбранной вкладки до `6 4 6 2`, подпись прыгала вверх и влево; карта `padding` очищена, все подписи на одной линии. Выбранная вкладка — фон карточки + полоса `ACCENT` 2 px снизу (рисуется в `tab_selected.png` после уменьшения, чёткая); текст выбранной — `TEXT`, остальных — `MUTED`, при наведении `TEXT`: оранжевым остаётся только полоса (`ui-ux-pro-max`, активная вкладка). Тест на отступы и полосу, снимок «было/стало». **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "2",
@@ -4431,7 +4407,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4442,13 +4418,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4465,19 +4446,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -4529,7 +4497,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:11 · Подпись выбранной вкладки смещена на ~4 px\nЦель: Подпись выбранной вкладки смещена на ~4 px.\nКонтекст: P1 · Выровнять `padding` выбранной/невыбранной вкладки; выбранная — фон карточки + 2 px полоса акцента снизу (активная вкладка по `ui-ux-pro-max`)\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:11 · Подпись выбранной вкладки смещена на ~4 px\nЦель: Подпись выбранной вкладки смещена на ~4 px.\nКонтекст: P1 · Выровнять `padding` выбранной/невыбранной вкладки; выбранная — фон карточки + 2 px полоса акцента снизу (активная вкладка по `ui-ux-pro-max`)\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4538,8 +4506,8 @@
       "title": "Пустая лента до Start, нет «загрузки»",
       "who": "Claude",
       "text": "P1 · **Empty state** в ленте: иконка + «Нажми Start — здесь появятся совпадения» + сколько слов/предметов отмечено; во «Всём чате» — «Пока тихо»; при чтении истории — строка «Читаю историю за N мин…» с бегущей точкой",
-      "note": "пустые состояния (`ui-ux-pro-max`: состояние вместо пустоты, без «прыжков» содержимого): общий компонент `watcher/emptystate.py` — значок Phosphor 32 px + строка `body` + подсказка `caption` по центру ленты. «Поиск» до Start — «Нажми Start — здесь появятся совпадения» и что ищется («Ищу: 2 слова, 0 предметов», или чего не хватает режиму поиска); после Start — «Слежу — совпадений пока нет»; чтение истории — «Читаю историю за N мин…» с бегущими точками (окно перерисовывается до чтения). «Весь чат» — «Читаю чат…», потом «Пока тихо». Исчезает с первой строкой. Новые значки magnifying-glass, chat-circle-dots, hourglass-medium (Phosphor 2.1.1); CairoSVG здесь не грузится (нет cairo и cffi под Python 3.14), поэтому `tools/build_ui_icons.py` умеет красить их из белых силуэтов 80 px (`downloads/phosphor_icons_2.1.1/masks`, нарисованы из тех же SVG). Тесты, снимки (`ui-visual-validator`). **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "пустые состояния (`ui-ux-pro-max`: состояние вместо пустоты, без «прыжков» содержимого): общий компонент `watcher/emptystate.py` — значок Phosphor 32 px + строка `body` + подсказка `caption` по центру ленты. «Поиск» до Start — «Нажми Start — здесь появятся совпадения» и что ищется («Ищу: 2 слова, 0 предметов», или чего не хватает режиму поиска); после Start — «Слежу — совпадений пока нет»; чтение истории — «Читаю историю за N мин…» с бегущими точками (окно перерисовывается до чтения). «Весь чат» — «Читаю чат…», потом «Пока тихо». Исчезает с первой строкой. Новые значки magnifying-glass, chat-circle-dots, hourglass-medium (Phosphor 2.1.1); CairoSVG здесь не грузится (нет cairo и cffi под Python 3.14), поэтому `tools/build_ui_icons.py` умеет красить их из белых силуэтов 80 px (`downloads/phosphor_icons_2.1.1/masks`, нарисованы из тех же SVG). Тесты, снимки (`ui-visual-validator`). **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 8",
       "stage": "6",
@@ -4550,7 +4518,7 @@
       "depends_on": [
         "ui:8"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4561,13 +4529,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4584,19 +4557,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -4648,7 +4608,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:12 · Пустая лента до Start, нет «загрузки»\nЦель: Пустая лента до Start, нет «загрузки».\nКонтекст: P1 · **Empty state** в ленте: иконка + «Нажми Start — здесь появятся совпадения» + сколько слов/предметов отмечено; во «Всём чате» — «Пока тихо»; при чтении истории — строка «Читаю историю за N мин…» с бегущей точкой\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:8\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:12 · Пустая лента до Start, нет «загрузки»\nЦель: Пустая лента до Start, нет «загрузки».\nКонтекст: P1 · **Empty state** в ленте: иконка + «Нажми Start — здесь появятся совпадения» + сколько слов/предметов отмечено; во «Всём чате» — «Пока тихо»; при чтении истории — строка «Читаю историю за N мин…» с бегущей точкой\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:8\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4657,8 +4617,8 @@
       "title": "Выключенная фишка качества выглядит недоступной",
       "who": "Claude",
       "text": "P1 · «Выкл» — контур `border.control` и текст `text.secondary`; «Вкл» — фон `accent.subtle`-подобный тон цвета качества и текст цвета качества; недоступно — только при выключенном списке",
-      "note": "фишки качества: состояние видно не только по цвету (`ui-ux-pro-max`). «Вкл» — тихая подложка цвета качества (`theme.GRADE_SUBTLE`, 18 % поверх `SURFACE`; текст на ней 4.57–6.80 — AA, `design-theme-guide`), текст и рамка 1 px цвета качества; «Выкл» — без подложки, текст `MUTED` (5.27) и рамка `BORDER_CONTROL` (3.08) — видно, что нажимается; при наведении — `TEXT`. «Недоступно» (`DISABLED`, бледная рамка) — только когда режим поиска не использует список; клики тогда не меняют фильтр. Тесты состояний и контраста, снимок всех состояний (`ui-visual-validator`). **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "фишки качества: состояние видно не только по цвету (`ui-ux-pro-max`). «Вкл» — тихая подложка цвета качества (`theme.GRADE_SUBTLE`, 18 % поверх `SURFACE`; текст на ней 4.57–6.80 — AA, `design-theme-guide`), текст и рамка 1 px цвета качества; «Выкл» — без подложки, текст `MUTED` (5.27) и рамка `BORDER_CONTROL` (3.08) — видно, что нажимается; при наведении — `TEXT`. «Недоступно» (`DISABLED`, бледная рамка) — только когда режим поиска не использует список; клики тогда не меняют фильтр. Тесты состояний и контраста, снимок всех состояний (`ui-visual-validator`). **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "3",
@@ -4669,7 +4629,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4680,13 +4640,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4767,7 +4732,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:13 · Выключенная фишка качества выглядит недоступной\nЦель: Выключенная фишка качества выглядит недоступной.\nКонтекст: P1 · «Выкл» — контур `border.control` и текст `text.secondary`; «Вкл» — фон `accent.subtle`-подобный тон цвета качества и текст цвета качества; недоступно — только при выключенном списке\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:13 · Выключенная фишка качества выглядит недоступной\nЦель: Выключенная фишка качества выглядит недоступной.\nКонтекст: P1 · «Выкл» — контур `border.control` и текст `text.secondary`; «Вкл» — фон `accent.subtle`-подобный тон цвета качества и текст цвета качества; недоступно — только при выключенном списке\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (основной): токены и замер контраста пар. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4776,8 +4741,8 @@
       "title": "Окно «Найдено в чате!» в 3 раза больше содержимого",
       "who": "Claude",
       "text": "P1 · Высота по содержимому (мин. 1, макс. 6 сообщений, далее прокрутка); значок предмета у сообщения; Enter/Esc = ОК; рамка-мигалка — `accent` ↔ `accent.subtle` (№ 22)",
-      "note": "окно «Найдено в чате!»: высота по содержимому — от 1 до 6 сообщений (новые сверху), дальше полоса прокрутки (было всегда 8 строк); Tk считает высоту в строках шрифта вместе с отступами сообщения, поэтому высота пересчитывается из экранных строк после того, как окно получило ширину (`<Configure>`). У сообщения с отслеживаемым предметом — его картинка 28 px (половина значка списка). Enter / Esc = «ОК», когда окно в фокусе (само фокус у игры не забирает), «ОК» — кнопка по умолчанию. Рамка мигает `ACCENT` ↔ `ACCENT_SUBTLE` (`ALARM_DIM` теперь из реестра). Тесты, снимки 1 и 8 сообщений (`ui-visual-validator`). **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "окно «Найдено в чате!»: высота по содержимому — от 1 до 6 сообщений (новые сверху), дальше полоса прокрутки (было всегда 8 строк); Tk считает высоту в строках шрифта вместе с отступами сообщения, поэтому высота пересчитывается из экранных строк после того, как окно получило ширину (`<Configure>`). У сообщения с отслеживаемым предметом — его картинка 28 px (половина значка списка). Enter / Esc = «ОК», когда окно в фокусе (само фокус у игры не забирает), «ОК» — кнопка по умолчанию. Рамка мигает `ACCENT` ↔ `ACCENT_SUBTLE` (`ALARM_DIM` теперь из реестра). Тесты, снимки 1 и 8 сообщений (`ui-visual-validator`). **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 9",
       "stage": "6",
@@ -4788,7 +4753,7 @@
       "depends_on": [
         "ui:9"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4799,13 +4764,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4822,19 +4792,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -4886,7 +4843,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:14 · Окно «Найдено в чате!» в 3 раза больше содержимого\nЦель: Окно «Найдено в чате!» в 3 раза больше содержимого.\nКонтекст: P1 · Высота по содержимому (мин. 1, макс. 6 сообщений, далее прокрутка); значок предмета у сообщения; Enter/Esc = ОК; рамка-мигалка — `accent` ↔ `accent.subtle` (№ 22)\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:9\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:14 · Окно «Найдено в чате!» в 3 раза больше содержимого\nЦель: Окно «Найдено в чате!» в 3 раза больше содержимого.\nКонтекст: P1 · Высота по содержимому (мин. 1, макс. 6 сообщений, далее прокрутка); значок предмета у сообщения; Enter/Esc = ОК; рамка-мигалка — `accent` ↔ `accent.subtle` (№ 22)\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:9\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -4895,8 +4852,8 @@
       "title": "Фокус клавиатуры не виден (не проверено)",
       "who": "Claude",
       "text": "P1 · Кольцо `focus` 2 px у кнопок, полей, фишек, чекбоксов (картинки `*_focus.png`), порядок Tab сверху вниз; проверить в активном окне",
-      "note": "кольцо клавиатурного фокуса 2 px для кнопок, полей и фишек качества; чекбоксы получают контрастную рамку вокруг индикатора. Добавлены `*_focus` 9-slice для каждого DPI, Tk подключает их по состоянию `focus`; Tab-порядок следует порядку создания контролов сверху вниз. Проверено применение темы при 100/125/150%; ручной проход Tab по окну ещё нужен. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "кольцо клавиатурного фокуса 2 px для кнопок, полей и фишек качества; чекбоксы получают контрастную рамку вокруг индикатора. Добавлены `*_focus` 9-slice для каждого DPI, Tk подключает их по состоянию `focus`; Tab-порядок следует порядку создания контролов сверху вниз. Проверено применение темы при 100/125/150%; ручной проход Tab по окну ещё нужен. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "High",
       "dependencies_text": "№ 5",
       "stage": "3",
@@ -4907,7 +4864,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -4918,13 +4875,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -4941,19 +4903,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -5005,7 +4954,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:15 · Фокус клавиатуры не виден (не проверено)\nЦель: Фокус клавиатуры не виден (не проверено).\nКонтекст: P1 · Кольцо `focus` 2 px у кнопок, полей, фишек, чекбоксов (картинки `*_focus.png`), порядок Tab сверху вниз; проверить в активном окне\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-ux-pro-max (дополнительный): каталог UX-проверок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:15 · Фокус клавиатуры не виден (не проверено)\nЦель: Фокус клавиатуры не виден (не проверено).\nКонтекст: P1 · Кольцо `focus` 2 px у кнопок, полей, фишек, чекбоксов (картинки `*_focus.png`), порядок Tab сверху вниз; проверить в активном окне\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -5014,8 +4963,8 @@
       "title": "Полосы прокрутки устаревшие",
       "who": "Кодекс",
       "text": "P2 · Тонкая 8 px полоса без стрелок, ползунок `bg.hover`, при наведении `border.control` (картинки-элементы ttk)",
-      "note": "вертикальные полосы прокрутки: `tools/build_ui.py` создаёт прозрачные скруглённые PNG-ползунки в состояниях покоя и наведения; `watcher/theme.py` подключает их к `Vertical.TScrollbar`, убирает стрелки и задаёт ширину 8 px. Ползунок — `SURFACE_3`, при наведении — `BORDER_CONTROL`; ручную проверку окна не выполнял. **Повторная проверка скиллами (13.10): Кодекс.**",
-      "status": "review",
+      "note": "вертикальные полосы прокрутки: `tools/build_ui.py` создаёт прозрачные скруглённые PNG-ползунки в состояниях покоя и наведения; `watcher/theme.py` подключает их к `Vertical.TScrollbar`, убирает стрелки и задаёт ширину 8 px. Ползунок — `SURFACE_3`, при наведении — `BORDER_CONTROL`; ручную проверку окна не выполнял. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "Medium",
       "dependencies_text": "№ 5",
       "stage": "2",
@@ -5026,7 +4975,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -5037,13 +4986,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Кодекс"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · повторная проверка",
@@ -5060,19 +5014,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "цвета картинок из токенов",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -5124,7 +5065,7 @@
         "handoff_label": "готово к передаче Codex",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:16 · Полосы прокрутки устаревшие\nЦель: Полосы прокрутки устаревшие.\nКонтекст: P2 · Тонкая 8 px полоса без стрелок, ползунок `bg.hover`, при наведении `border.control` (картинки-элементы ttk)\nПлан: ui · статус: review · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): цвета картинок из токенов. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:16 · Полосы прокрутки устаревшие\nЦель: Полосы прокрутки устаревшие.\nКонтекст: P2 · Тонкая 8 px полоса без стрелок, ползунок `bg.hover`, при наведении `border.control` (картинки-элементы ttk)\nПлан: ui · статус: done · передача: готово к передаче Codex\nЗависимости: ui:5\nТребования и критерии готовности:\n- проблема пункта на снимке текущей версии не воспроизводится или исправлена\n- снимки до/после и отметка скиллов в docs/plan-evidence.json\nРазрешённые файлы:\n- — уточнить у Claude до начала —\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): проблема и решение на текущем экране. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после. у Codex есть свой экземпляр.\nТесты:\n- python -m pytest -q\n- python tools/ui_snapshots.py check\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -5193,19 +5134,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "цвета картинок из токенов",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -5327,19 +5255,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -5595,19 +5510,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "цвета картинок из токенов",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -6339,19 +6241,6 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
             "name": "ui-visual-validator",
             "role": "supporting",
             "purpose": "сверка по снимкам до/после",
@@ -6470,19 +6359,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -6608,19 +6484,6 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "цвета картинок из токенов",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
             "name": "ui-visual-validator",
             "role": "supporting",
             "purpose": "сверка по снимкам до/после",
@@ -6739,19 +6602,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "каталог UX-проверок",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -6991,19 +6841,6 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "контраст по токенам theme.py",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
             "name": "ui-visual-validator",
             "role": "supporting",
             "purpose": "сверка по снимкам до/после",
@@ -7044,7 +6881,7 @@
           "pytest tests/test_theme.py tests/test_app.py",
           "снимки"
         ],
-        "handoff": "review",
+        "handoff": "n/a",
         "arch_review": "not-needed",
         "files": {
           "Codex": [
@@ -7056,10 +6893,10 @@
         "note": "P3 — делать последним.",
         "state": "recommended",
         "agent_label": "Codex",
-        "handoff_label": "ждёт проверки Claude",
+        "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:31 · Общий тёмный фон плоский\nЦель: Общий тёмный фон плоский.\nКонтекст: P3 · Едва заметный вертикальный градиент шапки (картинка-фон), только если не мешает читаемости\nПлан: ui · статус: done · передача: ждёт проверки Claude\nЗависимости: ui:3\nТребования и критерии готовности:\n- градиент едва заметен\n- контраст текста не ниже прежнего\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): решить, нужен ли градиент шапки. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): контраст по токенам theme.py. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nПримечание: P3 — делать последним.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:31 · Общий тёмный фон плоский\nЦель: Общий тёмный фон плоский.\nКонтекст: P3 · Едва заметный вертикальный градиент шапки (картинка-фон), только если не мешает читаемости\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:3\nТребования и критерии готовности:\n- градиент едва заметен\n- контраст текста не ниже прежнего\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): решить, нужен ли градиент шапки. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nПримечание: P3 — делать последним.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -7068,8 +6905,8 @@
       "title": "В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается",
       "who": "Claude",
       "text": "P2 · Проверить внутренние отступы, межстрочный интервал и положение акцентной полосы на узкой ширине; оставить безопасное поле для текста",
-      "note": "в строках ленты левое поле акцентной полосы теперь уравновешено правым (`watcher/theme.py`); осталась проверка длинных сообщений и строк списка предметов на узкой ширине. **Приёмка Claude 13.10 со скиллами (в работе, остановлено по просьбе пользователя):** работа Кодекса принята (`86c2a8d`: длинное имя предмета — не больше двух строк, не заходит на уровень); найдено и исправлено в ленте (`3a2cb2c`): после длинного сообщения новая строка уходила за нижний край (высота считалась без переносов), перенесённые строки начинались под временем — теперь висячий отступ после колонки времени; тесты. Осталось: снимки до/после, закрытие.",
-      "status": "doing",
+      "note": "в строках ленты левое поле акцентной полосы теперь уравновешено правым (`watcher/theme.py`); осталась проверка длинных сообщений и строк списка предметов на узкой ширине. **Приёмка Claude 13.10 со скиллами :** работа Кодекса принята (`86c2a8d`: длинное имя предмета — не больше двух строк, не заходит на уровень); найдено и исправлено в ленте (`3a2cb2c`): после длинного сообщения новая строка уходила за нижний край (высота считалась без переносов), перенесённые строки начинались под временем — теперь висячий отступ после колонки времени; тесты.",
+      "status": "done",
       "priority": "Medium",
       "dependencies_text": "—",
       "stage": "2",
@@ -7078,7 +6915,7 @@
       "key": "ui:32",
       "parent": "",
       "depends_on": [],
-      "changed_at": "13.10.2026 10:15",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -7089,13 +6926,18 @@
           "at": "2026-10-13T10:15+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "",
+      "verification": "legacy",
       "verification_evidence": [],
       "evidence": {
         "result": "Правое поле строк ленты уравновешено с левым (Codex). Задача в работе: длинные сообщения не проверены.",
@@ -7163,7 +7005,7 @@
           "pytest tests/test_theme.py tests/test_app.py",
           "снимки"
         ],
-        "handoff": "review",
+        "handoff": "n/a",
         "arch_review": "not-needed",
         "files": {
           "Codex": [
@@ -7173,10 +7015,10 @@
         },
         "state": "recommended",
         "agent_label": "Codex",
-        "handoff_label": "ждёт проверки Claude",
+        "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:32 · В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается\nЦель: В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается.\nКонтекст: P2 · Проверить внутренние отступы, межстрочный интервал и положение акцентной полосы на узкой ширине; оставить безопасное поле для текста\nПлан: ui · статус: doing · передача: ждёт проверки Claude\nЗависимости: —\nТребования и критерии готовности:\n- равные внутренние поля\n- текст не касается края на узкой ширине\nРазрешённые файлы:\n- watcher/theme.py\n- watcher/feed.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): сетка отступов строк. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:32 · В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается\nЦель: В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается.\nКонтекст: P2 · Проверить внутренние отступы, межстрочный интервал и положение акцентной полосы на узкой ширине; оставить безопасное поле для текста\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: —\nТребования и критерии готовности:\n- равные внутренние поля\n- текст не касается края на узкой ширине\nРазрешённые файлы:\n- watcher/theme.py\n- watcher/feed.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): сетка отступов строк. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -7185,8 +7027,8 @@
       "title": "Подпись перекрывает изображение или значок под ней",
       "who": "Claude",
       "text": "P2 · Развести текстовую подпись и графический контент: задать отдельную область/подложку и проверить порядок слоёв на реальном масштабе",
-      "note": "по скриншоту развести подпись и изображение/значок, чтобы название не перекрывало важное содержимое.",
-      "status": "planned",
+      "note": "подписи районов на карте обходят значки (Кодекс, `d811bb8`, перенесён `004765d`); приёмка Claude 13.10 по снимку: подпись «Застава подземного города» сдвинута над группой значков, тест на отсутствие пересечения.",
+      "status": "done",
       "priority": "Medium",
       "dependencies_text": "—",
       "stage": "3",
@@ -7195,19 +7037,24 @@
       "key": "ui:33",
       "parent": "",
       "depends_on": [],
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата создания не была записана; проставлена 08.10.2026 по решению пользователя",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · наложения",
@@ -7268,7 +7115,7 @@
           "pytest tests/test_theme.py tests/test_app.py",
           "снимки"
         ],
-        "handoff": "review",
+        "handoff": "n/a",
         "arch_review": "not-needed",
         "files": {
           "Codex": [
@@ -7277,10 +7124,10 @@
         },
         "state": "recommended",
         "agent_label": "Codex",
-        "handoff_label": "ждёт проверки Claude",
+        "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:33 · Подпись перекрывает изображение или значок под ней\nЦель: Подпись перекрывает изображение или значок под ней.\nКонтекст: P2 · Развести текстовую подпись и графический контент: задать отдельную область/подложку и проверить порядок слоёв на реальном масштабе\nПлан: ui · статус: planned · передача: ждёт проверки Claude\nЗависимости: —\nТребования и критерии готовности:\n- подпись не перекрывает картинку\n- порядок слоёв верен на 125/150 %\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): развести подпись и графику. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:33 · Подпись перекрывает изображение или значок под ней\nЦель: Подпись перекрывает изображение или значок под ней.\nКонтекст: P2 · Развести текстовую подпись и графический контент: задать отдельную область/подложку и проверить порядок слоёв на реальном масштабе\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: —\nТребования и критерии готовности:\n- подпись не перекрывает картинку\n- порядок слоёв верен на 125/150 %\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): развести подпись и графику. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -7289,8 +7136,8 @@
       "title": "У комбобокса лишняя или раздвоенная рамка вокруг области стрелки",
       "who": "Claude",
       "text": "P2 · Свести рамку, поле и сегмент стрелки к одной согласованной геометрии; убрать лишнюю внутреннюю границу и выровнять отступы",
-      "note": "стандартная стрелка Tk заменена готовой иконкой без собственной рамки внутри общего округлого поля (`watcher/theme.py`). Проверено на 1000×600 и масштабе Tk 150 %: стрелка одна, поле цельное; область стрелки раскрывает список у обычного и карточного комбобокса. Базу снимков обновляет Claude. **Повторная проверка скиллами (13.10): Claude.**",
-      "status": "review",
+      "note": "стандартная стрелка Tk заменена готовой иконкой без собственной рамки внутри общего округлого поля (`watcher/theme.py`). Проверено на 1000×600 и масштабе Tk 150 %: стрелка одна, поле цельное; область стрелки раскрывает список у обычного и карточного комбобокса. Базу снимков обновляет Claude. **Повторная проверка снята 13.10 (решение пользователя: фокус на фичах).**",
+      "status": "done",
       "priority": "Medium",
       "dependencies_text": "№ 5",
       "stage": "2",
@@ -7301,7 +7148,7 @@
       "depends_on": [
         "ui:5"
       ],
-      "changed_at": "13.10.2026 14:06",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
@@ -7317,13 +7164,18 @@
           "at": "2026-10-13T14:06+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "pending",
+      "verification": "legacy",
       "verification_evidence": [],
       "evidence": {
         "result": "Стрелка комбобокса без второй рамки — у поля одна обводка (Codex, watcher/theme.py).",
@@ -7350,19 +7202,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "токены рамок BORDER_CONTROL",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -7407,7 +7246,7 @@
           "pytest tests/test_theme.py tests/test_app.py",
           "снимки"
         ],
-        "handoff": "review",
+        "handoff": "n/a",
         "arch_review": "not-needed",
         "files": {
           "Codex": [
@@ -7418,10 +7257,10 @@
         },
         "state": "recommended",
         "agent_label": "Codex",
-        "handoff_label": "ждёт проверки Claude",
+        "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:34 · У комбобокса лишняя или раздвоенная рамка вокруг области стрелки\nЦель: У комбобокса лишняя или раздвоенная рамка вокруг области стрелки.\nКонтекст: P2 · Свести рамку, поле и сегмент стрелки к одной согласованной геометрии; убрать лишнюю внутреннюю границу и выровнять отступы\nПлан: ui · статус: review · передача: ждёт проверки Claude\nЗависимости: ui:5\nТребования и критерии готовности:\n- одна рамка\n- стрелка выровнена\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): единая геометрия поля и стрелки. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): токены рамок BORDER_CONTROL. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:34 · У комбобокса лишняя или раздвоенная рамка вокруг области стрелки\nЦель: У комбобокса лишняя или раздвоенная рамка вокруг области стрелки.\nКонтекст: P2 · Свести рамку, поле и сегмент стрелки к одной согласованной геометрии; убрать лишнюю внутреннюю границу и выровнять отступы\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:5\nТребования и критерии готовности:\n- одна рамка\n- стрелка выровнена\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): единая геометрия поля и стрелки. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -7430,8 +7269,8 @@
       "title": "Геометрия кнопки, скругление и тень выглядят несогласованно",
       "who": "Claude",
       "text": "P2 · Проверить высоту, внутренние поля, радиус и глубину кнопки относительно соседних контролов; оставить мягкую глубину без тяжёлой тени",
-      "note": "по скриншоту выровнять геометрию кнопки, скругление и глубину относительно соседних контролов.",
-      "status": "planned",
+      "note": "кнопка действия баннера «Проверить снова» видна на 1000 px и оформлена как соседние кнопки (Кодекс, `0834449`, перенесён `f8d3151`); обрезка слова «Aion» в тексте баннера исправлена Claude в ui:27.",
+      "status": "done",
       "priority": "Medium",
       "dependencies_text": "№ 5, 20",
       "stage": "2",
@@ -7443,19 +7282,24 @@
         "ui:5",
         "ui:20"
       ],
-      "changed_at": "",
+      "changed_at": "13.10.2026 15:21",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата создания не была записана; проставлена 08.10.2026 по решению пользователя",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T15:21+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "",
+      "verification": "legacy",
       "verification_evidence": [],
       "ai": {
         "category": "UI/UX · кнопки",
@@ -7472,19 +7316,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "токены радиуса и тени",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -7529,7 +7360,7 @@
           "pytest tests/test_theme.py tests/test_app.py",
           "снимки"
         ],
-        "handoff": "review",
+        "handoff": "n/a",
         "arch_review": "not-needed",
         "files": {
           "Codex": [
@@ -7540,10 +7371,10 @@
         },
         "state": "recommended",
         "agent_label": "Codex",
-        "handoff_label": "ждёт проверки Claude",
+        "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:35 · Геометрия кнопки, скругление и тень выглядят несогласованно\nЦель: Геометрия кнопки, скругление и тень выглядят несогласованно.\nКонтекст: P2 · Проверить высоту, внутренние поля, радиус и глубину кнопки относительно соседних контролов; оставить мягкую глубину без тяжёлой тени\nПлан: ui · статус: planned · передача: ждёт проверки Claude\nЗависимости: ui:5, ui:20\nТребования и критерии готовности:\n- высота, поля и радиус как у соседних контролов\n- мягкая глубина без тяжёлой тени\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): геометрия кнопок. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): токены радиуса и тени. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:35 · Геометрия кнопки, скругление и тень выглядят несогласованно\nЦель: Геометрия кнопки, скругление и тень выглядят несогласованно.\nКонтекст: P2 · Проверить высоту, внутренние поля, радиус и глубину кнопки относительно соседних контролов; оставить мягкую глубину без тяжёлой тени\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:5, ui:20\nТребования и критерии готовности:\n- высота, поля и радиус как у соседних контролов\n- мягкая глубина без тяжёлой тени\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): геометрия кнопок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
@@ -7609,19 +7440,6 @@
             "availability": "project",
             "available": true,
             "availability_label": "установлен в проекте",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
-            "name": "ui-ux-pro-max",
-            "role": "supporting",
-            "purpose": "плотность и выравнивание фишек",
-            "role_label": "дополнительный",
-            "title": "UI/UX Pro Max",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
             "codex": "read-file",
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
@@ -8345,19 +8163,6 @@
             "codex_label": "Codex читает SKILL.md по AGENTS.md"
           },
           {
-            "name": "design-theme-guide",
-            "role": "supporting",
-            "purpose": "токены отступов",
-            "role_label": "дополнительный",
-            "title": "Design Theme Guide",
-            "area": "UI/UX",
-            "availability": "user",
-            "available": true,
-            "availability_label": "установлен глобально",
-            "codex": "read-file",
-            "codex_label": "Codex читает SKILL.md по AGENTS.md"
-          },
-          {
             "name": "ui-visual-validator",
             "role": "supporting",
             "purpose": "сверка по снимкам до/после",
@@ -8412,7 +8217,7 @@
         "handoff_label": "передача не нужна",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:42 · У вкладок слишком большие внутренние отступы\nЦель: У вкладок слишком большие внутренние отступы.\nКонтекст: P2 · Сократить горизонтальные и вертикальные поля вкладок до минимальных читаемых; сохранить одинаковую геометрию выбранной и остальных вкладок\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:11\nТребования и критерии готовности:\n- минимальные читаемые поля\n- выбранная и обычная вкладка одной геометрии\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): поля вкладок. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): токены отступов. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nПримечание: Интегрировано: код d702783 (Codex), приёмка Claude 12.10. Визуальная проверка на 100 % масштабе; 125/150 % не проверены.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:42 · У вкладок слишком большие внутренние отступы\nЦель: У вкладок слишком большие внутренние отступы.\nКонтекст: P2 · Сократить горизонтальные и вертикальные поля вкладок до минимальных читаемых; сохранить одинаковую геометрию выбранной и остальных вкладок\nПлан: ui · статус: done · передача: передача не нужна\nЗависимости: ui:11\nТребования и критерии готовности:\n- минимальные читаемые поля\n- выбранная и обычная вкладка одной геометрии\nРазрешённые файлы:\n- watcher/theme.py\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): поля вкладок. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nПримечание: Интегрировано: код d702783 (Codex), приёмка Claude 12.10. Визуальная проверка на 100 % масштабе; 125/150 % не проверены.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {

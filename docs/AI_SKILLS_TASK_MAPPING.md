@@ -10,26 +10,26 @@
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 10 |
 | `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 23 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 40 |
-| `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 9 |
-| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 10 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 20 |
+| `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 0 |
+| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 0 |
 | `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
 | `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 33 |
 | `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 12 |
 | `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 4 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
-| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 24 |
+| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 4 |
 | `code-review` | Проверка и ревью | встроен в Claude Code | у Codex свой аналог | 1 |
 | `security-review` | Безопасность | встроен в Claude Code | только у Claude | 12 |
 | `run` | Проверка и ревью | встроен в Claude Code | только у Claude | 3 |
 | `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 13 |
 | `tool:check_project` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
-| `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 23 |
+| `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
 
 ## Распределение открытых задач
 
-Claude Code: **22** · Codex: **32** · Совместно: **18** · Пользователь: **0**
+Claude Code: **22** · Codex: **12** · Совместно: **18** · Пользователь: **0**
 
 ## Задачи
 
@@ -50,31 +50,11 @@ Claude Code: **22** · Codex: **32** · Совместно: **18** · Польз
 | `map:38` | Показывать в сообщении метку с названием локации | Claude Code | `superpowers:test-driven-development` | `superpowers:systematic-debugging` | передача не нужна |
 | `map:39` | Настраиваемая ширина карты и соседней панели | Совместно | `application-ui-ux-designer` | `application-software-architect`, `superpowers:test-driven-development` | готово к передаче Codex |
 | `sn:SN-4` | Старые оповещения — через центр | Claude Code | `application-software-architect` | `superpowers:test-driven-development`, `superpowers:systematic-debugging` | передача не нужна |
-| `sn:SN-5` | Вкладка «Уведомления» (настройки) | Совместно | `application-ui-ux-designer` | `ui-ux-pro-max`, `application-software-architect`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |
+| `sn:SN-5` | Вкладка «Уведомления» (настройки) | Совместно | `application-ui-ux-designer` | `application-software-architect`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |
 | `sn:SN-6` | Расписание: данные из статьи | Claude Code | `superpowers:verification-before-completion` | `anthropic-skills:deep-research` | передача не нужна |
 | `sn:SN-7` | Вкладка «Расписание» | Совместно | `application-ui-ux-designer` | `application-motion-designer`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |
 | `sn:SN-9` | Проверка обновления расписания | Codex | `application-software-architect` | `security-review`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |
 | `sn:SN-10` | Проверка поверх игры и сборка | Совместно | `ui-visual-validator` | `tool:ui_snapshots`, `run`, `superpowers:verification-before-completion` | нужен пользователь |
-| `ui:1` | На 1000×600 строка настроек обрезана, громкость пропадает | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:2` | Контраст ниже 4.5:1: «Пропущено», Stop, выключенные фишки; границы полей 1.5:1 | Codex | `application-ui-ux-designer`, `design-theme-guide` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:3` | Настройки занимают ≈ 45 % высоты | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:4` | Статус слежения мелкий и далеко от Start | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:5` | Нет токенов: 25 цветов и 14 шрифтов прописаны на месте | Codex | `application-ui-ux-designer`, `design-theme-guide` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:6` | Шрифты: один кегль на всё, нет иерархии | Codex | `application-ui-ux-designer`, `design-theme-guide` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:7` | Оранжевый везде — акцент не работает | Codex | `application-ui-ux-designer`, `design-theme-guide` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:8` | Разнородные Юникод-символы вместо иконок | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:9` | Совпадения — сплошные оранжевые плашки | Codex | `application-ui-ux-designer`, `design-theme-guide` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:10` | Счётчики похожи на кнопки | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:11` | Подпись выбранной вкладки смещена на ~4 px | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:12` | Пустая лента до Start, нет «загрузки» | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:13` | Выключенная фишка качества выглядит недоступной | Codex | `application-ui-ux-designer`, `design-theme-guide` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:14` | Окно «Найдено в чате!» в 3 раза больше содержимого | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:15` | Фокус клавиатуры не виден (не проверено) | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:16` | Полосы прокрутки устаревшие | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:32` | В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
-| `ui:33` | Подпись перекрывает изображение или значок под ней | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
-| `ui:34` | У комбобокса лишняя или раздвоенная рамка вокруг области стрелки | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
-| `ui:35` | Геометрия кнопки, скругление и тень выглядят несогласованно | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
 | `tg:1.1` | Модуль `telegram.py`: `sendMessage` (HTML, экранирование `<>&`), `429`, ошибки сети, `getUpdates` для поиска чатов. | Codex | `superpowers:test-driven-development` | `security-review`, `code-review` | план ждёт «делаем» |
 | `tg:1.2` | Поток-отправщик: группа через `ChatBatcher` (тик 0.5 с), личка — своя очередь, по одному. | Codex | `application-software-architect` | `superpowers:test-driven-development`, `superpowers:systematic-debugging` | план ждёт «делаем» |
 | `tg:1.3` | Отдельный «слушатель» лога для группы (свой tailer, только `3.Поиск группы` через `parse_line`), работает пока включена галочка. | Claude Code | `application-software-architect` | `superpowers:test-driven-development` | передача не нужна |

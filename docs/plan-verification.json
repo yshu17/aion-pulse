@@ -56,7 +56,7 @@
       "by": "Claude Code"
     },
     "ui:2": {
-      "state": "pending",
+      "state": "verified",
       "evidence": [
         {
           "kind": "commit",
@@ -73,6 +73,10 @@
         {
           "kind": "report",
           "ref": "reopened 13.10.2026 for a skill-based re-check (user decision); verified again after the re-check"
+        },
+        {
+          "kind": "report",
+          "ref": "re-check withdrawn 13.10.2026 (user: focus on features); the 12.10 verification stands"
         }
       ],
       "at": "13.10.2026",
