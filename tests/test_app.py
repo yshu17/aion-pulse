@@ -1315,6 +1315,7 @@ def test_settings_card_folds_smoothly_and_ends_in_the_right_state(tmp_path):
         root.deiconify()
         root.geometry("1200x800")
         app.cfg.reduce_motion = False
+        app.cfg.settings_open = True  # ui:3 starts folded; this test opens it first
         app._show_settings(True)
         root.update()
         full = app.settings_card.winfo_height()
