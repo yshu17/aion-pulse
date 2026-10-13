@@ -44,6 +44,39 @@ LABEL_CHARS = 5  # ui:36: the width of the «Найти» / «Ур.» label colu
 ANY_LEVEL = "любой"
 
 
+def _name_in_two_lines(name: str, width: int, font: tkfont.Font) -> str:
+    """Keep long item names inside a fixed-height row without entering the level column."""
+    width = max(1, width)
+    remaining = " ".join(name.split())
+    lines: list[str] = []
+    for _ in range(2):
+        if not remaining:
+            break
+        if font.measure(remaining) <= width:
+            lines.append(remaining)
+            remaining = ""
+            break
+        low, high = 0, len(remaining)
+        while low < high:
+            mid = (low + high + 1) // 2
+            if font.measure(remaining[:mid]) <= width:
+                low = mid
+            else:
+                high = mid - 1
+        cut = max(1, low)
+        space = remaining.rfind(" ", 0, cut + 1)
+        if space >= cut // 2:
+            cut = space
+        lines.append(remaining[:cut].rstrip())
+        remaining = remaining[cut:].lstrip()
+    if remaining and lines:
+        last = lines[-1]
+        while last and font.measure(last + "…") > width:
+            last = last[:-1]
+        lines[-1] = last.rstrip() + "…"
+    return "\n".join(lines)
+
+
 @dataclass
 class ItemFilter:
     grades: set[str] = field(default_factory=set)  # shown grades; empty = all
@@ -455,9 +488,10 @@ class ItemList(ttk.Frame):
                     fill=theme.SURFACE, outline="", stipple="gray50", tags="row",
                 )
         color = theme.GRADE_COLORS.get(item.grade, theme.TEXT) if self.enabled else theme.DISABLED
+        name_width = max(1, width - NAME_X - 56)  # 14 px edge + level and safe gap
         canvas.create_text(
-            NAME_X, mid, text=item.name, anchor="w", fill=color, font=self.font,
-            width=max(60, width - NAME_X - 56), tags="row",
+            NAME_X, mid, text=_name_in_two_lines(item.name, name_width, self.font),
+            anchor="w", fill=color, font=self.font, width=name_width, tags="row",
         )
         canvas.create_text(
             width - 14, mid, text=str(item.level), anchor="e", fill=theme.MUTED, font=self.small, tags="row"

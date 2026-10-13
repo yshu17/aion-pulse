@@ -208,3 +208,32 @@ def test_grade_chip_states_on_off_disabled(root):
     grades = set(lst.filter.grades)
     lst._toggle_grade("epic")
     assert lst.filter.grades == grades  # a disabled list ignores the chips
+
+
+def test_long_item_name_stays_within_two_lines(root):
+    from watcher.itemlist import _name_in_two_lines
+    from tkinter import font as tkfont
+
+    face = tkfont.Font(font=theme.font("body"))
+    shown = _name_in_two_lines("Очень длинное название легендарного предмета из далёкой крепости", 130, face)
+    assert shown.endswith("…")
+    assert len(shown.splitlines()) <= 2
+    assert all(face.measure(line) <= 130 for line in shown.splitlines())
+
+
+def test_long_name_does_not_overlap_level_or_next_row(root):
+    root.geometry("360x360")
+    item = WatchItem("long", "Очень длинное название легендарного предмета из далёкой крепости", 55,
+                     "Лата", "epic")
+    lst, _ = make(root, items=[item])
+    lst.render()
+    labels = [(i, lst.canvas.itemcget(i, "text")) for i in lst.canvas.find_withtag("row")
+              if lst.canvas.type(i) == "text"]
+    name_id = next(i for i, text in labels if text.endswith("…"))
+    level_id = next(i for i, text in labels if text == "55")
+    name = lst.canvas.bbox(name_id)
+    level = lst.canvas.bbox(level_id)
+    assert name is not None and level is not None
+    assert name[2] + 8 < level[0]
+    top = lst.row_top("long")
+    assert top is not None and top <= name[1] and name[3] <= top + ROW_H
