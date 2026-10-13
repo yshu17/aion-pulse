@@ -1133,3 +1133,29 @@ def test_unavailable_overlay_label_is_grey(tmp_path):
         assert ttk.Style(root).lookup(style, "foreground", ["disabled"]) == theme.DISABLED
     finally:
         root.destroy()
+
+
+def test_header_gradient_never_runs_behind_header_widgets(tmp_path):
+    """ui:31 recheck: Tk labels are opaque, so a gradient behind them shows their rectangles — the tint stays in the
+    header's empty top band, above every widget."""
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "fake_chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(log), "keywords": ["хил"], "game_check": False}), encoding="utf-8")
+    root = tk.Tk()
+    root.geometry("1200x700")
+    try:
+        app = App(root, cfg_path)
+        root.update()
+        backdrop = app._header_gradient
+        lines = backdrop.find_withtag("gradient")
+        assert lines  # the tint is there
+        top = min(child.winfo_y() for child in app.header.winfo_children() if child is not backdrop)
+        assert max(backdrop.coords(line)[1] for line in lines) < top
+    finally:
+        app._on_close()

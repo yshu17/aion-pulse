@@ -782,17 +782,22 @@ def _solid_button(style: ttk.Style, name: str, color: str, hover: str, text: str
 
 
 def install_header_gradient(header: ttk.Frame) -> tk.Canvas:
-    """Subtle vertical tint behind the title row; redraw only when its size changes."""
+    """Subtle vertical tint in the header's empty top band; redraw only when its size changes.
+
+    Tk labels are opaque: a tint behind the title and the counters showed their rectangles (ui:31 recheck), so the
+    gradient fades to BG within the header's top padding, above every widget."""
     backdrop = tk.Canvas(header, background=BG, borderwidth=0, highlightthickness=0)
     backdrop.place(x=0, y=0, relwidth=1, relheight=1)
     backdrop.tk.call("lower", backdrop._w)
-    end = mix(SURFACE_2, BG, 0.30)
+    start = mix(SURFACE_2, BG, 0.30)
+    raw = header.cget("padding")
+    padding = [int(str(v)) for v in (raw if isinstance(raw, (tuple, list)) else str(raw).split())] or [0]
+    band = padding[1] if len(padding) > 1 else padding[0]
 
     def redraw(event: tk.Event) -> None:
         backdrop.delete("gradient")
-        height = max(1, event.height)
-        for y in range(height):
-            shade = mix(end, BG, y / max(1, height - 1))
+        for y in range(max(0, min(band, event.height))):
+            shade = mix(start, BG, y / max(1, band))
             backdrop.create_line(0, y, event.width, y, fill=shade, tags="gradient")
 
     backdrop.bind("<Configure>", redraw)
