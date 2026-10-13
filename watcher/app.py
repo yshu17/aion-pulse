@@ -202,23 +202,20 @@ class App:
         self.browse_btn.grid(row=0, column=2, pady=4, sticky="w")
         Hint(self.browse_btn, "Выбрать папку игры или Chat.log")
         ttk.Label(settings, text="Оповещение", style="CardMuted.TLabel").grid(row=1, column=0, sticky="nw", pady=(10, 0))
-        # two lines: the mode, sound and reaction; then the popup and the volume (on a 1000 px window
-        # one line does not fit and the volume went off the edge)
+        # one grid (ui:37): the mode, sound, play and test; under them the volume (under «Звук») and the reaction;
+        # then the popup setting. The columns line up instead of two independent rows, and 1000 px fits
         alert = ttk.Frame(settings, style="Surface.TFrame")
         alert.grid(row=1, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=4)
-        alert_row = ttk.Frame(alert, style="Surface.TFrame")
-        alert_row.pack(anchor="w")
-        alert_row2 = ttk.Frame(alert, style="Surface.TFrame")
-        alert_row2.pack(anchor="w", pady=(4, 0))
+        alert_row = alert_row2 = alert
         self.mode_var = tk.StringVar(
             value=next((k for k, v in ALERT_MODES.items() if v == self.cfg.alert_mode), "Стандартный")
         )
         mode = ttk.Combobox(
             alert_row, textvariable=self.mode_var, values=list(ALERT_MODES), state="readonly", width=12, style="Card.TCombobox"
         )
-        mode.pack(side="left")
+        mode.grid(row=0, column=0, sticky="w")
         mode.bind("<<ComboboxSelected>>", lambda _e: self._on_mode_selected())
-        ttk.Label(alert_row, text="Звук", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
+        ttk.Label(alert_row, text="Звук", style="CardMuted.TLabel").grid(row=0, column=1, sticky="w", padx=(18, 8))
         self.sound_choices = self._sound_choices()
         self.sound_var = tk.StringVar(value=self._sound_label(self.cfg.sound_path))
         self.sound_box = ttk.Combobox(
@@ -229,23 +226,25 @@ class App:
             width=22,
             style="Card.TCombobox",
         )
-        self.sound_box.pack(side="left")
+        self.sound_box.grid(row=0, column=2, sticky="ew")
         self.sound_box.bind("<<ComboboxSelected>>", lambda _e: self._on_sound_selected())
         play_button = ttk.Button(
             alert_row, image=self.ui_icons.get("play", "accent", 16), style="Card.TButton",
             command=self.notifier.play, padding=(6, 5),
         )
-        play_button.pack(side="left", padx=8)
+        play_button.grid(row=0, column=3, padx=8)
         Hint(play_button, "Прослушать звук")
         preview = ttk.Button(alert_row, text="Тест уведомления", style="Card.TButton", command=self._preview_notification)
-        preview.pack(side="left", padx=(0, 8))
+        preview.grid(row=0, column=4, sticky="w", padx=(0, 8))
         Hint(preview, "Показать пробное уведомление в углу экрана")
-        ttk.Label(alert_row, text="Реакция", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
+        react_cell = ttk.Frame(alert, style="Surface.TFrame")  # «Реакция» sits after the volume, so 1000 px fits
+        react_cell.grid(row=1, column=4, sticky="w", pady=(6, 0))
+        ttk.Label(react_cell, text="Реакция", style="CardMuted.TLabel").pack(side="left", padx=(0, 8))
         self.react_var = tk.StringVar(
             value=next((k for k, v in REACT_CHOICES.items() if v == self.cfg.react_sec), "30 с")
         )
         react = ttk.Combobox(
-            alert_row, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7, style="Card.TCombobox"
+            react_cell, textvariable=self.react_var, values=list(REACT_CHOICES), state="readonly", width=7, style="Card.TCombobox"
         )
         react.pack(side="left")
         react.bind("<<ComboboxSelected>>", lambda _e: self._on_react_selected())
@@ -259,8 +258,9 @@ class App:
             command=self._on_popup_toggled,
             state="normal" if OVERLAY_POPUP_ENABLED else "disabled",
         )
-        self.popup_check.pack(side="left", padx=(18, 0))
-        ttk.Label(alert_row2, text="Громкость", style="CardMuted.TLabel").pack(side="left", padx=(18, 8))
+        self.popup_check.grid(row=2, column=1, columnspan=4, sticky="w", pady=(6, 0))
+        ttk.Label(alert_row2, text="Громкость", style="CardMuted.TLabel").grid(row=1, column=1, sticky="w", padx=(18, 8),
+                                                                         pady=(6, 0))
         self.volume_var = tk.IntVar(value=self.notifier.volume)
         volume = ttk.Scale(
             alert_row2,
@@ -271,10 +271,10 @@ class App:
             variable=self.volume_var,
             command=lambda _v: self._on_volume_changed(save=False),
         )
-        volume.pack(side="left")
+        volume.grid(row=1, column=2, sticky="ew", pady=(6, 0))
         volume.bind("<ButtonRelease-1>", lambda _e: self._on_volume_changed())
         self.volume_label = ttk.Label(alert_row2, text=f"{self.notifier.volume}%", style="Caption.TLabel", width=5)
-        self.volume_label.pack(side="left", padx=(8, 0))
+        self.volume_label.grid(row=1, column=3, pady=(6, 0))
         ttk.Label(settings, text="История", style="CardMuted.TLabel").grid(row=2, column=0, sticky="w")
         history_row = ttk.Frame(settings, style="Surface.TFrame")
         history_row.grid(row=2, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=4)
