@@ -113,6 +113,24 @@ def test_colours_live_only_in_the_theme():
     assert not stray, "colours outside theme.py:\n" + "\n".join(stray)
 
 
+def test_theme_functions_use_registered_colour_names():
+    """ui:5: drawing and styles must read named tokens, not hide hex values in functions."""
+    import ast
+    import re
+    from pathlib import Path
+
+    source = Path(theme.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    inline = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for child in ast.walk(node):
+                if (isinstance(child, ast.Constant) and isinstance(child.value, str)
+                        and re.fullmatch(r"#[0-9a-fA-F]{6}", child.value)):
+                    inline.append(f"{node.name}:{child.lineno}:{child.value}")
+    assert not inline, "inline theme colours:\n" + "\n".join(inline)
+
+
 def test_registry_has_every_named_colour_and_type_roles():
     assert theme.COLOR["PLACE"] == theme.PLACE and theme.COLOR["COUNTDOWN_URGENT"] == "#ffd0d1"
     assert theme.font("caption")[1:] == (11, "normal")

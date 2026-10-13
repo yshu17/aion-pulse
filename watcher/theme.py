@@ -105,6 +105,12 @@ TOOLTIP_LINE = "#3a3d46"
 TOOLTIP_SLOT = "#1c1f26"  # empty manastone / socket slot
 TOOLTIP_PROPS = "#e8c55a"  # 11.39 on TOOLTIP_BG
 TOOLTIP_WARNING = "#ff5b5b"  # 6.26 on TOOLTIP_BG
+PENDING_CHECK_BG = "#5a3610"  # checkbox backdrop on a highlighted alert row
+CHECK_DIM_FILL = "#6b4a26"  # disabled checked box
+CHECK_DIM_MARK = "#2a1d0e"  # disabled checkmark
+PENDING_HOT_INNER = "#7a4a14"  # highlighted pending checkbox interior
+ACCEPTED_CHECK_FILL = "#3fbf6f"  # accepted checkbox icon fill
+ACCEPTED_CHECK_MARK = "#0c2414"  # accepted checkbox icon stroke
 
 # Type scale (UI/UX item 6, plan section 2). Families are tried in order: Segoe UI Variable (Windows 11) first,
 # then Segoe UI (Windows 10); a «strong» role uses a Semibold family, or bold Segoe UI where that is missing.
@@ -203,7 +209,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.configure("CardMuted.TLabel", background=SURFACE, foreground=MUTED)
     style.configure("Caption.TLabel", background=SURFACE, foreground=MUTED, font=font("caption"))
     style.configure("Status.TLabel", background=BG, foreground=MUTED)
-    style.configure("Live.TLabel", background=BG, foreground="#5fd38d")
+    style.configure("Live.TLabel", background=BG, foreground=SUCCESS)
     style.configure("Warn.TLabel", background=BG, foreground=DANGER)
     style.configure(
         "Horizontal.TScale",
@@ -247,7 +253,7 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         bordercolor=[("focus", ACCENT)],
     )
     _solid_button(style, "Accent.TButton", ACCENT, ACCENT_HOVER, ACCENT_TEXT)
-    _solid_button(style, "Danger.TButton", DANGER_FILL, DANGER_FILL_HOVER, "#ffffff")
+    _solid_button(style, "Danger.TButton", DANGER_FILL, DANGER_FILL_HOVER, MAP_TEXT)
 
     style.configure(
         "TEntry",
@@ -354,15 +360,15 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
     style.element_create("PendHot.indicator", "image", hot, ("selected", done), border=0, sticky="")
     for name, element, background in (
         ("Pend.TCheckbutton", "Pend.indicator", SURFACE),
-        ("PendHot.TCheckbutton", "PendHot.indicator", "#5a3610"),
+        ("PendHot.TCheckbutton", "PendHot.indicator", PENDING_CHECK_BG),
     ):
         style.layout(name, [("Checkbutton.padding", {"sticky": "nswe", "children": [(element, {"sticky": ""})]})])
         style.configure(name, background=background, padding=(0, 0))
         style.map(name, background=[("active", background)])
     accepted, missed = _result_images(root)
     for name, element, image, background in (
-        ("Accept.TCheckbutton", "Accept.indicator", accepted, "#173a24"),
-        ("Missed.TCheckbutton", "Missed.indicator", missed, "#3d1a1d"),
+        ("Accept.TCheckbutton", "Accept.indicator", accepted, ACCEPTED_BG),
+        ("Missed.TCheckbutton", "Missed.indicator", missed, MISSED_BG),
     ):
         style.element_create(element, "image", image, border=0, sticky="")
         style.layout(name, [("Checkbutton.padding", {"sticky": "nswe", "children": [(element, {"sticky": ""})]})])
@@ -679,12 +685,12 @@ def _check_images(root: tk.Tk) -> tuple[tk.PhotoImage, ...]:
         (off, SURFACE_2, BORDER_CONTROL),
         (on, ACCENT, ACCENT),
         (off_dim, SURFACE, SURFACE_2),
-        (on_dim, "#6b4a26", "#6b4a26"),
+        (on_dim, CHECK_DIM_FILL, CHECK_DIM_FILL),
     ):
         image.put(border, to=(1, 1, size - 1, size - 1))
         image.put(fill, to=(3, 3, size - 3, size - 3))
     # checkmark: short stroke down-right, long stroke up-right
-    for image, color in ((on, ACCENT_TEXT), (on_dim, "#2a1d0e")):
+    for image, color in ((on, ACCENT_TEXT), (on_dim, CHECK_DIM_MARK)):
         for x in range(6, 11):
             _dot(image, x, 11 + (x - 6), color)
         for x in range(10, 19):
@@ -708,7 +714,7 @@ def _pending_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage, tk.Photo
     cold.put(ACCENT, to=(1, 1, size - 1, size - 1))
     cold.put(SURFACE_2, to=(3, 3, size - 3, size - 3))
     hot.put(ACCENT_HOVER, to=(0, 0, size, size))
-    hot.put("#7a4a14", to=(4, 4, size - 4, size - 4))
+    hot.put(PENDING_HOT_INNER, to=(4, 4, size - 4, size - 4))
     done.put(ACCENT, to=(1, 1, size - 1, size - 1))
     for x in range(6, 11):
         _dot(done, x, 11 + (x - 6), ACCENT_TEXT)
@@ -722,15 +728,15 @@ def _result_images(root: tk.Tk) -> tuple[tk.PhotoImage, tk.PhotoImage]:
     """24px boxes for finished alerts: green check (accepted) and red cross (missed)."""
     size = CHECK_SIZE
     accepted, missed = (tk.PhotoImage(master=root, width=size, height=size) for _ in range(2))
-    accepted.put("#3fbf6f", to=(1, 1, size - 1, size - 1))
+    accepted.put(ACCEPTED_CHECK_FILL, to=(1, 1, size - 1, size - 1))
     for x in range(6, 11):
-        _dot(accepted, x, 11 + (x - 6), "#0c2414")
+        _dot(accepted, x, 11 + (x - 6), ACCEPTED_CHECK_MARK)
     for x in range(10, 19):
-        _dot(accepted, x, 15 - (x - 10), "#0c2414")
+        _dot(accepted, x, 15 - (x - 10), ACCEPTED_CHECK_MARK)
     missed.put(DANGER, to=(1, 1, size - 1, size - 1))
     for i in range(6, 17):
-        missed.put("#ffffff", to=(i, i, i + 2, i + 2))
-        missed.put("#ffffff", to=(i, size - i - 2, i + 2, size - i))
+        missed.put(MAP_TEXT, to=(i, i, i + 2, i + 2))
+        missed.put(MAP_TEXT, to=(i, size - i - 2, i + 2, size - i))
     _images.extend((accepted, missed))
     return accepted, missed
 
