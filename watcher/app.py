@@ -184,7 +184,7 @@ class App:
             value=next((k for k, v in SEARCH_MODES.items() if v == self.cfg.search_mode), "Слово ИЛИ предмет")
         )
         search_mode = ttk.Combobox(
-            control, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=17
+            control, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=18
         )
         search_mode.bind("<<ComboboxSelected>>", lambda _e: self._on_search_mode_selected())
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
