@@ -20,6 +20,8 @@ MSK = timezone(timedelta(hours=3))
 DAY_NAMES = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
              "sat": "Суббота", "sun": "Воскресенье"}
 NEXT_LIMIT = 8
+LEADS = {"5 мин": 5, "15 мин": 15, "30 мин": 30, "1 час": 60}  # SN-8: how early to remind (user choice 13.10)
+DEFAULT_LEAD = 5
 REFRESH_MS = 30_000
 
 
@@ -78,6 +80,15 @@ def zone_name(msk: datetime, tz: timezone | None = None) -> str:
     return f"UTC{sign}{hours}" + (f":{rest:02d}" if rest else "")
 
 
+def bell_key(event: dict) -> str:
+    """The saved id of a weekly event the user wants to be reminded of."""
+    return f"{event['day']}|{event['start']}|{event['name']}"
+
+
+def lead_label(minutes: int) -> str:
+    return next((k for k, v in LEADS.items() if v == minutes), "5 мин")
+
+
 def time_range(start: datetime, end: datetime, tz: timezone | None = None) -> str:
     """«20:00–21:00» in local time."""
     return f"{to_local(start, tz):%H:%M}–{to_local(end, tz):%H:%M}"
@@ -86,9 +97,13 @@ def time_range(start: datetime, end: datetime, tz: timezone | None = None) -> st
 class ScheduleTab(ttk.Frame):
     """Two cards: «Ближайшие» (running and next events) and «По дням» (a weekday picker and its events)."""
 
-    def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None) -> None:
+    def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None,
+                 belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None) -> None:
         super().__init__(master, padding=(0, 12, 0, 0))
         self.events = events
+        self.belled = belled if belled is not None else set()  # SN-8: events to remind of (shared with the app)
+        self.on_bell = on_bell
+        self.on_lead = on_lead
         self.clock = clock
         self.tz = tz
         self._after: str | None = None
@@ -100,7 +115,15 @@ class ScheduleTab(ttk.Frame):
 
         nearest = ttk.Frame(body, style="Card.TFrame", padding=(16, 12))
         nearest.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-        ttk.Label(nearest, text="Ближайшие", style="Title.TLabel").pack(anchor="w")
+        near_head = ttk.Frame(nearest, style="Surface.TFrame")
+        near_head.pack(fill="x")
+        ttk.Label(near_head, text="Ближайшие", style="Title.TLabel").pack(side="left")
+        self.lead_var = tk.StringVar(value=lead_label(lead_min))
+        self.lead_box = ttk.Combobox(near_head, textvariable=self.lead_var, values=list(LEADS), state="readonly",
+                                     width=7, style="Card.TCombobox")
+        self.lead_box.pack(side="right")
+        self.lead_box.bind("<<ComboboxSelected>>", lambda _e: self._on_lead())
+        ttk.Label(near_head, text="Напоминать за", style="CardMuted.TLabel").pack(side="right", padx=(0, 8))
         self.next_box = tk.Frame(nearest, background=theme.SURFACE)
         self.next_box.pack(fill="both", expand=True, pady=(8, 0))
 
@@ -140,7 +163,10 @@ class ScheduleTab(ttk.Frame):
         for event, start in upcoming:
             end = end_of(event, start)
             running = start <= now < end
-            self._row(self.next_box, time_range(start, end, self.tz), event["name"], until_text(start, end, now),
+            badge = until_text(start, end, now)
+            if bell_key(event) in self.belled:
+                badge = "напомню · " + badge
+            self._row(self.next_box, time_range(start, end, self.tz), event["name"], badge,
                       accent=theme.SUCCESS if running else theme.ACCENT)
         day = next((k for k, v in DAY_NAMES.items() if v == self.day_var.get()), DAYS[now.weekday()])
         today = DAYS[now.weekday()]
@@ -155,16 +181,24 @@ class ScheduleTab(ttk.Frame):
                 hour=hour, minute=minute)
             end = end_of(event, start)
             past = day == today and end <= now
-            self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past)
+            self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event)
         if self._after:
             self.after_cancel(self._after)
         self._after = self.after(REFRESH_MS, self.refresh)
 
-    def _row(self, box: tk.Frame, when: str, name: str, badge: str, accent: str | None = None, dim: bool = False) -> None:
+    def _row(self, box: tk.Frame, when: str, name: str, badge: str, accent: str | None = None, dim: bool = False,
+             bell: dict | None = None) -> None:
         compact = box is self.day_list  # a weekday can have 11 events: they fit a 600 px window in the small font
         row = tk.Frame(box, background=theme.SURFACE)
         row.pack(fill="x", pady=0 if compact else 1)
         color = theme.MUTED if dim else theme.TEXT
+        # the toggle is packed first, so a long event name is cut, not the toggle
+        if bell is not None:
+            on = bell_key(bell) in self.belled
+            toggle = tk.Label(row, text="напомню" if on else "напомнить", background=theme.SURFACE,
+                              foreground=theme.ACCENT if on else theme.MUTED, font=theme.font("small"), cursor="hand2")
+            toggle.pack(side="right", padx=(8, 4))
+            toggle.bind("<Button-1>", lambda _e, ev=bell: self.toggle_bell(ev))
         tk.Label(row, text=when, width=11, anchor="w", background=theme.SURFACE, foreground=theme.MUTED,
                  font=theme.font("mono")).pack(side="left")
         tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
@@ -172,6 +206,22 @@ class ScheduleTab(ttk.Frame):
         if badge:
             tk.Label(row, text=badge, background=theme.SURFACE, foreground=accent or theme.MUTED,
                      font=theme.font("small")).pack(side="right")
+
+    def toggle_bell(self, event: dict) -> None:
+        """SN-8: switch the reminder of one weekly event on or off and tell the app (it saves the choice)."""
+        key = bell_key(event)
+        on = key not in self.belled
+        (self.belled.add if on else self.belled.discard)(key)
+        if self.on_bell:
+            self.on_bell(key, on)
+        self.refresh()
+
+    def lead_minutes(self) -> int:
+        return LEADS.get(self.lead_var.get(), DEFAULT_LEAD)
+
+    def _on_lead(self) -> None:
+        if self.on_lead:
+            self.on_lead(self.lead_minutes())
 
     def scroll(self, steps: int) -> None:
         """Wheel over the weekday list: scroll only when the list is taller than its card."""

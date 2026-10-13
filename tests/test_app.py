@@ -939,3 +939,32 @@ def test_schedule_tab_is_in_the_app(tmp_path):
         assert app.schedule_tab.next_box.winfo_children()
     finally:
         root.destroy()
+
+
+def test_schedule_reminders_before_and_at_start_once(tmp_path):
+    """SN-8: a belled event gives one toast N minutes before and one when it starts; unbelled events stay quiet."""
+    import json
+    from datetime import datetime
+
+    root, app, calls, say = _nag_app(tmp_path, remind_min=15)
+    try:
+        sent = []
+        app.notifications.notify = lambda source, kind, title, text="", *a, **k: sent.append((source, title))
+        app.schedule_tab.events = [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Арена"},
+                                   {"day": "wed", "start": "20:05", "end": "21:00", "name": "Тихо"}]
+        assert app.schedule_tab.lead_minutes() == 15
+        app.schedule_tab.toggle_bell(app.schedule_tab.events[0])
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["remind_events"] == ["wed|20:00|Арена"]
+        app._msk_clock = lambda: datetime(2026, 10, 14, 19, 50)  # Wednesday, 10 min before
+        app._check_reminders()
+        app._check_reminders()  # the next tick: no repeat
+        assert sent == [("schedule", "Через 15 мин: Арена")]
+        app._msk_clock = lambda: datetime(2026, 10, 14, 20, 0, 30)
+        app._check_reminders()
+        app._check_reminders()
+        assert sent[1:] == [("schedule", "Началось: Арена")]
+        app.schedule_tab.lead_var.set("1 час")
+        app.schedule_tab._on_lead()
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["remind_min"] == 60
+    finally:
+        root.destroy()

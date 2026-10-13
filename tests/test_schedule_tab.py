@@ -65,10 +65,10 @@ def test_tab_shows_running_next_and_the_day():
         assert rows[0] == ["20:00–21:00", "Арена", "идёт · ещё 30 мин"]
         assert rows[1] == ["22:00–00:00", "Поздно", "через 1 ч 30 мин"]
         assert tab.day_var.get() == "Среда"
-        assert [r[1] for r in _labels(tab.day_list)] == ["Арена", "Поздно"]
+        assert [r[-1] for r in _labels(tab.day_list)] == ["Арена", "Поздно"]
         tab.day_var.set("Четверг")
         tab.refresh()
-        assert [r[1] for r in _labels(tab.day_list)] == ["Дер"]
+        assert [r[-1] for r in _labels(tab.day_list)] == ["Дер"]
         tab.destroy()
     finally:
         root.destroy()

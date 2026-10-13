@@ -35,6 +35,8 @@ class Config:
     alert_mode: str = "standard"  # "standard" | "nag"
     search_mode: str = "or"  # "or" word or item, "words", "items", "and" word and item
     react_sec: int = 30  # nag mode: unaccepted alerts become «missed» after this; 0 = never
+    remind_min: int = 5  # SN-8: remind this many minutes before a belled schedule event (5, 15, 30 or 60)
+    remind_events: list[str] = field(default_factory=list)  # SN-8: «day|start|name» of the belled events
     nag_popup: bool = False  # nag mode: also show the always-on-top popup
     show_counters: bool = True  # unused: counters are always shown (kept so old configs load)
     chat_minutes: int = 15  # unused: «Весь чат» uses history_min (kept so old configs load)

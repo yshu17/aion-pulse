@@ -12,7 +12,9 @@ from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
 from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
-from watcher.schedule_tab import ScheduleTab, load_events
+from watcher.reminders import due_reminders
+from watcher.schedule_tab import LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range
+from watcher.schedule_view import next_events
 from watcher.errlog import log_exception
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
@@ -55,6 +57,7 @@ GAME_CHECK_SEC = 5  # while watching: how often to look for the game process
 GAME_OFF = "Игра не запущена — слежение остановлено"
 
 
+REMIND_MS = 30_000  # SN-8: how often the schedule reminders are checked
 STATUS_CHARS = 20  # the status chip keeps one width, so the keywords field does not jump; full text in its hint
 
 
@@ -373,7 +376,14 @@ class App:
         self.map_view.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.map_view, text="Карта")
         # SN-7: the server schedule — what runs now and next, and the events of any weekday
-        self.schedule_tab = ScheduleTab(self.tabs, load_events(resource_root() / "data" / "schedule.json"))
+        self.schedule_tab = ScheduleTab(
+            self.tabs, load_events(resource_root() / "data" / "schedule.json"),
+            belled=set(self.cfg.remind_events), on_bell=self._on_bell,
+            lead_min=self.cfg.remind_min if self.cfg.remind_min in LEADS.values() else 5, on_lead=self._on_lead,
+        )
+        self._msk_clock = msk_now  # tests replace it
+        self._reminded: set[str] = set()  # occurrences already announced this run (no repeats)
+        self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
         self.tabs.add(self.schedule_tab, text="Расписание")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
@@ -1008,6 +1018,39 @@ class App:
             self.notifier.play()
         self._update_counters()
 
+    def _on_bell(self, key: str, on: bool) -> None:
+        events = set(self.cfg.remind_events)
+        (events.add if on else events.discard)(key)
+        self.cfg.remind_events = sorted(events)
+        save_config(self.config_path, self.cfg)
+
+    def _on_lead(self, minutes: int) -> None:
+        self.cfg.remind_min = minutes
+        save_config(self.config_path, self.cfg)
+
+    def _check_reminders(self) -> None:
+        """SN-8: a toast N minutes before a belled event and one when it starts; each occurrence once."""
+        try:
+            now = self._msk_clock()
+            belled = [e for e in self.schedule_tab.events if bell_key(e) in self.schedule_tab.belled]
+            lead = self.schedule_tab.lead_minutes()
+            for key, event, start in due_reminders(belled, now, lead, self._reminded):
+                if (start - now).total_seconds() < 60:
+                    continue  # the start toast below covers it
+                self._reminded.add(key)
+                self.notifications.notify(
+                    "schedule", "event", f"Через {lead_label(lead)}: {event['name']}",
+                    f"{time_range(start, end_of(event, start), self.schedule_tab.tz)} · расписание сервера")
+            for event, start in next_events(belled, now, len(belled) + 1):
+                key = bell_key(event) + "|start|" + start.isoformat()
+                if 0 <= (now - start).total_seconds() < 120 and key not in self._reminded:
+                    self._reminded.add(key)
+                    self.notifications.notify(
+                        "schedule", "event", f"Началось: {event['name']}",
+                        f"{time_range(start, end_of(event, start), self.schedule_tab.tz)} · расписание сервера")
+        finally:
+            self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
+
     def _preview_notification(self) -> None:
         self.notifications.notify(
             "preview", "chat", "Уведомления работают",
@@ -1033,6 +1076,10 @@ class App:
         finally:
             self.stop()
             self.toasts.close()
+            try:
+                self.root.after_cancel(self._remind_after)
+            except (tk.TclError, ValueError):
+                pass
             self.alarm.close()
             self.all_chat.deactivate()
             if self._ui_after is not None:
