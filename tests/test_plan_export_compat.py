@@ -85,6 +85,7 @@ def test_old_export_restores_marks_in_a_fresh_browser(page_name, tmp_path):
             ledger2 = json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')"))
             assert len(ledger2["history"]) == len(ledger["history"])
             # rollback returns the state before the last import
+            page.evaluate("document.getElementById('shared-filters').open=true")
             page.click("#shared-restore")
             page.wait_for_timeout(300)
             assert errors == []
@@ -140,6 +141,7 @@ def test_native_only_marks_enter_the_journal_in_a_browser(tmp_path):
             page.set_input_files("#shared-file", str(FIXTURE))
             page.wait_for_timeout(400)
             assert "ui:40" in json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')"))["statuses"]
+            page.evaluate("document.getElementById('shared-filters').open=true")
             page.click("#shared-restore")
             page.wait_for_timeout(300)
             rolled = json.loads(page.evaluate("localStorage.getItem('aion-shared-plan-ledger-v1')") or "{}")
