@@ -701,19 +701,40 @@ def test_settings_card_folds_away_and_is_remembered(tmp_path):
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
         root.update()
-        assert app.cfg.settings_open and app.settings_card.winfo_manager() == "pack"  # open on the first run
+        assert not app.cfg.settings_open and not app.settings_card.winfo_manager()  # compact first launch
         assert app.settings_btn.cget("text") == "Настройки" and app.settings_btn.cget("image")
         app.cfg.reduce_motion = True  # instant fold; the smooth one has its own test
         app._toggle_settings()
         root.update()
-        assert not app.settings_card.winfo_manager() and app.settings_btn.cget("text") == "Настройки"
-        assert '"settings_open": false' in app.config_path.read_text(encoding="utf-8")
-        app._toggle_settings()
-        root.update()
         assert app.settings_card.winfo_manager() == "pack"
+        assert '"settings_open": true' in app.config_path.read_text(encoding="utf-8")
         # unfolded again right under the control row, above the tabs
         assert app.settings_card.winfo_y() > app.control_bar.winfo_y()
         assert app.settings_card.winfo_y() < app.tabs.winfo_y()
+        app._toggle_settings()
+        root.update()
+        assert not app.settings_card.winfo_manager() and app.settings_btn.cget("text") == "Настройки"
+        assert '"settings_open": false' in app.config_path.read_text(encoding="utf-8")
+    finally:
+        root.destroy()
+
+
+def test_fresh_start_keeps_filters_visible_at_600px(tmp_path):
+    """ui:3: first launch should leave the content area usable at the minimum height."""
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.update()
+        root.minsize(1000, 600)  # same contractual viewport as the snapshot fixture
+        root.geometry("1000x600")
+        root.deiconify()
+        root.update()
+        assert not app.cfg.settings_open
+        assert not app.settings_card.winfo_manager()
+        assert app.settings_btn.winfo_ismapped()
+        assert root.winfo_width() == 1000
+        assert app.item_list.type_box.winfo_ismapped()
+        assert (app.item_list.type_box.winfo_rooty() + app.item_list.type_box.winfo_height()
+                <= root.winfo_rooty() + root.winfo_height())
     finally:
         root.destroy()
 
