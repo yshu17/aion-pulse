@@ -113,6 +113,10 @@ def scaled_font(role: str) -> tuple[str, int, str]:
     return family, round(size * SCALE), weight
 
 
+def today_key(now: datetime) -> str:
+    return DAYS[now.weekday()]
+
+
 def _fit(text: str, width: float, font: tkfont.Font) -> str:
     """The longest start of ``text`` (with «…» when cut) that fits ``width`` pixels; "" when not even «…» fits."""
     if font.measure(text) <= width:
@@ -166,10 +170,10 @@ class ScheduleTab(ttk.Frame):
         clocks = ttk.Frame(self)
         clocks.pack(fill="x", pady=(0, 6))
         ttk.Label(clocks, text="Сервер", style="CardMuted.TLabel").pack(side="left")
-        self.server_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("title"))
+        self.server_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("caption_strong"))
         self.server_clock.pack(side="left", padx=(8, 24))
         ttk.Label(clocks, text="Ты", style="CardMuted.TLabel").pack(side="left")
-        self.local_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("title"))
+        self.local_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("caption_strong"))
         self.local_clock.pack(side="left", padx=(8, 0))
         # the chosen day at a glance: hours 00–24, events as blocks by kind, a «now» line on today
         strip_card = ttk.Frame(self, style="Card.TFrame", padding=(16, 6))
@@ -279,7 +283,7 @@ class ScheduleTab(ttk.Frame):
                 badge = "напомню · " + badge
             self._row(self.next_box, time_range(start, end, self.tz), event["name"], badge,
                       accent=theme.SUCCESS if running else theme.ACCENT, place=event,
-                      date=day_label(event["day"], now, now))
+                      date="" if event["day"] == today_key(now) else day_label(event["day"], now, now))
             if running:  # how far it has gone: a 3 px bar under the row
                 bar = tk.Canvas(self.next_box, height=3, background=theme.SURFACE_3, highlightthickness=0,
                                 borderwidth=0)
@@ -306,7 +310,8 @@ class ScheduleTab(ttk.Frame):
                 hour=hour, minute=minute)
             end = end_of(event, start)
             past = day == today and end <= now
-            self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event)
+            self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event,
+                      date=day_label(day, now, now))
         self._strip_day = (day, day == today, now, monday + timedelta(days=DAYS.index(day)))
         self._show_clocks(now)
         self.after_idle(self._trim_next)
@@ -407,8 +412,8 @@ class ScheduleTab(ttk.Frame):
         time_color = self._kind_color(bell or place) if (bell or place) else theme.MUTED
         if when:  # the time is a box with an outline in the colour of its kind's grade (user request 13.10)
             tk.Label(row, text=when, anchor="center", background=theme.SURFACE, foreground=time_color,
-                     font=scaled_font("mono"), highlightthickness=1, highlightbackground=time_color,
-                     padx=6).pack(side="left", padx=(0, 8))
+                     font=scaled_font("small"), highlightthickness=1, highlightbackground=time_color,
+                     padx=4).pack(side="left", padx=(0, 6))
         # the toggle is packed first, so a long event name is cut, not the toggle
         if bell is not None:
             on = bell_key(bell) in self.belled
@@ -435,7 +440,7 @@ class ScheduleTab(ttk.Frame):
                      font=scaled_font("small")).pack(side="right")
         if date:  # «Сегодня» / «ВТ 13.10» in the middle, between the name and the bell (user request 13.10)
             tk.Label(row, text=date, background=theme.SURFACE, foreground=theme.MUTED,
-                     font=scaled_font("mono")).pack(side="right", padx=(0, 12))
+                     font=scaled_font("small")).pack(side="right", padx=(0, 10))
         row.bind("<Enter>", lambda _e, r=row: self._hover(r, theme.SURFACE_2))
         row.bind("<Leave>", lambda _e, r=row: None if self._pointer_in(r) else self._hover(r, theme.SURFACE))
 

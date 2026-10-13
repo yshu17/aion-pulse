@@ -48,8 +48,12 @@ def test_load_events_missing_file_is_empty(tmp_path):
 
 
 def _labels(box):
-    """Text of each event row; the progress bar and the group headers (labels) are not rows."""
-    return [[w.cget("text") for w in row.winfo_children()] for row in box.winfo_children() if row.winfo_class() == "Frame"]
+    """Text of each event row, without the date label («Сегодня», «ВТ 13.10») and the empty bell label; the progress
+    bar and the group headers are not rows."""
+    import re
+    date = re.compile(r"^(Сегодня|[А-Я]{2} \d\d\.\d\d)$")
+    return [[w.cget("text") for w in row.winfo_children() if w.cget("text") and not date.match(w.cget("text"))]
+            for row in box.winfo_children() if row.winfo_class() == "Frame"]
 
 
 def test_tab_shows_running_next_and_the_day():
@@ -63,8 +67,8 @@ def test_tab_shows_running_next_and_the_day():
         theme.apply_dark_theme(root)
         tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
         rows = _labels(tab.next_box)
-        assert rows[0] == ["20:00–21:00", "Арена", "идёт · ещё 30 мин", "Сегодня"]  # date right of the badge
-        assert rows[1] == ["22:00–00:00", "Поздно", "через 1 ч 30 мин", "Сегодня"]
+        assert rows[0] == ["20:00–21:00", "Арена", "идёт · ещё 30 мин"]  # today: no date, it is the header
+        assert rows[1] == ["22:00–00:00", "Поздно", "через 1 ч 30 мин"]
         assert tab.day_var.get() == "Среда"
         assert [r[-1] for r in _labels(tab.day_list)] == ["Арена", "Поздно"]
         tab.day_var.set("Четверг")
@@ -344,7 +348,7 @@ def test_next_list_shows_the_date_between_name_and_bell_and_groups_the_days():
         tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
         texts = [w.cget("text") for row in tab.next_box.winfo_children() for w in row.winfo_children()
                  if w.winfo_class() == "Label"]
-        assert "Сегодня" in texts
+        assert "Сегодня" not in texts  # today's rows carry no date; the day is named in the header
         headers = [w.cget("text") for w in tab.day_list.winfo_children() if w.winfo_class() == "Label"]
         assert headers == ["Арены Хаоса и Доблести", "Прочее"]  # Wednesday: «Арена» and «Поздно» (not a known group)
         tab.destroy()
@@ -367,6 +371,30 @@ def test_time_is_outlined_by_grade_and_two_clocks_show_at_the_top():
         first = next(w for row in tab.next_box.winfo_children() if row.winfo_class() == "Frame"
                      for w in row.winfo_children() if w.winfo_class() == "Label" and ":" in w.cget("text"))
         assert int(str(first.cget("highlightthickness"))) >= 1
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_name_is_cut_before_the_badge_and_date_when_the_row_is_narrow():
+    """A narrow row (1000 px, +40 % text): the name gives way; the date and the badge keep their place."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.geometry("360x400")
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        long = [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Ингисон / Келькмарос очень длинное имя"}]
+        tab = st.ScheduleTab(root, long, clock=lambda: WED_2030, tz=MSK)
+        tab.pack(fill="both", expand=True)
+        root.deiconify()
+        root.update()
+        row = next(r for r in tab.next_box.winfo_children() if r.winfo_class() == "Frame")
+        name = next(w for w in row.winfo_children() if w.winfo_class() == "Label" and "Ингисон" in w.cget("text"))
+        badge = next(w for w in row.winfo_children() if w.winfo_class() == "Label" and "идёт" in w.cget("text"))
+        assert name.winfo_width() < len("Ингисон / Келькмарос очень длинное имя") * 9  # it was cut
+        assert badge.winfo_x() + badge.winfo_width() <= row.winfo_width() + 1  # badge fully inside
         tab.destroy()
     finally:
         root.destroy()
