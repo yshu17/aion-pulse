@@ -12,6 +12,7 @@ from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
 from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
+from watcher.schedule_tab import ScheduleTab, load_events
 from watcher.errlog import log_exception
 from watcher.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
@@ -371,6 +372,9 @@ class App:
         self.map_view.motion_enabled = lambda: not self.cfg.reduce_motion
         self.map_view.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.map_view, text="Карта")
+        # SN-7: the server schedule — what runs now and next, and the events of any weekday
+        self.schedule_tab = ScheduleTab(self.tabs, load_events(resource_root() / "data" / "schedule.json"))
+        self.tabs.add(self.schedule_tab, text="Расписание")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
         root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")
@@ -601,11 +605,15 @@ class App:
         save_config(self.config_path, self.cfg)
 
     def _on_mouse_wheel(self, event: tk.Event) -> None:
-        """Scroll the item list whenever the pointer is anywhere over it."""
+        """Scroll the item list (or the schedule's weekday list) whenever the pointer is anywhere over it."""
         widget = self.root.winfo_containing(event.x_root, event.y_root)
-        if widget is not None and str(widget).startswith(str(self.items_holder)):
-            steps = -event.delta // 120 or (-1 if event.delta > 0 else 1)
+        if widget is None:
+            return
+        steps = -event.delta // 120 or (-1 if event.delta > 0 else 1)
+        if str(widget).startswith(str(self.items_holder)):
             self.item_list.scroll(steps * 2)
+        elif str(widget).startswith(str(self.schedule_tab.day_canvas)):
+            self.schedule_tab.scroll(steps)
 
     def _icon_for(self, item: WatchItem) -> tk.PhotoImage:
         """Icon from data/icons (shared by items with the same picture); a placeholder if missing."""

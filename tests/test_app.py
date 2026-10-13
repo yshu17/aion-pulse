@@ -927,3 +927,15 @@ def test_settings_button_fits_at_the_minimum_window_width(tmp_path):
         assert app.kw_entry.winfo_width() >= 80  # the entry still has room to type
     finally:
         root.destroy()
+
+
+def test_schedule_tab_is_in_the_app(tmp_path):
+    """SN-7: «Расписание» is the fourth tab and reads data/schedule.json."""
+    root, app, calls, say = _nag_app(tmp_path)
+    try:
+        names = [app.tabs.tab(t, "text") for t in app.tabs.tabs()]
+        assert names == ["Поиск", "Весь чат", "Карта", "Расписание"]
+        assert len(app.schedule_tab.events) > 0
+        assert app.schedule_tab.next_box.winfo_children()
+    finally:
+        root.destroy()

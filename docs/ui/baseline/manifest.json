@@ -1,5 +1,5 @@
 {
-  "utc": "20261013T083330Z",
+  "utc": "20261013T085004Z",
   "windows": [
     [
       1400,
@@ -14,6 +14,7 @@
     "tabs-search",
     "tabs-chat",
     "tabs-map",
+    "tabs-schedule",
     "map-100",
     "map-125",
     "map-150",

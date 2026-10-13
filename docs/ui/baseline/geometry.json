@@ -674,6 +674,73 @@
       600
     ]
   },
+  "1000x600_tabs-schedule": {
+    "scenario": "tabs-schedule",
+    "window": [
+      1000,
+      600
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 120,
+        "width": 968,
+        "height": 464
+      },
+      "start": {
+        "x": 16,
+        "y": 64,
+        "width": 113,
+        "height": 48,
+        "requested_width": 113
+      },
+      "status-chip": {
+        "x": 141,
+        "y": 64,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 434,
+        "y": 10,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 845,
+        "y": 64,
+        "width": 139,
+        "height": 48,
+        "requested_width": 139
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 120,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 120,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 120,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
   "1000x600_tabs-search": {
     "scenario": "tabs-search",
     "window": [
@@ -1405,6 +1472,73 @@
         "y": 244,
         "width": 1083,
         "height": 592
+      },
+      "tab-0": {
+        "x": 16,
+        "y": 120,
+        "width": 96,
+        "height": 48,
+        "requested_width": 82
+      },
+      "tab-1": {
+        "x": 112,
+        "y": 120,
+        "width": 113,
+        "height": 48,
+        "requested_width": 99
+      },
+      "tab-2": {
+        "x": 225,
+        "y": 120,
+        "width": 91,
+        "height": 48,
+        "requested_width": 77
+      }
+    },
+    "overlaps": [],
+    "native_minimum": [
+      1132,
+      600
+    ]
+  },
+  "1400x860_tabs-schedule": {
+    "scenario": "tabs-schedule",
+    "window": [
+      1400,
+      860
+    ],
+    "widgets": {
+      "notebook": {
+        "x": 16,
+        "y": 120,
+        "width": 1368,
+        "height": 724
+      },
+      "start": {
+        "x": 16,
+        "y": 64,
+        "width": 113,
+        "height": 48,
+        "requested_width": 113
+      },
+      "status-chip": {
+        "x": 141,
+        "y": 64,
+        "width": 238,
+        "height": 48
+      },
+      "counters": {
+        "x": 834,
+        "y": 10,
+        "width": 550,
+        "height": 48
+      },
+      "settings-button": {
+        "x": 1245,
+        "y": 64,
+        "width": 139,
+        "height": 48,
+        "requested_width": 139
       },
       "tab-0": {
         "x": 16,

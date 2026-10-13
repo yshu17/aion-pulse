@@ -30,7 +30,7 @@ BASELINE = ROOT / "docs" / "ui" / "baseline"
 # known layout defects: a match does not fail a scenario, but is written to the report with its ticket
 KNOWN_DEFECTS = ROOT / "docs" / "ui" / "known_defects.json"
 WINDOWS = ((1400, 860), (1000, 600))
-SCENARIOS = ("tabs-search", "tabs-chat", "tabs-map", "map-100", "map-125", "map-150",
+SCENARIOS = ("tabs-search", "tabs-chat", "tabs-map", "tabs-schedule", "map-100", "map-125", "map-150",
              "settings-open", "settings-closed", "header-idle", "header-counters")
 GEOMETRY_TOLERANCE = 1
 PIXEL_CHANNEL_THRESHOLD = 16
@@ -319,6 +319,15 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
                 app.tabs.select(app.map_view)
                 _settle(root, app)
                 app.map_view.open_zone("220070000")
+            elif scenario == "tabs-schedule":
+                # a fixed Wednesday 20:30 MSK shown in MSK: the shot does not depend on today or the machine zone
+                from datetime import timedelta as _td, timezone as _tz
+                from datetime import datetime as _dt
+                app.schedule_tab.clock = lambda: _dt(2026, 10, 14, 20, 30)
+                app.schedule_tab.tz = _tz(_td(hours=3))
+                app.schedule_tab.day_var.set("Среда")
+                app.schedule_tab.refresh()
+                app.tabs.select(app.schedule_tab)
             elif scenario == "settings-open":
                 app._show_settings(True)
             elif scenario == "header-counters":
