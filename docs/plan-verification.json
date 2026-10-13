@@ -56,7 +56,7 @@
       "by": "Claude Code"
     },
     "ui:2": {
-      "state": "verified",
+      "state": "pending",
       "evidence": [
         {
           "kind": "commit",
@@ -69,9 +69,13 @@
         {
           "kind": "report",
           "ref": "independent recomputation 12.10.2026: DANGER on SURFACE_2 5.26, white on DANGER_FILL 5.15 and hover 4.76, BORDER_CONTROL 3.37 on BG and 3.08 on SURFACE; data/ui/danger*.png centre pixels equal DANGER_FILL and DANGER_FILL_HOVER"
+        },
+        {
+          "kind": "report",
+          "ref": "reopened 13.10.2026 for a skill-based re-check (user decision); verified again after the re-check"
         }
       ],
-      "at": "12.10.2026",
+      "at": "13.10.2026",
       "by": "Claude Code"
     },
     "ui:44": {

@@ -1055,7 +1055,7 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "ready",
+      "handoff": "review",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
@@ -1101,7 +1101,7 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "ready",
+      "handoff": "review",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
@@ -1145,7 +1145,7 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "ready",
+      "handoff": "review",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
@@ -1193,7 +1193,7 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "ready",
+      "handoff": "review",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
@@ -1243,7 +1243,7 @@
         "pytest tests/test_theme.py tests/test_app.py",
         "снимки"
       ],
-      "handoff": "ready",
+      "handoff": "review",
       "arch_review": "not-needed",
       "files": {
         "Codex": [
@@ -2730,6 +2730,1266 @@
       },
       "branch": "codex/plan-browser-residual",
       "note": "PASS по автопроверкам, полная приёмка не объявлена. Статус verified не присваивать без визуальной приёмки. Техническая готовность к этапу 4 — не разрешение удалять."
+    },
+    "ui:1": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:2": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены и замер контраста пар"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:3": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:4": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:5": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены и замер контраста пар"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:6": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены и замер контраста пар"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:7": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены и замер контраста пар"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:8": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "цвета картинок из токенов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:9": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены и замер контраста пар"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:10": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:11": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:12": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:13": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "primary",
+          "purpose": "токены и замер контраста пар"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:14": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:15": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:16": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "codex",
+      "reviewer": "claude",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "цвета картинок из токенов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Codex",
+        "test": "Codex",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "ready",
+      "arch_review": "not-needed"
+    },
+    "ui:17": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "цвета картинок из токенов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:18": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:19": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "цвета картинок из токенов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:20": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "цвета картинок из токенов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:21": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "время, кривая, прерывание, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "смысл анимации в интерфейсе"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест кадров и отключения"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:22": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "время, кривая, прерывание, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "смысл анимации в интерфейсе"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест кадров и отключения"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:23": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "время, кривая, прерывание, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "смысл анимации в интерфейсе"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест кадров и отключения"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:24": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "время, кривая, прерывание, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "смысл анимации в интерфейсе"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест кадров и отключения"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:25": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "время, кривая, прерывание, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "смысл анимации в интерфейсе"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест кадров и отключения"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:26": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:27": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:28": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "design-theme-guide",
+          "role": "supporting",
+          "purpose": "цвета картинок из токенов"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:29": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-ui-ux-designer",
+          "role": "primary",
+          "purpose": "проблема и решение на текущем экране"
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "role": "supporting",
+          "purpose": "каталог UX-проверок"
+        },
+        {
+          "name": "ui-visual-validator",
+          "role": "supporting",
+          "purpose": "сверка по снимкам до/после"
+        },
+        {
+          "name": "tool:ui_snapshots",
+          "role": "supporting",
+          "purpose": "снимки окна до/после"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
+    },
+    "ui:30": {
+      "category": "UI/UX · повторная проверка",
+      "agent": "claude",
+      "reviewer": "codex",
+      "skills": [
+        {
+          "name": "application-motion-designer",
+          "role": "primary",
+          "purpose": "время, кривая, прерывание, reduce_motion"
+        },
+        {
+          "name": "application-ui-ux-designer",
+          "role": "supporting",
+          "purpose": "смысл анимации в интерфейсе"
+        },
+        {
+          "name": "superpowers:test-driven-development",
+          "role": "supporting",
+          "purpose": "тест кадров и отключения"
+        }
+      ],
+      "split": {
+        "design": "Claude Code",
+        "build": "Claude Code",
+        "test": "Claude Code",
+        "approve": "Claude Code"
+      },
+      "done": [
+        "проблема пункта на снимке текущей версии не воспроизводится или исправлена",
+        "снимки до/после и отметка скиллов в docs/plan-evidence.json"
+      ],
+      "tests": [
+        "python -m pytest -q",
+        "python tools/ui_snapshots.py check"
+      ],
+      "handoff": "n/a",
+      "arch_review": "not-needed"
     }
   }
 }

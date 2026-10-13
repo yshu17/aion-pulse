@@ -83,7 +83,7 @@ from plan_common import set_nav  # noqa: E402
 from plan_task_meta import load_task_meta, task_meta  # noqa: E402
 
 
-STATUS_MARKS = {"x": "done", "~": "doing"}
+STATUS_MARKS = {"x": "done", "~": "doing", "?": "review"}
 
 
 def task_status(lines: list[str]) -> dict[str, tuple[str, str]]:
@@ -94,7 +94,7 @@ def task_status(lines: list[str]) -> dict[str, tuple[str, str]]:
         if line.startswith("## "):
             inside = line.startswith("## 9.")
             continue
-        match = re.match(r"^-\s+\[(x|~| )\]\s+\*\*(\d+)\*\*\s*[—-]?\s*(.*)$", line) if inside else None
+        match = re.match(r"^-\s+\[(x|~|\?| )\]\s+\*\*(\d+)\*\*\s*[—-]?\s*(.*)$", line) if inside else None
         if match:
             out[match.group(2)] = (STATUS_MARKS.get(match.group(1), "todo"), match.group(3).strip())
     return out
