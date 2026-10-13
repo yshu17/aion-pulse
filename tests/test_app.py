@@ -1155,7 +1155,8 @@ def test_header_gradient_never_runs_behind_header_widgets(tmp_path):
         backdrop = app._header_gradient
         lines = backdrop.find_withtag("gradient")
         assert lines  # the tint is there
-        top = min(child.winfo_y() for child in app.header.winfo_children() if child is not backdrop)
-        assert max(backdrop.coords(line)[1] for line in lines) < top
+        top = min(child.winfo_rooty() for child in app.header.winfo_children())
+        assert backdrop.winfo_rooty() + max(backdrop.coords(line)[1] for line in lines) < top
+        assert backdrop.winfo_width() == root.winfo_width()  # across the window, not only behind the title row
     finally:
         app._on_close()

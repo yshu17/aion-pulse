@@ -782,22 +782,24 @@ def _solid_button(style: ttk.Style, name: str, color: str, hover: str, text: str
 
 
 def install_header_gradient(header: ttk.Frame) -> tk.Canvas:
-    """Subtle vertical tint in the header's empty top band; redraw only when its size changes.
+    """Subtle vertical tint across the window above the header; redraw only when its size changes.
 
-    Tk labels are opaque: a tint behind the title and the counters showed their rectangles (ui:31 recheck), so the
-    gradient fades to BG within the header's top padding, above every widget."""
-    backdrop = tk.Canvas(header, background=BG, borderwidth=0, highlightthickness=0)
-    backdrop.place(x=0, y=0, relwidth=1, relheight=1)
-    backdrop.tk.call("lower", backdrop._w)
-    start = mix(SURFACE_2, BG, 0.30)
+    Tk labels are opaque: a tint behind the title and the counters showed their rectangles, and a canvas inside the
+    header only showed in the gaps between them (ui:31 recheck). So the tint is its own full-width strip in place of
+    the header's top padding, and fades to BG where the widgets start."""
     raw = header.cget("padding")
-    padding = [int(str(v)) for v in (raw if isinstance(raw, (tuple, list)) else str(raw).split())] or [0]
-    band = padding[1] if len(padding) > 1 else padding[0]
+    pad = [int(str(v)) for v in (raw if isinstance(raw, (tuple, list)) else str(raw).split())]
+    left, top, right, bottom = (pad + pad + pad + pad)[:4] if len(pad) < 4 else pad[:4]
+    band = max(1, top)
+    header.configure(padding=(left, 0, right, bottom))
+    backdrop = tk.Canvas(header.master, height=band, background=BG, borderwidth=0, highlightthickness=0)
+    backdrop.pack(fill="x", before=header)
+    start = mix(SURFACE_2, BG, 0.30)
 
     def redraw(event: tk.Event) -> None:
         backdrop.delete("gradient")
-        for y in range(max(0, min(band, event.height))):
-            shade = mix(start, BG, y / max(1, band))
+        for y in range(band):
+            shade = mix(start, BG, 1 - y / band)  # lit at the window's top edge, BG where the header starts
             backdrop.create_line(0, y, event.width, y, fill=shade, tags="gradient")
 
     backdrop.bind("<Configure>", redraw)
