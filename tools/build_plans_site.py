@@ -45,7 +45,7 @@ PHONE_CSS = """<style id="phone">
 :root{color-scheme:dark}
 html{-webkit-text-size-adjust:100%}
 body{overflow-wrap:anywhere}
-@media(max-width:620px){.pn{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pn::-webkit-scrollbar{display:none}.pn a{white-space:nowrap;flex:none}.pn .pn-x{display:none}}
+@media(max-width:620px){nav.pn{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav.pn::-webkit-scrollbar{display:none}nav.pn a{white-space:nowrap;flex:none}nav.pn .pn-x,nav.pn .pn-sep{display:none}}
 p,li,td,th,a,dd,dt{overflow-wrap:anywhere}
 table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 img,svg,video,canvas{max-width:100%;height:auto}
@@ -147,6 +147,8 @@ def drop_export(html: str) -> str:
 
 def phone_page(html: str) -> str:
     html = rewrite_links(drop_export(no_confirm(safe_storage(html))))
+    # long side blocks start folded on the phone; the task list stays the first thing on screen
+    html = re.sub(r'<details class="(ai-box|rs)" open>', r'<details class="\1">', html)
     html = re.sub(r'<meta name="viewport"[^>]*>',
                   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">', html, count=1)
     return html.replace("</head>", PHONE_CSS + "\n</head>", 1)
