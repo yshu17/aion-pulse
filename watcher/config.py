@@ -53,6 +53,12 @@ class Config:
     game_check: bool = True  # stop watching (and warn) when the game process aion.bin is not running
     filter_type: str = ""  # item list: category («Лата») or «Оружие: Меч», "" = all
     reduce_motion: bool = False  # disable decorative UI animations
+    notify_off: list[str] = field(default_factory=list)  # SN-5: notification sources not shown (chat, status, schedule)
+    notify_mute: list[str] = field(default_factory=list)  # SN-5: sources shown without sound
+    notify_dnd: bool = False  # SN-5: «не беспокоить» — nothing pops up
+    notify_corner: str = "bottom"  # SN-5: toasts at the right, "bottom" or "top"
+    notify_duration: int = 8  # SN-5: seconds a toast stays (5, 8 or 15)
+    notify_stack: int = 3  # SN-5: toasts shown at once (1..3)
 
     def chat_log_path(self) -> Path:
         if self.chat_log:

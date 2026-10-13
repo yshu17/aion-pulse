@@ -483,8 +483,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата создания не была записана; проставлена 08.10.2026 по решению пользователя",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T18:30+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 18:30"
     },
     "sn:SN-6": {
       "added_at": "08.10.2026",
@@ -1997,7 +2003,7 @@
     "sn:SN-2": "8a16ce26ebf5aa228cdd6284c7779e8d9e6d4ad99269ef2b72ae85db22478992",
     "sn:SN-3": "ca5f01fa7e8599b5c5770a397aee3327660c05062b6f4d756f71c0b8108b6457",
     "sn:SN-4": "cc272c284cc13c3090e42c21c63634fcaf018d1032b48980e11a34a33051d00c",
-    "sn:SN-5": "4d6f01c98192ac4e7a22fc78ecf3dcd5fa12cade0362fb6d8843629ce4fdf207",
+    "sn:SN-5": "11e19539a2ecdb742f21003ffa2f1294f38f6c3dacdc07e06b67689f7d83eada",
     "sn:SN-6": "30bcd095434ff400a45e0e9a87c018738735cd1ae2a7186475c791ed7334f3b9",
     "sn:SN-7": "b6626c3733a02faff78634e87b1faa40ac539e15bbd109683fb006ad85677388",
     "sn:SN-8": "fba5399899dbb45373fb7c22d7f61d82b9cfa75aa4962ca0c725ee027fdac6e1",

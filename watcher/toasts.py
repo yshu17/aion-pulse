@@ -186,6 +186,7 @@ class ToastManager:
         self.root, self.center = root, center
         self.on_open, self.on_action = on_open, on_action
         self.duration, self.max_visible = duration, max_visible
+        self.corner = "bottom"  # SN-5: "bottom" — stack up from the lower right, "top" — down from the upper right
         self.reduce_motion, self.clock = reduce_motion, clock
         self.desktop = WindowsDesktop() if sys.platform == "win32" else None
         self.area_provider = work_area or (self.desktop.work_area if self.desktop else self._fallback_area)
@@ -246,13 +247,18 @@ class ToastManager:
             if event is None:
                 break
             self.cards.append(ToastCard(self, event, self._area))
-        bottom = self._area.bottom - round(16 * self._area.scale)
+        margin, gap = round(16 * self._area.scale), round(8 * self._area.scale)
+        edge = self._area.top + margin if self.corner == "top" else self._area.bottom - margin
         for card in self.cards:
             t = 1.0 if self.reduce_motion() else min(1.0, max(0, (now - card.born) / .22))
             offset = round((1 - t) ** 3 * card.width)
-            card.move(self._area.right - round(16 * self._area.scale) - card.width + offset,
-                      bottom - card.height, t)
-            bottom -= card.height + round(8 * self._area.scale)
+            x = self._area.right - margin - card.width + offset
+            if self.corner == "top":
+                card.move(x, edge, t)
+                edge += card.height + gap
+            else:
+                card.move(x, edge - card.height, t)
+                edge -= card.height + gap
 
     def dismiss(self, card: ToastCard, *, acknowledge: bool = False) -> None:
         if acknowledge:

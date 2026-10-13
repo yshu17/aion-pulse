@@ -28,6 +28,8 @@ from watcher.window_icon import load_app_icon
 from watcher.notifier import Notifier, system_sounds
 from watcher.alert_bridge import AlertBridge
 from watcher.notify_center import Notification, NotificationAction, NotificationCenter
+from watcher.notify_settings import apply as apply_notify_settings
+from watcher.notify_tab import NotifyTab
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
@@ -144,6 +146,7 @@ class App:
             on_action=self._on_toast_action,
             reduce_motion=lambda: self.cfg.reduce_motion,
         )
+        apply_notify_settings(self.cfg, self.notifications, self.toasts)
         self.toasts.start()
         self._set_status(self._config_notice or "Остановлен")
         self._update_counters()
@@ -397,6 +400,10 @@ class App:
         self.root.after_idle(self._report_missed_reminders)
         self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
         self.tabs.add(self.schedule_tab, text="Расписание")
+        # SN-5: notification settings — sources, sound, place, duration, stack, «не беспокоить»
+        self.notify_tab = NotifyTab(self.tabs, self.cfg, on_change=self._on_notify_settings,
+                                    on_test=self._preview_notification)
+        self.tabs.add(self.notify_tab, text="Уведомления")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
         root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")
@@ -1126,6 +1133,10 @@ class App:
         more = f" и ещё {len(missed) - 5}" if len(missed) > 5 else ""
         self.notifications.notify("schedule", "event", f"Пропущено, пока программа была закрыта: {len(missed)}",
                                   ", ".join(names) + more)
+
+    def _on_notify_settings(self) -> None:
+        apply_notify_settings(self.cfg, self.notifications, self.toasts)
+        save_config(self.config_path, self.cfg)
 
     def _preview_notification(self) -> None:
         self.notifications.notify(

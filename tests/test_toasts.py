@@ -149,3 +149,15 @@ def test_accept_reaches_the_app_and_acknowledges(toast_env):
     manager.act(manager.cards[0], "accept")
     assert heard == [(event.id, "accept")]
     assert not center.is_active(event)
+
+
+def test_top_corner_stacks_cards_from_the_top(toast_env):
+    """SN-5: «Справа сверху» — the first card sits at the top edge, the next one below it."""
+    root, center, manager, now, _ = toast_env
+    manager.corner = "top"
+    publish(center, 2)
+    manager.pump()
+    root.update()
+    first, second = manager.cards
+    assert first.window.winfo_y() < 100
+    assert second.window.winfo_y() > first.window.winfo_y()

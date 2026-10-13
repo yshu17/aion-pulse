@@ -341,6 +341,8 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
                 app.schedule_tab.day_var.set("Среда")
                 app.schedule_tab.refresh()
                 app.tabs.select(app.schedule_tab)
+            elif scenario == "tabs-notify":  # evidence only (SN-5), not in SCENARIOS
+                app.tabs.select(app.notify_tab)
             elif scenario == "feed-long":  # evidence only (ui:32), not in SCENARIOS
                 from watcher.parser import ChatMessage
                 text = ("ищу группу в Бездну, нужен хил и танк, кто свободен — пишите в личку, "
