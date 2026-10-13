@@ -36,6 +36,7 @@ ICONS = (
     "play", "arrow-up", "arrow-down", "x", "caret-right", "caret-down", "caret-up",
     "house", "minus", "plus", "crosshair", "star", "check", "circle", "check-circle", "warning",
     "magnifying-glass", "chat-circle-dots", "hourglass-medium",  # empty states (UI/UX item 12)
+    "bell", "bell-fill", "map-pin", "arrow-clockwise", "funnel", "trash", "list", "pencil-simple",
 )
 COLORS = {
     "text": "#e9e7e4",
