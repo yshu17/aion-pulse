@@ -53,7 +53,14 @@ PLACE_ICON = 34  # px of the blue X that marks a place from the chat, as on the 
 # a point found by the search or reached from «Рядом», and a place from the chat, blink this long so the eye
 # finds them; a point picked with a click is ringed at once
 BLINK_MS = 3000
-BLINK_STEP_MS = 300
+BLINK_STEP_MS = 600  # the chat's place blinks: twice slower than before (user, 13.10)
+# the selected point: no ring; its icon pulses while it stays selected — slow, with a soft grow and shrink and a
+# dimmer small phase (user, 13.10). With animations off it is simply drawn PULSE_STILL times larger.
+PULSE_PERIOD_MS = 1600
+PULSE_STEP_MS = 50
+PULSE_GROW = 0.25
+PULSE_DIM = 0.45
+PULSE_STILL = 1.2
 OTHER_PIN = theme.PLACE
 BG_RGB = tuple(int(theme.SURFACE[i : i + 2], 16) for i in (1, 3, 5))
 
@@ -81,6 +88,23 @@ class Zone:
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
+
+
+def pulse_icon(path: Path, size: int, brightness: float, master: tk.Misc):
+    """One frame of the selected point's pulse: the icon at size px with its colours dimmed to brightness."""
+    from PIL import Image, ImageEnhance, ImageTk
+
+    try:
+        with Image.open(path) as image:
+            image = image.convert("RGBA")
+            ratio = size / max(image.size)
+            image = image.resize((max(1, round(image.width * ratio)), max(1, round(image.height * ratio))), Image.LANCZOS)
+            rgb, alpha = image.convert("RGB"), image.getchannel("A")
+            image = ImageEnhance.Brightness(rgb).enhance(brightness).convert("RGBA")
+            image.putalpha(alpha)
+            return ImageTk.PhotoImage(image, master=master)
+    except OSError:
+        return None
 
 
 def load_icon(path: Path, size: int, master: tk.Misc):
@@ -190,6 +214,9 @@ class MapView(ttk.Frame):
         self._blink_left = 0
         self._blink_dim = False
         self._blink_after: str | None = None
+        self._pulse_after: str | None = None
+        self._pulse_phase = 0.0  # 0..1 along PULSE_PERIOD_MS
+        self._pulse_item: tuple | None = None  # (canvas item, poi type, base size) of the selected icon
         self._drag: tuple[int, int, float, float] | None = None
         self._by_name = {zone.name: map_id for map_id, zone in sorted(zones.items(), key=lambda kv: kv[1].name)}
 
@@ -508,9 +535,6 @@ class MapView(ttk.Frame):
         canvas.create_image(0, 0, image=self._photo, anchor="nw")
         self._draw_labels(width, height)
         self._draw_poi(width, height)
-        if self.selected is not None and self.selected.zone == self.zone.map_id and self._blink_target != "poi":
-            sx, sy = self._spots.get(self.selected) or self.to_screen(self.selected.x, self.selected.y)
-            canvas.create_oval(sx - 17, sy - 17, sx + 17, sy + 17, outline=PIN, width=3, tags="selected")
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
             canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline=theme.PLACE_OUTLINE, width=2,
@@ -568,15 +592,14 @@ class MapView(ttk.Frame):
         return out
 
     def select(self, poi: Poi, centre: bool = False) -> None:
-        """Show a point in the card. A click (centre=False) rings it on the map; the search and «Рядом»
-        (centre=True) move the map to it and make its icon blink for BLINK_MS, then ring it."""
+        """Show a point in the card; its icon pulses on the map while it is selected. The search and «Рядом»
+        (centre=True) also move the map to it."""
         self.selected = poi
         kind = self.poi.type_name(poi.type)
         self.point_card.show(kind, poi.name or kind, poi.gx, poi.gy, poi.note, self.nearby(poi.zone, poi.gx, poi.gy, poi))
-        if centre:
-            self._start_blink("poi")
-        else:
-            self._stop_blink()
+        if self._blink_target == "pin":
+            self._stop_blink(redraw=False)
+        self._start_pulse()
         if centre:
             self.fly_to(poi.x, poi.y)
         else:
@@ -719,6 +742,7 @@ class MapView(ttk.Frame):
         """
         self._drawn = []
         self._spots = {}
+        self._pulse_item = None
         if self.zone is None or not self.layers:
             return
         points = self.poi.in_zone(self.zone.map_id, self.layers, self.side, self.current_layer)
@@ -736,12 +760,15 @@ class MapView(ttk.Frame):
             if not (-size < sx < width + size and -size < sy < height + size):
                 continue
             tags = ("poi", f"poi_{len(self._drawn)}")
-            if self._blink_target == "poi" and self.selected in members:
-                tags += ("blink",)
+            chosen = self.selected in members
+            if chosen:
+                tags += ("pulse",)
             self._drawn.append((sx, sy, members))
-            icon = self._poi_icon(members[0].type, size)
+            icon = self._pulse_frame(members[0].type, size) if chosen else self._poi_icon(members[0].type, size)
             if icon is not None:
-                canvas.create_image(sx, sy, image=icon, tags=tags)
+                item = canvas.create_image(sx, sy, image=icon, tags=tags)
+                if chosen:
+                    self._pulse_item = (item, members[0].type, size)
             else:
                 canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=theme.ACCENT, outline=theme.OUTLINE_DARK, tags=tags)
             if len(members) > 1:
@@ -749,6 +776,46 @@ class MapView(ttk.Frame):
                 canvas.create_oval(bx - 9, by - 9, bx + 9, by + 9, fill=theme.OUTLINE_DARK, outline=theme.ACCENT, tags=tags)
                 canvas.create_text(bx, by, text=str(len(members)) if len(members) < 100 else "99+",
                                    fill=theme.MAP_TEXT, font=theme.font("badge"), tags=tags)
+
+    # --- the selected point's pulse -----------------------------------------------------------
+    def _pulse_frame(self, type_: str, size: int):
+        """The selected icon at the current pulse phase: grown (up to PULSE_GROW) and bright, or small and dimmer."""
+        if not self.motion_enabled():
+            return self._poi_icon(type_, round(size * PULSE_STILL))
+        wave = 0.5 - 0.5 * math.cos(2 * math.pi * self._pulse_phase)  # 0 -> 1 -> 0, soft at both ends
+        step = round(wave * 10)  # 11 cached frames per icon size
+        key = ("pulse", type_, size, step)
+        if key not in self._poi_icons:
+            icon = self.poi.types.get(type_, {}).get("icon")
+            self._poi_icons[key] = (pulse_icon(self.icons_dir / icon, round(size * (1 + PULSE_GROW * step / 10)),
+                                               1 - PULSE_DIM * (1 - step / 10), self.canvas) if icon else None)
+        return self._poi_icons[key]
+
+    def _start_pulse(self) -> None:
+        self._stop_pulse()
+        self._pulse_phase = 0.5  # start big and bright: the eye finds it at once
+        if self.motion_enabled():
+            self._pulse_after = self.after(PULSE_STEP_MS, self._pulse_tick)
+
+    def _stop_pulse(self) -> None:
+        if self._pulse_after is not None:
+            self.after_cancel(self._pulse_after)
+            self._pulse_after = None
+
+    def _pulse_tick(self) -> None:
+        self._pulse_after = None
+        if self.selected is None:
+            return
+        self._pulse_phase = (self._pulse_phase + PULSE_STEP_MS / PULSE_PERIOD_MS) % 1.0
+        try:
+            if self._pulse_item is not None:
+                item, type_, size = self._pulse_item
+                frame = self._pulse_frame(type_, size)
+                if frame is not None and self.canvas.find_withtag(item):
+                    self.canvas.itemconfigure(item, image=frame)
+            self._pulse_after = self.after(PULSE_STEP_MS, self._pulse_tick)
+        except tk.TclError:  # the window is closing
+            self._pulse_after = None
 
     # --- blinking ---------------------------------------------------------------------------
     def _start_blink(self, target: str) -> None:

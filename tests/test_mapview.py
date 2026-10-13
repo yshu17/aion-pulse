@@ -184,14 +184,12 @@ def test_point_card_and_nearby(root):
     types = [t for t, _name, _m in view.point_card.rows]
     assert types[:3] == ["teleport", "bindstone", "warehouse"]
     assert all(m < 600 for t, _n, m in view.point_card.rows if t in ("warehouse", "merchant"))
-    # clicking a «Рядом» row jumps to that point: it blinks first, then gets the ring
+    # clicking a «Рядом» row jumps to that point: its icon pulses (no ring)
     view.point_card.near.winfo_children()[types.index("warehouse")].event_generate("<Button-1>")
     root.update()
     assert view.selected is not None and view.selected.type == "warehouse"
-    assert view._blink_target == "poi"
-    view._stop_blink()
     view.render()
-    assert view.canvas.find_withtag("selected")
+    assert view.canvas.find_withtag("pulse") and not view.canvas.find_withtag("selected")
     # a click (no drag) on a single drawn point opens its card
     view.open_zone("220070000")
     root.update()
@@ -282,12 +280,11 @@ def test_last_two_zoom_levels_split_groups_into_icons_side_by_side(root):
         for i, (x1, y1, p1) in enumerate(spots):  # no two icons cover each other
             for x2, y2, p2 in spots[i + 1:]:
                 assert math.hypot(x1 - x2, y1 - y2) >= min(view._icon_size(p1.type), view._icon_size(p2.type)) - 1
-    # the selection ring follows the icon, not the hidden exact spot
+    # the pulsing icon is the laid-out icon itself, not a mark at the hidden exact spot
     x, y, members = view._drawn[0]
     view.select(members[0])
     view.render()
-    x0, y0, x1, y1 = view.canvas.coords(view.canvas.find_withtag("selected")[0])
-    assert ((x0 + x1) / 2, (y0 + y1) / 2) == pytest.approx(view._spots[members[0]], abs=1)
+    assert tuple(view.canvas.coords(view.canvas.find_withtag("pulse")[0])) == pytest.approx(view._spots[members[0]], abs=1)
 
 
 def test_fortresses_tunnel_and_dungeons_drawn_bigger(root):
@@ -301,7 +298,10 @@ def test_fortresses_tunnel_and_dungeons_drawn_bigger(root):
         assert view._icon_size("portal") == usual  # Abyss gates and the tunnel's exits stay as they were
 
 
-def test_click_rings_the_point_search_and_jumps_blink_first(root):
+def test_selected_point_pulses_slowly_without_a_ring(root):
+    """User, 13.10: no ring; the selected icon pulses (soft grow / shrink, dimmer small phase) while it is selected;
+    the chat's place still blinks, slower; with animations off the icon is just drawn larger."""
+    from watcher import mapview as mv
     from watcher.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
@@ -311,31 +311,35 @@ def test_click_rings_the_point_search_and_jumps_blink_first(root):
     root.update()
     view.open_zone("220070000")
     teleport = next(iter(view.poi.in_zone("220070000", {"teleport"})))
-    view.select(teleport)  # a click: the ring at once, no blinking
+    view.select(teleport)  # a click
     view.render()
-    assert view._blink_target is None and view.canvas.find_withtag("selected")
-    view.search("привратник", 0)  # the search: no ring yet, the found icon blinks
+    assert not view.canvas.find_withtag("selected")  # no ring any more
+    item = view.canvas.find_withtag("pulse")[0]
+    sizes = set()
+    for _ in range(int(mv.PULSE_PERIOD_MS / mv.PULSE_STEP_MS)):  # one full cycle
+        view._pulse_tick()
+        sizes.add(view.tk.call("image", "width", view.canvas.itemcget(item, "image")))
+    base = view._icon_size(teleport.type)
+    assert min(sizes) <= base + 1 and max(sizes) >= round(base * (1 + mv.PULSE_GROW)) - 1  # soft grow and shrink
+    assert len(sizes) >= 4  # many steps, not an on/off blink
+    assert mv.PULSE_PERIOD_MS >= 1200 and mv.BLINK_STEP_MS >= 600  # slower than the old 300 ms blink
+    view.search("привратник", 0)  # the search: the found icon pulses too
     root.after(180, root.quit)
     root.mainloop()
     view.render()
-    assert view._blink_target == "poi" and not view.canvas.find_withtag("selected")
-    assert view.canvas.find_withtag("blink")
-    view._blink_tick()
-    assert all(view.canvas.itemcget(i, "state") == "hidden" for i in view.canvas.find_withtag("blink"))
-    view.render()  # a redraw keeps the phase
-    assert all(view.canvas.itemcget(i, "state") == "hidden" for i in view.canvas.find_withtag("blink"))
-    for _ in range(20):
-        if view._blink_target is None:
-            break
-        view._blink_tick()
-    view.render()
-    assert view._blink_target is None and view.canvas.find_withtag("selected")  # 3 s later: the usual ring
-    view.show(Place("220070000", 1173.0, 1227.4, "Место"))  # a place from the chat blinks too
+    assert view.canvas.find_withtag("pulse") and not view.canvas.find_withtag("selected")
+    view.show(Place("220070000", 1173.0, 1227.4, "Место"))  # a place from the chat still blinks
     view.render()
     blinking = set(view.canvas.find_withtag("blink"))
-    assert view._blink_target == "pin" and blinking and blinking < set(view.canvas.find_withtag("pin"))  # not the label
-    view.select(teleport)  # a click stops it
+    assert view._blink_target == "pin" and blinking and blinking < set(view.canvas.find_withtag("pin"))
+    view.select(teleport)  # a click stops the place's blinking
     assert view._blink_target is None
+    view.motion_enabled = lambda: False  # «Отключить анимации»: a still, larger icon
+    view.select(teleport)
+    view.render()
+    still = view.canvas.find_withtag("pulse")[0]
+    assert view.tk.call("image", "width", view.canvas.itemcget(still, "image")) >= round(base * mv.PULSE_STILL) - 1
+    assert view._pulse_after is None
 
 
 def test_side_switch_shows_that_sides_fortress_npcs_and_quest_givers(root):

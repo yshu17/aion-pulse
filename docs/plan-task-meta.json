@@ -251,8 +251,14 @@
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата создания не была записана; проставлена 08.10.2026 по решению пользователя",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T13:35+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
-      ]
+      ],
+      "changed_at": "13.10.2026 13:35"
     },
     "map:22": {
       "added_at": "08.10.2026",
@@ -1507,7 +1513,7 @@
     "map:18": "cadac2a729059c50f8cc51fd99c9a17a03f676492700b3380c25a70a3f8358e8",
     "map:19": "45da8daaf7e55ff19b6ead7784213bfc4b6e810c417722125f7c15a3c49a50ed",
     "map:20": "26ce274767b8a958e7bcc81e88dddacc70b39b6fdea9b13b13a0dc5efc5fab07",
-    "map:21": "f6186f4466f6da9da1888988ed2d287c47afd72c80a7eed5d71e489aaab83b34",
+    "map:21": "8fcd110bdc0e12dc4830125f86bc75662e35305bfc4661d7c45cd185b65f4ac3",
     "map:22": "0578773642faf6a82dfcae065faabe4ce684253f4b2399c6dc55b0f1f43134ed",
     "map:23": "0b2d941d4fc4f001d0713703d2eccceabb4442ddb1fad49046784e14e9f6863f",
     "map:24": "bb8be04e15ce10c8ea10dcf76dce1d84564489da396ecb6eb86596526541f160",
