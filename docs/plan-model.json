@@ -6930,8 +6930,8 @@
       "title": "Общий тёмный фон плоский",
       "who": "Claude",
       "text": "P3 · Едва заметный вертикальный градиент шапки (картинка-фон), только если не мешает читаемости",
-      "note": "",
-      "status": "planned",
+      "note": "едва заметный вертикальный градиент сверху окна (Кодекс, `027a24f`, перенесён `dbfe301`). **Приёмка Claude 13.10 со скиллами:** у Кодекса градиент лежал под непрозрачными метками Tk — за «Aion Chat Watcher», «Поиск группы» и счётчиками были видны прямоугольники, а сам градиент был виден только в щелях между ними; исправлено: отдельная полоса на всю ширину вместо верхнего поля шапки (10 px), от mix(SURFACE_2, BG, 0.3) к BG, под виджетами не проходит — тест (`a5ce537`). Текст шапки стоит на BG, контраст не изменился.",
+      "status": "done",
       "priority": "Low",
       "dependencies_text": "№ 3",
       "stage": "",
@@ -6942,20 +6942,36 @@
       "depends_on": [
         "ui:3"
       ],
-      "changed_at": "",
+      "changed_at": "13.10.2026 14:53",
       "history": [
         {
           "at": "2026-10-12T00:00+02:00",
           "event": "Дата создания не была записана; проставлена 08.10.2026 по решению пользователя",
           "origin": "decision"
+        },
+        {
+          "at": "2026-10-13T14:53+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
       "owners": [
         "Claude"
       ],
       "is_new": false,
-      "verification": "",
+      "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Едва заметный градиент вдоль верхнего края окна; за надписями шапки больше нет прямоугольников.",
+        "before": "dbfe301",
+        "after": "a5ce537",
+        "skills_used": [
+          "application-ui-ux-designer",
+          "design-theme-guide",
+          "ui-visual-validator"
+        ],
+        "skills_note": "Codex: прочитан application-ui-ux-designer (по его отчёту); приёмка Claude 13.10 скиллами — найден и исправлен дефект: прямоугольники меток на градиенте"
+      },
       "ai": {
         "category": "UI/UX · фон",
         "agent": "codex",
@@ -7043,7 +7059,7 @@
         "handoff_label": "ждёт проверки Claude",
         "arch_label": "не требуется",
         "missing_tools": [],
-        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:31 · Общий тёмный фон плоский\nЦель: Общий тёмный фон плоский.\nКонтекст: P3 · Едва заметный вертикальный градиент шапки (картинка-фон), только если не мешает читаемости\nПлан: ui · статус: planned · передача: ждёт проверки Claude\nЗависимости: ui:3\nТребования и критерии готовности:\n- градиент едва заметен\n- контраст текста не ниже прежнего\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): решить, нужен ли градиент шапки. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): контраст по токенам theme.py. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nПримечание: P3 — делать последним.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
+        "codex_text": "ЗАДАНИЕ ДЛЯ CODEX · ui:31 · Общий тёмный фон плоский\nЦель: Общий тёмный фон плоский.\nКонтекст: P3 · Едва заметный вертикальный градиент шапки (картинка-фон), только если не мешает читаемости\nПлан: ui · статус: done · передача: ждёт проверки Claude\nЗависимости: ui:3\nТребования и критерии готовности:\n- градиент едва заметен\n- контраст текста не ниже прежнего\nРазрешённые файлы:\n- watcher/theme.py\n- tools/build_ui.py\n- data/ui/\nЗапрещено:\n- Игровая папка (только чтение)\n- config.json пользователя\n- docs/plan-ai-tools.json и статусы планов — меняет Claude\n- Чужие незавершённые файлы из `git status`\nИнструменты (читай SKILL.md и references/ из .claude/skills или ~/.claude/skills):\n- application-ui-ux-designer (основной): решить, нужен ли градиент шапки. Codex читает SKILL.md по AGENTS.md.\n- design-theme-guide (дополнительный): контраст по токенам theme.py. Codex читает SKILL.md по AGENTS.md.\n- ui-visual-validator (дополнительный): сверка по снимкам до/после. Codex читает SKILL.md по AGENTS.md.\n- tool:ui_snapshots (дополнительный): снимки окна до/после для визуальной сверки. у Codex есть свой экземпляр.\nПримечание: P3 — делать последним.\nТесты:\n- pytest tests/test_theme.py tests/test_app.py\n- снимки\n- python tools/check_project.py\nПроверяет и принимает: Claude Code.\nОтчёт: строка в журнал PAIR.md (что сделано, файлы, результат тестов, открытые вопросы); своя ветка codex/<задача>."
       }
     },
     {
