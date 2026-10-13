@@ -164,7 +164,7 @@ class App:
         self.start_btn.pack(side="left")
         self.status_short_var = tk.StringVar()
         self.status_label = ttk.Label(control, textvariable=self.status_short_var, style="Idle.Chip.TLabel", compound="left",
-                                      width=STATUS_CHARS)
+                                      width=STATUS_CHARS, anchor="center")  # ui:38: icon and text centred as one group
         self.status_hint = Hint(self.status_label, "")
         self._status_pulse_after: str | None = None
         self._status_pulse_generation = 0
