@@ -448,3 +448,27 @@ def test_area_label_moves_away_from_poi_icon(root):
     assert moved != original
     assert moved is not None and icon is not None
     assert moved[3] + 5 <= icon[1] or moved[1] >= icon[3] + 5 or moved[2] + 5 <= icon[0] or moved[0] >= icon[2] + 5
+
+
+def test_dragging_or_zooming_stops_the_flight(root):
+    """ui:30 recheck: grabbing the map in the middle of a flight hands it to the user — the remaining frames of the
+    flight must not pull it back to the target."""
+    window = MapView(root, zones())
+    window.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
+    window.open_zone("220070000")
+    window.zoom = window._fit_zoom() * 3
+    window._clamp()
+    window.render()
+    root.update()
+    zone = window.zone
+    window.fly_to(*zone.to_image(1500, 1500))  # first frame now, three more queued
+    event = type("E", (), {"x": 300, "y": 300})()
+    window._on_press(event)
+    event.x, event.y = 340, 330
+    window._on_drag(event)
+    grabbed = (window.left, window.top)
+    root.after(200, root.quit)
+    root.mainloop()
+    assert (window.left, window.top) == pytest.approx(grabbed)

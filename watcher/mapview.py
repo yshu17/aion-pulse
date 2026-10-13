@@ -413,6 +413,7 @@ class MapView(ttk.Frame):
 
     def zoom_at(self, factor: float, screen_x: float, screen_y: float) -> None:
         """Zoom keeping the map point under (screen_x, screen_y) in place."""
+        self._cancel_fly()
         new = max(self._fit_zoom(), min(MAX_ZOOM, self.zoom * factor))
         image_x = self.left + screen_x / self.zoom
         image_y = self.top + screen_y / self.zoom
@@ -992,6 +993,7 @@ class MapView(ttk.Frame):
         self.coords_var.set(f"x {game[0]:.0f} · y {game[1]:.0f}" if game else "")
 
     def _on_press(self, event: tk.Event) -> None:
+        self._cancel_fly()  # the user takes the map: the flight's remaining frames must not pull it back (ui:30)
         self._drag = (event.x, event.y, self.left, self.top)
 
     def _on_drag(self, event: tk.Event) -> None:
@@ -1008,6 +1010,7 @@ class MapView(ttk.Frame):
         self.zoom_at(factor, width / 2, height / 2)
 
     def _fit(self) -> None:
+        self._cancel_fly()
         self.zoom = self._fit_zoom()
         self._clamp()
         self.render()
