@@ -47,3 +47,14 @@ def test_sorted_by_start_and_negative_lead_rejected():
         pass
     else:
         raise AssertionError("negative lead accepted")
+
+
+def test_occurrences_between_spans_weeks_and_excludes_the_left_edge():
+    from watcher.reminders import occurrences_between
+
+    sun = {"day": "sun", "start": "21:00", "end": "22:00", "name": "Вс"}
+    after = datetime(2026, 10, 14, 20, 0)  # Wednesday 20:00, exactly the start of EVENT: excluded
+    until = datetime(2026, 10, 21, 20, 0)  # next Wednesday 20:00: included
+    got = occurrences_between([EVENT, sun], after, until)
+    assert [(e["name"], at) for e, at in got] == [("Вс", datetime(2026, 10, 18, 21, 0)), ("Арена", datetime(2026, 10, 21, 20, 0))]
+    assert occurrences_between([EVENT], until, after) == []

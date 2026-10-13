@@ -46,3 +46,16 @@ def due_reminders(events: list[dict], now: datetime, lead_min: int, sent: set[st
                 if key not in sent:
                     found.append((key, event, at))
     return sorted(found, key=lambda item: item[2])
+
+
+def occurrences_between(events: list[dict], after: datetime, until: datetime) -> list[tuple[dict, datetime]]:
+    """Weekly occurrences that started in (after, until], earliest first (SN-8: missed while the program was closed)."""
+    found = []
+    monday = week_start(after)
+    while monday <= until:
+        for event in events:
+            at = starts_at(event, monday)
+            if after < at <= until:
+                found.append((event, at))
+        monday += timedelta(days=7)
+    return sorted(found, key=lambda item: item[1])

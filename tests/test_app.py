@@ -968,3 +968,47 @@ def test_schedule_reminders_before_and_at_start_once(tmp_path):
         assert json.loads(app.config_path.read_text(encoding="utf-8"))["remind_min"] == 60
     finally:
         root.destroy()
+
+
+def test_reminder_has_snooze_repeats_and_stops_after_the_event(tmp_path):
+    """SN-8: «Понятно» / «Через 5 мин», repeat while unanswered, no repeat once the event is over."""
+    from datetime import datetime
+
+    root, app, calls, say = _nag_app(tmp_path, remind_min=5, remind_events=["wed|20:00|Арена"])
+    try:
+        app.schedule_tab.events = [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Арена"}]
+        app.schedule_tab.belled = {"wed|20:00|Арена"}
+        app._msk_clock = lambda: datetime(2026, 10, 14, 19, 56)
+        app._check_reminders()
+        event = app.notifications.history[-1]
+        assert [a.id for a in event.actions] == ["accept", "snooze"]
+        assert event.repeat_after == 180
+        assert event.id in app._reminder_ids
+        app._msk_clock = lambda: datetime(2026, 10, 14, 21, 1)  # the event is over
+        app._check_reminders()
+        assert not app.notifications.is_active(event)
+        assert app._reminder_ids == {}
+    finally:
+        root.destroy()
+
+
+def test_missed_reminders_while_closed_come_as_one_toast(tmp_path):
+    from datetime import datetime
+
+    root, app, calls, say = _nag_app(tmp_path, remind_events=["wed|20:00|Арена", "thu|02:00|Дер"],
+                                      remind_last_check="2026-10-14T19:00:00")
+    try:
+        app.schedule_tab.events = [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Арена"},
+                                   {"day": "thu", "start": "02:00", "end": "04:00", "name": "Дер"},
+                                   {"day": "wed", "start": "21:00", "end": "22:00", "name": "Без отметки"}]
+        app.schedule_tab.belled = {"wed|20:00|Арена", "thu|02:00|Дер"}
+        app.schedule_tab.tz = None
+        sent = []
+        app.notifications.notify = lambda source, kind, title, text="", *a, **k: sent.append((title, text))
+        app._msk_clock = lambda: datetime(2026, 10, 15, 9, 0)  # Thursday morning: both belled events were missed
+        app._report_missed_reminders()
+        assert len(sent) == 1 and sent[0][0] == "Пропущено, пока программа была закрыта: 2"
+        assert "Арена (ср" in sent[0][1] and "Дер (чт" in sent[0][1] and "Без отметки" not in sent[0][1]
+        assert app.cfg.remind_last_check == "2026-10-15T09:00:00"
+    finally:
+        root.destroy()

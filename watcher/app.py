@@ -12,8 +12,9 @@ from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
 from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
-from watcher.reminders import due_reminders
-from watcher.schedule_tab import LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range
+from watcher.reminders import due_reminders, occurrences_between
+from watcher.schedule_tab import (LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range,
+                                  to_local)
 from watcher.schedule_view import next_events
 from watcher.errlog import log_exception
 from watcher.matcher import Matcher, highlight_segments
@@ -58,6 +59,8 @@ GAME_OFF = "Игра не запущена — слежение остановл
 
 
 REMIND_MS = 30_000  # SN-8: how often the schedule reminders are checked
+REMIND_REPEAT_S = 180  # SN-8: an unanswered reminder comes back after this, until the event ends
+MISSED_DAYS = 7  # SN-8: events missed while the program was closed are reported for at most a week back
 STATUS_CHARS = 20  # the status chip keeps one width, so the keywords field does not jump; full text in its hint
 
 
@@ -383,6 +386,8 @@ class App:
         )
         self._msk_clock = msk_now  # tests replace it
         self._reminded: set[str] = set()  # occurrences already announced this run (no repeats)
+        self._reminder_ids: dict[int, datetime] = {}  # notification id -> end of its event: repeats stop there
+        self.root.after_idle(self._report_missed_reminders)
         self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
         self.tabs.add(self.schedule_tab, text="Расписание")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
@@ -1034,22 +1039,56 @@ class App:
             now = self._msk_clock()
             belled = [e for e in self.schedule_tab.events if bell_key(e) in self.schedule_tab.belled]
             lead = self.schedule_tab.lead_minutes()
+            for event_id, end in list(self._reminder_ids.items()):
+                if now >= end:  # the event is over: its reminder stops repeating
+                    self.notifications.acknowledge(event_id)
+                    del self._reminder_ids[event_id]
             for key, event, start in due_reminders(belled, now, lead, self._reminded):
                 if (start - now).total_seconds() < 60:
                     continue  # the start toast below covers it
                 self._reminded.add(key)
-                self.notifications.notify(
-                    "schedule", "event", f"Через {lead_label(lead)}: {event['name']}",
-                    f"{time_range(start, end_of(event, start), self.schedule_tab.tz)} · расписание сервера")
+                self._remind(f"Через {lead_label(lead)}: {event['name']}", event, start)
             for event, start in next_events(belled, now, len(belled) + 1):
                 key = bell_key(event) + "|start|" + start.isoformat()
                 if 0 <= (now - start).total_seconds() < 120 and key not in self._reminded:
                     self._reminded.add(key)
-                    self.notifications.notify(
-                        "schedule", "event", f"Началось: {event['name']}",
-                        f"{time_range(start, end_of(event, start), self.schedule_tab.tz)} · расписание сервера")
+                    self._remind(f"Началось: {event['name']}", event, start)
+            self.cfg.remind_last_check = now.isoformat(timespec="seconds")
         finally:
             self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
+
+    def _remind(self, title: str, event: dict, start: datetime) -> None:
+        """One reminder toast: «Понятно» stops it, «Через 5 мин» snoozes it, silence repeats it until the event ends."""
+        end = end_of(event, start)
+        note = self.notifications.notify(
+            "schedule", "event", title, f"{time_range(start, end, self.schedule_tab.tz)} · расписание сервера",
+            [NotificationAction("accept", "Понятно"), NotificationAction("snooze", "Через 5 мин")],
+            repeat_after=REMIND_REPEAT_S,
+        )
+        if note is not None:
+            self._reminder_ids[note.id] = end
+
+    def _report_missed_reminders(self) -> None:
+        """SN-8: belled events that started while the program was closed — one toast, at most a week back."""
+        now = self._msk_clock()
+        try:
+            last = datetime.fromisoformat(self.cfg.remind_last_check)
+        except ValueError:
+            last = None
+        self.cfg.remind_last_check = now.isoformat(timespec="seconds")
+        save_config(self.config_path, self.cfg)
+        if last is None:
+            return
+        last = max(last, now - timedelta(days=MISSED_DAYS))
+        belled = [e for e in self.schedule_tab.events if bell_key(e) in self.schedule_tab.belled]
+        missed = [(e, at) for e, at in occurrences_between(belled, last, now) if (now - at).total_seconds() >= 120]
+        if not missed:
+            return
+        days = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
+        names = [f"{e['name']} ({days[at.weekday()]} {to_local(at, self.schedule_tab.tz):%H:%M})" for e, at in missed[:5]]
+        more = f" и ещё {len(missed) - 5}" if len(missed) > 5 else ""
+        self.notifications.notify("schedule", "event", f"Пропущено, пока программа была закрыта: {len(missed)}",
+                                  ", ".join(names) + more)
 
     def _preview_notification(self) -> None:
         self.notifications.notify(
@@ -1076,6 +1115,8 @@ class App:
         finally:
             self.stop()
             self.toasts.close()
+            self.cfg.remind_last_check = self._msk_clock().isoformat(timespec="seconds")  # SN-8: «missed while closed» starts here
+            save_config(self.config_path, self.cfg)
             try:
                 self.root.after_cancel(self._remind_after)
             except (tk.TclError, ValueError):
