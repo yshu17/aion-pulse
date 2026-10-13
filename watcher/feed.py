@@ -69,6 +69,11 @@ class MatchFeed(ttk.Frame):
         self.text.pack(side="left", fill="both", expand=True)
         self.text.tag_configure("alert", rmargin=HOLDER_WIDTH)
         self.text.tag_configure("blink", background=PENDING_DIM)
+        # the row under the mouse takes a slightly lighter ground; a match's own ground stays on top
+        self.text.tag_configure("hover", background=theme.SURFACE_2)
+        self.text.tag_lower("hover")
+        self.text.bind("<Motion>", lambda e: self.hover_at(e.x, e.y), add="+")
+        self.text.bind("<Leave>", lambda _e: self.hover_at(None, None), add="+")
         self.text.tag_configure("accepted", background=ACCEPTED_BG)
         self.text.tag_configure("missed", background=MISSED_BG)
         self.text.tag_raise("hit")
@@ -106,6 +111,16 @@ class MatchFeed(ttk.Frame):
         width = max(60, event.width - overhead)
         if str(self.banner_label.cget("wraplength")) != str(width):
             self.banner_label.configure(wraplength=width)
+
+    def hover_at(self, x: int | None, y: int | None) -> None:
+        """Light the chat row at (x, y) of the text; None clears it (the empty top spacer is never lit)."""
+        self.text.tag_remove("hover", "1.0", "end")
+        if x is None or y is None:
+            return
+        index = self.text.index(f"@{x},{y}")
+        if int(index.split(".")[0]) < 2 or not self.text.get(f"{index} linestart", f"{index} lineend").strip():
+            return
+        self.text.tag_add("hover", f"{index} linestart", f"{index} lineend +1c")
 
     def hide_banner(self) -> None:
         if self.banner.winfo_manager():

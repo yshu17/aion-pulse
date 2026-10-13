@@ -293,3 +293,20 @@ def test_wrapped_lines_hang_under_the_message_not_under_the_time(root):
     for tag in ("row", "hitline"):
         first = int(str(feed.text.tag_cget(tag, "lmargin1")))
         assert int(str(feed.text.tag_cget(tag, "lmargin2"))) >= first + time_width
+
+
+def test_the_row_under_the_mouse_lights_up(root):
+    """Motion: the feed row under the mouse takes the hover ground; leaving the feed clears it."""
+    from watcher import theme
+    theme.apply_dark_theme(root)
+    feed = make(root)
+    feed.add(msg("A", "wts первое"), ["wts"])
+    feed.add(msg("B", "wts второе"), ["wts"])
+    root.update()
+    line = feed.text.dlineinfo("end-2c linestart")
+    feed.hover_at(line[0] + 5, line[1] + 2)
+    ranges = feed.text.tag_ranges("hover")
+    assert ranges and "второе" in feed.text.get(ranges[0], ranges[1])
+    assert feed.text.tag_cget("hover", "background") == theme.SURFACE_2
+    feed.hover_at(None, None)
+    assert not feed.text.tag_ranges("hover")

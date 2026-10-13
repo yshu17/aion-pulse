@@ -48,7 +48,8 @@ def test_load_events_missing_file_is_empty(tmp_path):
 
 
 def _labels(box):
-    return [[w.cget("text") for w in row.winfo_children()] for row in box.winfo_children()]
+    """Text of each row; the progress bar under a running event is not a row."""
+    return [[w.cget("text") for w in row.winfo_children()] for row in box.winfo_children() if row.winfo_class() == "Frame"]
 
 
 def test_tab_shows_running_next_and_the_day():
@@ -229,6 +230,56 @@ def test_day_strip_shows_the_day_and_now():
         x0, y0, x1, y1 = strip.coords(block)
         strip.event_generate("<Button-1>", x=int((x0 + x1) / 2), y=int((y0 + y1) / 2))
         assert opened and opened[0]["name"] == "Дер"
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_rows_light_up_under_the_mouse():
+    """Motion: a schedule row takes the hover ground on enter and gives it back on leave (instant without motion)."""
+    import tkinter as tk
+    root = tk.Tk()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK, motion=lambda: False)
+        tab.pack(fill="both", expand=True)
+        root.update()
+        row = tab.next_box.winfo_children()[0]
+        row.event_generate("<Enter>")
+        assert row.cget("background") == theme.SURFACE_2
+        assert all(child.cget("background") == theme.SURFACE_2 for child in row.winfo_children())
+        row.event_generate("<Leave>")
+        assert row.cget("background") == theme.SURFACE
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_running_event_shows_its_progress_and_the_now_line_moves():
+    """Motion: a running event has a thin progress bar (half way at 20:30 of 20:00–21:00); the light tick moves the
+    «now» line and the bar without rebuilding the lists."""
+    import tkinter as tk
+    root = tk.Tk()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        clock = [WED_2030]
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: clock[0], tz=MSK)
+        tab.pack(fill="both", expand=True)
+        root.geometry("1000x600")
+        root.update()
+        bar, start, end = tab._progress[0]
+        x0, _y0, x1, _y1 = bar.coords("fill")
+        assert abs((x1 - x0) / bar.winfo_width() - 0.5) < 0.05
+        rows = tab.next_box.winfo_children()
+        before = tab.strip.coords("now")[0]
+        clock[0] = WED_2030 + timedelta(minutes=15)
+        tab.tick_now()
+        assert tab.strip.coords("now")[0] > before
+        _x0, _y0, x1b, _y1 = bar.coords("fill")
+        assert x1b > x1
+        assert tab.next_box.winfo_children() == rows  # the lists were not rebuilt
         tab.destroy()
     finally:
         root.destroy()

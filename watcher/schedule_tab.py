@@ -25,6 +25,7 @@ NEXT_LIMIT = 8
 LEADS = {"5 мин": 5, "15 мин": 15, "30 мин": 30, "1 час": 60}  # SN-8: how early to remind (user choice 13.10)
 DEFAULT_LEAD = 5
 REFRESH_MS = 30_000
+NOW_TICK_MS = 5_000  # the «now» line and the progress bars move this often; the lists rebuild every REFRESH_MS
 # day strip: one colour per kind, in the order of the data (existing theme roles, no new colours)
 KIND_COLORS = (theme.ACCENT, theme.PLACE, theme.NICK, theme.SUCCESS, theme.WARNING)  # no red: it reads as an error
 LANE_H, AXIS_H = 18, 14
@@ -114,11 +115,12 @@ class ScheduleTab(ttk.Frame):
     def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None,
                  belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None,
                  hidden: set[str] | None = None, on_filter=None, custom: Custom | None = None,
-                 on_map=None, side=lambda: "dark", on_check=None) -> None:
+                 on_map=None, side=lambda: "dark", on_check=None, motion=lambda: True) -> None:
         super().__init__(master, padding=(0, 12, 0, 0))
         self.base = events  # data/schedule.json — never changed by the tab
         self.custom = custom or Custom(None)
-        self.on_map, self.side = on_map, side  # SN-7 «на карте»: open a zone; the player's side picks one of two  # SN-7: the user's own added / edited / removed events
+        self.on_map, self.side = on_map, side
+        self.motion = motion  # False with «Отключить анимации»: hover colours switch at once  # SN-7 «на карте»: open a zone; the player's side picks one of two  # SN-7: the user's own added / edited / removed events
         self.events = self.custom.merge(events)
         self.belled = belled if belled is not None else set()  # SN-8: events to remind of (shared with the app)
         self.on_bell = on_bell
@@ -126,6 +128,8 @@ class ScheduleTab(ttk.Frame):
         self.clock = clock
         self.tz = tz
         self._after: str | None = None
+        self._now_after: str | None = None
+        self._progress: list[tuple[tk.Canvas, datetime, datetime]] = []  # running events: bar, start, end (MSK)
         # SN-7: «Виды» — hide kinds of events from both lists (reminders of belled events still come)
         self.on_filter = on_filter
         hidden = hidden or set()
@@ -239,6 +243,7 @@ class ScheduleTab(ttk.Frame):
         for box in (self.next_box, self.day_list):
             for child in box.winfo_children():
                 child.destroy()
+        self._progress = []
         upcoming = next_events(shown, now, NEXT_LIMIT)
         if not upcoming:
             self._row(self.next_box, "", "Расписание пусто", "")
@@ -250,6 +255,13 @@ class ScheduleTab(ttk.Frame):
                 badge = "напомню · " + badge
             self._row(self.next_box, time_range(start, end, self.tz), event["name"], badge,
                       accent=theme.SUCCESS if running else theme.ACCENT, place=event)
+            if running:  # how far it has gone: a 3 px bar under the row
+                bar = tk.Canvas(self.next_box, height=3, background=theme.SURFACE_3, highlightthickness=0,
+                                borderwidth=0)
+                bar.pack(fill="x", pady=(0, 2))
+                bar.create_rectangle(0, 0, 0, 3, fill=theme.SUCCESS, outline="", tags="fill")
+                bar.bind("<Configure>", lambda _e: self._move_progress(self.clock()))
+                self._progress.append((bar, start, end))
         day = next((k for k, v in DAY_NAMES.items() if v == self.day_var.get()), DAYS[now.weekday()])
         today = DAYS[now.weekday()]
         day_events = events_for_day(shown, day)
@@ -270,6 +282,26 @@ class ScheduleTab(ttk.Frame):
         if self._after:
             self.after_cancel(self._after)
         self._after = self.after(REFRESH_MS, self.refresh)
+        if self._now_after is None:
+            self._now_after = self.after(NOW_TICK_MS, self.tick_now)
+
+    def tick_now(self) -> None:
+        """The light tick: move the «now» line and the progress bars to the clock, nothing else is rebuilt."""
+        self._now_after = None
+        now = self.clock()
+        if hasattr(self, "_strip_day"):
+            day, today, _old, date = self._strip_day
+            self._strip_day = (day, today, now, date)
+            self._draw_strip()
+        self._move_progress(now)
+        if self.winfo_exists():
+            self._now_after = self.after(NOW_TICK_MS, self.tick_now)
+
+    def _move_progress(self, now: datetime) -> None:
+        for bar, start, end in self._progress:
+            if bar.winfo_exists():
+                share = min(1.0, max(0.0, (now - start) / (end - start)))
+                bar.coords("fill", 0, 0, bar.winfo_width() * share, 3)
 
     def _trim_next(self) -> None:
         """Only whole rows in «Ближайшие»: a row that does not fit the card's height is hidden, not cut in half."""
@@ -357,6 +389,27 @@ class ScheduleTab(ttk.Frame):
         if badge:
             tk.Label(row, text=badge, background=theme.SURFACE, foreground=accent or theme.MUTED,
                      font=theme.font("small")).pack(side="right")
+        row.bind("<Enter>", lambda _e, r=row: self._hover(r, theme.SURFACE_2))
+        row.bind("<Leave>", lambda _e, r=row: None if self._pointer_in(r) else self._hover(r, theme.SURFACE))
+
+    @staticmethod
+    def _pointer_in(row: tk.Frame) -> bool:
+        """<Leave> also fires when the mouse moves onto a label of the row: keep the light then."""
+        try:
+            under = row.winfo_containing(row.winfo_pointerx(), row.winfo_pointery())
+        except (KeyError, tk.TclError):
+            return False
+        return under is not None and (under is row or under.master is row)
+
+    def _hover(self, row: tk.Frame, color: str) -> None:
+        """The row under the mouse takes a slightly lighter ground (theme.MOTION fast, 3 frames)."""
+        from watcher.motion import tween_color
+
+        def paint(value: str) -> None:
+            for widget in (row, *row.winfo_children()):
+                widget.configure(background=value)
+        tween_color(row, paint, str(row.cget("background")), color, theme.MOTION["fast"],
+                    enabled=bool(self.motion()), steps=3)
 
     def toggle_bell(self, event: dict) -> None:
         """SN-8: switch the reminder of one weekly event on or off and tell the app (it saves the choice)."""
@@ -383,6 +436,9 @@ class ScheduleTab(ttk.Frame):
         if self._after:
             self.after_cancel(self._after)
             self._after = None
+        if self._now_after:
+            self.after_cancel(self._now_after)
+            self._now_after = None
         super().destroy()
 
 

@@ -402,6 +402,7 @@ class App:
             hidden=set(self.cfg.schedule_hidden), on_filter=self._on_schedule_filter,
             custom=Custom.load(self.config_path.with_name("schedule_custom.json")),  # SN-7: the user's own events
             on_map=self._open_zone, side=lambda: self.cfg.map_side, on_check=lambda: self.check_schedule_update(True),
+            motion=lambda: not self.cfg.reduce_motion,
         )
         # SN-9: the grid of data/schedule.json was typed from this picture version of the knowledge base article
         try:
