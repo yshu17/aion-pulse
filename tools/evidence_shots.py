@@ -26,6 +26,7 @@ def git(*args: str, cwd: Path = ROOT) -> str:
 
 
 def checkout(commit: str) -> None:
+    commit = git("rev-parse", "--verify", commit + "^{commit}")  # resolve in the main checkout: HEAD here, not the worktree's
     if not WT.exists():
         git("worktree", "add", "--detach", str(WT), commit)
     else:

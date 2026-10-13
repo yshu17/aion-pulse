@@ -5,7 +5,9 @@
 
 ## Скиллы — всегда
 
-Перед каждой задачей вызывай подходящие скиллы через Skill (решение пользователя 13.10: «всегда вызывать»): UI —
+Перед каждой задачей вызывай скиллы, которые план рекомендует для неё (блок AI в карточке, `docs/plan-ai-tools.json`:
+`primary` и `supporting`), через Skill — решение пользователя 13.10: «всегда, в соответствии с планом». Если у задачи
+рекомендации нет — подходящие по смыслу: UI —
 `ui-ux-pro-max`, `ui-visual-validator`, `design-theme-guide` и проектные `application-*`; процесс — `superpowers`
 (brainstorming, test-driven-development, systematic-debugging, verification-before-completion). Маленькая задача — не
 причина пропустить. Проектные скиллы лежат в `.claude/skills` этой папки: если сессия открыта из `ClaudeWorkspace` и их
