@@ -40,6 +40,7 @@ GRADE_LABELS = {
     "rare": "Редк.", "common": "Обыч.",
 }
 ALL_TYPES = "Все типы"
+LABEL_CHARS = 5  # ui:36: the width of the «Найти» / «Ур.» label column
 ANY_LEVEL = "любой"
 
 
@@ -118,7 +119,8 @@ class ItemList(ttk.Frame):
 
         search = ttk.Frame(self, style="Surface.TFrame")
         search.pack(fill="x", padx=(0, 8))
-        ttk.Label(search, text="Найти", style="CardMuted.TLabel").pack(side="left", padx=(0, 8))
+        # ui:36: «Найти» and «Ур.» share one label column; the grade chips start under the fields
+        ttk.Label(search, text="Найти", style="CardMuted.TLabel", width=LABEL_CHARS).pack(side="left", padx=(0, 6))
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(search, textvariable=self.search_var, style="Card.TEntry")
         self.search_entry.pack(side="left", fill="x", expand=True)
@@ -128,7 +130,7 @@ class ItemList(ttk.Frame):
                                    command=lambda: self.step(1), padding=(6, 5))
         Hint(self.prev_btn, "Предыдущее совпадение")
         Hint(self.next_btn, "Следующее совпадение")
-        self.count_label = ttk.Label(search, text="", style="CardMuted.TLabel", width=8, anchor="center")
+        self.count_label = ttk.Label(search, text="", style="CardMuted.TLabel", anchor="center")  # no empty reserve
         self.count_label.pack(side="left", padx=(6, 0))
         self.prev_btn.pack(side="left", padx=(4, 0))
         self.next_btn.pack(side="left", padx=(4, 0))
@@ -272,7 +274,8 @@ class ItemList(ttk.Frame):
         self.grades = [g for g in GRADE_ORDER if any(item.grade == g for item in items)]
         levels = sorted({item.level for item in items})
         bar = ttk.Frame(self, style="Surface.TFrame")
-        bar.pack(fill="x", padx=(0, 8), pady=(8, 0))
+        bar.pack(fill="x", padx=(0, 8), pady=(6, 0))
+        ttk.Label(bar, text="", style="CardMuted.TLabel", width=LABEL_CHARS).pack(side="left", padx=(0, 6))
         self.grade_chips: dict[str, tk.Label] = {}
         self._chip_hover: str | None = None
         for grade in self.grades:
@@ -287,7 +290,7 @@ class ItemList(ttk.Frame):
             self.grade_chips[grade] = chip
         row = ttk.Frame(self, style="Surface.TFrame")
         row.pack(fill="x", padx=(0, 8), pady=(6, 0))
-        ttk.Label(row, text="Ур.", style="CardMuted.TLabel").pack(side="left", padx=(0, 6))
+        ttk.Label(row, text="Ур.", style="CardMuted.TLabel", width=LABEL_CHARS).pack(side="left", padx=(0, 6))
         level_values = [ANY_LEVEL, *map(str, levels)]
         self.level_min_var = tk.StringVar()
         self.level_max_var = tk.StringVar()

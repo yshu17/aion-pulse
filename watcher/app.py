@@ -533,12 +533,14 @@ class App:
         panel = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10, 4, 10))
         self.items_panel = panel
         head = ttk.Frame(panel, style="Surface.TFrame")
-        head.pack(fill="x", padx=(0, 8), pady=(0, 10))
+        head.pack(fill="x", padx=(0, 8), pady=(0, 8))
         self.items_title = ttk.Label(head, text="Что искать", style="Title.TLabel")
         self.items_title.pack(side="left")
-        clear = ttk.Button(head, text="Снять", style="Card.TButton", command=lambda: self._select_all_items(False))
+        clear = ttk.Button(head, text="Снять", style="Card.TButton", command=lambda: self._select_all_items(False),
+                           width=0)  # ui:36: natural width instead of the theme's 11 characters
         clear.pack(side="right")
-        select_all = ttk.Button(head, text="Все", style="Card.TButton", command=lambda: self._select_all_items(True))
+        select_all = ttk.Button(head, text="Все", style="Card.TButton", command=lambda: self._select_all_items(True),
+                                width=0)
         select_all.pack(side="right", padx=6)
         self.item_controls: list[ttk.Widget] = [clear, select_all]
         self._icons: dict[str, tk.PhotoImage] = {}
