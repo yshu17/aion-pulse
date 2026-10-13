@@ -26,6 +26,7 @@
 | `downloads/aiondb_icons/` | aiondb.ru, 09.10.2026 | значки карты (SVG) → `data/maps/icons/` |
 | `downloads/icon_upscale/` | официальный релиз `nihui/waifu2x-ncnn-vulkan` 20250915, GitHub, 10.10.2026 | переносимый инструмент и локальные модели Waifu2x для увеличения значков; zip и распакованные файлы нужны `tools/upscale_icons.py` |
 | `downloads/phosphor_icons_2.1.1/` | официальный Phosphor Core (MIT) и PyPI, 10.10.2026 | 19 SVG и CairoSVG/Pillow для `tools/build_ui_icons.py`; Markdown и зависимости для `tools/build_plans_site.py`; PNG 16/20 px собираются в `data/ui/icons/` |
+| `downloads/phosphor_icons_2.1.1/add_2026-10-13/` | официальный Phosphor Core (MIT), 13.10.2026 | 8 SVG: bell, bell-fill, map-pin, arrow-clockwise, funnel, trash, list, pencil-simple — значки расписания и меню; подключает Кодекс (`docs/TASK_ICONS-2.md`) |
 | `client_extract/` | клиент игры (только чтение) | см. `client_extract/README.md`; полный отчёт распаковки — `client_extract/raw/REPORT.md` |
 
 ## Временные загрузки
