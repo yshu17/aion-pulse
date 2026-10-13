@@ -299,8 +299,8 @@
     },
     "overlaps": [],
     "native_minimum": [
-      1154,
-      600
+      1210,
+      750
     ]
   },
   "1000x600_map-150": {
@@ -372,8 +372,8 @@
     },
     "overlaps": [],
     "native_minimum": [
-      1322,
-      600
+      1396,
+      901
     ]
   },
   "1000x600_settings-closed": {
@@ -1120,8 +1120,8 @@
     },
     "overlaps": [],
     "native_minimum": [
-      1154,
-      600
+      1210,
+      750
     ]
   },
   "1400x860_map-150": {
@@ -1193,8 +1193,8 @@
     },
     "overlaps": [],
     "native_minimum": [
-      1322,
-      600
+      1396,
+      901
     ]
   },
   "1400x860_settings-closed": {
