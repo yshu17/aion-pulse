@@ -510,10 +510,26 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             ("Entry.padding", {"sticky": "nswe", "children": [("Entry.textarea", {"sticky": "nswe"})]})
         ]})],
     )
+    # The clam arrow draws a second frame inside our rounded field. Use the
+    # bundled borderless UI arrow so the whole combobox has one outline.
+    arrow_size = 20 if scale >= 1.25 else 16
+    arrow_dir = ui_dir / "icons"
+    arrow_path = arrow_dir / f"arrow-down_{arrow_size}_muted.png"
+    arrow_hot_path = arrow_dir / f"arrow-down_{arrow_size}_text.png"
+    downarrow = "Combobox.downarrow"
+    if arrow_path.is_file() and arrow_hot_path.is_file():
+        arrow = load_png(root, arrow_path)
+        arrow_hot = load_png(root, arrow_hot_path)
+        _images.extend((arrow, arrow_hot))
+        downarrow = "Flat.Combobox.downarrow"
+        style.element_create(
+            downarrow, "image", arrow, ("active", arrow_hot),
+            sticky="", padding=(round(6 * scale), 0, round(6 * scale), 0),
+        )
     style.layout(
         "TCombobox",
         [("Rounded.field", {"sticky": "nswe", "children": [
-            ("Combobox.downarrow", {"side": "right", "sticky": "ns"}),
+            (downarrow, {"side": "right", "sticky": ""}),
             ("Combobox.padding", {"expand": "1", "sticky": "nswe", "children": [
                 ("Combobox.textarea", {"sticky": "nswe"})
             ]}),
@@ -536,7 +552,7 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
     style.layout(
         "Card.TCombobox",
         [("Card.Rounded.field", {"sticky": "nswe", "children": [
-            ("Combobox.downarrow", {"side": "right", "sticky": "ns"}),
+            (downarrow, {"side": "right", "sticky": ""}),
             ("Combobox.padding", {"expand": "1", "sticky": "nswe", "children": [
                 ("Combobox.textarea", {"sticky": "nswe"})
             ]}),
@@ -777,8 +793,11 @@ def style_text(widget: tk.Text) -> None:
     widget.tag_configure("meta", foreground=MUTED, font=font("mono"))  # time: an even column of digits
     widget.tag_configure("nick", foreground=NICK, font=font("body_strong"))
     widget.tag_configure("hit", background=HIT_BG, foreground=HIT_FG, font=font("body_strong"))
-    widget.tag_configure("row", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE)
-    widget.tag_configure("hitline", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE, lmargincolor=ACCENT)
+    # Tk's left stripe adds three pixels; reserve the same space at the right
+    # so long chat rows keep a balanced inset instead of touching the edge.
+    widget.tag_configure("row", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE, rmargin=HIT_STRIPE)
+    widget.tag_configure("hitline", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE,
+                         rmargin=HIT_STRIPE, lmargincolor=ACCENT)
 
 
 def dark_title_bar(root: tk.Tk) -> None:

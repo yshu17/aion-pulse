@@ -10,26 +10,26 @@
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 10 |
 | `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 24 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 28 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 27 |
 | `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
-| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 3 |
+| `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
 | `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
 | `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 34 |
 | `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 13 |
 | `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 4 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
-| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 12 |
+| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 11 |
 | `code-review` | Проверка и ревью | встроен в Claude Code | у Codex свой аналог | 1 |
 | `security-review` | Безопасность | встроен в Claude Code | только у Claude | 12 |
 | `run` | Проверка и ревью | встроен в Claude Code | только у Claude | 3 |
 | `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 13 |
 | `tool:check_project` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
-| `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 11 |
+| `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 10 |
 
 ## Распределение открытых задач
 
-Claude Code: **25** · Codex: **18** · Совместно: **18** · Пользователь: **0**
+Claude Code: **25** · Codex: **17** · Совместно: **18** · Пользователь: **0**
 
 ## Задачи
 
@@ -59,7 +59,6 @@ Claude Code: **25** · Codex: **18** · Совместно: **18** · Польз
 | `ui:31` | Общий тёмный фон плоский | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:32` | В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:33` | Подпись перекрывает изображение или значок под ней | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:34` | У комбобокса лишняя или раздвоенная рамка вокруг области стрелки | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:35` | Геометрия кнопки, скругление и тень выглядят несогласованно | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:36` | В панели «Что искать» остаётся много пустого места, элементы размещены нерационально | Claude Code | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
 | `ui:37` | Строки настроек используют ширину негибко | Claude Code | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
