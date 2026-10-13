@@ -216,3 +216,14 @@ def test_loading_state_animates_its_dots(root):
     assert len(texts) >= 3  # «», «.», «..», «...» — the line breathes
     feed.add_note("— выше история —")
     assert not feed.empty.shown and feed.empty._after is None
+
+
+def test_warning_banner_keeps_action_visible_at_narrow_width(root):
+    root.geometry("520x350")
+    feed = make(root)
+    feed.show_banner("Игра не запущена. После запуска Aion нажми «Проверить снова».",
+                     "Проверить снова", lambda: None)
+    root.update()
+    assert feed.banner_button.winfo_ismapped()
+    assert feed.banner_button.winfo_x() + feed.banner_button.winfo_width() <= feed.banner.winfo_width()
+    assert feed.banner_label.winfo_height() > 20  # long warning wraps instead of pushing the action away

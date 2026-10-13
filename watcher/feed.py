@@ -54,10 +54,11 @@ class MatchFeed(ttk.Frame):
         self._blink_color = PENDING_DIM
         self.ui_icons = IconSet(self, resource_root() / "data" / "ui" / "icons")
         self.banner = ttk.Frame(self, style="Surface.TFrame", padding=(10, 7))
-        self.banner_label = ttk.Label(self.banner, style="Warn.Chip.TLabel", anchor="w")
-        self.banner_label.pack(side="left", fill="x", expand=True)
-        self.banner_button = ttk.Button(self.banner, style="Ghost.TButton")
+        self.banner_button = ttk.Button(self.banner, style="Card.TButton")
         self.banner_button.pack(side="right", padx=(8, 0))
+        self.banner_label = ttk.Label(self.banner, style="Warn.Chip.TLabel", anchor="w", width=1)
+        self.banner_label.pack(side="left", fill="x", expand=True)
+        self.banner.bind("<Configure>", self._fit_banner_text)
         self.banner.pack_forget()
         self.text = tk.Text(self, wrap="word", state="disabled")
         theme.style_text(self.text)
@@ -93,6 +94,12 @@ class MatchFeed(ttk.Frame):
         self.banner_button.configure(text=action, command=command)
         if not self.banner.winfo_manager():
             self.banner.pack(fill="x", side="top", pady=(0, 6), before=self.text)
+
+    def _fit_banner_text(self, event: tk.Event) -> None:
+        """Reserve the action button first and wrap warning text into the remaining width."""
+        width = max(60, event.width - self.banner_button.winfo_reqwidth() - 42)
+        if str(self.banner_label.cget("wraplength")) != str(width):
+            self.banner_label.configure(wraplength=width)
 
     def hide_banner(self) -> None:
         if self.banner.winfo_manager():
