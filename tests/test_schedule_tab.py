@@ -283,3 +283,29 @@ def test_running_event_shows_its_progress_and_the_now_line_moves():
         tab.destroy()
     finally:
         root.destroy()
+
+
+def test_schedule_uses_icons():
+    """Icons (Codex icons-2): a bell instead of the «напомнить» word (filled when on), a pin at «на карте», icons on
+    the buttons; the words stay as hints."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        events = EVENTS + [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Зона", "maps": ["220070000"]}]
+        tab = st.ScheduleTab(root, events, clock=lambda: WED_2030, tz=MSK, belled={"wed|22:00|Поздно"},
+                             on_map=lambda _z: None, on_check=lambda: None)
+        bells = [row.winfo_children()[0] for row in tab.day_list.winfo_children()]
+        assert all(str(b.cget("image")) and b.cget("text") == "" for b in bells)
+        on, off = str(tab.icons.get("bell-fill", "accent", 16)), str(tab.icons.get("bell", "muted", 16))
+        by_name = {row.winfo_children()[-1].cget("text"): row.winfo_children()[0] for row in tab.day_list.winfo_children()}
+        assert str(by_name["Поздно"].cget("image")) == on and str(by_name["Арена"].cget("image")) == off
+        pins = [w for row in tab.next_box.winfo_children() for w in row.winfo_children()
+                if w.winfo_class() == "Label" and w.cget("text") == "на карте"]
+        assert pins and all(str(p.cget("image")) for p in pins)
+        assert str(tab.kinds_button.cget("image")) and "▾" not in tab.kinds_button.cget("text")
+        tab.destroy()
+    finally:
+        root.destroy()

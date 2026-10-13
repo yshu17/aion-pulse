@@ -14,6 +14,9 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
+from watcher.catalog import resource_root
+from watcher.hint import Hint
+from watcher.ui_icons import IconSet
 from watcher.reminders import DAYS
 from watcher.schedule_custom import Custom, check
 from watcher.schedule_view import day_blocks, events_for_day, kind_of, kinds, map_for, next_events, visible
@@ -120,6 +123,7 @@ class ScheduleTab(ttk.Frame):
         self.base = events  # data/schedule.json — never changed by the tab
         self.custom = custom or Custom(None)
         self.on_map, self.side = on_map, side
+        self.icons = IconSet(self, resource_root() / "data" / "ui" / "icons")  # Phosphor, Codex icons-2
         self.motion = motion  # False with «Отключить анимации»: hover colours switch at once  # SN-7 «на карте»: open a zone; the player's side picks one of two  # SN-7: the user's own added / edited / removed events
         self.events = self.custom.merge(events)
         self.belled = belled if belled is not None else set()  # SN-8: events to remind of (shared with the app)
@@ -139,13 +143,14 @@ class ScheduleTab(ttk.Frame):
                                   activebackground=theme.SURFACE_3, activeforeground=theme.TEXT,
                                   selectcolor=theme.ACCENT)
         self._fill_kinds_menu()
-        self.kinds_button = ttk.Button(bar, style="Card.TButton", command=self._show_kinds)
+        self.kinds_button = ttk.Button(bar, style="Card.TButton", command=self._show_kinds, compound="left",
+                                       image=self.icons.get("funnel", "muted", 16))
         self.kinds_button.pack(side="right")
-        ttk.Button(bar, text="Добавить событие", style="Card.TButton", command=self.open_form).pack(
-            side="right", padx=(0, 8))
+        ttk.Button(bar, text="Добавить событие", style="Card.TButton", command=self.open_form, compound="left",
+                   image=self.icons.get("plus", "muted", 16)).pack(side="right", padx=(0, 8))
         if on_check:  # SN-9: compare with the knowledge base article
-            ttk.Button(bar, text="Проверить обновление", style="Ghost.TButton", command=on_check).pack(
-                side="right", padx=(0, 4))
+            ttk.Button(bar, text="Проверить обновление", style="Ghost.TButton", command=on_check, compound="left",
+                       image=self.icons.get("arrow-clockwise", "muted", 16)).pack(side="right", padx=(0, 4))
         self._label_kinds()
         # the chosen day at a glance: hours 00–24, events as blocks by kind, a «now» line on today
         strip_card = ttk.Frame(self, style="Card.TFrame", padding=(16, 6))
@@ -229,7 +234,7 @@ class ScheduleTab(ttk.Frame):
 
     def _label_kinds(self) -> None:
         count = len(self.hidden())
-        self.kinds_button.configure(text=f"Виды: {count} скрыт{'о' if count > 1 else ''} ▾" if count else "Виды: все ▾")
+        self.kinds_button.configure(text=f" Виды: {count} скрыт{'о' if count > 1 else ''}" if count else " Виды: все")
 
     def _show_kinds(self) -> None:
         button = self.kinds_button
@@ -239,7 +244,7 @@ class ScheduleTab(ttk.Frame):
         """Rebuild both lists from the clock; called every REFRESH_MS while the tab exists."""
         now = self.clock()
         shown = visible(self.events, self.hidden())
-        self.note.configure(text=f"Время — твоё локальное ({zone_name(now, self.tz)}), сервер живёт по МСК.")
+        self.note.configure(text=f"Время — твоё локальное ({zone_name(now, self.tz)}).")
         for box in (self.next_box, self.day_list):
             for child in box.winfo_children():
                 child.destroy()
@@ -368,14 +373,16 @@ class ScheduleTab(ttk.Frame):
         # the toggle is packed first, so a long event name is cut, not the toggle
         if bell is not None:
             on = bell_key(bell) in self.belled
-            toggle = tk.Label(row, text="напомню" if on else "напомнить", background=theme.SURFACE,
-                              foreground=theme.ACCENT if on else theme.MUTED, font=theme.font("small"), cursor="hand2")
+            toggle = tk.Label(row, image=self.icons.get("bell-fill" if on else "bell", "accent" if on else "muted", 16),
+                              background=theme.SURFACE, cursor="hand2")
             toggle.pack(side="right", padx=(8, 4))
+            Hint(toggle, "Напомню — нажми, чтобы отменить" if on else "Напомнить о событии")
             toggle.bind("<Button-1>", lambda _e, ev=bell: self.toggle_bell(ev))
         zone = map_for(place, self.side()) if place is not None and self.on_map else None
         if zone:
             link = tk.Label(row, text="на карте", background=theme.SURFACE, foreground=theme.PLACE,
-                            font=theme.font("small"), cursor="hand2")
+                            font=theme.font("small"), cursor="hand2", compound="left", padx=0,
+                            image=self.icons.get("map-pin", "muted", 16))
             link.pack(side="right", padx=(8, 0))
             link.bind("<Button-1>", lambda _e, z=zone: self.on_map(z))
         tk.Label(row, text=when, width=11, anchor="w", background=theme.SURFACE, foreground=theme.MUTED,
@@ -469,7 +476,9 @@ class EventForm(tk.Toplevel):
         buttons = ttk.Frame(self, style="Surface.TFrame")
         buttons.grid(row=5, column=0, columnspan=2, sticky="e", pady=(10, 0))
         if event:
-            ttk.Button(buttons, text="Удалить", style="Card.TButton", command=self.delete).pack(side="left", padx=(0, 8))
+            self._trash = IconSet(self, resource_root() / "data" / "ui" / "icons").get("trash", "warning", 16)
+            ttk.Button(buttons, text="Удалить", style="Card.TButton", command=self.delete, compound="left",
+                       image=self._trash).pack(side="left", padx=(0, 8))
         ttk.Button(buttons, text="Отмена", style="Card.TButton", command=self.destroy).pack(side="left", padx=(0, 8))
         ttk.Button(buttons, text="Сохранить", style="Accent.TButton", command=self.save).pack(side="left")
         self.bind("<Return>", lambda _e: self.save())
