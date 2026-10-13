@@ -178,3 +178,28 @@ def test_own_events_can_be_added_edited_and_removed(tmp_path):
         tab.destroy()
     finally:
         root.destroy()
+
+
+def test_event_with_a_place_opens_the_map():
+    """SN-7: an event with a zone has «на карте»; a click hands the zone to the app."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        opened = []
+        events = EVENTS + [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Ингисон / Келькмарос",
+                            "maps": ["210050000", "220070000"]}]
+        tab = st.ScheduleTab(root, events, clock=lambda: WED_2030, tz=MSK, on_map=opened.append, side=lambda: "dark")
+        tab.pack(fill="both", expand=True)
+        root.deiconify()
+        root.update()
+        links = [w for row in tab.next_box.winfo_children() for w in row.winfo_children()
+                 if w.cget("text") == "на карте"]
+        assert links  # this week and the next one when the schedule is short
+        links[0].event_generate("<Button-1>")
+        assert opened == ["220070000"]
+        tab.destroy()
+    finally:
+        root.destroy()

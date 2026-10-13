@@ -60,3 +60,13 @@ def kinds(events: list[dict]) -> list[str]:
 def visible(events: list[dict], hidden: set[str]) -> list[dict]:
     """The events whose kind is not hidden by the filter."""
     return [event for event in events if kind_of(event) not in hidden]
+
+
+def map_for(event: dict, side: str) -> str | None:
+    """SN-7 «На карте»: the zone map id of an event (field «maps»); of two zones, the one of the player's side —
+    «dark» (Asmodians) prefers 220…, «light» (Elyos) 210…; None when the event has no place."""
+    maps = event.get("maps") or []
+    if not maps:
+        return None
+    prefix = "220" if side == "dark" else "210"
+    return next((m for m in maps if m.startswith(prefix)), maps[0])

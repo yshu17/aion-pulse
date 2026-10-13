@@ -109,3 +109,13 @@ def test_every_event_in_the_data_file_has_a_kind():
     data = json.loads((Path(__file__).resolve().parents[1] / "data" / "schedule.json").read_text(encoding="utf-8"))
     assert all(event.get("kind") for event in data["events"])
     assert {e["kind"] for e in data["events"] if e["name"] in ("1x1", "2x2", "3x3", "Gold Arena")} == {"Арены"}
+
+
+def test_map_for_picks_the_zone_of_the_side():
+    """SN-7 «На карте»: an event in two zones opens the zone of the player's side; one zone — that zone; none — None."""
+    from watcher.schedule_view import map_for
+    both = {"name": "Ингисон / Келькмарос", "maps": ["210050000", "220070000"]}
+    assert map_for(both, "dark") == "220070000"  # Asmodians: Келькмарос
+    assert map_for(both, "light") == "210050000"  # Elyos: Ингисон
+    assert map_for({"name": "РУ", "maps": ["400010000"]}, "dark") == "400010000"
+    assert map_for({"name": "Дер"}, "dark") is None

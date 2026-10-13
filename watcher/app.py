@@ -396,6 +396,7 @@ class App:
             lead_min=self.cfg.remind_min if self.cfg.remind_min in LEADS.values() else 5, on_lead=self._on_lead,
             hidden=set(self.cfg.schedule_hidden), on_filter=self._on_schedule_filter,
             custom=Custom.load(self.config_path.with_name("schedule_custom.json")),  # SN-7: the user's own events
+            on_map=self._open_zone, side=lambda: self.cfg.map_side,
         )
         self._msk_clock = msk_now  # tests replace it
         self._reminded: set[str] = set()  # occurrences already announced this run (no repeats)
@@ -1075,6 +1076,11 @@ class App:
         (events.add if on else events.discard)(key)
         self.cfg.remind_events = sorted(events)
         save_config(self.config_path, self.cfg)
+
+    def _open_zone(self, map_id: str) -> None:
+        """SN-7 «на карте»: the zone of a schedule event on the «Карта» tab."""
+        self.tabs.select(self.map_view)
+        self.map_view.open_zone(map_id)
 
     def _on_schedule_filter(self, hidden: set[str]) -> None:
         self.cfg.schedule_hidden = sorted(hidden)

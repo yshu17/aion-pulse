@@ -10,11 +10,11 @@
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 8 |
 | `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 27 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 21 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 20 |
 | `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 0 |
 | `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 2 |
-| `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
-| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 39 |
+| `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 2 |
+| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 38 |
 | `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 13 |
 | `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 6 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
@@ -29,7 +29,7 @@
 
 ## Распределение открытых задач
 
-Claude Code: **20** · Codex: **13** · Совместно: **19** · Пользователь: **2**
+Claude Code: **20** · Codex: **13** · Совместно: **18** · Пользователь: **2**
 
 ## Задачи
 
@@ -50,7 +50,6 @@ Claude Code: **20** · Codex: **13** · Совместно: **19** · Польз
 | `map:38` | Показывать в сообщении метку с названием локации | Claude Code | `superpowers:test-driven-development` | `superpowers:systematic-debugging` | передача не нужна |
 | `map:39` | Настраиваемая ширина карты и соседней панели | Совместно | `application-ui-ux-designer` | `application-software-architect`, `superpowers:test-driven-development` | готово к передаче Codex |
 | `sn:SN-6` | Расписание: данные из статьи | Claude Code | `superpowers:verification-before-completion` | `anthropic-skills:deep-research` | передача не нужна |
-| `sn:SN-7` | Вкладка «Расписание» | Совместно | `application-ui-ux-designer` | `application-motion-designer`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |
 | `sn:SN-9` | Проверка обновления расписания | Codex | `application-software-architect` | `security-review`, `superpowers:test-driven-development` | ждёт архитектурного решения Claude |
 | `sn:SN-10` | Проверка поверх игры и сборка | Совместно | `ui-visual-validator` | `tool:ui_snapshots`, `run`, `superpowers:verification-before-completion` | нужен пользователь |
 | `tg:1.1` | Модуль `telegram.py`: `sendMessage` (HTML, экранирование `<>&`), `429`, ошибки сети, `getUpdates` для поиска чатов. | Codex | `superpowers:test-driven-development` | `security-review`, `code-review` | план ждёт «делаем» |

@@ -514,9 +514,14 @@
           "at": "2026-10-13T10:51+02:00",
           "event": "Изменено в исходном плане",
           "origin": "source"
+        },
+        {
+          "at": "2026-10-13T18:46+02:00",
+          "event": "Изменено в исходном плане",
+          "origin": "source"
         }
       ],
-      "changed_at": "13.10.2026 10:51"
+      "changed_at": "13.10.2026 18:46"
     },
     "sn:SN-8": {
       "added_at": "08.10.2026",
@@ -2005,7 +2010,7 @@
     "sn:SN-4": "cc272c284cc13c3090e42c21c63634fcaf018d1032b48980e11a34a33051d00c",
     "sn:SN-5": "11e19539a2ecdb742f21003ffa2f1294f38f6c3dacdc07e06b67689f7d83eada",
     "sn:SN-6": "30bcd095434ff400a45e0e9a87c018738735cd1ae2a7186475c791ed7334f3b9",
-    "sn:SN-7": "b6626c3733a02faff78634e87b1faa40ac539e15bbd109683fb006ad85677388",
+    "sn:SN-7": "5cc6dbf1f6ba614a93de770353660d4f9fef95f9cc2835ab0c5518e13302d752",
     "sn:SN-8": "fba5399899dbb45373fb7c22d7f61d82b9cfa75aa4962ca0c725ee027fdac6e1",
     "sn:SN-9": "c4eed2b20edff5cd16ff1727567b4e9e79627e82d2a880bcf985c1ee5b8e2016",
     "sn:SN-10": "7320f1e573b8a805a1f6501960d24e762dfc7f57e1de0c58eb5cab2f09e5d939",

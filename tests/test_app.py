@@ -1246,3 +1246,14 @@ def test_schedule_kind_filter_is_saved(tmp_path):
         assert json.loads(app.config_path.read_text(encoding="utf-8"))["schedule_hidden"] == ["Арены"]
     finally:
         app._on_close()
+
+
+def test_schedule_event_opens_its_zone_on_the_map(tmp_path):
+    """SN-7: «на карте» of a schedule event selects the «Карта» tab with that zone."""
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        app._open_zone("220070000")
+        assert app.tabs.select() == str(app.map_view)
+        assert app.map_view.zone is not None and app.map_view.zone.map_id == "220070000"
+    finally:
+        app._on_close()

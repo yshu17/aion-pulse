@@ -15,7 +15,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.reminders import DAYS
 from watcher.schedule_custom import Custom, check
-from watcher.schedule_view import events_for_day, kinds, next_events, visible
+from watcher.schedule_view import events_for_day, kinds, map_for, next_events, visible
 
 MSK = timezone(timedelta(hours=3))
 DAY_NAMES = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
@@ -100,10 +100,12 @@ class ScheduleTab(ttk.Frame):
 
     def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None,
                  belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None,
-                 hidden: set[str] | None = None, on_filter=None, custom: Custom | None = None) -> None:
+                 hidden: set[str] | None = None, on_filter=None, custom: Custom | None = None,
+                 on_map=None, side=lambda: "dark") -> None:
         super().__init__(master, padding=(0, 12, 0, 0))
         self.base = events  # data/schedule.json — never changed by the tab
-        self.custom = custom or Custom(None)  # SN-7: the user's own added / edited / removed events
+        self.custom = custom or Custom(None)
+        self.on_map, self.side = on_map, side  # SN-7 «на карте»: open a zone; the player's side picks one of two  # SN-7: the user's own added / edited / removed events
         self.events = self.custom.merge(events)
         self.belled = belled if belled is not None else set()  # SN-8: events to remind of (shared with the app)
         self.on_bell = on_bell
@@ -206,8 +208,7 @@ class ScheduleTab(ttk.Frame):
         """Rebuild both lists from the clock; called every REFRESH_MS while the tab exists."""
         now = self.clock()
         shown = visible(self.events, self.hidden())
-        self.note.configure(text=f"Время — твоё локальное ({zone_name(now, self.tz)}); сервер живёт по МСК. "
-                                 "Источник: база знаний Aion Empire.")
+        self.note.configure(text=f"Время — твоё локальное ({zone_name(now, self.tz)}), сервер живёт по МСК.")
         for box in (self.next_box, self.day_list):
             for child in box.winfo_children():
                 child.destroy()
@@ -221,7 +222,7 @@ class ScheduleTab(ttk.Frame):
             if bell_key(event) in self.belled:
                 badge = "напомню · " + badge
             self._row(self.next_box, time_range(start, end, self.tz), event["name"], badge,
-                      accent=theme.SUCCESS if running else theme.ACCENT)
+                      accent=theme.SUCCESS if running else theme.ACCENT, place=event)
         day = next((k for k, v in DAY_NAMES.items() if v == self.day_var.get()), DAYS[now.weekday()])
         today = DAYS[now.weekday()]
         day_events = events_for_day(shown, day)
@@ -241,7 +242,7 @@ class ScheduleTab(ttk.Frame):
         self._after = self.after(REFRESH_MS, self.refresh)
 
     def _row(self, box: tk.Frame, when: str, name: str, badge: str, accent: str | None = None, dim: bool = False,
-             bell: dict | None = None) -> None:
+             bell: dict | None = None, place: dict | None = None) -> None:
         compact = box is self.day_list  # a weekday can have 11 events: they fit a 600 px window in the small font
         row = tk.Frame(box, background=theme.SURFACE)
         row.pack(fill="x", pady=0 if compact else 1)
@@ -253,6 +254,12 @@ class ScheduleTab(ttk.Frame):
                               foreground=theme.ACCENT if on else theme.MUTED, font=theme.font("small"), cursor="hand2")
             toggle.pack(side="right", padx=(8, 4))
             toggle.bind("<Button-1>", lambda _e, ev=bell: self.toggle_bell(ev))
+        zone = map_for(place, self.side()) if place is not None and self.on_map else None
+        if zone:
+            link = tk.Label(row, text="на карте", background=theme.SURFACE, foreground=theme.PLACE,
+                            font=theme.font("small"), cursor="hand2")
+            link.pack(side="right", padx=(8, 0))
+            link.bind("<Button-1>", lambda _e, z=zone: self.on_map(z))
         tk.Label(row, text=when, width=11, anchor="w", background=theme.SURFACE, foreground=theme.MUTED,
                  font=theme.font("mono")).pack(side="left")
         label = tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
