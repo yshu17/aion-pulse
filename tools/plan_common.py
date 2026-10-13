@@ -13,8 +13,8 @@ import re
 # key, short title for the bar, page in docs/, where the plan stands as a whole
 PLANS = [
     ("map", "Карта", "map-poi-plan.html", "в работе"),
-    ("draft", "Черновики функций", "feature-drafts.html", "черновики, не утверждено"),
-    ("sn", "Расписание и уведомления", "schedule-notify-plan.html", "в работе · SN-1–3 готовы"),
+    ("draft", "Черновики функций", "feature-drafts.html", "черновики"),
+    ("sn", "Расписание и уведомления", "schedule-notify-plan.html", "в работе"),
     ("ui", "UI/UX", "ui-ux-improvement-plan.html", "в работе"),
     ("tg", "Telegram", "telegram-bridge-plan.html", "ждёт «делаем»"),
 ]

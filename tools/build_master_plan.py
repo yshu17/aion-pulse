@@ -211,8 +211,9 @@ a{color:#ffb05c}
 .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
 .plan{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
 .plan h3{margin:0;font-size:16px}.plan h3 a{color:var(--text);text-decoration:none}.plan h3 a:hover{color:var(--accent)}
+.plans-box>summary{cursor:pointer;list-style:none}.plans-box>summary::-webkit-details-marker{display:none}.plans-box>summary h2{display:inline}.plans-box>summary h2:before{content:'▾ ';color:#ff8c1a}.plans-box:not([open])>summary h2:before{content:'▸ '}
 .gate{display:inline-block;font-size:12px;padding:1px 8px;border-radius:7px;border:1px solid var(--border);color:var(--muted)}
-.gate.go{border-color:#375b48;color:var(--ok)}
+.gate.go{border-color:#375b48;color:var(--ok)}.gate.wait{border-color:#6b5a2a;color:#f5b544}
 .bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
 .split{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}.split b{color:var(--text)}
 .total{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 0}
@@ -245,8 +246,10 @@ __NAV__
   <div class="sub">Aion Chat Watcher · все планы в одном месте · собран <span id="built"></span> из самих планов (<code>python tools/build_master_plan.py</code>) — правки делаются в планах, здесь только сводка</div>
   <div class="total" id="total"></div>
 
-  <h2>Планы</h2>
+  <details class="plans-box" open><summary><h2>Планы</h2></summary>
   <div class="plans" id="plans"></div>
+  </details>
+  <!--SHARED_SLOT-->
 
   __DRAFTS__
 
@@ -289,7 +292,7 @@ function totals(){const all=DATA.items,done=all.filter(i=>itemStatus(i)==="done"
 function plans(){document.getElementById("plans").innerHTML=DATA.plans.map(p=>{const its=DATA.items.filter(i=>i.plan===p.key),
   done=its.filter(i=>itemStatus(i)==="done").length,pct=its.length?Math.round(done/its.length*100):0,
   open=o=>its.filter(i=>itemStatus(i)!=="done"&&i.owners.includes(o)).length,doing=its.filter(i=>itemStatus(i)==="doing");
-  return `<div class="plan"><h3><a href="${p.page}">${esc(p.title)} →</a></h3><span class="gate ${p.gate==="в работе"?"go":""}">${esc(p.gate)}</span>
+  return `<div class="plan"><h3><a href="${p.page}">${esc(p.title)} →</a></h3><span class="gate ${p.gate==="в работе"?"go":p.gate.startsWith("ждёт")?"wait":""}">${esc(p.gate)}</span>
   <div class="bar"><i style="width:${pct}%"></i></div><div class="split"><span><b>${done}</b> из ${its.length} готово</span><span>Claude <b>${open("Claude")}</b></span><span>Кодекс <b>${open("Кодекс")}</b></span><span>ты <b>${open("Ты")}</b></span></div>
   ${doing.length?`<div class="tag">в работе: ${doing.map(i=>esc(i.id+". "+i.title)).join("; ")}</div>`:""}</div>`}).join("");}
 function you(){const gates=DATA.plans.filter(p=>p.gate!=="в работе").map(p=>`<div><b>${esc(p.title)}</b> — ${esc(p.gate)} · <a href="${p.page}">открыть план</a></div>`);

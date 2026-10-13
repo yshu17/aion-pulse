@@ -24,9 +24,12 @@ def load_task_meta() -> dict:
 def task_meta(data: dict, key: str) -> dict:
     """Return date and current-new state for a plan task key such as ``ui:42``."""
     info = data.get("tasks", {}).get(key, {})
+    latest_day = data.get("tasks", {}).get(data.get("latest", ""), {}).get("added_at", "")[:10]
+    added = info.get("added_at", "")
     return {
-        "added_at": info.get("added_at", ""),
-        "is_latest": data.get("latest") == key,
+        "added_at": added,
+        # added on the same day as the newest task: all of them are new, not only the very last one
+        "is_latest": bool(latest_day) and added[:10] == latest_day,
     }
 
 

@@ -70,7 +70,7 @@ def filename(plan: dict) -> str:
 def master_section(data: dict) -> str:
     cards = []
     for plan in sorted(data["plans"], key=lambda row: row["number"], reverse=True):
-        badge = '<span class="new-badge">НОВОЕ</span>' if plan["id"] == data["latest"] else ""
+        badge = '<span class="new-badge">НОВОЕ</span>' if is_new_draft(plan, data) else ""
         cards.append(f'<article class="plan"><h3><a href="{esc(filename(plan))}">{esc(plan["id"])} · {esc(plan["title"])}</a> {badge}</h3>'
                      f'<span class="gate">DRAFT · ожидает Claude</span><span class="tag">Добавлено: {esc(data["added_at"])}</span></article>')
     return (f'<h2>Новые планы · черновики для Claude Code</h2><p class="tag">'
@@ -94,9 +94,16 @@ def ai_block(rec: dict) -> str:
             + (f'<p class="muted">{esc(rec["note"])}</p>' if rec.get("note") else "") + '</details>')
 
 
+def is_new_draft(plan: dict, data: dict) -> bool:
+    """Drafts added on the day of the newest one are all new (one file added the six together)."""
+    latest = next((p for p in data["plans"] if p["id"] == data["latest"]), {})
+    day = (latest.get("added_at") or data.get("added_at", ""))[:10]
+    return bool(day) and (plan.get("added_at") or data.get("added_at", ""))[:10] == day
+
+
 def render_plan(plan: dict, data: dict, ai: dict | None = None) -> str:
     ai = ai or {}
-    latest = plan["id"] == data["latest"]
+    latest = is_new_draft(plan, data)
     badge = ' <span class="badge">НОВОЕ</span>' if latest else ""
     heading = (f'<h1>{esc(plan["id"])} · {esc(plan["title"])}{badge}</h1>'
                f'<div class="banner"><b>{esc(data["reviewLabel"])}</b><br>Добавлено: {esc(data["added_at"])}. '
@@ -127,7 +134,7 @@ def render_plan(plan: dict, data: dict, ai: dict | None = None) -> str:
 def render_hub(data: dict) -> str:
     cards = ""
     for plan in sorted(data["plans"], key=lambda row: row["number"], reverse=True):
-        badge = ' <span class="badge">НОВОЕ</span>' if plan["id"] == data["latest"] else ""
+        badge = ' <span class="badge">НОВОЕ</span>' if is_new_draft(plan, data) else ""
         cards += (f'<a class="card" data-plan href="{esc(filename(plan))}"><h3>{esc(plan["id"])} · {esc(plan["title"])}{badge}</h3>'
                   f'<p>{esc(plan["goal"])}</p><small>DRAFT · {esc(data["added_at"])}</small></a>')
     body = ('<h1>Новые планы для Claude Code</h1><p class="muted">Шесть первоначальных планов из одного файла '
