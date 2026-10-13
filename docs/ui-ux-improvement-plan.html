@@ -292,7 +292,7 @@ document.addEventListener('change',e=>{const el=e.target;if(!el.matches('.task .
 window.addEventListener('storage',e=>{if(e.key===KEY){try{const value=JSON.parse(e.newValue);if(value?.schema_version===1)ledger=value}catch(_e){}draw();window.dispatchEvent(new Event('plan-shared-change'))}});
 window.addEventListener('plan-shared-change',()=>{if(['all','ui','tg'].includes(PAGE)&&typeof window.render==='function')window.render()});
 document.querySelectorAll('.shared-qbtns button[data-q]').forEach(x=>x.onclick=()=>{$('shared-status-filter').value=x.dataset.q;saveFilters();draw()});
-$('shared-filters-btn').onclick=()=>{const d=$('shared-filters');d.open=!d.open};if(['ui','tg'].includes(PAGE))$('shared-plan').open=true;
+$('shared-filters-btn').onclick=()=>{const d=$('shared-filters');d.open=!d.open};$('shared-plan').open=true;
 aiInit();fillStages();fillOwners();if(PAGE==='all')$('shared-status-filter').value='open';loadFilters();draw();if(matchMedia('(max-width:620px)').matches)$('shared-filters').open=false;
 if(HAS_NATIVE){const n=$('shared-native-note'),url=new URL(location.href);
   if(WANT_NATIVE){url.searchParams.delete('native');n.innerHTML=`Показан <b>старый список</b> этой страницы. <a href="${esc(url.pathname+url.search)}">Вернуться к общему списку</a>.`}

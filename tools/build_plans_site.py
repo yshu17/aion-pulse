@@ -132,7 +132,7 @@ def no_confirm(html: str) -> str:
 def safe_storage(html: str) -> str:
     """localStorage can throw inside the artifact frame (blocked site data): wrap the bare writes."""
     return re.sub(r"(?<!try\{)localStorage\.setItem\(([^;\n{}]*?)\);",
-                  r"try{localStorage.setItem(\1)}catch(e){};", html)
+                  r"(()=>{try{localStorage.setItem(\1)}catch(e){}})();", html)  # an expression: valid even right before else
 
 
 def drop_export(html: str) -> str:

@@ -92,3 +92,19 @@ def test_import_is_idempotent_for_history():
     assert "const seen=new Set(ledger.history.map" in script
     assert "if(!seen.has(k))" in script
     assert "ledger.history.push(...data.history" not in script
+
+
+def test_phone_build_storage_wrap_stays_valid_before_else(tmp_path):
+    """The phone build wraps localStorage writes; the wrap broke `if(..)setItem(..);else ..` and killed the whole page."""
+    import shutil
+    import subprocess
+
+    import build_plans_site
+
+    js = build_plans_site.safe_storage("if(a)localStorage.setItem('k','v');else localStorage.removeItem('k')")
+    assert "try{localStorage.setItem('k','v')}" in js
+    node = shutil.which("node")
+    if node:
+        f = tmp_path / "x.js"
+        f.write_text("const localStorage={setItem(){},removeItem(){}};const a=1;" + js, encoding="utf-8")
+        assert subprocess.run([node, "--check", str(f)], capture_output=True).returncode == 0
