@@ -68,3 +68,24 @@ def test_fade_survives_a_window_closed_mid_way(root):
     fade_window(win, 100)
     win.destroy()
     pump(root, 0.2)  # no TclError from the pending frames
+
+
+def test_animate_eases_a_number_to_its_end_and_can_be_cancelled(root):
+    from watcher.motion import animate
+    seen, done = [], []
+    animate(root, 0, 100, 80, seen.append, steps=4, done=lambda: done.append(True))
+    pump(root, 0.3)
+    assert seen[-1] == 100 and done == [True]
+    assert seen == sorted(seen) and seen[1] > 25  # ease-out: the first step covers more than a linear quarter
+    seen2 = []
+    handle = animate(root, 0, 100, 200, seen2.append, steps=8)
+    handle.cancel()
+    pump(root, 0.3)
+    assert seen2 == [0]
+
+
+def test_animate_without_motion_jumps_to_the_end(root):
+    from watcher.motion import animate
+    seen = []
+    animate(root, 0, 100, 200, seen.append, enabled=False)
+    assert seen == [100]

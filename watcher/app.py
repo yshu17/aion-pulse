@@ -1031,8 +1031,45 @@ class App:
 
     def _toggle_settings(self) -> None:
         self.cfg.settings_open = not self.cfg.settings_open
-        self._show_settings(self.cfg.settings_open)
+        self._fold_settings(self.cfg.settings_open)
         save_config(self.config_path, self.cfg)
+
+    def _fold_settings(self, open_: bool) -> None:
+        """Grow or shrink the «Настройки» card over theme.MOTION base (ease-out); a click in the middle reverses from
+        the current height; ends natural-height when open, unpacked when closed; instant with reduce_motion."""
+        from watcher.motion import animate
+        card = self.settings_card
+        running = getattr(self, "_fold", None)
+        if running is not None:
+            running.cancel()
+        shown = bool(card.winfo_manager())
+        current = card.winfo_height() if shown else 0
+        if open_ and not shown:
+            card.pack_propagate(False)
+            card.configure(height=1)
+            self._show_settings(True)
+        self.settings_btn.configure(image=self.ui_icons.get("caret-up" if open_ else "caret-down", "muted", 16))
+        card.update_idletasks()
+        card.pack_propagate(False)
+        target = card.winfo_reqheight() if open_ else 0
+        if open_:  # the natural height: measure with propagation for a moment
+            card.pack_propagate(True)
+            card.update_idletasks()
+            target = card.winfo_reqheight()
+            card.pack_propagate(False)
+            card.configure(height=max(1, current))
+
+        def finish() -> None:
+            self._fold = None
+            if open_:
+                card.pack_propagate(True)
+            else:
+                self._show_settings(False)
+                card.pack_propagate(True)
+
+        self._fold = animate(card, current, target, theme.MOTION["base"],
+                             lambda h: card.configure(height=max(1, int(h))),
+                             enabled=not self.cfg.reduce_motion, done=finish)
 
     def _on_map_theme(self, theme: str) -> None:
         self.cfg.map_theme = theme

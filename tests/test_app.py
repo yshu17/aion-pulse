@@ -703,6 +703,7 @@ def test_settings_card_folds_away_and_is_remembered(tmp_path):
         root.update()
         assert app.cfg.settings_open and app.settings_card.winfo_manager() == "pack"  # open on the first run
         assert app.settings_btn.cget("text") == "Настройки" and app.settings_btn.cget("image")
+        app.cfg.reduce_motion = True  # instant fold; the smooth one has its own test
         app._toggle_settings()
         root.update()
         assert not app.settings_card.winfo_manager() and app.settings_btn.cget("text") == "Настройки"
@@ -1279,5 +1280,41 @@ def test_schedule_update_check_tells_and_remembers(tmp_path):
         assert app.notifications.pop_next().title == "Расписание актуально"
         app._on_update_result("err", "timed out", manual=True)
         assert "Не удалось" in app.notifications.pop_next().title
+    finally:
+        app._on_close()
+
+
+def test_settings_card_folds_smoothly_and_ends_in_the_right_state(tmp_path):
+    """Motion: «Настройки» grows and shrinks over ~200 ms; it ends natural-height when open and unpacked when closed;
+    a click in the middle reverses from the current height; with reduce_motion it is instant."""
+    import time
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.geometry("1200x800")
+        app.cfg.reduce_motion = False
+        app._show_settings(True)
+        root.update()
+        full = app.settings_card.winfo_height()
+        app._toggle_settings()  # close
+        assert app.settings_card.winfo_manager() and app._fold is not None  # still shrinking
+        deadline = time.monotonic() + 0.5
+        while time.monotonic() < deadline:
+            root.update()
+            time.sleep(0.01)
+        assert not app.settings_card.winfo_manager()
+        app._toggle_settings()  # open
+        heights = [int(str(app.settings_card.cget("height")))]  # the first frame: the card starts low
+        deadline = time.monotonic() + 0.5
+        while time.monotonic() < deadline:
+            root.update()
+            heights.append(app.settings_card.winfo_height())
+            time.sleep(0.01)
+        assert heights[0] < full and abs(heights[-1] - full) <= 2
+        app.cfg.reduce_motion = True
+        app._toggle_settings()
+        root.update()
+        assert not app.settings_card.winfo_manager()
     finally:
         app._on_close()
