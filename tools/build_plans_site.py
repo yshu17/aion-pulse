@@ -255,6 +255,8 @@ def main() -> int:
             (OUT / "main.html").write_text(main_page(page), encoding="utf-8")
     for _href, (source, page, title) in SOURCES.items():
         (OUT / page).write_text(markdown_page(source, title), encoding="utf-8")
+    if (DOCS / "evidence").is_dir():  # before / after pictures shown in the task cards and on the master plan
+        shutil.copytree(DOCS / "evidence", OUT / "evidence")
     reader = OUT / "Планы_Aion_Chat_Watcher_Telegram.html"
     reader.write_text(telegram_reader(), encoding="utf-8")
     files = sorted(p.name for p in OUT.iterdir())

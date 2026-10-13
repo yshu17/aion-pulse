@@ -145,6 +145,18 @@ def main() -> int:
     for item in items:
         item["verification"], item["verification_evidence"] = plan_verification.resolve(
             item["status"], verification["tasks"].get(item["key"]))
+    # before / after pictures, a short result and the skills really used (user, 13.10): docs/plan-evidence.json
+    evidence_path = DOCS / "plan-evidence.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8")).get("tasks", {}) if evidence_path.exists() else {}
+    for item in items:
+        if item["key"] in evidence:
+            item["evidence"] = evidence[item["key"]]
+    # before / after pictures, a short result and the skills really used (user, 13.10): docs/plan-evidence.json
+    evidence_path = DOCS / "plan-evidence.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8")).get("tasks", {}) if evidence_path.exists() else {}
+    for item in items:
+        if item["key"] in evidence:
+            item["evidence"] = evidence[item["key"]]
     plans = [{"key": k, "title": t, "page": p, "gate": g} for k, t, p, g in PLANS]
     needs = [{"plan": key, "title": title, "detail": detail, "link": link}
              for key, *_ in PLANS for kind, title, detail, link in RESOURCES.get(key, []) if kind == "need"]
@@ -153,6 +165,8 @@ def main() -> int:
     plan_ai_tools.annotate(items, ai_data, ai_skills)
     model = {"schema_version": 1, "plans": plans, "items": items, "needs": needs,
              "latest": load_task_meta().get("latest", ""), "built": date.today().strftime("%d.%m.%Y"),
+             "plan_evidence": (json.loads((DOCS / "plan-evidence.json").read_text(encoding="utf-8")).get("plans", [])
+                               if (DOCS / "plan-evidence.json").exists() else []),
              "states": [{"key": k, "label": l, "color": c} for k, l, c in plan_states.STATES],
              "priorities": plan_states.PRIORITIES, "priority_not_set": plan_states.NOT_SET,
              "stages": {"ui": [{"id": str(st["id"]), "name": st["name"], "ready": st.get("ready", "")}
@@ -211,7 +225,7 @@ a{color:#ffb05c}
 .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
 .plan{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
 .plan h3{margin:0;font-size:16px}.plan h3 a{color:var(--text);text-decoration:none}.plan h3 a:hover{color:var(--accent)}
-.plans-box>summary{cursor:pointer;list-style:none}.plans-box>summary::-webkit-details-marker{display:none}.plans-box>summary h2{display:inline}.plans-box>summary h2:before{content:'▾ ';color:#ff8c1a}.plans-box:not([open])>summary h2:before{content:'▸ '}
+.plan-ev .ev{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0}.plan-ev p{margin:4px 0}.plan-ev .evp{display:grid;grid-template-columns:1fr 1fr;gap:10px}.plan-ev figure{margin:0}.plan-ev img{width:100%;border:1px solid var(--border);border-radius:8px}.plan-ev figcaption{font-size:12px;color:var(--muted)}@media(max-width:620px){.plan-ev .evp{grid-template-columns:1fr}}.plans-box>summary{cursor:pointer;list-style:none}.plans-box>summary::-webkit-details-marker{display:none}.plans-box>summary h2{display:inline}.plans-box>summary h2:before{content:'▾ ';color:#ff8c1a}.plans-box:not([open])>summary h2:before{content:'▸ '}
 .gate{display:inline-block;font-size:12px;padding:1px 8px;border-radius:7px;border:1px solid var(--border);color:var(--muted)}
 .gate.go{border-color:#375b48;color:var(--ok)}.gate.wait{border-color:#6b5a2a;color:#f5b544}
 .bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
@@ -248,6 +262,9 @@ __NAV__
 
   <details class="plans-box" open><summary><h2>Планы</h2></summary>
   <div class="plans" id="plans"></div>
+  </details>
+  <details class="plans-box"><summary><h2>Как менялись планы · до / после</h2></summary>
+  <div class="plan-ev" id="plan-ev"></div>
   </details>
   <!--SHARED_SLOT-->
 
@@ -323,7 +340,9 @@ function list(){const q=f.q.trim().toLocaleLowerCase("ru");
   document.getElementById("list").innerHTML=html;}
 const st=document.getElementById("status"),qi=document.getElementById("q");st.value=f.status;qi.value=f.q;
 st.onchange=()=>{f.status=st.value;save();list()};qi.oninput=()=>{f.q=qi.value;save();list()};
-function render(){totals();plans();you();chips();list()}
+function planEvidence(){const box=document.getElementById('plan-ev');if(!box)return;
+  box.innerHTML=(DATA.plan_evidence||[]).map(e=>`<div class="ev"><b>${esc(e.title)}</b><p>${esc(e.result)}</p><p class="tag">Скилл: ${(e.skills_used||[]).length?e.skills_used.map(esc).join(', '):esc(e.skills_note||'не вызывался')}</p><div class="evp"><figure><img loading="lazy" src="evidence/${esc(e.key)}/before.png" alt="до"><figcaption>до · ${esc(e.before)}</figcaption></figure><figure><img loading="lazy" src="evidence/${esc(e.key)}/after.png" alt="после"><figcaption>после · ${esc(e.after)}</figcaption></figure></div></div>`).join('')}
+function render(){totals();plans();planEvidence();you();chips();list()}
 render();
 </script>
 </body>

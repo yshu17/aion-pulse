@@ -832,6 +832,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Выбранная точка без кольца: значок медленно пульсирует (1,6 с, до 125 %, в малой фазе темнее); метка из чата мигает вдвое медленнее.",
+        "before": "f347b7f^ (кольцо)",
+        "after": "f347b7f (пульсация, большая фаза)",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "state": "retro"
       }
@@ -2784,6 +2791,13 @@
       "is_new": false,
       "verification": "",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Четвёртая вкладка «Расписание»: «Ближайшие» (идёт / через N мин) и «По дням», время в локальном поясе. В работе: фильтр по видам, правка событий, «На карте».",
+        "before": "5943d6d^ (вкладки нет)",
+        "after": "5943d6d",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "Расписание · интерфейс",
         "agent": "joint",
@@ -2894,6 +2908,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Напоминания: отметка «напомнить», «Напоминать за» 5/15/30 мин/1 час, тосты «Через N» и «Началось» с «Понятно» / «Через 5 мин», повтор до конца события, пропущенные — одним тостом.",
+        "before": "5943d6d",
+        "after": "15b6bce",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "Расписание · логика",
         "agent": "claude",
@@ -4425,6 +4446,13 @@
       "is_new": false,
       "verification": "",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Правое поле строк ленты уравновешено с левым (Codex). Задача в работе: длинные сообщения не проверены.",
+        "shots": false,
+        "no_shots": "в снимках лента пустая, разница видна только на сообщениях — снимок будет при закрытии задачи",
+        "skills_used": [],
+        "skills_note": "Codex: вызов скилла в отчёте не указан — не подтверждено"
+      },
       "ai": {
         "category": "UI/UX · отступы",
         "agent": "codex",
@@ -4641,6 +4669,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Стрелка комбобокса без второй рамки — у поля одна обводка (Codex, watcher/theme.py).",
+        "before": "f95a39f^",
+        "after": "f95a39f",
+        "skills_used": [],
+        "skills_note": "Codex: вызов скилла в отчёте не указан — не подтверждено"
+      },
       "ai": {
         "category": "UI/UX · комбобокс",
         "agent": "codex",
@@ -4890,6 +4925,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "«Что искать»: кнопки «Все» / «Снять» по ширине текста, поле «Найти» до стрелок, подписи и чипы в одной колонке.",
+        "before": "1b4ae9e^",
+        "after": "1b4ae9e",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · компоновка",
         "agent": "claude",
@@ -5008,6 +5050,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Блок «Оповещение» на одной сетке: «Громкость» под «Звук», «Реакция» во втором ряду; на 1000 px ничего не обрезается.",
+        "before": "8c53555^",
+        "after": "8c53555",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · компоновка",
         "agent": "claude",
@@ -5113,6 +5162,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Значок и текст статусной плашки по центру как одна группа.",
+        "before": "5ef0b84^",
+        "after": "5ef0b84",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · статус",
         "agent": "codex",
@@ -5226,6 +5282,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Кнопки масштаба карты больше не уходят за край на 1000 px; зона, поиск, сторона, задания и тема собраны в группу по центру.",
+        "before": "45a9b5f^",
+        "after": "45a9b5f",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · компоновка",
         "agent": "claude",
@@ -5333,6 +5396,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "«Окно поверх игры» показано неактивным с пометкой «пока недоступно», всплывающее окно не открывается, сохранённое значение в config.json не меняется.",
+        "before": "59605cd^",
+        "after": "59605cd",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · поведение",
         "agent": "claude",
@@ -5440,6 +5510,13 @@
       "is_new": false,
       "verification": "legacy",
       "verification_evidence": [],
+      "evidence": {
+        "result": "Шапка ниже на 6 px; «Настройки» больше не обрезается на 1000 px и при 150 % — сужается поле ключевых слов. Start 149 → 113 px.",
+        "before": "d25f8b9^",
+        "after": "d25f8b9",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · шапка",
         "agent": "claude",
@@ -5562,6 +5639,13 @@
           "ref": "PAIR.md journal, entry «приёмка ui:42»"
         }
       ],
+      "evidence": {
+        "result": "Вкладки уже: горизонтальные поля 22 → 16 px (вкладка 108 → 96 px), подпись по центру (Codex).",
+        "before": "d702783^",
+        "after": "d125e49",
+        "skills_used": [],
+        "skills_note": "Codex: вызов скилла в отчёте не указан — не подтверждено"
+      },
       "ai": {
         "category": "UI/UX · вкладки",
         "agent": "codex",
@@ -5709,6 +5793,13 @@
           "ref": "docs/UI_SNAPSHOTS.md"
         }
       ],
+      "evidence": {
+        "result": "Инструмент визуальной проверки tools/ui_snapshots.py: 20 снимков (2 размера × 10 сценариев), сравнение с базой docs/ui/baseline/.",
+        "shots": false,
+        "no_shots": "инструмент, не экран; доказательство — отчёт `ui_snapshots check` (PASS)",
+        "skills_used": [],
+        "skills_note": "Codex: вызов скилла в отчёте не указан — не подтверждено"
+      },
       "ai": {
         "category": "UI/UX · тестирование",
         "agent": "codex",
@@ -5835,6 +5926,13 @@
           "ref": "7146f49"
         }
       ],
+      "evidence": {
+        "result": "Аудит 12 страниц планов: найдены и исправлены QA-01–03; браузерная часть Codex не выполнена (браузер не открыл локальные файлы).",
+        "shots": false,
+        "no_shots": "проверка, не изменение экрана; отчёт docs/PLAN_BROWSER_QA_REPORT.md",
+        "skills_used": [],
+        "skills_note": "Codex: не подтверждено; Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · тестирование планов",
         "agent": "codex",
@@ -5941,6 +6039,13 @@
           "ref": "bda0170"
         }
       ],
+      "evidence": {
+        "result": "Автопроверки планов: 36 снимков, импорт/повтор/откат, reduced motion эмуляцией; найден и исправлен UI45-01.",
+        "shots": false,
+        "no_shots": "проверка, не изменение экрана; снимки в docs/ui/plan-browser/, отчёт docs/PLAN_BROWSER_REPORT.md",
+        "skills_used": [],
+        "skills_note": "Claude: скилл не вызывался"
+      },
       "ai": {
         "category": "UI/UX · тестирование планов",
         "agent": "codex",
@@ -8749,6 +8854,26 @@
   ],
   "latest": "ui:45",
   "built": "13.10.2026",
+  "plan_evidence": [
+    {
+      "key": "plans-master",
+      "title": "MASTER и планы: новый вид",
+      "result": "Сводка и сворачиваемые «Планы» сверху, задачи ниже; одинаковые метки состояний; кнопки по всем состояниям со счётчиками; компактные карточки; выполненные свёрнуты.",
+      "before": "12.10, e5f8a86",
+      "after": "13.10",
+      "skills_used": [],
+      "skills_note": "Claude: скилл не вызывался"
+    },
+    {
+      "key": "plans-phone",
+      "title": "Планы на телефоне",
+      "result": "Свой заголовок и плитки у плана, навигация в одну строку, круглые чекбоксы, плашка статуса, старые списки скрыты.",
+      "before": "12.10, e5f8a86",
+      "after": "13.10",
+      "skills_used": [],
+      "skills_note": "Claude: скилл не вызывался"
+    }
+  ],
   "states": [
     {
       "key": "planned",
