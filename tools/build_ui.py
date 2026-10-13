@@ -25,7 +25,7 @@ TAB_STRIPE = 2  # px, accent bar under the selected tab
 SCROLLBAR_WIDTH = 8
 SCROLLBAR_HEIGHT = 24
 SCALE_TRACK_WIDTH = 12
-SCALE_TRACK_HEIGHT = 6
+SCALE_TRACK_HEIGHT = 4
 SCALE_THUMB_SIZE = 16
 
 
@@ -105,7 +105,7 @@ def scale_track() -> None:
     width, height = SCALE_TRACK_WIDTH * SCALE, SCALE_TRACK_HEIGHT * SCALE
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((0, 0, width - 1, height - 1), radius=height // 2, fill=theme.SURFACE_2)
+    draw.rounded_rectangle((0, 0, width - 1, height - 1), radius=height // 2, fill=theme.BORDER_CONTROL)  # 3.08:1 on SURFACE, ui:19
     image.resize((SCALE_TRACK_WIDTH, SCALE_TRACK_HEIGHT), Image.Resampling.LANCZOS).save(
         OUT / "scale_track.png", optimize=True
     )
