@@ -535,6 +535,7 @@ class MapView(ttk.Frame):
         canvas.create_image(0, 0, image=self._photo, anchor="nw")
         self._draw_labels(width, height)
         self._draw_poi(width, height)
+        self._avoid_label_poi(width, height)  # ui:33: area text must not cover map icons
         for index, other in enumerate(self.others):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
             canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline=theme.PLACE_OUTLINE, width=2,
@@ -567,16 +568,42 @@ class MapView(ttk.Frame):
         size = max(8, min(15, round(5 + 4 * self.zoom)))
         fonts = {"main": (theme.FONT_FAMILY, size + 1, "bold"), "zoom": (theme.FONT_FAMILY, size - 1, "bold")}
         close = self.zoom * self.zone.size >= LABELS_ZOOM_WIDTH
-        for image_x, image_y, text, level in self.zone.labels:
+        for index, (image_x, image_y, text, level) in enumerate(self.zone.labels):
             if level == "zoom" and not close:
                 continue
             font = fonts[level]
             sx, sy = self.to_screen(image_x, image_y)
             if -200 < sx < width + 200 and -60 < sy < height + 60:
+                tags = ("label", f"area_label_{index}")
                 for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
                     self.canvas.create_text(sx + dx, sy + dy, text=text, fill=theme.OUTLINE_DARK, font=font,
-                                            justify="center", tags="label")
-                self.canvas.create_text(sx, sy, text=text, fill=theme.MAP_LABEL, font=font, justify="center", tags="label")
+                                            justify="center", tags=tags)
+                self.canvas.create_text(sx, sy, text=text, fill=theme.MAP_LABEL, font=font, justify="center", tags=tags)
+
+    def _avoid_label_poi(self, width: int, height: int) -> None:
+        """Nudge area names around POI icons, including badges, at the current zoom."""
+        canvas = self.canvas
+        icon_boxes = [box for item in canvas.find_withtag("poi") if (box := canvas.bbox(item))]
+        if not icon_boxes:
+            return
+        def overlaps(a: tuple[int, ...], b: tuple[int, ...]) -> bool:
+            return a[0] < b[2] + 5 and a[2] > b[0] - 5 and a[1] < b[3] + 5 and a[3] > b[1] - 5
+
+        for index in range(len(self.zone.labels)):
+            tag = f"area_label_{index}"
+            box = canvas.bbox(tag)
+            if box is None or not any(overlaps(box, icon) for icon in icon_boxes):
+                continue
+            nearby = [icon for icon in icon_boxes if icon[0] < box[2] + 90 and icon[2] > box[0] - 90
+                      and icon[1] < box[3] + 90 and icon[3] > box[1] - 90]
+            for dx, dy in ((0, -28), (0, 28), (-38, 0), (38, 0), (0, -56), (0, 56)):
+                moved = (box[0] + dx, box[1] + dy, box[2] + dx, box[3] + dy)
+                if (moved[0] >= 2 and moved[1] >= 2 and moved[2] <= width - 2 and moved[3] <= height - 2
+                        and not any(overlaps(moved, icon) for icon in nearby)):
+                    canvas.move(tag, dx, dy)
+                    break
+            else:
+                canvas.itemconfigure(tag, state="hidden")
 
     # --- selection and «Рядом» ------------------------------------------------------------
     def nearby(self, zone: str, gx: float, gy: float, exclude: Poi | None = None):

@@ -427,3 +427,24 @@ def test_relief_theme_uses_the_radar_map_in_the_same_frame(root):
     relief = MapView(root, all_zones, map_theme="relief")
     relief.open_zone("220070000")
     assert relief.theme_var.get() == "Рельеф" and relief._image.getpixel((1500, 1500)) != game_pixel
+
+
+def test_area_label_moves_away_from_poi_icon(root):
+    from types import SimpleNamespace
+
+    view = MapView(root, zones())
+    view.pack(fill="both", expand=True)
+    root.geometry("1000x900")
+    root.update()
+    view.zone = SimpleNamespace(labels=[(0, 0, "Район", "main")])
+    canvas = view.canvas
+    canvas.create_text(250, 180, text="Район", tags=("label", "area_label_0"))
+    canvas.create_rectangle(225, 165, 275, 195, tags="poi")
+    original = canvas.bbox("area_label_0")
+    assert original is not None
+    view._avoid_label_poi(500, 400)
+    moved = canvas.bbox("area_label_0")
+    icon = canvas.bbox("poi")
+    assert moved != original
+    assert moved is not None and icon is not None
+    assert moved[3] + 5 <= icon[1] or moved[1] >= icon[3] + 5 or moved[2] + 5 <= icon[0] or moved[0] >= icon[2] + 5
