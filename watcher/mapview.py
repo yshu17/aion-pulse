@@ -195,15 +195,28 @@ class MapView(ttk.Frame):
 
         bar = ttk.Frame(self, padding=(0, 0, 0, 8))
         bar.pack(fill="x")
+        # ui:39: the zoom buttons are packed first, so a narrow window never pushes them off the edge; the zone,
+        # search, side, quests and theme controls are one group centred in the rest of the row
+        for name, hint, command in (
+            ("crosshair", "Вернуться к метке из чата", self._back_to_place),
+            ("plus", "Увеличить масштаб (или колесо мыши)", lambda: self._zoom_center(ZOOM_STEP)),
+            ("minus", "Уменьшить масштаб (или колесо мыши)", lambda: self._zoom_center(1 / ZOOM_STEP)),
+            ("house", "Показать всю карту (карту можно тянуть мышью)", self._fit),
+        ):
+            button = ttk.Button(bar, image=self.ui_icons.get(name, "muted"), command=command, padding=(6, 5))
+            button.pack(side="right", padx=(6, 0))
+            Hint(button, hint)
+        group = ttk.Frame(bar)
+        group.pack(side="left", expand=True)
         self.zone_var = tk.StringVar()
-        self.zone_box = ttk.Combobox(bar, textvariable=self.zone_var, values=list(self._by_name), state="readonly",
-                                     width=20)
+        self.zone_box = ttk.Combobox(group, textvariable=self.zone_var, values=list(self._by_name), state="readonly",
+                                     width=16)
         self.zone_box.pack(side="left")
         self.zone_box.bind("<<ComboboxSelected>>", lambda _e: self.open_zone(self._by_name[self.zone_var.get()]))
         self.search_var = tk.StringVar()
-        self.search_entry = ttk.Entry(bar, textvariable=self.search_var, style="Card.TEntry", width=26)
+        self.search_entry = ttk.Entry(group, textvariable=self.search_var, style="Card.TEntry", width=20)
         self.search_entry.pack(side="left", padx=(10, 0))
-        self.search_count = ttk.Label(bar, text="", style="Muted.TLabel", width=6, anchor="w")
+        self.search_count = ttk.Label(group, text="", style="Muted.TLabel", anchor="w")  # natural width: no gap when empty
         self.search_count.pack(side="left", padx=(6, 0))
         self._show_placeholder()
         self.search_entry.bind("<FocusIn>", lambda _e: self._hide_placeholder())
@@ -213,41 +226,30 @@ class MapView(ttk.Frame):
         self.search_entry.bind("<Escape>", lambda _e: self.search_var.set(""))
         self.search_entry.bind("<KeyRelease>", self._on_search_key)
         self.side_var = tk.StringVar(value=SIDES[self.side])
-        self.side_box = ttk.Combobox(bar, textvariable=self.side_var, values=list(SIDES.values()), state="readonly",
+        self.side_box = ttk.Combobox(group, textvariable=self.side_var, values=list(SIDES.values()), state="readonly",
                                      width=11)
         self.side_box.pack(side="left", padx=(12, 0))
         self.side_box.bind("<<ComboboxSelected>>", lambda _e: self._on_side_selected())
         self.quests_var = tk.BooleanVar(value=show_quests)
         if any(t in self.poi.types for t in QUEST_TYPES):
-            ttk.Checkbutton(bar, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
+            ttk.Checkbutton(group, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
                             command=self._on_quests_toggled).pack(side="left", padx=(12, 0))
         self.theme_var = tk.StringVar(value=THEMES[self.theme])
         if any(z.relief is not None for z in zones.values()):
-            self.theme_box = ttk.Combobox(bar, textvariable=self.theme_var, values=list(THEMES.values()),
+            self.theme_box = ttk.Combobox(group, textvariable=self.theme_var, values=list(THEMES.values()),
                                           state="readonly", width=8)
             self.theme_box.pack(side="left", padx=(12, 0))
             self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._on_theme_selected())
         self.layer_var = tk.StringVar()
-        self.layer_box = ttk.Combobox(bar, textvariable=self.layer_var, state="readonly", width=12)
+        self.layer_box = ttk.Combobox(group, textvariable=self.layer_var, state="readonly", width=12)
         if any(z.layers for z in zones.values()):
             self.layer_box.pack(side="left", padx=(10, 0))
             self.layer_box.pack_forget()
             self.layer_box.bind("<<ComboboxSelected>>", lambda _e: self._on_layer_selected())
             Hint(self.layer_box, "Слой карты Бездны. Для NPC и подписей правило выбора по высоте в XML клиента не найдено.")
-        self.title = ttk.Label(bar, text="", style="Title.TLabel")
+        self.title = ttk.Label(group, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
         self.title.pack_forget()
-        for name, hint, command in (
-            ("crosshair", "Вернуться к метке из чата", self._back_to_place),
-            ("plus", "Увеличить масштаб", lambda: self._zoom_center(ZOOM_STEP)),
-            ("minus", "Уменьшить масштаб", lambda: self._zoom_center(1 / ZOOM_STEP)),
-            ("house", "Показать всю карту", self._fit),
-        ):
-            button = ttk.Button(bar, image=self.ui_icons.get(name, "muted"), command=command, padding=(6, 5))
-            button.pack(side="right", padx=(6, 0))
-            Hint(button, hint)
-        self.hint = ttk.Label(bar, text="колесо — масштаб · тяни — сдвиг · клик — карточка", style="Muted.TLabel")
-        self.hint.pack(side="right", padx=12)
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         self._matches: list = []
