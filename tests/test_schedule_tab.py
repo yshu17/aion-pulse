@@ -48,7 +48,7 @@ def test_load_events_missing_file_is_empty(tmp_path):
 
 
 def _labels(box):
-    """Text of each row; the progress bar under a running event is not a row."""
+    """Text of each event row; the progress bar and the group headers (labels) are not rows."""
     return [[w.cget("text") for w in row.winfo_children()] for row in box.winfo_children() if row.winfo_class() == "Frame"]
 
 
@@ -63,8 +63,8 @@ def test_tab_shows_running_next_and_the_day():
         theme.apply_dark_theme(root)
         tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
         rows = _labels(tab.next_box)
-        assert rows[0] == ["20:00–21:00", "Арена", "идёт · ещё 30 мин"]
-        assert rows[1] == ["22:00–00:00", "Поздно", "через 1 ч 30 мин"]
+        assert rows[0] == ["20:00–21:00", "Арена", "идёт · ещё 30 мин", "Сегодня"]  # date right of the badge
+        assert rows[1] == ["22:00–00:00", "Поздно", "через 1 ч 30 мин", "Сегодня"]
         assert tab.day_var.get() == "Среда"
         assert [r[-1] for r in _labels(tab.day_list)] == ["Арена", "Поздно"]
         tab.day_var.set("Четверг")
@@ -85,8 +85,8 @@ def test_empty_schedule_says_so():
         from watcher import theme
         theme.apply_dark_theme(root)
         tab = st.ScheduleTab(root, [], clock=lambda: WED_2030, tz=MSK)
-        assert _labels(tab.next_box)[0][1] == "Расписание пусто"
-        assert _labels(tab.day_list)[0][1] == "В этот день событий нет"
+        assert _labels(tab.next_box)[0][-1] == "Расписание пусто"  # the message is the row's last label
+        assert _labels(tab.day_list)[0][-1] == "В этот день событий нет"
     finally:
         root.destroy()
 
@@ -110,7 +110,8 @@ def test_long_day_scrolls_in_a_low_window():
         tab.pack(fill="both", expand=True)
         root.geometry("600x260")
         root.update()
-        assert len(tab.day_list.winfo_children()) == 12
+        # 12 event rows; the group headers (labels) are not rows
+        assert len([w for w in tab.day_list.winfo_children() if w.winfo_class() == "Frame"]) == 12
         top = tab.day_canvas.yview()[0]
         tab.scroll(3)
         root.update()
@@ -297,15 +298,75 @@ def test_schedule_uses_icons():
         events = EVENTS + [{"day": "wed", "start": "20:00", "end": "21:00", "name": "Зона", "maps": ["220070000"]}]
         tab = st.ScheduleTab(root, events, clock=lambda: WED_2030, tz=MSK, belled={"wed|22:00|Поздно"},
                              on_map=lambda _z: None, on_check=lambda: None)
-        bells = [row.winfo_children()[0] for row in tab.day_list.winfo_children()]
-        assert all(str(b.cget("image")) and b.cget("text") == "" for b in bells)
         on, off = str(tab.icons.get("bell-fill", "accent", 16)), str(tab.icons.get("bell", "muted", 16))
-        by_name = {row.winfo_children()[-1].cget("text"): row.winfo_children()[0] for row in tab.day_list.winfo_children()}
-        assert str(by_name["Поздно"].cget("image")) == on and str(by_name["Арена"].cget("image")) == off
+        bell_of = {}  # event name → its bell label (the image, found by its own row, not by position)
+        for row in tab.day_list.winfo_children():
+            if row.winfo_class() != "Frame":
+                continue
+            labels = [w for w in row.winfo_children() if w.winfo_class() == "Label"]
+            name = next(w.cget("text") for w in labels if w.cget("text") and ":" not in w.cget("text")
+                        and w.cget("text") != "")
+            bell_of[name] = next(w for w in labels if str(w.cget("image")))
+        assert str(bell_of["Поздно"].cget("image")) == on and str(bell_of["Арена"].cget("image")) == off
         pins = [w for row in tab.next_box.winfo_children() for w in row.winfo_children()
                 if w.winfo_class() == "Label" and w.cget("text") == "на карте"]
         assert pins and all(str(p.cget("image")) for p in pins)
         assert str(tab.kinds_button.cget("image")) and "▾" not in tab.kinds_button.cget("text")
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_schedule_text_is_forty_percent_larger_than_before():
+    """The schedule tab only: fonts 40 % larger than the common scale (user request 13.10)."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
+        assert st.scaled_font("small")[1] == round(theme.font("small")[1] * 1.4)
+        assert st.scaled_font("body")[1] == round(theme.font("body")[1] * 1.4)
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_next_list_shows_the_date_between_name_and_bell_and_groups_the_days():
+    """Date label in the «Ближайшие» rows; the «По дням» list has a section header per group, time in a grade-like box."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
+        texts = [w.cget("text") for row in tab.next_box.winfo_children() for w in row.winfo_children()
+                 if w.winfo_class() == "Label"]
+        assert "Сегодня" in texts
+        headers = [w.cget("text") for w in tab.day_list.winfo_children() if w.winfo_class() == "Label"]
+        assert headers == ["Арены Хаоса и Доблести", "Прочее"]  # Wednesday: «Арена» and «Поздно» (not a known group)
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_time_is_outlined_by_grade_and_two_clocks_show_at_the_top():
+    """The time of a row is a box with an outline in its kind's colour (like the rarity chips); the top has the server
+    clock and the computer clock, updated by the light tick."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
+        assert tab.server_clock.cget("text") == "20:30:00" or tab.server_clock.cget("text")
+        assert tab.local_clock.cget("text")
+        first = next(w for row in tab.next_box.winfo_children() if row.winfo_class() == "Frame"
+                     for w in row.winfo_children() if w.winfo_class() == "Label" and ":" in w.cget("text"))
+        assert int(str(first.cget("highlightthickness"))) >= 1
         tab.destroy()
     finally:
         root.destroy()

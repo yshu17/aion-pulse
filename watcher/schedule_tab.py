@@ -19,7 +19,8 @@ from watcher.hint import Hint
 from watcher.ui_icons import IconSet
 from watcher.reminders import DAYS
 from watcher.schedule_custom import Custom, check
-from watcher.schedule_view import day_blocks, events_for_day, kind_of, kinds, map_for, next_events, visible
+from watcher.schedule_view import (GROUPS, clock_pair, day_blocks, day_label, events_for_day, group_of, kind_of, kinds,
+                                   map_for, next_events, visible)
 
 MSK = timezone(timedelta(hours=3))
 DAY_NAMES = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
@@ -103,6 +104,15 @@ def time_range(start: datetime, end: datetime, tz: timezone | None = None) -> st
     return f"{to_local(start, tz):%H:%M}–{to_local(end, tz):%H:%M}"
 
 
+SCALE = 1.4  # user request 13.10: the schedule's text and icons 40 % larger than the common scale
+
+
+def scaled_font(role: str) -> tuple[str, int, str]:
+    """The common font of ``role`` with the schedule's size (SCALE), same family and weight."""
+    family, size, weight = theme.font(role)
+    return family, round(size * SCALE), weight
+
+
 def _fit(text: str, width: float, font: tkfont.Font) -> str:
     """The longest start of ``text`` (with «…» when cut) that fits ``width`` pixels; "" when not even «…» fits."""
     if font.measure(text) <= width:
@@ -152,13 +162,22 @@ class ScheduleTab(ttk.Frame):
             ttk.Button(bar, text="Проверить обновление", style="Ghost.TButton", command=on_check, compound="left",
                        image=self.icons.get("arrow-clockwise", "muted", 16)).pack(side="right", padx=(0, 4))
         self._label_kinds()
+        # two clocks: the server (MSK) and this computer (user request 13.10)
+        clocks = ttk.Frame(self)
+        clocks.pack(fill="x", pady=(0, 6))
+        ttk.Label(clocks, text="Сервер", style="CardMuted.TLabel").pack(side="left")
+        self.server_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("title"))
+        self.server_clock.pack(side="left", padx=(8, 24))
+        ttk.Label(clocks, text="Ты", style="CardMuted.TLabel").pack(side="left")
+        self.local_clock = ttk.Label(clocks, text="", style="Title.TLabel", font=scaled_font("title"))
+        self.local_clock.pack(side="left", padx=(8, 0))
         # the chosen day at a glance: hours 00–24, events as blocks by kind, a «now» line on today
         strip_card = ttk.Frame(self, style="Card.TFrame", padding=(16, 6))
         strip_card.pack(fill="x", pady=(0, 8))
         self.strip = tk.Canvas(strip_card, height=AXIS_H + 2 * LANE_H + 4, background=theme.SURFACE,
                                highlightthickness=0, borderwidth=0)
         self.strip.pack(fill="x")
-        self._strip_font = tkfont.Font(root=self, font=theme.font("small"))
+        self._strip_font = tkfont.Font(root=self, font=scaled_font("small"))
         self.strip.bind("<Configure>", lambda _e: self._draw_strip())
         self.strip.bind("<Button-1>", self._on_strip_click)
         self._strip_hits: list[tuple[float, float, float, float, dict]] = []
@@ -259,7 +278,8 @@ class ScheduleTab(ttk.Frame):
             if bell_key(event) in self.belled:
                 badge = "напомню · " + badge
             self._row(self.next_box, time_range(start, end, self.tz), event["name"], badge,
-                      accent=theme.SUCCESS if running else theme.ACCENT, place=event)
+                      accent=theme.SUCCESS if running else theme.ACCENT, place=event,
+                      date=day_label(event["day"], now, now))
             if running:  # how far it has gone: a 3 px bar under the row
                 bar = tk.Canvas(self.next_box, height=3, background=theme.SURFACE_3, highlightthickness=0,
                                 borderwidth=0)
@@ -274,7 +294,13 @@ class ScheduleTab(ttk.Frame):
         if not day_events:
             self._row(self.day_list, "", "В этот день событий нет", "")
         monday = now.date() - timedelta(days=now.weekday())
+        seen_groups: set[str] = set()
         for event in day_events:
+            group = group_of(event)
+            if group not in seen_groups:  # a section header before the first event of each group
+                seen_groups.add(group)
+                tk.Label(self.day_list, text=group, anchor="w", background=theme.SURFACE, foreground=theme.ACCENT,
+                         font=scaled_font("caption_strong")).pack(fill="x", pady=(6, 0))
             hour, minute = map(int, event["start"].split(":"))
             start = datetime.combine(monday + timedelta(days=DAYS.index(day)), datetime.min.time()).replace(
                 hour=hour, minute=minute)
@@ -282,6 +308,7 @@ class ScheduleTab(ttk.Frame):
             past = day == today and end <= now
             self._row(self.day_list, time_range(start, end, self.tz), event["name"], "", dim=past, bell=event)
         self._strip_day = (day, day == today, now, monday + timedelta(days=DAYS.index(day)))
+        self._show_clocks(now)
         self.after_idle(self._trim_next)
         self._draw_strip()
         if self._after:
@@ -294,6 +321,7 @@ class ScheduleTab(ttk.Frame):
         """The light tick: move the «now» line and the progress bars to the clock, nothing else is rebuilt."""
         self._now_after = None
         now = self.clock()
+        self._show_clocks(now)
         if hasattr(self, "_strip_day"):
             day, today, _old, date = self._strip_day
             self._strip_day = (day, today, now, date)
@@ -301,6 +329,12 @@ class ScheduleTab(ttk.Frame):
         self._move_progress(now)
         if self.winfo_exists():
             self._now_after = self.after(NOW_TICK_MS, self.tick_now)
+
+    def _show_clocks(self, now: datetime) -> None:
+        utc = now.replace(tzinfo=MSK).astimezone(timezone.utc) if self.clock is msk_now or now.tzinfo is None else now
+        server, local = clock_pair(utc.replace(tzinfo=timezone.utc), self.tz or datetime.now().astimezone().tzinfo)
+        self.server_clock.configure(text=server)
+        self.local_clock.configure(text=local)
 
     def _move_progress(self, now: datetime) -> None:
         for bar, start, end in self._progress:
@@ -335,7 +369,7 @@ class ScheduleTab(ttk.Frame):
             canvas.create_line(x, AXIS_H, x, AXIS_H + 2 * LANE_H, fill=theme.SURFACE_3)
             if hour < 24:
                 canvas.create_text(x + 2, 1, text=f"{hour:02d}", anchor="nw", fill=theme.MUTED,
-                                   font=theme.font("small"))
+                                   font=scaled_font("small"))
         palette = {kind: KIND_COLORS[i % len(KIND_COLORS)] for i, kind in enumerate(kinds(self.events))}
         for event, start, end, lane in day_blocks(events_for_day(visible(self.events, self.hidden()), day)):
             start, end = max(0, start + offset), min(1440, end + offset)
@@ -365,11 +399,16 @@ class ScheduleTab(ttk.Frame):
                 return
 
     def _row(self, box: tk.Frame, when: str, name: str, badge: str, accent: str | None = None, dim: bool = False,
-             bell: dict | None = None, place: dict | None = None) -> None:
+             bell: dict | None = None, place: dict | None = None, date: str = "") -> None:
         compact = box is self.day_list  # a weekday can have 11 events: they fit a 600 px window in the small font
         row = tk.Frame(box, background=theme.SURFACE)
         row.pack(fill="x", pady=0 if compact else 1)
         color = theme.MUTED if dim else theme.TEXT
+        time_color = self._kind_color(bell or place) if (bell or place) else theme.MUTED
+        if when:  # the time is a box with an outline in the colour of its kind's grade (user request 13.10)
+            tk.Label(row, text=when, anchor="center", background=theme.SURFACE, foreground=time_color,
+                     font=scaled_font("mono"), highlightthickness=1, highlightbackground=time_color,
+                     padx=6).pack(side="left", padx=(0, 8))
         # the toggle is packed first, so a long event name is cut, not the toggle
         if bell is not None:
             on = bell_key(bell) in self.belled
@@ -381,12 +420,10 @@ class ScheduleTab(ttk.Frame):
         zone = map_for(place, self.side()) if place is not None and self.on_map else None
         if zone:
             link = tk.Label(row, text="на карте", background=theme.SURFACE, foreground=theme.PLACE,
-                            font=theme.font("small"), cursor="hand2", compound="left", padx=0,
+                            font=scaled_font("small"), cursor="hand2", compound="left", padx=0,
                             image=self.icons.get("map-pin", "muted", 16))
             link.pack(side="right", padx=(8, 0))
             link.bind("<Button-1>", lambda _e, z=zone: self.on_map(z))
-        tk.Label(row, text=when, width=11, anchor="w", background=theme.SURFACE, foreground=theme.MUTED,
-                 font=theme.font("mono")).pack(side="left")
         label = tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
                          font=theme.font("small" if compact else "body"))
         label.pack(side="left", fill="x", expand=True)
@@ -395,7 +432,10 @@ class ScheduleTab(ttk.Frame):
             label.bind("<Button-1>", lambda _e, ev=bell: self.open_form(ev))
         if badge:
             tk.Label(row, text=badge, background=theme.SURFACE, foreground=accent or theme.MUTED,
-                     font=theme.font("small")).pack(side="right")
+                     font=scaled_font("small")).pack(side="right")
+        if date:  # «Сегодня» / «ВТ 13.10» in the middle, between the name and the bell (user request 13.10)
+            tk.Label(row, text=date, background=theme.SURFACE, foreground=theme.MUTED,
+                     font=scaled_font("mono")).pack(side="right", padx=(0, 12))
         row.bind("<Enter>", lambda _e, r=row: self._hover(r, theme.SURFACE_2))
         row.bind("<Leave>", lambda _e, r=row: None if self._pointer_in(r) else self._hover(r, theme.SURFACE))
 
@@ -407,6 +447,12 @@ class ScheduleTab(ttk.Frame):
         except (KeyError, tk.TclError):
             return False
         return under is not None and (under is row or under.master is row)
+
+    def _kind_color(self, event: dict) -> str:
+        """The colour of an event's kind, the same as its block on the day strip."""
+        kinds_order = kinds(self.events)
+        kind = kind_of(event)
+        return KIND_COLORS[kinds_order.index(kind) % len(KIND_COLORS)] if kind in kinds_order else theme.MUTED
 
     def _hover(self, row: tk.Frame, color: str) -> None:
         """The row under the mouse takes a slightly lighter ground (theme.MOTION fast, 3 frames)."""
