@@ -113,6 +113,9 @@ def scaled_font(role: str) -> tuple[str, int, str]:
     return family, round(size * SCALE), weight
 
 
+DAYS_ORDER = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")  # the chips of the form, Monday first
+
+
 def today_key(now: datetime) -> str:
     return DAYS[now.weekday()]
 
@@ -438,9 +441,14 @@ class ScheduleTab(ttk.Frame):
         label = tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
                          font=theme.font("small" if compact else "body"))
         label.pack(side="left", fill="x", expand=True)
-        if bell is not None:  # a day row: a click on the name edits or removes the event (SN-7)
+        if bell is not None:  # a day row: a click on the name or the pencil edits or removes the event (SN-7)
             label.configure(cursor="hand2")
             label.bind("<Button-1>", lambda _e, ev=bell: self.open_form(ev))
+            pencil = tk.Label(row, image=self.icons.get("pencil-simple", "muted", 16), background=theme.SURFACE,
+                              cursor="hand2")
+            pencil.pack(side="right", padx=(4, 0))
+            pencil.bind("<Button-1>", lambda _e, ev=bell: self.open_form(ev))
+            Hint(pencil, "Изменить событие")
         row.bind("<Enter>", lambda _e, r=row: self._hover(r, theme.SURFACE_2))
         row.bind("<Leave>", lambda _e, r=row: None if self._pointer_in(r) else self._hover(r, theme.SURFACE))
 
@@ -510,12 +518,15 @@ class EventForm(tk.Toplevel):
         self.transient(tab.winfo_toplevel())
         self.resizable(False, False)
         source = event or {"day": DAYS[tab.clock().weekday()], "start": "", "end": "", "name": ""}
-        self.day_var = tk.StringVar(value=DAY_NAMES.get(source["day"], DAY_NAMES["mon"]))
+        self.day_chips: dict[str, tk.BooleanVar] = {d: tk.BooleanVar(value=(d == source["day"])) for d in DAYS_ORDER}
         self.start_var = tk.StringVar(value=source["start"])
         self.end_var = tk.StringVar(value=source["end"])
         self.name_var = tk.StringVar(value=source["name"])
-        fields = (("День", ttk.Combobox(self, textvariable=self.day_var, values=list(DAY_NAMES.values()),
-                                        state="readonly", width=14, style="Card.TCombobox")),
+        chips = ttk.Frame(self, style="Surface.TFrame")
+        for d in DAYS_ORDER:  # the chips: one event on any days («на все дни»)
+            ttk.Checkbutton(chips, text=DAY_NAMES[d][:2].upper(), variable=self.day_chips[d],
+                            style="Toolbutton").pack(side="left", padx=(0, 3))
+        fields = (("Дни", chips),
                   ("Начало (МСК)", ttk.Entry(self, textvariable=self.start_var, width=8, style="Card.TEntry")),
                   ("Конец (МСК)", ttk.Entry(self, textvariable=self.end_var, width=8, style="Card.TEntry")),
                   ("Название", ttk.Entry(self, textvariable=self.name_var, width=28, style="Card.TEntry")))
@@ -537,20 +548,28 @@ class EventForm(tk.Toplevel):
         fields[3][1].focus_set()
 
     def _value(self) -> dict:
-        day = next((k for k, v in DAY_NAMES.items() if v == self.day_var.get()), "")
-        return {"day": day, "start": self.start_var.get().strip(), "end": self.end_var.get().strip(),
+        return {"day": "", "start": self.start_var.get().strip(), "end": self.end_var.get().strip(),
                 "name": self.name_var.get().strip()}
+
+    def _days(self) -> list[str]:
+        return [d for d in DAYS_ORDER if self.day_chips[d].get()]
 
     def save(self) -> None:
         value = self._value()
-        problem = check(value)
+        days = self._days()
+        if not days:
+            self.error.configure(text="Выбери хотя бы один день.")
+            return
+        problem = check({**value, "day": days[0]})
         if problem:
             self.error.configure(text=problem)
             return
         if self.event:
-            self.tab.custom.edit(self.event, value)
+            self.tab.custom.edit(self.event, {**value, "day": days[0]})
+            if len(days) > 1:
+                self.tab.custom.add_days(value, days[1:])
         else:
-            self.tab.custom.add(value)
+            self.tab.custom.add_days(value, days)
         self.tab._changed_events()
         self.destroy()
 

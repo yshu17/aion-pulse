@@ -160,7 +160,8 @@ def test_own_events_can_be_added_edited_and_removed(tmp_path):
         custom = Custom.load(tmp_path / "schedule_custom.json")
         tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK, custom=custom)
         form = tab.open_form()
-        form.day_var.set("Среда")
+        for d in st.DAYS_ORDER:  # the chips: only Wednesday
+            form.day_chips[d].set(d == "wed")
         form.start_var.set("23:30")
         form.end_var.set("23:45")
         form.name_var.set("")
@@ -417,6 +418,27 @@ def test_badge_keeps_its_full_text_in_the_next_list():
         row = next(r for r in tab.next_box.winfo_children() if r.winfo_class() == "Frame")
         badge = next(w for w in row.winfo_children() if w.winfo_class() == "Label" and "идёт" in w.cget("text"))
         assert badge.winfo_reqwidth() <= badge.winfo_width()  # the full text fits without cutting
+        tab.destroy()
+    finally:
+        root.destroy()
+
+
+def test_pencil_edits_an_event_and_the_form_offers_every_day():
+    """Pencil on a «По дням» row opens the form for that event; the form has a chip per weekday («на все дни»)."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK)
+        pencils = [w for row in tab.day_list.winfo_children() if row.winfo_class() == "Frame"
+                   for w in row.winfo_children() if w.winfo_class() == "Label" and str(w.cget("image"))
+                   and w.cget("cursor") == "hand2" and not w.cget("text")]
+        assert pencils  # every day row has a pencil
+        form = tab.open_form(EVENTS[0])
+        assert form.day_chips and set(form.day_chips) == set(st.DAYS_ORDER)  # one chip per weekday
+        form.destroy()
         tab.destroy()
     finally:
         root.destroy()
