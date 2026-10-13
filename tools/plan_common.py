@@ -35,7 +35,6 @@ def nav_html(current: str) -> str:
              '<span class="pn-sep"></span>']
     for key, title, page, _gate in PLANS:
         links.append(f'<a href="{page}"{" class=\"on\"" if key == current else ""}>{html.escape(title)}</a>')
-    links.append('<a href="feature-drafts.html">Черновики</a>')
     links.append('<a class="pn-x" href="../PAIR.md">PAIR.md</a>')
     return f'<style>{NAV_CSS}</style><nav class="pn" aria-label="Планы">{"".join(links)}</nav>'
 

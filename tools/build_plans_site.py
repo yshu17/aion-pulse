@@ -45,6 +45,9 @@ PHONE_CSS = """<style id="phone">
 :root{color-scheme:dark}
 html{-webkit-text-size-adjust:100%}
 body{overflow-wrap:anywhere}
+@media(max-width:620px){.pn{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pn::-webkit-scrollbar{display:none}.pn a{white-space:nowrap;flex:none}.pn .pn-x{display:none}}
+p,li,td,th,a,dd,dt{overflow-wrap:anywhere}
+table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 img,svg,video,canvas{max-width:100%;height:auto}
 pre,code{white-space:pre-wrap;word-break:break-word}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
@@ -152,7 +155,8 @@ def phone_page(html: str) -> str:
 def markdown_page(source: Path, title: str) -> str:
     body = markdown.markdown(source.read_text(encoding="utf-8"), extensions=["tables", "fenced_code", "sane_lists"])
     body = body.replace("<table>", '<div class="table-scroll"><table>').replace("</table>", "</table></div>")
-    return MD_PAGE.format(title=title, nav=NAV, body=site_links_only(body))
+    page = MD_PAGE.format(title=title, nav=NAV, body=site_links_only(body))
+    return page.replace("</head>", PHONE_CSS + "\n</head>", 1)  # the same phone rules as the plan pages
 
 
 def main_page(html: str) -> str:
