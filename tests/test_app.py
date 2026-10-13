@@ -1012,3 +1012,17 @@ def test_missed_reminders_while_closed_come_as_one_toast(tmp_path):
         assert app.cfg.remind_last_check == "2026-10-15T09:00:00"
     finally:
         root.destroy()
+
+
+def test_unavailable_overlay_label_is_grey(tmp_path):
+    """ui:40 (visual check 13.10): the disabled setting's label uses the theme's DISABLED colour, not normal text."""
+    from tkinter import ttk
+
+    from watcher import theme
+
+    root, app, calls, say = _nag_app(tmp_path)
+    try:
+        style = app.popup_check.cget("style")
+        assert ttk.Style(root).lookup(style, "foreground", ["disabled"]) == theme.DISABLED
+    finally:
+        root.destroy()

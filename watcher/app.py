@@ -256,12 +256,15 @@ class App:
         react.pack(side="left")
         react.bind("<<ComboboxSelected>>", lambda _e: self._on_react_selected())
         self.popup_var = tk.BooleanVar(value=self.cfg.nag_popup)
-        # ui:40: temporarily unavailable, shown disabled so the user sees why it does nothing
+        # ui:40: temporarily unavailable, shown disabled so the user sees why it does nothing; the label greys out too
+        # (the card style has no disabled colour — found by the visual check of 13.10)
+        ttk.Style(self.root).map("Off.CardPlain.TCheckbutton", foreground=[("disabled", theme.DISABLED), ("selected", theme.ACCENT)],
+                                 background=[("active", theme.SURFACE)])
         self.popup_check = ttk.Checkbutton(
             alert_row2,
             text="Окно поверх игры (пока недоступно)",
             variable=self.popup_var,
-            style="CardPlain.TCheckbutton",
+            style="Off.CardPlain.TCheckbutton",
             command=self._on_popup_toggled,
             state="normal" if OVERLAY_POPUP_ENABLED else "disabled",
         )
