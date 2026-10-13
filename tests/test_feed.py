@@ -104,6 +104,23 @@ def test_mark_accepted_and_missed_stop_blinking(root):
     assert str(feed.boxes[1].cget("style")) == style  # finished rows no longer blink
 
 
+def test_marking_mid_blink_keeps_the_final_colour(root):
+    """ui:22 recheck: frames of a blink still running when the row is marked must not repaint it amber."""
+    import time
+    from watcher.feed import ACCEPTED_BG
+    feed = make(root)
+    feed.add(msg("A", "wts"), ["wts"], alert_id=1)
+    feed.blink()  # 450 ms tween in 4 frames starts
+    root.update()
+    feed.mark(1, "accepted")
+    deadline = time.monotonic() + 0.8
+    while time.monotonic() < deadline:  # let the remaining frames run
+        root.update()
+        time.sleep(0.02)
+    assert str(feed._holders[1].cget("background")) == ACCEPTED_BG
+    assert str(feed.countdowns[1].cget("background")) == ACCEPTED_BG
+
+
 def test_old_rows_are_trimmed(root):
     feed = make(root, max_rows=3)
     for i in range(5):

@@ -37,6 +37,46 @@ def test_empty_feed_before_start_names_what_is_looked_for(tmp_path):
         root.destroy()
 
 
+def test_watching_status_breathes_smoothly_and_stops(tmp_path):
+    """ui:21 recheck: «Слежу» breathes in at least 9 frames a second, stops on another status and with reduce_motion."""
+    import json
+    import time
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "fake_chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(log), "keywords": ["хил"], "game_check": False}), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = App(root, cfg_path)
+        app.cfg.reduce_motion = False
+        seen = []
+        app._set_status(f"Слежу за {log}")
+        deadline = time.monotonic() + 1.0
+        while time.monotonic() < deadline:
+            root.update()
+            colour = str(app.status_label.cget("foreground"))
+            if not seen or seen[-1] != colour:
+                seen.append(colour)
+            time.sleep(0.01)
+        assert len(seen) >= 9, seen
+        app._set_status("Не слежу")
+        root.update()
+        assert str(app.status_label.cget("foreground")) == ""
+        app.cfg.reduce_motion = True
+        app._set_status(f"Слежу за {log}")
+        root.update()
+        time.sleep(0.3)
+        root.update()
+        assert str(app.status_label.cget("foreground")) == ""
+    finally:
+        app._on_close()
+
+
 def test_tick_keeps_polling_when_processing_fails(tmp_path):
     import json
     import tkinter as tk

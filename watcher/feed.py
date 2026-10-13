@@ -205,9 +205,10 @@ class MatchFeed(ttk.Frame):
         for alert_id in self._pending:
             self.boxes[alert_id].configure(style=style)
             holder, countdown = self._holders[alert_id], self.countdowns[alert_id]
-            tween_color(self.text, lambda value, w=holder: w.configure(background=value),
+            # a frame left over after mark() must not repaint the finished row amber (ui:22)
+            tween_color(self.text, lambda value, w=holder, a=alert_id: a in self._pending and w.configure(background=value),
                         start, color, 450, enabled=self.motion_enabled(), steps=4)
-            tween_color(self.text, lambda value, w=countdown: w.configure(background=value),
+            tween_color(self.text, lambda value, w=countdown, a=alert_id: a in self._pending and w.configure(background=value),
                         start, color, 450, enabled=self.motion_enabled(), steps=4)
 
     # --- internals ----------------------------------------------------------------------

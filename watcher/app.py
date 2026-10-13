@@ -779,7 +779,7 @@ class App:
                 return
             tween_color(
                 self.status_label, paint,
-                color_a, color_b, 1000, enabled=True, steps=6,
+                color_a, color_b, 1000, enabled=True, steps=12,  # ~83 ms a frame: no visible steps (ui:21)
                 done=lambda: schedule(color_b, color_a),
             )
 
