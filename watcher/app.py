@@ -393,6 +393,7 @@ class App:
             self.tabs, load_events(resource_root() / "data" / "schedule.json"),
             belled=set(self.cfg.remind_events), on_bell=self._on_bell,
             lead_min=self.cfg.remind_min if self.cfg.remind_min in LEADS.values() else 5, on_lead=self._on_lead,
+            hidden=set(self.cfg.schedule_hidden), on_filter=self._on_schedule_filter,
         )
         self._msk_clock = msk_now  # tests replace it
         self._reminded: set[str] = set()  # occurrences already announced this run (no repeats)
@@ -1071,6 +1072,10 @@ class App:
         events = set(self.cfg.remind_events)
         (events.add if on else events.discard)(key)
         self.cfg.remind_events = sorted(events)
+        save_config(self.config_path, self.cfg)
+
+    def _on_schedule_filter(self, hidden: set[str]) -> None:
+        self.cfg.schedule_hidden = sorted(hidden)
         save_config(self.config_path, self.cfg)
 
     def _on_lead(self, minutes: int) -> None:

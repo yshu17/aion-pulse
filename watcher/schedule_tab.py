@@ -14,7 +14,7 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.reminders import DAYS
-from watcher.schedule_view import events_for_day, next_events
+from watcher.schedule_view import events_for_day, kinds, next_events, visible
 
 MSK = timezone(timedelta(hours=3))
 DAY_NAMES = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
@@ -98,7 +98,8 @@ class ScheduleTab(ttk.Frame):
     """Two cards: «Ближайшие» (running and next events) and «По дням» (a weekday picker and its events)."""
 
     def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None,
-                 belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None) -> None:
+                 belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None,
+                 hidden: set[str] | None = None, on_filter=None) -> None:
         super().__init__(master, padding=(0, 12, 0, 0))
         self.events = events
         self.belled = belled if belled is not None else set()  # SN-8: events to remind of (shared with the app)
@@ -107,6 +108,19 @@ class ScheduleTab(ttk.Frame):
         self.clock = clock
         self.tz = tz
         self._after: str | None = None
+        # SN-7: «Виды» — hide kinds of events from both lists (reminders of belled events still come)
+        self.on_filter = on_filter
+        hidden = hidden or set()
+        self.kind_vars = {kind: tk.BooleanVar(value=kind not in hidden) for kind in kinds(events)}
+        bar = ttk.Frame(self)  # the bottom line: the time note and «Виды» (no extra height above the cards)
+        self.kinds_menu = tk.Menu(self, tearoff=False, background=theme.SURFACE_2, foreground=theme.TEXT,
+                                  activebackground=theme.SURFACE_3, activeforeground=theme.TEXT,
+                                  selectcolor=theme.ACCENT)
+        for kind, var in self.kind_vars.items():
+            self.kinds_menu.add_checkbutton(label=kind, variable=var, command=self.filter_changed)
+        self.kinds_button = ttk.Button(bar, style="Card.TButton", command=self._show_kinds)
+        self.kinds_button.pack(side="right")
+        self._label_kinds()
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         body.columnconfigure(0, weight=3, uniform="cards")
@@ -145,19 +159,38 @@ class ScheduleTab(ttk.Frame):
         self.day_list.bind("<Configure>", lambda _e: self.day_canvas.configure(scrollregion=self.day_canvas.bbox("all")))
         self.day_canvas.bind("<Configure>", lambda e: self.day_canvas.itemconfigure(window, width=e.width))
 
-        self.note = ttk.Label(self, style="Muted.TLabel")
-        self.note.pack(side="bottom", anchor="w", pady=(8, 0), before=body)  # reserved first: never pushed off
+        self.note = ttk.Label(bar, style="Muted.TLabel")
+        self.note.pack(side="left", anchor="w")
+        bar.pack(side="bottom", fill="x", pady=(8, 0), before=body)  # reserved first: never pushed off
         self.refresh()
+
+    def hidden(self) -> set[str]:
+        return {kind for kind, var in self.kind_vars.items() if not var.get()}
+
+    def filter_changed(self) -> None:
+        self._label_kinds()
+        if self.on_filter:
+            self.on_filter(self.hidden())
+        self.refresh()
+
+    def _label_kinds(self) -> None:
+        count = len(self.hidden())
+        self.kinds_button.configure(text=f"Виды: {count} скрыт{'о' if count > 1 else ''} ▾" if count else "Виды: все ▾")
+
+    def _show_kinds(self) -> None:
+        button = self.kinds_button
+        self.kinds_menu.tk_popup(button.winfo_rootx(), button.winfo_rooty() + button.winfo_height())
 
     def refresh(self) -> None:
         """Rebuild both lists from the clock; called every REFRESH_MS while the tab exists."""
         now = self.clock()
+        shown = visible(self.events, self.hidden())
         self.note.configure(text=f"Время — твоё локальное ({zone_name(now, self.tz)}); сервер живёт по МСК. "
                                  "Источник: база знаний Aion Empire.")
         for box in (self.next_box, self.day_list):
             for child in box.winfo_children():
                 child.destroy()
-        upcoming = next_events(self.events, now, NEXT_LIMIT)
+        upcoming = next_events(shown, now, NEXT_LIMIT)
         if not upcoming:
             self._row(self.next_box, "", "Расписание пусто", "")
         for event, start in upcoming:
@@ -170,7 +203,7 @@ class ScheduleTab(ttk.Frame):
                       accent=theme.SUCCESS if running else theme.ACCENT)
         day = next((k for k, v in DAY_NAMES.items() if v == self.day_var.get()), DAYS[now.weekday()])
         today = DAYS[now.weekday()]
-        day_events = events_for_day(self.events, day)
+        day_events = events_for_day(shown, day)
         self.day_canvas.yview_moveto(0)
         if not day_events:
             self._row(self.day_list, "", "В этот день событий нет", "")

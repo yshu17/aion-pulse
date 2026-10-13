@@ -86,3 +86,26 @@ def test_schedule_json_events_work_with_the_view():
 
     assert len(events) >= 1
     assert schedule_view.next_events(events, datetime(2026, 10, 19, 23, 0), 5)
+
+
+def test_kinds_keep_the_data_order_and_fall_back_to_the_name():
+    """SN-7: the filter offers each kind once, in the order of the data; an event without «kind» is its own kind."""
+    from watcher.schedule_view import kind_of, kinds
+    events = [{"name": "1x1", "kind": "Арены"}, {"name": "Дер"}, {"name": "2x2", "kind": "Арены"}]
+    assert kind_of(events[1]) == "Дер"
+    assert kinds(events) == ["Арены", "Дер"]
+
+
+def test_hidden_kinds_are_filtered_out():
+    from watcher.schedule_view import visible
+    events = [{"name": "1x1", "kind": "Арены"}, {"name": "Дер"}]
+    assert visible(events, {"Арены"}) == [{"name": "Дер"}]
+    assert visible(events, set()) == events
+
+
+def test_every_event_in_the_data_file_has_a_kind():
+    import json
+    from pathlib import Path
+    data = json.loads((Path(__file__).resolve().parents[1] / "data" / "schedule.json").read_text(encoding="utf-8"))
+    assert all(event.get("kind") for event in data["events"])
+    assert {e["kind"] for e in data["events"] if e["name"] in ("1x1", "2x2", "3x3", "Gold Arena")} == {"Арены"}

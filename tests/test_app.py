@@ -1233,3 +1233,16 @@ def test_notifications_tab_saves_and_applies_settings(tmp_path):
         assert app.notifications.queued >= 1
     finally:
         app._on_close()
+
+
+def test_schedule_kind_filter_is_saved(tmp_path):
+    """SN-7: hidden kinds of the «Расписание» tab survive a restart."""
+    import json
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        app.schedule_tab.kind_vars["Арены"].set(False)
+        app.schedule_tab.filter_changed()
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["schedule_hidden"] == ["Арены"]
+    finally:
+        app._on_close()

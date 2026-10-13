@@ -59,6 +59,7 @@ class Config:
     notify_corner: str = "bottom"  # SN-5: toasts at the right, "bottom" or "top"
     notify_duration: int = 8  # SN-5: seconds a toast stays (5, 8 or 15)
     notify_stack: int = 3  # SN-5: toasts shown at once (1..3)
+    schedule_hidden: list[str] = field(default_factory=list)  # SN-7: kinds of events hidden in the «Расписание» tab
 
     def chat_log_path(self) -> Path:
         if self.chat_log:

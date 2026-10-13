@@ -45,3 +45,18 @@ def next_events(events: list[dict], now: datetime, limit: int) -> list[tuple[dic
                 found.append((event, start))
         week_offset += 1
     return sorted(found, key=lambda item: item[1])[:limit]
+
+
+def kind_of(event: dict) -> str:
+    """SN-7: the event's kind for the filter («Арены» groups the arena brackets); without one, its own name."""
+    return event.get("kind") or event["name"]
+
+
+def kinds(events: list[dict]) -> list[str]:
+    """Each kind once, in the order of the data."""
+    return list(dict.fromkeys(kind_of(event) for event in events))
+
+
+def visible(events: list[dict], hidden: set[str]) -> list[dict]:
+    """The events whose kind is not hidden by the filter."""
+    return [event for event in events if kind_of(event) not in hidden]

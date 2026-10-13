@@ -7,475 +7,554 @@
    "day": "mon",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "tue",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "wed",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "thu",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "fri",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sat",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sun",
    "start": "02:00",
    "end": "04:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "mon",
    "start": "05:00",
    "end": "06:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "tue",
    "start": "05:00",
    "end": "06:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "wed",
    "start": "05:00",
    "end": "06:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "thu",
    "start": "05:00",
    "end": "06:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "05:00",
    "end": "06:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "05:00",
    "end": "06:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "sun",
    "start": "05:00",
    "end": "06:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "mon",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "tue",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "wed",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "thu",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "fri",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sat",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sun",
    "start": "10:00",
    "end": "12:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "mon",
    "start": "12:00",
    "end": "13:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "tue",
    "start": "12:00",
    "end": "13:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "wed",
    "start": "12:00",
    "end": "13:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "thu",
    "start": "12:00",
    "end": "13:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "12:00",
    "end": "13:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "12:00",
    "end": "13:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "sun",
    "start": "12:00",
    "end": "13:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "15:00",
    "end": "16:00",
-   "name": "Potato"
+   "name": "Potato",
+   "kind": "Potato"
   },
   {
    "day": "sun",
    "start": "15:00",
    "end": "16:00",
-   "name": "Gold Arena"
+   "name": "Gold Arena",
+   "kind": "Арены"
   },
   {
    "day": "mon",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "tue",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "wed",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "thu",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "fri",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sat",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sun",
    "start": "16:00",
    "end": "18:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "mon",
    "start": "17:00",
    "end": "18:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "tue",
    "start": "17:00",
    "end": "18:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "wed",
    "start": "17:00",
    "end": "18:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "thu",
    "start": "17:00",
    "end": "18:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "17:00",
    "end": "18:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "17:00",
    "end": "18:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sun",
    "start": "17:00",
    "end": "18:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "mon",
    "start": "18:00",
    "end": "19:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "tue",
    "start": "18:00",
    "end": "19:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "wed",
    "start": "18:00",
    "end": "19:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "thu",
    "start": "18:00",
    "end": "19:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "18:00",
    "end": "19:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "18:00",
    "end": "19:00",
-   "name": "2x2"
+   "name": "2x2",
+   "kind": "Арены"
   },
   {
    "day": "sun",
    "start": "18:00",
    "end": "19:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "mon",
    "start": "19:00",
    "end": "20:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "tue",
    "start": "19:00",
    "end": "20:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "wed",
    "start": "19:00",
    "end": "20:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "thu",
    "start": "19:00",
    "end": "20:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "19:00",
    "end": "20:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "19:00",
    "end": "20:00",
-   "name": "Gold Arena"
+   "name": "Gold Arena",
+   "kind": "Арены"
   },
   {
    "day": "sun",
    "start": "19:00",
    "end": "20:00",
-   "name": "Potato"
+   "name": "Potato",
+   "kind": "Potato"
   },
   {
    "day": "mon",
    "start": "20:00",
    "end": "21:00",
-   "name": "РУ / Астерия Нижняя Бездна"
+   "name": "РУ / Астерия Нижняя Бездна",
+   "kind": "РУ / Астерия Нижняя Бездна"
   },
   {
    "day": "tue",
    "start": "20:00",
    "end": "21:00",
-   "name": "МКАД"
+   "name": "МКАД",
+   "kind": "МКАД"
   },
   {
    "day": "wed",
    "start": "20:00",
    "end": "21:00",
-   "name": "Ингисон / Келькмарос"
+   "name": "Ингисон / Келькмарос",
+   "kind": "Ингисон / Келькмарос"
   },
   {
    "day": "thu",
    "start": "20:00",
    "end": "21:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "20:00",
    "end": "21:00",
-   "name": "МКАД"
+   "name": "МКАД",
+   "kind": "МКАД"
   },
   {
    "day": "sat",
    "start": "20:00",
    "end": "21:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sun",
    "start": "20:00",
    "end": "21:00",
-   "name": "Ингисон / Келькмарос"
+   "name": "Ингисон / Келькмарос",
+   "kind": "Ингисон / Келькмарос"
   },
   {
    "day": "mon",
    "start": "21:00",
    "end": "23:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "tue",
    "start": "21:00",
    "end": "23:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "wed",
    "start": "21:00",
    "end": "23:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "thu",
    "start": "21:00",
    "end": "23:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "fri",
    "start": "21:00",
    "end": "23:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sat",
    "start": "21:00",
    "end": "22:00",
-   "name": "Осада Святости"
+   "name": "Осада Святости",
+   "kind": "Осада Святости"
   },
   {
    "day": "sun",
    "start": "21:00",
    "end": "23:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "mon",
    "start": "22:00",
    "end": "24:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "tue",
    "start": "22:00",
    "end": "24:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "wed",
    "start": "22:00",
    "end": "24:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "thu",
    "start": "22:00",
    "end": "24:00",
-   "name": "3x3"
+   "name": "3x3",
+   "kind": "Арены"
   },
   {
    "day": "fri",
    "start": "22:00",
    "end": "24:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   },
   {
    "day": "sat",
    "start": "22:00",
    "end": "24:00",
-   "name": "Дер"
+   "name": "Дер",
+   "kind": "Дер"
   },
   {
    "day": "sun",
    "start": "22:00",
    "end": "24:00",
-   "name": "1x1"
+   "name": "1x1",
+   "kind": "Арены"
   }
  ],
  "resets": [

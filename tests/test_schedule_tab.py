@@ -116,3 +116,27 @@ def test_long_day_scrolls_in_a_low_window():
         assert tab.day_canvas.yview()[0] > top  # the list moved: the last events are reachable
     finally:
         root.destroy()
+
+
+def test_kind_filter_hides_events_and_reports_the_choice():
+    """SN-7: «Виды» — a hidden kind leaves both lists; the choice is handed to the app to save."""
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        saved = []
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK, hidden={"Арена"}, on_filter=saved.append)
+        assert "Арена" not in [r[1] for r in _labels(tab.next_box)]
+        assert tab.kind_vars["Арена"].get() is False
+        tab.kind_vars["Арена"].set(True)
+        tab.kind_vars["Поздно"].set(False)
+        tab.filter_changed()
+        assert saved[-1] == {"Поздно"}
+        names = [r[1] for r in _labels(tab.next_box)]
+        assert "Арена" in names and "Поздно" not in names
+        assert "1 скрыт" in tab.kinds_button.cget("text")
+        tab.destroy()
+    finally:
+        root.destroy()
