@@ -135,3 +135,33 @@ def test_day_blocks_put_overlaps_on_separate_lanes():
 def test_day_blocks_cut_an_event_past_midnight_at_the_day_end():
     from watcher.schedule_view import day_blocks
     assert day_blocks([{"day": "wed", "start": "23:00", "end": "01:00", "name": "Ночь"}])[0][1:] == (1380, 1440, 0)
+
+
+def test_group_of_maps_each_kind_to_its_section():
+    """Sections of the schedule: PVP арена, Арена Хаоса и Доблести (the «Арены» kind), Осады, Дерадиконы."""
+    from watcher.schedule_view import group_of
+    assert group_of({"name": "1x1", "kind": "Арены"}) == "Арены Хаоса и Доблести"
+    assert group_of({"name": "Дер"}) == "Дерадиконы"
+    assert group_of({"name": "Осада Святости"}) == "Осады"
+    assert group_of({"name": "Potato", "kind": "Potato"}) == "PVP арена"
+    assert group_of({"name": "Gold Arena", "kind": "Арены"}) == "Арены Хаоса и Доблести"
+    assert group_of({"name": "МКАД"}) == "Прочее"
+
+
+def test_day_label_says_today_or_the_weekday_and_date():
+    """Date next to the bell: «Сегодня» for today, else «ВТ 13.10» style."""
+    from datetime import datetime
+    from watcher.schedule_view import day_label
+    now = datetime(2026, 10, 13, 20, 0)  # Tuesday
+    assert day_label("tue", now, now) == "Сегодня"
+    assert day_label("mon", now, now) == "ПН 12.10"
+    assert day_label("wed", now, now) == "СР 14.10"
+
+
+def test_server_and_local_clocks_show_both_times():
+    """Two clocks: the server (MSK) and this computer; the text is HH:MM:SS."""
+    from datetime import datetime, timedelta, timezone
+    from watcher.schedule_view import clock_pair
+    utc_now = datetime(2026, 10, 13, 17, 5, 9, tzinfo=timezone.utc)
+    server, local = clock_pair(utc_now, timezone(timedelta(hours=2)))
+    assert server == "20:05:09" and local == "19:05:09"

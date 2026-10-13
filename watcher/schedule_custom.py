@@ -74,6 +74,11 @@ class Custom:
         self.data["added"].append(clean)
         self.save()
 
+    def add_days(self, event: dict, days: list[str]) -> None:
+        """One event on several weekdays («на все дни»): saved as one entry per day."""
+        for day in days:
+            self.add({**event, "day": day})
+
     def remove(self, event: dict) -> None:
         key = event_key(event)
         own = [e for e in self.data["added"] if event_key(e) == key]

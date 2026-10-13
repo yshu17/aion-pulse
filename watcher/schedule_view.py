@@ -93,3 +93,44 @@ def day_blocks(events: list[dict]) -> list[tuple[dict, int, int, int]]:
             lane_ends[lane] = end
         blocks.append((event, start, end, lane))
     return blocks
+
+
+GROUPS = ("PVP арена", "Арены Хаоса и Доблести", "Осады", "Дерадиконы", "Прочее")
+
+
+def group_of(event: dict) -> str:
+    """Section of the schedule for an event: by its kind (or name when it has none)."""
+    kind = kind_of(event)
+    name = event["name"]
+    if kind in ("Арены", "Арена"):
+        return "Арены Хаоса и Доблести"
+    if kind.startswith("PVP") or kind == "Potato":
+        return "PVP арена"
+    if "Осада" in name or "Осада" in kind:
+        return "Осады"
+    if name == "Дер" or "Дерадикон" in name:
+        return "Дерадиконы"
+    return "Прочее"
+
+
+DAY_SHORT = {"mon": "ПН", "tue": "ВТ", "wed": "СР", "thu": "ЧТ", "fri": "ПТ", "sat": "СБ", "sun": "ВС"}
+
+
+def day_label(day: str, now: datetime, today: datetime) -> str:
+    """«Сегодня» for the current weekday, else «ВТ 13.10» — the date of that weekday in this week."""
+    if day == DAY_SHORT_BY_INDEX[today.weekday()] and day == DAY_SHORT_BY_INDEX[now.weekday()]:
+        return "Сегодня"
+    monday = week_start(now)
+    target = monday + timedelta(days=DAYS.index(day))
+    return f"{DAY_SHORT[day]} {target:%d.%m}"
+
+
+DAY_SHORT_BY_INDEX = dict(enumerate(DAYS))
+
+
+def clock_pair(utc_now: datetime, local_tz) -> tuple[str, str]:
+    """Server time (MSK, UTC+3) and this computer's time, both as HH:MM:SS."""
+    from datetime import timezone as _tz
+    msk = utc_now.astimezone(_tz(timedelta(hours=3)))
+    local = utc_now.astimezone(local_tz)
+    return f"{msk:%H:%M:%S}", f"{local:%H:%M:%S}"

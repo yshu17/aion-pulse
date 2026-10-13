@@ -50,3 +50,13 @@ def test_a_broken_file_gives_no_changes(tmp_path):
     assert Custom.load(path).merge(BASE) == BASE
     path.write_text(json.dumps({"added": "x"}), encoding="utf-8")
     assert Custom.load(path).merge(BASE) == BASE
+
+
+def test_one_event_can_be_added_to_several_days(tmp_path):
+    """«На все дни»: a single add with days=[...] makes one event per day, each removable separately."""
+    custom = Custom.load(tmp_path / "c.json")
+    custom.add_days({"start": "19:00", "end": "20:00", "name": "Рейд"}, ["mon", "wed", "fri"])
+    days = sorted(e["day"] for e in custom.merge([]))
+    assert days == ["fri", "mon", "wed"]
+    custom.remove({"day": "wed", "start": "19:00", "end": "20:00", "name": "Рейд", "kind": "Свои"})
+    assert sorted(e["day"] for e in custom.merge([])) == ["fri", "mon"]
