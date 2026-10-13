@@ -1,9 +1,1 @@
-[
-  {
-    "id": "UI-DEF-1",
-    "ticket": "docs/PROJECT_ISSUES.md, «Известные дефекты интерфейса», UI-DEF-1",
-    "scenarios": "*",
-    "issue": "settings-button: clipped",
-    "note": "Кнопка «Настройки» обрезается при минимальном размере окна и при масштабе 150 %. Снят с allowlist, когда исправлена раскладка шапки в watcher/app.py."
-  }
-]
+[]

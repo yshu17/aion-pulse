@@ -912,3 +912,18 @@ def test_overlay_setting_is_disabled_and_does_not_show_a_popup(tmp_path):
         assert json.loads(app.config_path.read_text(encoding="utf-8"))["nag_popup"] is True
     finally:
         root.destroy()
+
+
+def test_settings_button_fits_at_the_minimum_window_width(tmp_path):
+    """ui:41 / UI-DEF-1: at 1000 px the keyword entry shrinks; «Настройки» is never cut off the right edge."""
+    root, app, calls, say = _nag_app(tmp_path)
+    try:
+        root.geometry("1000x600")
+        root.deiconify()
+        root.update()
+        bar = app.control_bar
+        right = app.settings_btn.winfo_x() + app.settings_btn.winfo_width()
+        assert right <= bar.winfo_width() - 8  # inside the bar's right padding
+        assert app.kw_entry.winfo_width() >= 80  # the entry still has room to type
+    finally:
+        root.destroy()

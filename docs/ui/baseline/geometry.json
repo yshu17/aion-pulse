@@ -8,65 +8,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 437,
-        "y": 12,
+        "y": 10,
         "width": 547,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 544,
-        "height": 394
+        "height": 400
       },
       "item-list": {
         "x": 586,
-        "y": 404,
+        "y": 398,
         "width": 384,
-        "height": 168
+        "height": 174
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -87,65 +87,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 544,
-        "height": 394
+        "height": 400
       },
       "item-list": {
         "x": 586,
-        "y": 404,
+        "y": 398,
         "width": 384,
-        "height": 168
+        "height": 174
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -166,59 +166,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "map-canvas": {
         "x": 24,
-        "y": 250,
+        "y": 244,
         "width": 683,
-        "height": 326
+        "height": 332
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -239,59 +239,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 150,
+        "y": 144,
         "width": 968,
-        "height": 434
+        "height": 440
       },
       "start": {
         "x": 16,
-        "y": 82,
-        "width": 175,
+        "y": 76,
+        "width": 131,
         "height": 60,
-        "requested_width": 175
+        "requested_width": 131
       },
       "status-chip": {
-        "x": 203,
-        "y": 82,
+        "x": 159,
+        "y": 76,
         "width": 282,
         "height": 60
       },
       "counters": {
         "x": 435,
-        "y": 12,
+        "y": 10,
         "width": 549,
         "height": 60
       },
       "settings-button": {
-        "x": 1197,
-        "y": 82,
-        "width": 187,
+        "x": 819,
+        "y": 76,
+        "width": 165,
         "height": 60,
-        "requested_width": 187
+        "requested_width": 165
       },
       "map-canvas": {
         "x": 24,
-        "y": 298,
+        "y": 292,
         "width": 685,
-        "height": 278
+        "height": 284
       },
       "tab-0": {
         "x": 16,
-        "y": 150,
+        "y": 144,
         "width": 114,
         "height": 60,
         "requested_width": 96
       },
       "tab-1": {
         "x": 130,
-        "y": 150,
+        "y": 144,
         "width": 136,
         "height": 60,
         "requested_width": 118
       },
       "tab-2": {
         "x": 266,
-        "y": 150,
+        "y": 144,
         "width": 107,
         "height": 60,
         "requested_width": 89
@@ -312,59 +312,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 174,
+        "y": 168,
         "width": 968,
-        "height": 410
+        "height": 416
       },
       "start": {
         "x": 16,
-        "y": 94,
-        "width": 201,
+        "y": 88,
+        "width": 149,
         "height": 72,
-        "requested_width": 201
+        "requested_width": 149
       },
       "status-chip": {
-        "x": 229,
-        "y": 94,
+        "x": 177,
+        "y": 88,
         "width": 326,
         "height": 72
       },
       "counters": {
         "x": 521,
-        "y": 12,
+        "y": 10,
         "width": 463,
         "height": 72
       },
       "settings-button": {
-        "x": 1335,
-        "y": 94,
-        "width": 49,
+        "x": 796,
+        "y": 88,
+        "width": 188,
         "height": 72,
-        "requested_width": 213
+        "requested_width": 188
       },
       "map-canvas": {
         "x": 24,
-        "y": 346,
+        "y": 340,
         "width": 694,
-        "height": 230
+        "height": 236
       },
       "tab-0": {
         "x": 16,
-        "y": 174,
+        "y": 168,
         "width": 131,
         "height": 72,
         "requested_width": 109
       },
       "tab-1": {
         "x": 147,
-        "y": 174,
+        "y": 168,
         "width": 157,
         "height": 72,
         "requested_width": 135
       },
       "tab-2": {
         "x": 304,
-        "y": 174,
+        "y": 168,
         "width": 125,
         "height": 72,
         "requested_width": 103
@@ -385,65 +385,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 544,
-        "height": 394
+        "height": 400
       },
       "item-list": {
         "x": 586,
-        "y": 404,
+        "y": 398,
         "width": 384,
-        "height": 168
+        "height": 174
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -464,65 +464,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 367,
+        "y": 361,
         "width": 968,
-        "height": 217
+        "height": 223
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 429,
+        "y": 423,
         "width": 544,
-        "height": 153
+        "height": 159
       },
       "settings-card": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
         "height": 235
       },
       "tab-0": {
         "x": 16,
-        "y": 367,
+        "y": 361,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 367,
+        "y": 361,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 367,
+        "y": 361,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -543,53 +543,53 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -610,59 +610,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "map-canvas": {
         "x": 24,
-        "y": 250,
+        "y": 244,
         "width": 683,
-        "height": 326
+        "height": 332
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -683,65 +683,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 968,
-        "height": 458
+        "height": 464
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 434,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 974,
-        "y": 70,
-        "width": 10,
+        "x": 845,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 544,
-        "height": 394
+        "height": 400
       },
       "item-list": {
         "x": 586,
-        "y": 404,
+        "y": 398,
         "width": 384,
-        "height": 168
+        "height": 174
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -762,65 +762,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 837,
-        "y": 12,
+        "y": 10,
         "width": 547,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 808,
-        "height": 654
+        "height": 660
       },
       "item-list": {
         "x": 850,
-        "y": 404,
+        "y": 398,
         "width": 520,
-        "height": 428
+        "height": 434
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -841,65 +841,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 808,
-        "height": 654
+        "height": 660
       },
       "item-list": {
         "x": 850,
-        "y": 404,
+        "y": 398,
         "width": 520,
-        "height": 428
+        "height": 434
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -920,59 +920,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "map-canvas": {
         "x": 24,
-        "y": 250,
+        "y": 244,
         "width": 1083,
-        "height": 586
+        "height": 592
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -993,59 +993,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 150,
+        "y": 144,
         "width": 1368,
-        "height": 694
+        "height": 700
       },
       "start": {
         "x": 16,
-        "y": 82,
-        "width": 175,
+        "y": 76,
+        "width": 131,
         "height": 60,
-        "requested_width": 175
+        "requested_width": 131
       },
       "status-chip": {
-        "x": 203,
-        "y": 82,
+        "x": 159,
+        "y": 76,
         "width": 282,
         "height": 60
       },
       "counters": {
         "x": 761,
-        "y": 12,
+        "y": 10,
         "width": 623,
         "height": 60
       },
       "settings-button": {
-        "x": 1197,
-        "y": 82,
-        "width": 187,
+        "x": 1219,
+        "y": 76,
+        "width": 165,
         "height": 60,
-        "requested_width": 187
+        "requested_width": 165
       },
       "map-canvas": {
         "x": 24,
-        "y": 298,
+        "y": 292,
         "width": 1085,
-        "height": 538
+        "height": 544
       },
       "tab-0": {
         "x": 16,
-        "y": 150,
+        "y": 144,
         "width": 114,
         "height": 60,
         "requested_width": 96
       },
       "tab-1": {
         "x": 130,
-        "y": 150,
+        "y": 144,
         "width": 136,
         "height": 60,
         "requested_width": 118
       },
       "tab-2": {
         "x": 266,
-        "y": 150,
+        "y": 144,
         "width": 107,
         "height": 60,
         "requested_width": 89
@@ -1066,59 +1066,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 174,
+        "y": 168,
         "width": 1368,
-        "height": 670
+        "height": 676
       },
       "start": {
         "x": 16,
-        "y": 94,
-        "width": 201,
+        "y": 88,
+        "width": 149,
         "height": 72,
-        "requested_width": 201
+        "requested_width": 149
       },
       "status-chip": {
-        "x": 229,
-        "y": 94,
+        "x": 177,
+        "y": 88,
         "width": 326,
         "height": 72
       },
       "counters": {
         "x": 659,
-        "y": 12,
+        "y": 10,
         "width": 725,
         "height": 72
       },
       "settings-button": {
-        "x": 1335,
-        "y": 94,
-        "width": 49,
+        "x": 1196,
+        "y": 88,
+        "width": 188,
         "height": 72,
-        "requested_width": 213
+        "requested_width": 188
       },
       "map-canvas": {
         "x": 24,
-        "y": 346,
+        "y": 340,
         "width": 1094,
-        "height": 490
+        "height": 496
       },
       "tab-0": {
         "x": 16,
-        "y": 174,
+        "y": 168,
         "width": 131,
         "height": 72,
         "requested_width": 109
       },
       "tab-1": {
         "x": 147,
-        "y": 174,
+        "y": 168,
         "width": 157,
         "height": 72,
         "requested_width": 135
       },
       "tab-2": {
         "x": 304,
-        "y": 174,
+        "y": 168,
         "width": 125,
         "height": 72,
         "requested_width": 103
@@ -1139,65 +1139,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 808,
-        "height": 654
+        "height": 660
       },
       "item-list": {
         "x": 850,
-        "y": 404,
+        "y": 398,
         "width": 520,
-        "height": 428
+        "height": 434
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -1218,71 +1218,71 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 367,
+        "y": 361,
         "width": 1368,
-        "height": 477
+        "height": 483
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 429,
+        "y": 423,
         "width": 808,
-        "height": 413
+        "height": 419
       },
       "item-list": {
         "x": 850,
-        "y": 645,
+        "y": 639,
         "width": 520,
-        "height": 187
+        "height": 193
       },
       "settings-card": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
         "height": 235
       },
       "tab-0": {
         "x": 16,
-        "y": 367,
+        "y": 361,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 367,
+        "y": 361,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 367,
+        "y": 361,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -1303,53 +1303,53 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -1370,59 +1370,59 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "map-canvas": {
         "x": 24,
-        "y": 250,
+        "y": 244,
         "width": 1083,
-        "height": 586
+        "height": 592
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -1443,65 +1443,65 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 1368,
-        "height": 718
+        "height": 724
       },
       "start": {
         "x": 16,
-        "y": 70,
-        "width": 149,
+        "y": 64,
+        "width": 113,
         "height": 48,
-        "requested_width": 149
+        "requested_width": 113
       },
       "status-chip": {
-        "x": 177,
-        "y": 70,
+        "x": 141,
+        "y": 64,
         "width": 238,
         "height": 48
       },
       "counters": {
         "x": 834,
-        "y": 12,
+        "y": 10,
         "width": 550,
         "height": 48
       },
       "settings-button": {
-        "x": 1223,
-        "y": 70,
-        "width": 161,
+        "x": 1245,
+        "y": 64,
+        "width": 139,
         "height": 48,
-        "requested_width": 161
+        "requested_width": 139
       },
       "feed": {
         "x": 18,
-        "y": 188,
+        "y": 182,
         "width": 808,
-        "height": 654
+        "height": 660
       },
       "item-list": {
         "x": 850,
-        "y": 404,
+        "y": 398,
         "width": 520,
-        "height": 428
+        "height": 434
       },
       "tab-0": {
         "x": 16,
-        "y": 126,
+        "y": 120,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 126,
+        "y": 120,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 126,
+        "y": 120,
         "width": 91,
         "height": 48,
         "requested_width": 77

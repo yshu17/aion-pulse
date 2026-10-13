@@ -149,7 +149,7 @@ class App:
         self._window_icons = load_app_icon(root, resource_root() / "data" / "ui")
         theme.dark_title_bar(root)
 
-        header = ttk.Frame(root, padding=(16, 12, 16, 4))
+        header = ttk.Frame(root, padding=(16, 10, 16, 2))  # ui:41: less empty space above and between the rows
         header.pack(fill="x")
         self.header = header
         ttk.Label(header, text="Aion Chat Watcher", style="AppTitle.TLabel").pack(side="left")
@@ -157,10 +157,10 @@ class App:
 
         # UI/UX plan item 3: one always visible control row (Start, status, what to look for) and the settings that
         # change rarely (game folder, alerts, history) in a card that folds away; open on the first run, remembered.
-        control = ttk.Frame(root, padding=(16, 6, 16, 8))
+        control = ttk.Frame(root, padding=(16, 4, 16, 8))
         control.pack(fill="x")
         self.control_bar = control
-        self.start_btn = ttk.Button(control, text="Start", style="Accent.TButton", command=self.toggle)
+        self.start_btn = ttk.Button(control, text="Start", style="Accent.TButton", command=self.toggle, width=7)
         self.start_btn.pack(side="left")
         self.status_short_var = tk.StringVar()
         self.status_label = ttk.Label(control, textvariable=self.status_short_var, style="Idle.Chip.TLabel", compound="left",
@@ -169,23 +169,26 @@ class App:
         self._status_pulse_after: str | None = None
         self._status_pulse_generation = 0
         self.status_label.pack(side="left", padx=(12, 0))
-        ttk.Label(control, text="Ключевые слова", style="Muted.TLabel").pack(side="left", padx=(20, 8))
+        ttk.Label(control, text="Ключевые слова", style="Muted.TLabel").pack(side="left", padx=(16, 8))
         self.kw_var = tk.StringVar(value=", ".join(self.cfg.keywords))
         kw_entry = ttk.Entry(control, textvariable=self.kw_var)
         self.kw_entry = kw_entry
-        kw_entry.pack(side="left", fill="x", expand=True)
         self.search_mode_var = tk.StringVar(
             value=next((k for k, v in SEARCH_MODES.items() if v == self.cfg.search_mode), "Слово ИЛИ предмет")
         )
         search_mode = ttk.Combobox(
-            control, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=18
+            control, textvariable=self.search_mode_var, values=list(SEARCH_MODES), state="readonly", width=17
         )
-        search_mode.pack(side="left", padx=(8, 0))
         search_mode.bind("<<ComboboxSelected>>", lambda _e: self._on_search_mode_selected())
         kw_entry.bind("<Return>", lambda _e: self._apply_keywords())
         kw_entry.bind("<FocusOut>", lambda _e: self._apply_keywords())
-        self.settings_btn = ttk.Button(control, text="Настройки", command=self._toggle_settings, compound="right")
-        self.settings_btn.pack(side="left", padx=(8, 0))
+        self.settings_btn = ttk.Button(control, text="Настройки", command=self._toggle_settings, compound="right", width=0)
+        # ui:41 / UI-DEF-1: the right-hand controls are packed before the entry, so a narrow window shrinks the
+        # keyword entry instead of cutting «Настройки» off the edge
+        self.settings_btn.pack(side="right", padx=(8, 0))
+        search_mode.pack(side="right", padx=(8, 0))
+        kw_entry.configure(width=10)
+        kw_entry.pack(side="left", fill="x", expand=True)
 
         settings = ttk.Frame(root, style="Card.TFrame", padding=(16, 4))
         self.settings_card = settings
