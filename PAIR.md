@@ -109,6 +109,8 @@
 
 ## Журнал (новое — вверху)
 
+- **13.10 Claude · SN-9 готова** — `watcher/schedule_update.py`: отпечаток картинки сетки (имя + ETag + Last-Modified), проверка при запуске и кнопкой, тост «Расписание на сайте обновилось»; `tests/conftest.py` запрещает тестам сеть. Поля `schedule_check`, `schedule_seen` в config.json.
+
 - **13.10 Claude · SN-6 закрыта** — пользователь подтвердил: перекрытие «Дер» 16–18 и 17–18 в сетке верное.
 
 - **13.10 Claude · SN-7 готова** — фильтр «Виды» (`fc7a4f5`), свои события в `schedule_custom.json` (`a8ad3b9`), «на карте» для событий с зоной; поле `kind` и `maps` в `data/schedule.json`; ядра `schedule_view.py`, `schedule_custom.py` без Tk; база снимков обновлена.

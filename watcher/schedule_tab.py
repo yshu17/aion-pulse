@@ -101,7 +101,7 @@ class ScheduleTab(ttk.Frame):
     def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None,
                  belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None,
                  hidden: set[str] | None = None, on_filter=None, custom: Custom | None = None,
-                 on_map=None, side=lambda: "dark") -> None:
+                 on_map=None, side=lambda: "dark", on_check=None) -> None:
         super().__init__(master, padding=(0, 12, 0, 0))
         self.base = events  # data/schedule.json — never changed by the tab
         self.custom = custom or Custom(None)
@@ -126,6 +126,9 @@ class ScheduleTab(ttk.Frame):
         self.kinds_button.pack(side="right")
         ttk.Button(bar, text="Добавить событие", style="Card.TButton", command=self.open_form).pack(
             side="right", padx=(0, 8))
+        if on_check:  # SN-9: compare with the knowledge base article
+            ttk.Button(bar, text="Проверить обновление", style="Ghost.TButton", command=on_check).pack(
+                side="right", padx=(0, 4))
         self._label_kinds()
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)

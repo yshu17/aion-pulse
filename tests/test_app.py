@@ -1257,3 +1257,27 @@ def test_schedule_event_opens_its_zone_on_the_map(tmp_path):
         assert app.map_view.zone is not None and app.map_view.zone.map_id == "220070000"
     finally:
         app._on_close()
+
+
+def test_schedule_update_check_tells_and_remembers(tmp_path):
+    """SN-9: a changed picture on the site gives a toast with «Открыть статью»; «Понятно» remembers that version, so
+    the next start stays quiet; a manual check of an unchanged schedule says it is current."""
+    import json
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        app.toasts.pump = lambda: None
+        known = app.schedule_known
+        app._on_update_result("ok", "schedule-21ru.jpg|x|y", manual=False)
+        note = app.notifications.pop_next()
+        assert note.title == "Расписание на сайте обновилось" and [a.id for a in note.actions] == ["site", "accept"]
+        app._on_toast_action(note, "accept")
+        assert json.loads(app.config_path.read_text(encoding="utf-8"))["schedule_seen"] == "schedule-21ru.jpg|x|y"
+        app._on_update_result("ok", "schedule-21ru.jpg|x|y", manual=False)
+        assert app.notifications.pop_next() is None
+        app._on_update_result("ok", known, manual=True)
+        assert app.notifications.pop_next().title == "Расписание актуально"
+        app._on_update_result("err", "timed out", manual=True)
+        assert "Не удалось" in app.notifications.pop_next().title
+    finally:
+        app._on_close()

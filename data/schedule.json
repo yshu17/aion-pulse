@@ -2,6 +2,9 @@
  "version": 1,
  "source": "https://kb.aionempire.com/article/rasapisanie (картинка schedule-20ru.jpg, «Расписание активностей»)",
  "timezone": "Europe/Moscow (UTC+03:00, без летнего времени); программа переводит в локальное время компьютера",
+ "image": "schedule-20ru.jpg",
+ "image_etag": "\"6a942095-f31b0\"",
+ "image_modified": "Sun, 30 Aug 2026 12:22:45 GMT",
  "events": [
   {
    "day": "mon",

@@ -60,6 +60,8 @@ class Config:
     notify_duration: int = 8  # SN-5: seconds a toast stays (5, 8 or 15)
     notify_stack: int = 3  # SN-5: toasts shown at once (1..3)
     schedule_hidden: list[str] = field(default_factory=list)  # SN-7: kinds of events hidden in the «Расписание» tab
+    schedule_check: bool = True  # SN-9: check the knowledge base for a new schedule picture at start
+    schedule_seen: str = ""  # SN-9: the site version the user already acknowledged («Понятно»)
 
     def chat_log_path(self) -> Path:
         if self.chat_log:

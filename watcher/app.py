@@ -1,6 +1,10 @@
 """tkinter window: keywords, start/stop, list of matched messages."""
 
+import json
+import queue
+import threading
 import time
+import webbrowser
 import tkinter as tk
 from collections import deque
 from datetime import datetime, timedelta
@@ -31,6 +35,7 @@ from watcher.notify_center import Notification, NotificationAction, Notification
 from watcher.notify_settings import apply as apply_notify_settings
 from watcher.notify_tab import NotifyTab
 from watcher.schedule_custom import Custom
+from watcher.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
@@ -396,8 +401,18 @@ class App:
             lead_min=self.cfg.remind_min if self.cfg.remind_min in LEADS.values() else 5, on_lead=self._on_lead,
             hidden=set(self.cfg.schedule_hidden), on_filter=self._on_schedule_filter,
             custom=Custom.load(self.config_path.with_name("schedule_custom.json")),  # SN-7: the user's own events
-            on_map=self._open_zone, side=lambda: self.cfg.map_side,
+            on_map=self._open_zone, side=lambda: self.cfg.map_side, on_check=lambda: self.check_schedule_update(True),
         )
+        # SN-9: the grid of data/schedule.json was typed from this picture version of the knowledge base article
+        try:
+            self.schedule_known = known_fingerprint(
+                json.loads((resource_root() / "data" / "schedule.json").read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            self.schedule_known = ""
+        self._update_results: queue.Queue = queue.Queue()
+        self._update_note: tuple[int, str] | None = None  # the «обновилось» toast and its site version
+        if self.cfg.schedule_check:
+            self.root.after(5000, lambda: self.check_schedule_update(False))
         self._msk_clock = msk_now  # tests replace it
         self._reminded: set[str] = set()  # occurrences already announced this run (no repeats)
         self._reminder_ids: dict[int, datetime] = {}  # notification id -> end of its event: repeats stop there
@@ -545,7 +560,13 @@ class App:
     def _on_toast_action(self, event: Notification, action: str) -> None:
         """SN-4: «Принять» on a chat toast accepts its alerts; «Проверить снова» restarts watching; other actions open
         the source tab."""
-        if action == "accept":
+        if action == "site":
+            webbrowser.open(ARTICLE)
+        elif action == "accept" and self._update_note and (event.repeat_key or event.id) == self._update_note[0]:
+            self.cfg.schedule_seen = self._update_note[1]  # SN-9: this site version is known, no toast at start
+            save_config(self.config_path, self.cfg)
+            self._update_note = None
+        elif action == "accept":
             alerts = self.alert_bridge.toast_accepted(event)
             for alert_id in alerts:
                 self._accept(alert_id)
@@ -572,6 +593,8 @@ class App:
     def _ui_tick(self, now: float | None = None) -> None:
         """Blink pending rows and move overdue ones to «missed»."""
         self._ui_after = None
+        while hasattr(self, "_update_results") and not self._update_results.empty():
+            self._on_update_result(*self._update_results.get_nowait())
         current = time.monotonic() if now is None else now
         expired = self.tracker.expire(current)
         for alert_id in expired:
@@ -1076,6 +1099,32 @@ class App:
         (events.add if on else events.discard)(key)
         self.cfg.remind_events = sorted(events)
         save_config(self.config_path, self.cfg)
+
+    def check_schedule_update(self, manual: bool) -> None:
+        """SN-9: ask the site in a background thread (short timeout); the UI tick shows the answer."""
+        def work() -> None:
+            try:
+                self._update_results.put(("ok", site_fingerprint(http_fetch), manual))
+            except Exception as error:  # network, site layout: report on a manual check only
+                self._update_results.put(("err", str(error), manual))
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_result(self, status: str, value: str, manual: bool) -> None:
+        if status == "err":
+            if manual:
+                self.notifications.notify("schedule", "warning", "Не удалось проверить расписание", value[:120])
+            return
+        verdict = decide(self.schedule_known, value, self.cfg.schedule_seen, manual)
+        if verdict == "same":
+            self.notifications.notify("schedule", "event", "Расписание актуально",
+                                      "Картинка в базе знаний та же, по которой составлена сетка программы.")
+        elif verdict == "changed":
+            note = self.notifications.notify(
+                "schedule", "event", "Расписание на сайте обновилось",
+                "Картинка в базе знаний новая — сверь сетку; data/schedule.json правится вручную.",
+                [NotificationAction("site", "Открыть статью"), NotificationAction("accept", "Понятно")])
+            if note is not None:
+                self._update_note = (note.id, value)
 
     def _open_zone(self, map_id: str) -> None:
         """SN-7 «на карте»: the zone of a schedule event on the «Карта» tab."""
