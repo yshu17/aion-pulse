@@ -261,3 +261,35 @@ def test_warning_banner_keeps_action_visible_at_narrow_width(root):
     assert feed.banner_button.winfo_ismapped()
     assert feed.banner_button.winfo_x() + feed.banner_button.winfo_width() <= feed.banner.winfo_width()
     assert feed.banner_label.winfo_height() > 20  # long warning wraps instead of pushing the action away
+
+
+def test_last_row_stays_fully_visible_after_a_wrapped_message(root):
+    """ui:32 recheck: rows are pushed to the bottom; a message that wraps into several screen lines was counted as
+    one, so the newest row slid below the edge."""
+    from watcher import theme
+    theme.apply_dark_theme(root)
+    root.geometry("520x360")
+    feed = make(root)
+    text = ("ищу группу в Бездну, нужен хил и танк, кто свободен — пишите в личку, "
+            "собираемся у крепости через десять минут, берём всех от 60 уровня")
+    feed.add(msg("Длинноенеразрывноеимяигрока", text), ["группу"])
+    feed.add(msg("Nick", "короткое: группа в данж"), ["группа"])
+    for _ in range(5):
+        root.update()
+    last = feed.text.dlineinfo("end-2c linestart")
+    assert last is not None
+    y, height = last[1], last[3]
+    assert y + height <= feed.text.winfo_height()
+
+
+def test_wrapped_lines_hang_under_the_message_not_under_the_time(root):
+    """ui:32 recheck: continuation lines of a long message start after the time column, so the time stays a clean
+    column of digits."""
+    import tkinter.font as tkfont
+    from watcher import theme
+    theme.apply_dark_theme(root)
+    feed = make(root)
+    time_width = tkfont.Font(root=root, font=theme.font("mono")).measure("00:00:00")
+    for tag in ("row", "hitline"):
+        first = int(str(feed.text.tag_cget(tag, "lmargin1")))
+        assert int(str(feed.text.tag_cget(tag, "lmargin2"))) >= first + time_width

@@ -341,6 +341,13 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
                 app.schedule_tab.day_var.set("Среда")
                 app.schedule_tab.refresh()
                 app.tabs.select(app.schedule_tab)
+            elif scenario == "feed-long":  # evidence only (ui:32), not in SCENARIOS
+                from watcher.parser import ChatMessage
+                text = ("ищу группу в Бездну, нужен хил и танк, кто свободен — пишите в личку, "
+                        "собираемся у крепости через десять минут, берём всех от 60 уровня")
+                app.feed.add(ChatMessage("2026.10.13 18:43:17", "Длинноенеразрывноеимяигрока", text, ""), ["группу"])
+                app.feed.add(ChatMessage("2026.10.13 18:44:02", "Nick", "короткое: группа в данж", ""), ["группа"],
+                             alert_id=1)
             elif scenario == "items-filtered":  # evidence only (ui:29), not in SCENARIOS
                 app.item_list._toggle_grade(app.item_list.grades[0])
             elif scenario == "banner-game-off":  # evidence only (ui:27), not in SCENARIOS

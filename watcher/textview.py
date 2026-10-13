@@ -18,8 +18,11 @@ ITEM_COLOR = theme.ACCENT  # «рыжий», like epic item links in the game
 
 
 def text_height(text: tk.Text, start: str, end: str) -> int:
-    """Pixel height of a text range (Text.count returns a tuple on older Pythons)."""
-    value = text.count(start, end, "ypixels")
+    """Pixel height of a text range (Text.count returns a tuple on older Pythons).
+
+    «update» makes Tk lay out wrapped lines first: without it a message wrapping into several screen lines counted
+    as one, and the bottom-anchored feed pushed its newest row below the edge (ui:32 recheck)."""
+    value = text.count(start, end, "update", "ypixels")
     if isinstance(value, tuple):
         value = value[0]
     return int(value or 0)

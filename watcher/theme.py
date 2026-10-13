@@ -2,6 +2,7 @@
 
 import ctypes
 import tkinter as tk
+import tkinter.font as tkfont
 from pathlib import Path
 from tkinter import font as tkfont
 from tkinter import ttk
@@ -828,8 +829,11 @@ def style_text(widget: tk.Text) -> None:
     widget.tag_configure("hit", background=HIT_BG, foreground=HIT_FG, font=font("body_strong"))
     # Tk's left stripe adds three pixels; reserve the same space at the right
     # so long chat rows keep a balanced inset instead of touching the edge.
-    widget.tag_configure("row", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE, rmargin=HIT_STRIPE)
-    widget.tag_configure("hitline", lmargin1=HIT_STRIPE, lmargin2=HIT_STRIPE,
+    # wrapped lines hang after the time column («00:00:00» and its two spaces), so the time stays a clean column
+    # and a long message reads as one block (ui:32 recheck)
+    hang = HIT_STRIPE + tkfont.Font(root=widget, font=font("mono")).measure("00:00:00  ")
+    widget.tag_configure("row", lmargin1=HIT_STRIPE, lmargin2=hang, rmargin=HIT_STRIPE)
+    widget.tag_configure("hitline", lmargin1=HIT_STRIPE, lmargin2=hang,
                          rmargin=HIT_STRIPE, lmargincolor=ACCENT)
 
 
