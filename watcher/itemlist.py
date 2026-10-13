@@ -314,7 +314,7 @@ class ItemList(ttk.Frame):
         for grade in self.grades:
             chip = tk.Label(
                 bar, text=GRADE_LABELS.get(grade, grade), background=theme.SURFACE,
-                font=self.small, padx=8, pady=3, cursor="hand2", borderwidth=0,
+                font=self.small, padx=7, pady=2, cursor="hand2", borderwidth=0,
                 highlightthickness=2, highlightcolor=theme.ACCENT, takefocus=1,
             )
             chip.pack(side="left", padx=(0, 4))
