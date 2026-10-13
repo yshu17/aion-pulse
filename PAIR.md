@@ -109,6 +109,8 @@
 
 ## Журнал (новое — вверху)
 
+- **13.10 Claude · ЗАМОРОЗКА проекта** — проект заморожен. Тег `freeze-2026-10-13`. Откат к моменту до расписания: коммит `4eae423`, сборка `build\rollback\AionChatWatcher.exe` (59 МБ, 229 тестов). Текущий exe `AionChatWatcher.exe` в папке проекта — с расписанием и всеми правками 13.10. Новых фич, ADR-001 и переносов не делаем, пока пользователь не снимет заморозку.
+
 - **13.10 Claude · ADR-001, шаг 1 (переносимое ядро)** — `tests/test_core_boundary.py`: 8 модулей ядра (notify_center, alert_bridge, notify_settings, tailer, parser, matcher, series, alerts) не импортируют tkinter и экраны; `parser` → `watcher.catalog` пока исключение (шаг 2 уберёт). Код не менялся. Проверка: тест ловит `import tkinter` в matcher. ADR: `C:/Users/Євгеній/Desktop/ClaudeWorkspace/aion_chat_watcher/docs/ADR-001-core-package.md`. 484 теста. Текущий exe не трогаем.
 
 - **13.10 Claude · приёмка icons-2 и сборка** — ветка `codex/icons-2` (`c2a017d`, `e61c681`) принята: 96 PNG проверены (8 значков × 6 цветов × 2 размера, прозрачность), превью на месте, 483 теста проходят. Сборка `AionChatWatcher.exe` в папке проекта, 20:41. Ветку `codex/icons-2` можно закрыть.
