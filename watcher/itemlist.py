@@ -339,7 +339,7 @@ class ItemList(ttk.Frame):
                                      state="readonly", width=18, style="Card.TCombobox")
         self.type_box.pack(side="left", padx=(12, 0), fill="x", expand=True)
         self.type_box.bind("<<ComboboxSelected>>", lambda _e: self._on_filter_widgets())
-        self.reset_btn = ttk.Button(row, image=self.ui_icons.get("x", "muted"), style="Card.TButton",
+        self.reset_btn = ttk.Button(row, image=self.ui_icons.get("x", "muted"), style="CardGhost.TButton",
                                     command=self._reset_filter, padding=(6, 5))
         Hint(self.reset_btn, "Сбросить фильтры")
         self._sync_filter_widgets()

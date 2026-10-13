@@ -237,3 +237,17 @@ def test_long_name_does_not_overlap_level_or_next_row(root):
     assert name[2] + 8 < level[0]
     top = lst.row_top("long")
     assert top is not None and top <= name[1] and name[3] <= top + ROW_H
+
+
+def test_filter_reset_is_a_quiet_ghost_on_the_card(root):
+    """ui:29 recheck: the ✕ that resets the filter weighs less than the search arrows next to it — no ground until
+    hovered, on the card's own colour, and only while a filter is set."""
+    from tkinter import ttk
+    lst, _calls = make(root)
+    assert not lst.reset_btn.winfo_ismapped()
+    lst._toggle_grade(lst.grades[0])
+    root.update()
+    assert lst.reset_btn.winfo_ismapped()
+    style = str(lst.reset_btn.cget("style"))
+    assert style == "CardGhost.TButton"
+    assert ttk.Style(root).lookup(style, "background") == theme.SURFACE

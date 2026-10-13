@@ -404,6 +404,11 @@ def apply_dark_theme(root: tk.Tk, ui_dir: Path | None = None) -> None:
         lightcolor=[("active", SURFACE_2)],
         darkcolor=[("active", SURFACE_2)],
     )
+    # the same ghost on a card (ui:29: the filter reset weighed as much as the search arrows beside it)
+    style.configure("CardGhost.TButton", background=SURFACE, foreground=MUTED, bordercolor=SURFACE,
+                    lightcolor=SURFACE, darkcolor=SURFACE, padding=(6, 5))
+    style.map("CardGhost.TButton", foreground=[("disabled", DISABLED), ("active", TEXT)],
+              background=[("pressed", SURFACE_3), ("active", SURFACE_2)])
     style.layout("Plain.TCheckbutton", style.layout("Item.TCheckbutton"))
     style.configure("Plain.TCheckbutton", background=BG, foreground=TEXT, padding=(0, 0))
     style.map("Plain.TCheckbutton", background=[("active", BG)], foreground=[("selected", ACCENT)])
@@ -485,6 +490,7 @@ def _apply_rounded(style: ttk.Style, root: tk.Tk, ui_dir: Path) -> None:
             ("Button.padding", {"sticky": "nswe", "children": [("Button.label", {"sticky": "nswe"})]})
         ]})],
     )
+    style.layout("CardGhost.TButton", style.layout("Ghost.TButton"))  # ui:29
     style.map("Card.TButton", foreground=[("disabled", DISABLED)])
     for name, base, hover in (("Accent", "accent", "accent_active"), ("Danger", "danger", "danger_active")):
         element(f"{name}.Rounded.border", base,
