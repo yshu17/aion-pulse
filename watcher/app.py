@@ -601,7 +601,12 @@ class App:
         min_width = self.items_panel.winfo_reqwidth()
         self.split.paneconfigure(self.items_panel, minsize=min_width)
         self.split.paneconfigure(self.split.panes()[0], minsize=min_width)
-        self.root.minsize(2 * min_width + 12 + 32, 600)
+        # ui:28: at 125/150 % the control row and the map bar outgrow two list widths, and 600 px of height cut the
+        # bottom of the panels — the minimum follows the widest row and the display scale (within the screen)
+        scale = max(1.0, float(self.root.tk.call("tk", "scaling")) / (96 / 72))
+        width = max(2 * min_width + 12 + 32, self.control_bar.winfo_reqwidth(), self.map_view.bar.winfo_reqwidth() + 48)
+        height = max(600, min(round(600 * scale), self.root.winfo_screenheight() - 80))
+        self.root.minsize(min(width, self.root.winfo_screenwidth()), height)
         if self.cfg.items_width:
             self.set_items_width(self.cfg.items_width)
 

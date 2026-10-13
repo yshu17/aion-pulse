@@ -220,7 +220,7 @@ class MapView(ttk.Frame):
         self._drag: tuple[int, int, float, float] | None = None
         self._by_name = {zone.name: map_id for map_id, zone in sorted(zones.items(), key=lambda kv: kv[1].name)}
 
-        bar = ttk.Frame(self, padding=(0, 0, 0, 8))
+        bar = self.bar = ttk.Frame(self, padding=(0, 0, 0, 8))  # its width sets the window minimum (ui:28)
         bar.pack(fill="x")
         # ui:39: the zoom buttons are packed first, so a narrow window never pushes them off the edge; the zone,
         # search, side, quests and theme controls are one group centred in the rest of the row

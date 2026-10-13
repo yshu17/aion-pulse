@@ -322,8 +322,8 @@ def _worker(run_dir: Path, scenario: str, width: int, height: int) -> int:
             root.update_idletasks()
             root.update()  # run App._init_split, which may raise the normal minimum width
             native_minimum = list(root.minsize())
-            if width == 1000:
-                root.minsize(1000, 600)  # fixture-only: expose clipping at the contractual size
+            # fixture-only: expose clipping at the contractual sizes, below the scaled native minimum (ui:28)
+            root.minsize(min(width, native_minimum[0]), min(height, native_minimum[1]))
             root.geometry(f"{width}x{height}+100+100")
             root.attributes("-topmost", True)
             if scenario in ("tabs-chat",):

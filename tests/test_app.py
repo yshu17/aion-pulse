@@ -111,6 +111,39 @@ def test_every_icon_only_button_has_a_hint(tmp_path):
         app._on_close()
 
 
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize("factor", [1.0, 1.25, 1.5])
+def test_minimum_window_fits_the_control_rows_at_windows_scaling(tmp_path, factor):
+    """ui:28 recheck: at 125/150 % the minimum window kept 600 px of height and the item list's width only, so the
+    keyword field, the search mode, the map theme and the bottom of the side panel were cut."""
+    import json
+    import tkinter as tk
+
+    from watcher.app import App
+
+    log = tmp_path / "fake_chat.log"
+    log.write_bytes(b"")
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps({"chat_log": str(log), "keywords": ["хил"], "game_check": False}), encoding="utf-8")
+    root = tk.Tk()
+    root.withdraw()
+    base = float(root.tk.call("tk", "scaling"))
+    root.tk.call("tk", "scaling", base * factor)
+    try:
+        app = App(root, cfg_path)
+        root.update()
+        width, height = root.minsize()
+        assert width >= app.control_bar.winfo_reqwidth()
+        assert width >= app.map_view.bar.winfo_reqwidth() + 48  # notebook margins around the map bar
+        scale = float(root.tk.call("tk", "scaling")) / (96 / 72)
+        assert height >= min(round(600 * max(1.0, scale)), root.winfo_screenheight() - 80)
+    finally:
+        root.tk.call("tk", "scaling", base)  # Tk keeps the scaling for every later window of the process
+        app._on_close()
+
+
 def test_tick_keeps_polling_when_processing_fails(tmp_path):
     import json
     import tkinter as tk
