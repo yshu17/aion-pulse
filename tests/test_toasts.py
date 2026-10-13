@@ -136,3 +136,16 @@ def test_dpi_layout_keeps_text_buttons_and_frame_inside_window(toast_env, scale)
     assert card.height < 400 * scale
     for box, _ in card.action_boxes:
         assert box[2] < card.width and box[3] < card.height
+
+
+def test_accept_reaches_the_app_and_acknowledges(toast_env):
+    """SN-4: «Принять» on a chat toast must accept the chat alerts — the app has to hear it."""
+    root, center, manager, now, _ = toast_env
+    heard = []
+    manager.on_action = lambda event, action: heard.append((event.id, action))
+    event = center.notify("chat", "chat", "Найдено", "Nick: wts", [NotificationAction("accept", "Принять")], sound=False)
+    manager.pump()
+    root.update()
+    manager.act(manager.cards[0], "accept")
+    assert heard == [(event.id, "accept")]
+    assert not center.is_active(event)

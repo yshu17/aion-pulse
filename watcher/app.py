@@ -26,6 +26,7 @@ from watcher.ui_icons import IconSet
 from watcher.hint import Hint
 from watcher.window_icon import load_app_icon
 from watcher.notifier import Notifier, system_sounds
+from watcher.alert_bridge import AlertBridge
 from watcher.notify_center import Notification, NotificationAction, NotificationCenter
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
@@ -113,6 +114,7 @@ class App:
         if self.cfg.react_sec not in REACT_CHOICES.values():
             self.cfg.react_sec = DEFAULT_REACT_SEC  # e.g. the removed «выкл» (0) from an older config
         self.tracker = AlertTracker(self.cfg.react_sec)
+        self._toasted_alerts: set[int] = set()  # SN-4: alerts already shown in a toast
         self.series = SeriesTracker()
         self.zones = load_zones(data_dir / "maps", MAP_NAMES)
         self.places: deque[Place] = deque(maxlen=MAX_PLACES)  # place links seen in «Поиск группы»
@@ -136,9 +138,10 @@ class App:
         self.alarm.reduce_motion = self.cfg.reduce_motion
         self.tooltip.reduce_motion = self.cfg.reduce_motion
         self.notifications = NotificationCenter(sound=lambda _event: self.notifier.play())
+        self.alert_bridge = AlertBridge(self.notifications)  # SN-4: chat alerts and «game off» as toasts
         self.toasts = ToastManager(
             root, self.notifications, on_open=self._open_notification,
-            on_action=lambda event, _action: self._open_notification(event),
+            on_action=self._on_toast_action,
             reduce_motion=lambda: self.cfg.reduce_motion,
         )
         self.toasts.start()
@@ -521,14 +524,33 @@ class App:
 
     def _accept(self, alert_id: int) -> None:
         """Accept an alert and every other waiting alert of the same series (same player and match)."""
+        done = []
         for accepted in (alert_id, *sorted(self.series.accept(alert_id))):
             if self.tracker.accept(accepted):
                 self.feed.mark(accepted, "accepted")
+                done.append(accepted)
+        self.alert_bridge.alerts_done(done)
+
+    def _on_toast_action(self, event: Notification, action: str) -> None:
+        """SN-4: «Принять» on a chat toast accepts its alerts; «Проверить снова» restarts watching; other actions open
+        the source tab."""
+        if action == "accept":
+            alerts = self.alert_bridge.toast_accepted(event)
+            for alert_id in alerts:
+                self._accept(alert_id)
+            if alerts:
+                self._after_alert_change()
+        elif action == "retry":
+            self.start()
+        else:
+            self._open_notification(event)
 
     def _on_popup_ack(self) -> None:
-        for alert_id in self.tracker.accept_all():
+        accepted = self.tracker.accept_all()
+        for alert_id in accepted:
             self.series.accept(alert_id)
             self.feed.mark(alert_id, "accepted")
+        self.alert_bridge.alerts_done(accepted)
         self._after_alert_change()
 
     def _after_alert_change(self) -> None:
@@ -543,6 +565,7 @@ class App:
         expired = self.tracker.expire(current)
         for alert_id in expired:
             self.feed.mark(alert_id, "missed")
+        self.alert_bridge.alerts_done(expired)
         if expired:
             self._after_alert_change()
         if self.tracker.pending_ids:
@@ -768,6 +791,8 @@ class App:
                                       "Обзор…", self._pick_dir)
             else:
                 self.feed.hide_banner()
+        if not unchanged and hasattr(self, "alert_bridge"):
+            self.alert_bridge.game_running(text != GAME_OFF)
         if style == "Live.Chip.TLabel" and not self.cfg.reduce_motion and not unchanged:
             self._pulse_status(theme.SUCCESS, theme.SUCCESS_PULSE)
 
@@ -896,7 +921,6 @@ class App:
             self.stop()
         self._set_status(GAME_OFF)
         self.feed.add_note(f"— {datetime.now():%H:%M} {GAME_OFF}: запусти игру и нажми Start —")
-        self.notifier.play()
         return True
 
     def _schedule(self, delay_ms: int) -> None:
@@ -1026,10 +1050,14 @@ class App:
                 self.feed.add(msg, hits, alert_id, animate_new=True)
                 self.feed.set_countdown(self.tracker.remaining(now))
                 loud.append((msg, hits))
+        if loud:
+            # SN-4: one toast per batch; standard mode beeps through the center (its per-source sound rule),
+            # nag mode keeps the alarm's looping sound and the toast offers «Принять»
+            waiting = [alert_id for alert_id in self.tracker.pending_ids if alert_id not in self._toasted_alerts]
+            self._toasted_alerts.update(waiting)
+            self.alert_bridge.chat_match(waiting, [(msg.nick, msg.text, hits) for msg, hits in loud], nag=nag)
         if loud and nag:
             self.alarm.trigger(loud, popup=self.cfg.nag_popup and OVERLAY_POPUP_ENABLED)
-        elif loud:
-            self.notifier.play()
         self._update_counters()
 
     def _on_bell(self, key: str, on: bool) -> None:

@@ -269,7 +269,7 @@ class ToastManager:
         try:
             if action == "open":
                 self.on_open(card.event)
-            elif action != "accept" and self.on_action:
+            elif self.on_action:  # «accept» too: a chat toast's «Принять» accepts the chat alerts (SN-4)
                 self.on_action(card.event, action)
         finally:
             self.dismiss(card, acknowledge=True)

@@ -1160,3 +1160,47 @@ def test_header_gradient_never_runs_behind_header_widgets(tmp_path):
         assert backdrop.winfo_width() == root.winfo_width()  # across the window, not only behind the title row
     finally:
         app._on_close()
+
+
+def test_chat_alerts_go_through_toasts_and_their_accept_accepts_the_rows(tmp_path):
+    """SN-4: a nag match is a toast with «Принять»; accepting it accepts the rows and silences; a row accepted in the
+    feed closes its toast."""
+    root, app, calls, say = _nag_app(tmp_path)
+    try:
+        app.toasts.pump = lambda: None  # keep the queue for the test
+        app.start()
+        say("A", "B")
+        note = app.notifications.pop_next()
+        assert note is not None and note.source == "chat" and [a.id for a in note.actions] == ["accept"]
+        app._on_toast_action(note, "accept")
+        assert counters(app) == (2, 2, 0)
+        assert calls[-1] == ("close",)
+        say("C")
+        second = app.notifications.pop_next()
+        app.feed.boxes[app.tracker.pending_ids[0]].invoke()
+        assert not app.notifications.is_active(second)
+        app.stop()
+    finally:
+        root.destroy()
+
+
+def test_game_off_is_a_toast_with_retry(tmp_path):
+    """SN-4: «the game is not running» goes to the center once, with «Проверить снова»; it closes when watching starts."""
+    from watcher.app import GAME_OFF
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        app.toasts.pump = lambda: None
+        started = []
+        app.start = lambda: started.append(True)
+        app._set_status(GAME_OFF)
+        note = app.notifications.pop_next()
+        assert note is not None and note.source == "status" and [a.id for a in note.actions] == ["retry"]
+        app._set_status(GAME_OFF)
+        assert app.notifications.pop_next() is None  # no second toast while it stays off
+        app._on_toast_action(note, "retry")
+        assert started == [True]
+        app._set_status("Слежу за Chat.log")
+        assert not app.notifications.is_active(note)
+    finally:
+        root.destroy()
