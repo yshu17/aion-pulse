@@ -2,6 +2,7 @@ __pycache__/
 .pytest_cache/
 build/
 config.json
+schedule_custom.json
 AionChatWatcher.exe
 AionChatWatcher_SN23.exe
 .superpowers/

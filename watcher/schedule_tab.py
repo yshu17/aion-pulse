@@ -14,6 +14,7 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.reminders import DAYS
+from watcher.schedule_custom import Custom, check
 from watcher.schedule_view import events_for_day, kinds, next_events, visible
 
 MSK = timezone(timedelta(hours=3))
@@ -99,9 +100,11 @@ class ScheduleTab(ttk.Frame):
 
     def __init__(self, master: tk.Misc, events: list[dict], clock=msk_now, tz: timezone | None = None,
                  belled: set[str] | None = None, on_bell=None, lead_min: int = DEFAULT_LEAD, on_lead=None,
-                 hidden: set[str] | None = None, on_filter=None) -> None:
+                 hidden: set[str] | None = None, on_filter=None, custom: Custom | None = None) -> None:
         super().__init__(master, padding=(0, 12, 0, 0))
-        self.events = events
+        self.base = events  # data/schedule.json — never changed by the tab
+        self.custom = custom or Custom(None)  # SN-7: the user's own added / edited / removed events
+        self.events = self.custom.merge(events)
         self.belled = belled if belled is not None else set()  # SN-8: events to remind of (shared with the app)
         self.on_bell = on_bell
         self.on_lead = on_lead
@@ -116,10 +119,11 @@ class ScheduleTab(ttk.Frame):
         self.kinds_menu = tk.Menu(self, tearoff=False, background=theme.SURFACE_2, foreground=theme.TEXT,
                                   activebackground=theme.SURFACE_3, activeforeground=theme.TEXT,
                                   selectcolor=theme.ACCENT)
-        for kind, var in self.kind_vars.items():
-            self.kinds_menu.add_checkbutton(label=kind, variable=var, command=self.filter_changed)
+        self._fill_kinds_menu()
         self.kinds_button = ttk.Button(bar, style="Card.TButton", command=self._show_kinds)
         self.kinds_button.pack(side="right")
+        ttk.Button(bar, text="Добавить событие", style="Card.TButton", command=self.open_form).pack(
+            side="right", padx=(0, 8))
         self._label_kinds()
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
@@ -163,6 +167,23 @@ class ScheduleTab(ttk.Frame):
         self.note.pack(side="left", anchor="w")
         bar.pack(side="bottom", fill="x", pady=(8, 0), before=body)  # reserved first: never pushed off
         self.refresh()
+
+    def _fill_kinds_menu(self) -> None:
+        self.kinds_menu.delete(0, "end")
+        for kind, var in self.kind_vars.items():
+            self.kinds_menu.add_checkbutton(label=kind, variable=var, command=self.filter_changed)
+
+    def _changed_events(self) -> None:
+        """After the user's own change: merge again, offer a new kind in «Виды», redraw."""
+        self.events = self.custom.merge(self.base)
+        for kind in kinds(self.events):
+            self.kind_vars.setdefault(kind, tk.BooleanVar(value=True))
+        self._fill_kinds_menu()
+        self.refresh()
+
+    def open_form(self, event: dict | None = None) -> "EventForm":
+        """SN-7: the add form, or with an event — edit it or remove it."""
+        return EventForm(self, event)
 
     def hidden(self) -> set[str]:
         return {kind for kind, var in self.kind_vars.items() if not var.get()}
@@ -234,8 +255,12 @@ class ScheduleTab(ttk.Frame):
             toggle.bind("<Button-1>", lambda _e, ev=bell: self.toggle_bell(ev))
         tk.Label(row, text=when, width=11, anchor="w", background=theme.SURFACE, foreground=theme.MUTED,
                  font=theme.font("mono")).pack(side="left")
-        tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
-                 font=theme.font("small" if compact else "body")).pack(side="left", fill="x", expand=True)
+        label = tk.Label(row, text=name, anchor="w", background=theme.SURFACE, foreground=color,
+                         font=theme.font("small" if compact else "body"))
+        label.pack(side="left", fill="x", expand=True)
+        if bell is not None:  # a day row: a click on the name edits or removes the event (SN-7)
+            label.configure(cursor="hand2")
+            label.bind("<Button-1>", lambda _e, ev=bell: self.open_form(ev))
         if badge:
             tk.Label(row, text=badge, background=theme.SURFACE, foreground=accent or theme.MUTED,
                      font=theme.font("small")).pack(side="right")
@@ -266,3 +291,62 @@ class ScheduleTab(ttk.Frame):
             self.after_cancel(self._after)
             self._after = None
         super().destroy()
+
+
+class EventForm(tk.Toplevel):
+    """Add or edit one weekly event; times are server time (MSK), like the data file."""
+
+    def __init__(self, tab: ScheduleTab, event: dict | None) -> None:
+        super().__init__(tab, background=theme.SURFACE, padx=16, pady=12)
+        self.tab, self.event = tab, event
+        self.title("Изменить событие" if event else "Новое событие")
+        self.transient(tab.winfo_toplevel())
+        self.resizable(False, False)
+        source = event or {"day": DAYS[tab.clock().weekday()], "start": "", "end": "", "name": ""}
+        self.day_var = tk.StringVar(value=DAY_NAMES.get(source["day"], DAY_NAMES["mon"]))
+        self.start_var = tk.StringVar(value=source["start"])
+        self.end_var = tk.StringVar(value=source["end"])
+        self.name_var = tk.StringVar(value=source["name"])
+        fields = (("День", ttk.Combobox(self, textvariable=self.day_var, values=list(DAY_NAMES.values()),
+                                        state="readonly", width=14, style="Card.TCombobox")),
+                  ("Начало (МСК)", ttk.Entry(self, textvariable=self.start_var, width=8, style="Card.TEntry")),
+                  ("Конец (МСК)", ttk.Entry(self, textvariable=self.end_var, width=8, style="Card.TEntry")),
+                  ("Название", ttk.Entry(self, textvariable=self.name_var, width=28, style="Card.TEntry")))
+        for row, (label, widget) in enumerate(fields):
+            ttk.Label(self, text=label, style="CardMuted.TLabel").grid(row=row, column=0, sticky="w", pady=3)
+            widget.grid(row=row, column=1, sticky="w", padx=(12, 0), pady=3)
+        self.error = ttk.Label(self, style="CardMuted.TLabel", foreground=theme.DANGER)
+        self.error.grid(row=4, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        buttons = ttk.Frame(self, style="Surface.TFrame")
+        buttons.grid(row=5, column=0, columnspan=2, sticky="e", pady=(10, 0))
+        if event:
+            ttk.Button(buttons, text="Удалить", style="Card.TButton", command=self.delete).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Отмена", style="Card.TButton", command=self.destroy).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Сохранить", style="Accent.TButton", command=self.save).pack(side="left")
+        self.bind("<Return>", lambda _e: self.save())
+        self.bind("<Escape>", lambda _e: self.destroy())
+        fields[3][1].focus_set()
+
+    def _value(self) -> dict:
+        day = next((k for k, v in DAY_NAMES.items() if v == self.day_var.get()), "")
+        return {"day": day, "start": self.start_var.get().strip(), "end": self.end_var.get().strip(),
+                "name": self.name_var.get().strip()}
+
+    def save(self) -> None:
+        value = self._value()
+        problem = check(value)
+        if problem:
+            self.error.configure(text=problem)
+            return
+        if self.event:
+            self.tab.custom.edit(self.event, value)
+        else:
+            self.tab.custom.add(value)
+        self.tab._changed_events()
+        self.destroy()
+
+    def delete(self) -> None:
+        if self.event:
+            self.tab.custom.remove(self.event)
+            self.tab._changed_events()
+        self.destroy()

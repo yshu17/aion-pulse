@@ -140,3 +140,41 @@ def test_kind_filter_hides_events_and_reports_the_choice():
         tab.destroy()
     finally:
         root.destroy()
+
+
+def test_own_events_can_be_added_edited_and_removed(tmp_path):
+    """SN-7: «Добавить событие», a click on an event opens the form with «Удалить»; changes go to schedule_custom.json."""
+    import tkinter as tk
+    from watcher.schedule_custom import Custom
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        from watcher import theme
+        theme.apply_dark_theme(root)
+        custom = Custom.load(tmp_path / "schedule_custom.json")
+        tab = st.ScheduleTab(root, EVENTS, clock=lambda: WED_2030, tz=MSK, custom=custom)
+        form = tab.open_form()
+        form.day_var.set("Среда")
+        form.start_var.set("23:30")
+        form.end_var.set("23:45")
+        form.name_var.set("")
+        form.save()
+        assert "название" in form.error.cget("text") and form.winfo_exists()  # nothing saved, the form explains
+        form.name_var.set("Рейд гильдии")
+        form.save()
+        assert "Рейд гильдии" in [r[-1] for r in _labels(tab.day_list)]
+        assert "Свои" in tab.kind_vars
+        mine = next(e for e in tab.events if e["name"] == "Рейд гильдии")
+        form = tab.open_form(mine)
+        assert form.name_var.get() == "Рейд гильдии"
+        form.delete()
+        assert "Рейд гильдии" not in [r[-1] for r in _labels(tab.day_list)]
+        arena = next(e for e in tab.events if e["name"] == "Арена")
+        form = tab.open_form(arena)
+        form.start_var.set("20:15")
+        form.save()
+        assert any(e["name"] == "Арена" and e["start"] == "20:15" for e in tab.events)
+        assert Custom.load(tmp_path / "schedule_custom.json").data["removed"]  # the data event is hidden, not changed
+        tab.destroy()
+    finally:
+        root.destroy()
