@@ -10,26 +10,26 @@
 | `superpowers:brainstorming` | Планирование | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:writing-plans` | Планирование | плагин | у Codex есть свой экземпляр | 10 |
 | `application-software-architect` | Архитектура | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 23 |
-| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 43 |
-| `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 10 |
+| `application-ui-ux-designer` | UI/UX | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 41 |
+| `ui-ux-pro-max` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 9 |
 | `design-theme-guide` | UI/UX | установлен глобально | Codex читает SKILL.md по AGENTS.md | 11 |
-| `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 4 |
-| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 34 |
+| `application-motion-designer` | Motion | установлен в проекте | Codex читает SKILL.md по AGENTS.md | 3 |
+| `superpowers:test-driven-development` | Разработка и тесты | плагин | у Codex есть свой экземпляр | 33 |
 | `superpowers:systematic-debugging` | Отладка | плагин | у Codex есть свой экземпляр | 12 |
 | `superpowers:verification-before-completion` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 4 |
 | `superpowers:requesting-code-review` | Проверка и ревью | плагин | у Codex есть свой экземпляр | 0 |
 | `superpowers:using-git-worktrees` | Совместная работа | плагин | у Codex есть свой экземпляр | 0 |
-| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 26 |
+| `ui-visual-validator` | Проверка и ревью | установлен глобально | Codex читает SKILL.md по AGENTS.md | 25 |
 | `code-review` | Проверка и ревью | встроен в Claude Code | у Codex свой аналог | 1 |
 | `security-review` | Безопасность | встроен в Claude Code | только у Claude | 12 |
 | `run` | Проверка и ревью | встроен в Claude Code | только у Claude | 3 |
 | `anthropic-skills:deep-research` | Исследование | из claude.ai | только у Claude | 13 |
 | `tool:check_project` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 3 |
-| `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 25 |
+| `tool:ui_snapshots` | Инструменты проекта | скрипт проекта | у Codex есть свой экземпляр | 24 |
 
 ## Распределение открытых задач
 
-Claude Code: **24** · Codex: **33** · Совместно: **18** · Пользователь: **0**
+Claude Code: **22** · Codex: **33** · Совместно: **18** · Пользователь: **0**
 
 ## Задачи
 
@@ -71,8 +71,6 @@ Claude Code: **24** · Codex: **33** · Совместно: **18** · Польз
 | `ui:14` | Окно «Найдено в чате!» в 3 раза больше содержимого | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:15` | Фокус клавиатуры не виден (не проверено) | Codex | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
 | `ui:16` | Полосы прокрутки устаревшие | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | готово к передаче Codex |
-| `ui:29` | Список «Что искать»: кнопка ✕ сброса фильтров весит как стрелки поиска | Claude Code | `application-ui-ux-designer` | `ui-ux-pro-max`, `ui-visual-validator`, `tool:ui_snapshots` | передача не нужна |
-| `ui:30` | Поиск по карте: результат «прыгает» | Claude Code | `application-motion-designer` | `application-ui-ux-designer`, `superpowers:test-driven-development` | передача не нужна |
 | `ui:31` | Общий тёмный фон плоский | Codex | `application-ui-ux-designer` | `design-theme-guide`, `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
 | `ui:32` | В некоторых строках заметны неравномерные отступы и текст подходит слишком близко к краю/обрезается | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
 | `ui:33` | Подпись перекрывает изображение или значок под ней | Codex | `application-ui-ux-designer` | `ui-visual-validator`, `tool:ui_snapshots` | ждёт проверки Claude |
