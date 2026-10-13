@@ -33,7 +33,7 @@ from watcher.notifier import Notifier, system_sounds
 from watcher.alert_bridge import AlertBridge
 from watcher.notify_center import Notification, NotificationAction, NotificationCenter
 from watcher.notify_settings import apply as apply_notify_settings
-from watcher.notify_tab import NotifyTab
+from watcher.notify_tab import NotifyPanel
 from watcher.schedule_custom import Custom
 from watcher.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
 from watcher.toasts import ToastManager
@@ -317,6 +317,11 @@ class App:
             settings, text="Отключить анимации", variable=self.reduce_motion_var,
             style="CardPlain.TCheckbutton", command=self._on_reduce_motion,
         ).grid(row=3, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=(4, 2))
+        # SN-5: notification settings — a block of this card (user decision 13.10: not a tab of their own)
+        ttk.Label(settings, text="Уведомления", style="CardMuted.TLabel").grid(row=4, column=0, sticky="nw",
+                                                                           pady=(8, 0))
+        self.notify_panel = NotifyPanel(settings, self.cfg, on_change=self._on_notify_settings)
+        self.notify_panel.grid(row=4, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=(6, 2))
         settings.columnconfigure(1, weight=1)
         self._show_settings(self.cfg.settings_open)
         self.status_var = tk.StringVar()  # full status text; the folder row shows a short form
@@ -420,10 +425,6 @@ class App:
         self.root.after_idle(self._report_missed_reminders)
         self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
         self.tabs.add(self.schedule_tab, text="Расписание")
-        # SN-5: notification settings — sources, sound, place, duration, stack, «не беспокоить»
-        self.notify_tab = NotifyTab(self.tabs, self.cfg, on_change=self._on_notify_settings,
-                                    on_test=self._preview_notification)
-        self.tabs.add(self.notify_tab, text="Уведомления")
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
         root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")

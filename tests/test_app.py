@@ -1063,7 +1063,7 @@ def test_schedule_tab_is_in_the_app(tmp_path):
     root, app, calls, say = _nag_app(tmp_path)
     try:
         names = [app.tabs.tab(t, "text") for t in app.tabs.tabs()]
-        assert names == ["Поиск", "Весь чат", "Карта", "Расписание", "Уведомления"]  # SN-5 adds the fifth
+        assert names == ["Поиск", "Весь чат", "Карта", "Расписание"]  # notifications live in «Настройки» (13.10)
         assert len(app.schedule_tab.events) > 0
         assert app.schedule_tab.next_box.winfo_children()
     finally:
@@ -1228,31 +1228,31 @@ def test_game_off_is_a_toast_with_retry(tmp_path):
         root.destroy()
 
 
-def test_notifications_tab_saves_and_applies_settings(tmp_path):
-    """SN-5: the «Уведомления» tab — sources on/off and sound, place, duration, stack, «не беспокоить», a test button;
-    every change goes to config.json and to the center / toast window at once."""
+def test_notification_settings_live_in_the_settings_card(tmp_path):
+    """SN-5 (moved 13.10, user decision): the notification settings are a block of the «Настройки» card, not a tab —
+    sources on/off and sound, place, duration, stack, «не беспокоить»; every change goes to config.json and applies."""
     import json
 
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
-        tab = app.notify_tab
-        assert app.tabs.tab(tab, "text") == "Уведомления"
-        tab.sound_vars["chat"].set(False)
-        tab.show_vars["schedule"].set(False)
-        tab.dnd_var.set(True)
-        tab.corner_var.set("Справа сверху")
-        tab.duration_var.set("15 с")
-        tab.stack_var.set("1")
-        tab.changed()
+        panel = app.notify_panel
+        widget = panel
+        while widget is not None and widget is not app.settings_card:
+            widget = widget.master
+        assert widget is app.settings_card
+        assert "Уведомления" not in [app.tabs.tab(t, "text") for t in app.tabs.tabs()]
+        panel.sound_vars["chat"].set(False)
+        panel.show_vars["schedule"].set(False)
+        panel.dnd_var.set(True)
+        panel.corner_var.set("Справа сверху")
+        panel.duration_var.set("15 с")
+        panel.stack_var.set("1")
+        panel.changed()
         saved = json.loads(app.config_path.read_text(encoding="utf-8"))
         assert (saved["notify_mute"], saved["notify_off"], saved["notify_dnd"]) == (["chat"], ["schedule"], True)
         assert (saved["notify_corner"], saved["notify_duration"], saved["notify_stack"]) == ("top", 15, 1)
         assert app.notifications.rules["chat"].sound is False and app.notifications.do_not_disturb
         assert (app.toasts.corner, app.toasts.duration, app.toasts.max_visible) == ("top", 15, 1)
-        tab.dnd_var.set(False)
-        tab.changed()
-        tab.test_button.invoke()
-        assert app.notifications.queued >= 1
     finally:
         app._on_close()
 

@@ -464,9 +464,9 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 416,
+        "y": 502,
         "width": 968,
-        "height": 168
+        "height": 82
       },
       "start": {
         "x": 16,
@@ -496,33 +496,33 @@
       },
       "feed": {
         "x": 18,
-        "y": 478,
+        "y": 564,
         "width": 544,
-        "height": 104
+        "height": 18
       },
       "settings-card": {
         "x": 16,
         "y": 120,
         "width": 968,
-        "height": 290
+        "height": 376
       },
       "tab-0": {
         "x": 16,
-        "y": 416,
+        "y": 502,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 416,
+        "y": 502,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 416,
+        "y": 502,
         "width": 91,
         "height": 48,
         "requested_width": 77
@@ -1285,9 +1285,9 @@
     "widgets": {
       "notebook": {
         "x": 16,
-        "y": 416,
+        "y": 502,
         "width": 1368,
-        "height": 428
+        "height": 342
       },
       "start": {
         "x": 16,
@@ -1317,39 +1317,39 @@
       },
       "feed": {
         "x": 18,
-        "y": 478,
+        "y": 564,
         "width": 808,
-        "height": 364
+        "height": 278
       },
       "item-list": {
         "x": 850,
-        "y": 690,
+        "y": 776,
         "width": 520,
-        "height": 142
+        "height": 56
       },
       "settings-card": {
         "x": 16,
         "y": 120,
         "width": 1368,
-        "height": 290
+        "height": 376
       },
       "tab-0": {
         "x": 16,
-        "y": 416,
+        "y": 502,
         "width": 96,
         "height": 48,
         "requested_width": 82
       },
       "tab-1": {
         "x": 112,
-        "y": 416,
+        "y": 502,
         "width": 113,
         "height": 48,
         "requested_width": 99
       },
       "tab-2": {
         "x": 225,
-        "y": 416,
+        "y": 502,
         "width": 91,
         "height": 48,
         "requested_width": 77

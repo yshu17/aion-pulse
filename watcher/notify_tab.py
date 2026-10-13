@@ -1,4 +1,5 @@
-"""SN-5: the «Уведомления» tab — a thin screen over watcher.notify_settings (the rules live there)."""
+"""SN-5: the notification settings — a compact block of the «Настройки» card (moved from its own tab on 13.10, user
+decision); a thin screen over watcher.notify_settings (the rules live there)."""
 
 from __future__ import annotations
 
@@ -8,52 +9,47 @@ from tkinter import ttk
 
 from watcher.notify_settings import CORNERS, DURATIONS, SOURCES, STACK
 
+SHORT = {"chat": "Чат", "status": "Игра не запущена", "schedule": "Расписание"}
 
-class NotifyTab(ttk.Frame):
-    """Writes the ``notify_*`` fields of ``cfg`` and calls ``on_change()`` after every change; ``on_test()`` shows a
-    sample toast."""
 
-    def __init__(self, master: tk.Misc, cfg, on_change: Callable[[], None], on_test: Callable[[], None]) -> None:
-        super().__init__(master, padding=(0, 12, 0, 0))
+class NotifyPanel(ttk.Frame):
+    """Two rows: each source — «show» and «звук»; then place, duration, stack and «Не беспокоить». Writes the
+    ``notify_*`` fields of ``cfg`` and calls ``on_change()`` after every change."""
+
+    def __init__(self, master: tk.Misc, cfg, on_change: Callable[[], None]) -> None:
+        super().__init__(master, style="Surface.TFrame")
         self.cfg, self.on_change = cfg, on_change
-        card = ttk.Frame(self, style="Card.TFrame", padding=(16, 12))
-        card.pack(fill="x", anchor="n")
-        ttk.Label(card, text="Что показывать", style="Title.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 8))
-        ttk.Label(card, text="Звук", style="CardMuted.TLabel").grid(row=0, column=1, sticky="w", padx=(24, 0))
+        sources = ttk.Frame(self, style="Surface.TFrame")
+        sources.pack(fill="x")
         self.show_vars: dict[str, tk.BooleanVar] = {}
         self.sound_vars: dict[str, tk.BooleanVar] = {}
-        for row, (source, label) in enumerate(SOURCES, start=1):
+        for index, (source, label) in enumerate(SOURCES):
             show = tk.BooleanVar(value=source not in cfg.notify_off)
             sound = tk.BooleanVar(value=source not in cfg.notify_mute)
             self.show_vars[source], self.sound_vars[source] = show, sound
-            ttk.Checkbutton(card, text=label, variable=show, style="CardPlain.TCheckbutton",
-                            command=self.changed).grid(row=row, column=0, sticky="w", pady=2)
-            ttk.Checkbutton(card, variable=sound, style="CardPlain.TCheckbutton",
-                            command=self.changed).grid(row=row, column=1, sticky="w", padx=(24, 0))
+            check = ttk.Checkbutton(sources, text=SHORT.get(source, label), variable=show,
+                                    style="CardPlain.TCheckbutton", command=self.changed)
+            check.pack(side="left", padx=(0 if index == 0 else 18, 0))
+            ttk.Checkbutton(sources, text="звук", variable=sound, style="CardPlain.TCheckbutton",
+                            command=self.changed).pack(side="left", padx=(6, 0))
 
-        view = ttk.Frame(self, style="Card.TFrame", padding=(16, 12))
-        view.pack(fill="x", anchor="n", pady=(10, 0))
-        ttk.Label(view, text="Карточки", style="Title.TLabel").grid(row=0, column=0, columnspan=4, sticky="w",
-                                                                  pady=(0, 8))
+        view = ttk.Frame(self, style="Surface.TFrame")
+        view.pack(fill="x", pady=(6, 0))
         self.corner_var = tk.StringVar(value=CORNERS.get(cfg.notify_corner, CORNERS["bottom"]))
         self.duration_var = tk.StringVar(value=f"{cfg.notify_duration if cfg.notify_duration in DURATIONS else 8} с")
         self.stack_var = tk.StringVar(value=str(cfg.notify_stack if cfg.notify_stack in STACK else 3))
-        for column, (label, var, values, width) in enumerate((
-                ("Где", self.corner_var, list(CORNERS.values()), 14),
-                ("Сколько держать", self.duration_var, [f"{d} с" for d in DURATIONS], 6),
-                ("Сразу на экране", self.stack_var, [str(n) for n in STACK], 3))):
-            ttk.Label(view, text=label, style="CardMuted.TLabel").grid(row=1, column=column, sticky="w",
-                                                                      padx=(0 if column == 0 else 20, 0))
+        for index, (label, var, values, width) in enumerate((
+                ("Где", self.corner_var, list(CORNERS.values()), 13),
+                ("Держать", self.duration_var, [f"{d} с" for d in DURATIONS], 5),
+                ("Сразу", self.stack_var, [str(n) for n in STACK], 3))):
+            ttk.Label(view, text=label, style="CardMuted.TLabel").pack(side="left", padx=(0 if index == 0 else 18, 8))
             box = ttk.Combobox(view, textvariable=var, values=values, state="readonly", width=width,
                                style="Card.TCombobox")
-            box.grid(row=2, column=column, sticky="w", padx=(0 if column == 0 else 20, 0), pady=(4, 0))
+            box.pack(side="left")
             box.bind("<<ComboboxSelected>>", lambda _e: self.changed())
         self.dnd_var = tk.BooleanVar(value=cfg.notify_dnd)
-        ttk.Checkbutton(view, text="Не беспокоить — копить, но не показывать", variable=self.dnd_var,
-                        style="CardPlain.TCheckbutton", command=self.changed).grid(
-            row=3, column=0, columnspan=3, sticky="w", pady=(10, 0))
-        self.test_button = ttk.Button(view, text="Проверить", style="Card.TButton", command=on_test)
-        self.test_button.grid(row=3, column=3, sticky="e", padx=(20, 0), pady=(10, 0))
+        ttk.Checkbutton(view, text="Не беспокоить", variable=self.dnd_var, style="CardPlain.TCheckbutton",
+                        command=self.changed).pack(side="left", padx=(18, 0))
 
     def changed(self) -> None:
         cfg = self.cfg
