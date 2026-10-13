@@ -314,10 +314,13 @@ class ItemList(ttk.Frame):
         for grade in self.grades:
             chip = tk.Label(
                 bar, text=GRADE_LABELS.get(grade, grade), background=theme.SURFACE,
-                font=self.small, padx=8, pady=3, cursor="hand2", borderwidth=0, highlightthickness=1,
+                font=self.small, padx=8, pady=3, cursor="hand2", borderwidth=0,
+                highlightthickness=2, highlightcolor=theme.ACCENT, takefocus=1,
             )
             chip.pack(side="left", padx=(0, 4))
             chip.bind("<Button-1>", lambda _e, g=grade: self._toggle_grade(g))
+            chip.bind("<space>", lambda _e, g=grade: self._toggle_grade(g))
+            chip.bind("<Return>", lambda _e, g=grade: self._toggle_grade(g))
             chip.bind("<Enter>", lambda _e, g=grade: self._hover_chip(g))
             chip.bind("<Leave>", lambda _e: self._hover_chip(None))
             self.grade_chips[grade] = chip
@@ -375,7 +378,8 @@ class ItemList(ttk.Frame):
                     theme.TEXT if hover else theme.BORDER_CONTROL)
             else:
                 ground, text, outline = theme.SURFACE, theme.DISABLED, theme.SURFACE_3
-            chip.configure(background=ground, foreground=text, highlightbackground=outline, highlightcolor=outline,
+            chip.configure(background=ground, foreground=text, highlightbackground=outline,
+                           highlightcolor=theme.ACCENT, takefocus=state != "disabled",
                            cursor="hand2" if state != "disabled" else "")
 
     def _hover_chip(self, grade: str | None) -> None:

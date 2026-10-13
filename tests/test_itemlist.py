@@ -190,6 +190,24 @@ def test_grade_chips_toggle(root):
     assert lst.filter.grades == set()  # all on again = no grade filter
 
 
+def test_grade_chip_is_reachable_and_usable_with_keyboard(root):
+    lst, _ = make(root)
+    chip = lst.grade_chips["rare"]
+    assert str(chip.cget("takefocus")) == "1"
+    root.focus_force()
+    chip.focus_set()
+    root.update()
+    assert root.focus_get() is chip
+    assert chip.cget("highlightthickness") == 2
+    assert chip.cget("highlightcolor") == theme.ACCENT
+    chip.event_generate("<space>")
+    root.update()
+    assert "rare" not in lst.filter.grades and lst.filter.grades
+    chip.event_generate("<Return>")
+    root.update()
+    assert lst.filter.grades == set()
+
+
 def test_grade_chip_states_on_off_disabled(root):
     lst, _ = make(root)
     chip = lst.grade_chips["epic"]
