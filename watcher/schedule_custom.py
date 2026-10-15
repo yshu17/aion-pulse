@@ -52,6 +52,7 @@ class Custom:
                     and all(isinstance(e, dict) and not check(e) for e in added)
                     and all(isinstance(k, str) for k in removed)):
                 raise ValueError("unexpected schedule_custom.json")
+            added = list({event_key(e): e for e in added}.values())  # old duplicates collapse, the last one wins
             return cls(path, {"added": added, "removed": removed})
         except (OSError, ValueError, AttributeError):
             return cls(path)
@@ -65,14 +66,16 @@ class Custom:
 
     def merge(self, base: list[dict]) -> list[dict]:
         removed = set(self.data["removed"])
-        kept = [event for event in base if event_key(event) not in removed]
+        added_keys = {event_key(event) for event in self.data["added"]}  # an own copy replaces the server event
+        kept = [event for event in base if event_key(event) not in removed and event_key(event) not in added_keys]
         return kept + [{**event, "kind": OWN_KIND} for event in self.data["added"]]
 
     def add(self, event: dict) -> None:
         clean = {key: event[key] for key in ("day", "start", "end", "name")}
         clean.update({key: event[key] for key in ("group", "color") if event.get(key)})  # optional, set in the form
         clean["name"] = clean["name"].strip()
-        self.data["added"].append(clean)
+        key = event_key(clean)  # the same day, start and name: replace, never duplicate
+        self.data["added"] = [e for e in self.data["added"] if event_key(e) != key] + [clean]
         self.save()
 
     def add_days(self, event: dict, days: list[str]) -> None:
