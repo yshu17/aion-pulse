@@ -101,7 +101,8 @@ GROUPS = ("Дерадиконы", "PVP арена", "Арены Хаоса и Д
 def groups(events: list[dict]) -> list[str]:
     """The groups present in ``events``, in the menu order (Прочее goes last, «Свои» is the own events)."""
     present = {group_of(event) for event in events}
-    return [g for g in GROUPS if g in present]
+    known = [g for g in GROUPS if g in present]
+    return known + sorted(present - set(GROUPS))  # the user's own groups after the known ones
 
 
 def group_hidden(events: list[dict], hidden_groups: set[str]) -> list[dict]:
@@ -110,7 +111,9 @@ def group_hidden(events: list[dict], hidden_groups: set[str]) -> list[dict]:
 
 
 def group_of(event: dict) -> str:
-    """Section of the schedule for an event: by its kind (or name when it has none)."""
+    """Section of the schedule for an event: its own «group» if the user set one, else by kind (or name)."""
+    if event.get("group"):
+        return event["group"]
     kind = kind_of(event)
     name = event["name"]
     if kind in ("Арены", "Арена"):

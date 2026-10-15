@@ -70,6 +70,7 @@ class Custom:
 
     def add(self, event: dict) -> None:
         clean = {key: event[key] for key in ("day", "start", "end", "name")}
+        clean.update({key: event[key] for key in ("group", "color") if event.get(key)})  # optional, set in the form
         clean["name"] = clean["name"].strip()
         self.data["added"].append(clean)
         self.save()

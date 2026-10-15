@@ -33,6 +33,9 @@ NOW_TICK_MS = 5_000  # the «now» line and the progress bars move this often; t
 # day strip: one colour per kind, in the order of the data (existing theme roles, no new colours)
 KIND_COLORS = (theme.ACCENT, theme.PLACE, theme.NICK, theme.SUCCESS, theme.WARNING)  # no red: it reads as an error
 LANE_H, AXIS_H = 18, 14
+COLOR_NAMES = {"Оранжевый": theme.ACCENT, "Бирюзовый": theme.PLACE, "Голубой": theme.NICK, "Зелёный": theme.SUCCESS,
+               "Жёлтый": theme.WARNING}  # the colours a group or an event can get (existing theme roles)
+AUTO_COLOR = "Авто"
 
 
 def load_events(path: Path) -> list[dict]:
@@ -403,10 +406,12 @@ class ScheduleTab(ttk.Frame):
         return under is not None and (under is row or under.master is row)
 
     def _kind_color(self, event: dict) -> str:
-        """The colour of an event's kind, the same as its block on the day strip."""
-        kinds_order = kinds(self.events)
-        kind = kind_of(event)
-        return KIND_COLORS[kinds_order.index(kind) % len(KIND_COLORS)] if kind in kinds_order else theme.MUTED
+        """The event's own colour if the user chose one, else a colour by its group."""
+        if event.get("color") in COLOR_NAMES:
+            return COLOR_NAMES[event["color"]]
+        order = groups(self.events)
+        group = group_of(event)
+        return KIND_COLORS[order.index(group) % len(KIND_COLORS)] if group in order else theme.MUTED
 
     def _hover(self, row: tk.Frame, color: str) -> None:
         """The row under the mouse takes a slightly lighter ground (theme.MOTION fast, 3 frames)."""
@@ -469,7 +474,15 @@ class EventForm(tk.Toplevel):
                             style="Toolbutton").pack(side="left", padx=(0, 3))
         ttk.Button(chips, text="Все дни", style="Card.TButton", padding=(8, 2),
                    command=lambda: [v.set(True) for v in self.day_chips.values()]).pack(side="left", padx=(8, 0))
-        fields = (("Дни", chips),
+        self.group_var = tk.StringVar(value=source.get("group") or group_of(source) if event else "Прочее")
+        self.color_var = tk.StringVar(value=source.get("color") or AUTO_COLOR)
+        group_names = list(dict.fromkeys(list(GROUPS) + groups(tab.events)))  # a typed new name is a new group
+        pick = ttk.Frame(self, style="Surface.TFrame")
+        ttk.Combobox(pick, textvariable=self.group_var, values=group_names, width=24,
+                     style="Card.TCombobox").pack(side="left")
+        ttk.Combobox(pick, textvariable=self.color_var, values=[AUTO_COLOR] + list(COLOR_NAMES), state="readonly",
+                     width=11, style="Card.TCombobox").pack(side="left", padx=(8, 0))
+        fields = (("Дни", chips), ("Группа / цвет", pick),
                   ("Начало (МСК)", ttk.Entry(self, textvariable=self.start_var, width=8, style="Card.TEntry")),
                   ("Конец (МСК)", ttk.Entry(self, textvariable=self.end_var, width=8, style="Card.TEntry")),
                   ("Название", ttk.Entry(self, textvariable=self.name_var, width=28, style="Card.TEntry")))
@@ -491,8 +504,13 @@ class EventForm(tk.Toplevel):
         fields[3][1].focus_set()
 
     def _value(self) -> dict:
-        return {"day": "", "start": self.start_var.get().strip(), "end": self.end_var.get().strip(),
-                "name": self.name_var.get().strip()}
+        value = {"day": "", "start": self.start_var.get().strip(), "end": self.end_var.get().strip(),
+                 "name": self.name_var.get().strip()}
+        if self.group_var.get().strip():
+            value["group"] = self.group_var.get().strip()
+        if self.color_var.get() in COLOR_NAMES:
+            value["color"] = self.color_var.get()
+        return value
 
     def _days(self) -> list[str]:
         return [d for d in DAYS_ORDER if self.day_chips[d].get()]
@@ -570,7 +588,8 @@ class TextEditor(tk.Toplevel):
         base_keys = {event_key(e) for e in self.tab.base}
         # server events present in the text stay (no removal); those missing from it are removed; the rest are own
         custom.data["removed"] = sorted(base_keys - text_keys)
-        custom.data["added"] = [e for e in events if event_key(e) not in base_keys]
+        own = {event_key(e): e for e in custom.data["added"]}  # keep the group and colour of own events
+        custom.data["added"] = [{**own.get(event_key(e), {}), **e} for e in events if event_key(e) not in base_keys]
         custom.save()
         self.tab._changed_events()
         self.destroy()
