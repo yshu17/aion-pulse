@@ -467,6 +467,8 @@ class EventForm(tk.Toplevel):
         for d in DAYS_ORDER:  # the chips: one event on any days («на все дни»)
             ttk.Checkbutton(chips, text=DAY_NAMES[d][:2].upper(), variable=self.day_chips[d],
                             style="Toolbutton").pack(side="left", padx=(0, 3))
+        ttk.Button(chips, text="Все дни", style="Card.TButton", padding=(8, 2),
+                   command=lambda: [v.set(True) for v in self.day_chips.values()]).pack(side="left", padx=(8, 0))
         fields = (("Дни", chips),
                   ("Начало (МСК)", ttk.Entry(self, textvariable=self.start_var, width=8, style="Card.TEntry")),
                   ("Конец (МСК)", ttk.Entry(self, textvariable=self.end_var, width=8, style="Card.TEntry")),
@@ -536,6 +538,18 @@ class TextEditor(tk.Toplevel):
         self.text = tk.Text(self, width=60, height=22, background=theme.SURFACE_2, foreground=theme.TEXT,
                             insertbackground=theme.TEXT, relief="flat", font=scaled_font("body"), wrap="none")
         self.text.pack(fill="both", expand=True, pady=(6, 6))
+        # copy / paste / cut / select all also on the Russian keyboard layout (Tk binds only the Latin letters)
+        keys = {67: "<<Copy>>", 86: "<<Paste>>", 88: "<<Cut>>"}
+
+        def on_ctrl(event: tk.Event) -> str | None:
+            if event.keycode in keys:
+                self.text.event_generate(keys[event.keycode])
+                return "break"
+            if event.keycode == 65:
+                self.text.tag_add("sel", "1.0", "end-1c")
+                return "break"
+            return None
+        self.text.bind("<Control-Key>", on_ctrl)
         self.text.insert("1.0", to_text(tab.events))
         self.error = ttk.Label(self, style="CardMuted.TLabel", foreground=theme.DANGER)
         self.error.pack(anchor="w")
