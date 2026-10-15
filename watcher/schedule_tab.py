@@ -153,6 +153,7 @@ class ScheduleTab(ttk.Frame):
         self.tz = tz
         self._after: str | None = None
         self._now_after: str | None = None
+        self.collapsed: set[str] = set()  # day-list groups folded by a click on their header
         self._progress: list[tuple[tk.Canvas, datetime, datetime]] = []  # running events: bar, start, end (MSK)
         # SN-7: «Виды» — hide kinds of events from both lists (reminders of belled events still come)
         self.on_filter = on_filter
@@ -297,13 +298,23 @@ class ScheduleTab(ttk.Frame):
         if not day_events:
             self._row(self.day_list, "", "В этот день событий нет", "")
         monday = now.date() - timedelta(days=now.weekday())
+        order = groups(self.events)
+        day_events = sorted(day_events, key=lambda e: (order.index(group_of(e)) if group_of(e) in order else 99,
+                                                      e["start"]))  # all events of a group together, then by time
+        counts = {g: sum(1 for e in day_events if group_of(e) == g) for g in order}
         seen_groups: set[str] = set()
         for event in day_events:
             group = group_of(event)
-            if group not in seen_groups:  # a section header before the first event of each group
+            if group not in seen_groups:  # a header before the first event of each group; a click folds the group
                 seen_groups.add(group)
-                tk.Label(self.day_list, text=group, anchor="w", background=theme.SURFACE, foreground=theme.ACCENT,
-                         font=scaled_font("caption_strong")).pack(fill="x", pady=(6, 0))
+                folded = group in self.collapsed
+                header = tk.Label(self.day_list, text=f"{'▸' if folded else '▾'} {group} ({counts[group]})", anchor="w",
+                                  background=theme.SURFACE, foreground=theme.ACCENT, cursor="hand2",
+                                  font=scaled_font("caption_strong"))
+                header.pack(fill="x", pady=(6, 0))
+                header.bind("<Button-1>", lambda _e, g=group: self._toggle_group(g))
+            if group in self.collapsed:
+                continue
             hour, minute = map(int, event["start"].split(":"))
             start = datetime.combine(monday + timedelta(days=DAYS.index(day)), datetime.min.time()).replace(
                 hour=hour, minute=minute)
@@ -339,6 +350,10 @@ class ScheduleTab(ttk.Frame):
             if bar.winfo_exists():
                 share = min(1.0, max(0.0, (now - start) / (end - start)))
                 bar.coords("fill", 0, 0, bar.winfo_width() * share, 3)
+
+    def _toggle_group(self, group: str) -> None:
+        self.collapsed.symmetric_difference_update({group})
+        self.refresh()
 
     def _trim_next(self) -> None:
         """Only whole rows in «Ближайшие»: a row that does not fit the card's height is hidden, not cut in half."""

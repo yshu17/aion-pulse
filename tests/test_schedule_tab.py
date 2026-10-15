@@ -321,7 +321,10 @@ def test_next_list_shows_the_date_between_name_and_bell_and_groups_the_days():
                  if w.winfo_class() == "Label"]
         assert "Сегодня" not in texts  # today's rows carry no date; the day is named in the header
         headers = [w.cget("text") for w in tab.day_list.winfo_children() if w.winfo_class() == "Label"]
-        assert headers == ["Арены Хаоса и Доблести", "Прочее"]  # Wednesday: «Арена» and «Поздно» (not a known group)
+        assert headers == ["▾ Арены Хаоса и Доблести (1)", "▾ Прочее (1)"]  # Wednesday: «Арена» and «Поздно»
+        tab._toggle_group("Прочее")  # a click on a header folds its group
+        assert "Поздно" not in [n for r in _labels(tab.day_list) for n in r]
+        assert "▸ Прочее (1)" in [w.cget("text") for w in tab.day_list.winfo_children() if w.winfo_class() == "Label"]
         tab.destroy()
     finally:
         root.destroy()
