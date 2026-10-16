@@ -36,6 +36,8 @@ from watcher.notify_settings import apply as apply_notify_settings
 from watcher.notify_tab import NotifyPanel
 from watcher.schedule_custom import Custom
 from watcher.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
+from watcher.updater import API as RELEASE_API, latest_release, newer
+from watcher.version import APP_NAME, VERSION
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
@@ -161,7 +163,7 @@ class App:
 
     def _build_ui(self) -> None:
         root = self.root
-        root.title("Aion Chat Watcher")
+        root.title(f"{APP_NAME} {VERSION}")
         root.geometry("1400x860")
         root.minsize(1000, 600)
         theme.apply_dark_theme(root, resource_root() / "data" / "ui")
@@ -419,6 +421,10 @@ class App:
         self._update_note: tuple[int, str] | None = None  # the «обновилось» toast and its site version
         if self.cfg.schedule_check:
             self.root.after(5000, lambda: self.check_schedule_update(False))
+        self._release_results: queue.Queue = queue.Queue()
+        self._release_note: tuple[int, str, str] | None = None  # toast id, tag, release page
+        if self.cfg.update_check:
+            self.root.after(8000, self.check_release)
         self._msk_clock = msk_now  # tests replace it
         self._reminded: set[str] = set()  # occurrences already announced this run (no repeats)
         self._reminder_ids: dict[int, datetime] = {}  # notification id -> end of its event: repeats stop there
@@ -564,6 +570,12 @@ class App:
         the source tab."""
         if action == "site":
             webbrowser.open(ARTICLE)
+        elif action == "release" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
+            webbrowser.open(self._release_note[2])
+        elif action == "accept" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
+            self.cfg.update_seen = self._release_note[1]  # this release is known: no toast at the next start
+            save_config(self.config_path, self.cfg)
+            self._release_note = None
         elif action == "accept" and self._update_note and (event.repeat_key or event.id) == self._update_note[0]:
             self.cfg.schedule_seen = self._update_note[1]  # SN-9: this site version is known, no toast at start
             save_config(self.config_path, self.cfg)
@@ -597,6 +609,8 @@ class App:
         self._ui_after = None
         while hasattr(self, "_update_results") and not self._update_results.empty():
             self._on_update_result(*self._update_results.get_nowait())
+        while hasattr(self, "_release_results") and not self._release_results.empty():
+            self._on_release_result(self._release_results.get_nowait())
         current = time.monotonic() if now is None else now
         expired = self.tracker.expire(current)
         for alert_id in expired:
@@ -1147,6 +1161,26 @@ class App:
             except Exception as error:  # network, site layout: report on a manual check only
                 self._update_results.put(("err", str(error), manual))
         threading.Thread(target=work, daemon=True).start()
+
+    def check_release(self) -> None:
+        """Ask GitHub for the latest release in the background; a private repo or no network gives no answer."""
+        def work() -> None:
+            try:
+                body, _headers = http_fetch(RELEASE_API, "GET")
+                self._release_results.put(latest_release(body))
+            except Exception:
+                self._release_results.put(None)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_release_result(self, found: tuple[str, str] | None) -> None:
+        if found is None or not newer(found[0], VERSION) or found[0] == self.cfg.update_seen:
+            return
+        note = self.notifications.notify(
+            "app", "event", f"Доступна новая версия {found[0]}",
+            "Открой страницу релиза и скачай новый Pulse.exe. Программа сама ничего не скачивает.",
+            [NotificationAction("release", "Открыть релиз"), NotificationAction("accept", "Понятно")])
+        if note is not None:
+            self._release_note = (note.id, found[0], found[1])
 
     def _on_update_result(self, status: str, value: str, manual: bool) -> None:
         if status == "err":

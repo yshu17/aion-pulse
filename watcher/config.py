@@ -62,6 +62,8 @@ class Config:
     schedule_hidden: list[str] = field(default_factory=list)  # SN-7: kinds of events hidden in the «Расписание» tab
     schedule_check: bool = True  # SN-9: check the knowledge base for a new schedule picture at start
     schedule_seen: str = ""  # SN-9: the site version the user already acknowledged («Понятно»)
+    update_check: bool = True  # check GitHub for a newer release at start
+    update_seen: str = ""  # the release tag the user already acknowledged («Понятно»)
 
     def chat_log_path(self) -> Path:
         if self.chat_log:
