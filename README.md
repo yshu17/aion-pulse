@@ -1,5 +1,14 @@
 # Pulse
 
+<p align="center">
+  <a href="https://github.com/yshu17/aion-pulse/releases/latest">
+    <img src="https://img.shields.io/badge/%D1%81%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Pulse.exe-ff8c1a?style=for-the-badge&logo=github&logoColor=white" alt="Скачать Pulse.exe">
+  </a>
+</p>
+<p align="center">
+  <a href="https://github.com/yshu17/aion-pulse/releases/tag/v1.0.0"><b>Релиз v1.0.0</b></a>
+</p>
+
 Следит за чатом Aion в реальном времени и подаёт звуковой сигнал, когда в канале
 «Поиск группы» появляется сообщение с одним из ключевых слов или ссылка на отмеченный предмет.
 
