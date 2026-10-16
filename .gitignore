@@ -23,3 +23,13 @@ AionChatWatcher*.exe
 *.key
 Thumbs.db
 desktop.ini
+
+# локальные рабочие файлы, в репозиторий не входят
+docs/
+.claude/
+PAIR.md
+CLAUDE.md
+AGENTS.md
+UI_UX_IMPROVEMENT_PLAN.md
+REPORT_SN23.md
+DOWNLOADS.md
