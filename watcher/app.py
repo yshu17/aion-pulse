@@ -173,7 +173,7 @@ class App:
         header = ttk.Frame(root, padding=(16, 10, 16, 2))  # ui:41: less empty space above and between the rows
         header.pack(fill="x")
         self.header = header
-        ttk.Label(header, text="Aion Chat Watcher", style="AppTitle.TLabel").pack(side="left")
+        ttk.Label(header, text=APP_NAME, style="AppTitle.TLabel").pack(side="left")
         ttk.Label(header, text="  ·  Поиск группы", style="Muted.TLabel").pack(side="left", pady=(6, 0))
 
         # UI/UX plan item 3: one always visible control row (Start, status, what to look for) and the settings that

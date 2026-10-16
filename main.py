@@ -1,4 +1,4 @@
-"""Aion Chat Watcher: beep when «Поиск группы» chat contains a keyword."""
+"""Pulse: beep when «Поиск группы» chat contains a keyword."""
 
 import ctypes
 import tkinter as tk

@@ -52,7 +52,7 @@ def http_fetch(url: str, method: str, timeout: float = 10) -> tuple[str, dict]:
     """The real fetch: HTTPS only, a short timeout, nothing sent but the request itself; Russian page version."""
     if not url.startswith("https://"):
         raise ValueError("only https")
-    request = urllib.request.Request(url, method=method, headers={"User-Agent": "AionChatWatcher", "Accept-Language": "ru"})
+    request = urllib.request.Request(url, method=method, headers={"User-Agent": "Pulse", "Accept-Language": "ru"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         body = response.read(2_000_000).decode("utf-8", "replace") if method == "GET" else ""
         return body, dict(response.headers)
