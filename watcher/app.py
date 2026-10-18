@@ -12,6 +12,7 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from watcher import theme
+from watcher.mapview import RESIZE_SETTLE_MS
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
@@ -330,6 +331,11 @@ class App:
         self.status_var = tk.StringVar()  # full status text; the folder row shows a short form
 
         self.tabs = ttk.Notebook(root)
+        # While the window is dragged the tab pages are taken out of the layout (the page keeps its state); they come
+        # back once the size settles. Tk re-lays out every page on each size step: 150-300 ms per step, 2-3 fps.
+        self._frozen_tabs: dict | None = None
+        self._thaw_after: str | None = None
+        root.bind("<Configure>", self._on_root_resize, add="+")
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 16))
         self.search_tab = ttk.Frame(self.tabs, padding=(0, 12, 0, 0))
         self.tabs.add(self.search_tab, text="Поиск")
@@ -567,6 +573,32 @@ class App:
             self.map_view.activate()
         if self.bestiary_view and self.tabs.select() == str(self.bestiary_view):
             self.bestiary_view.activate()
+
+    def _on_root_resize(self, event: tk.Event) -> None:
+        if event.widget is not self.root:
+            return
+        if self._frozen_tabs is None:
+            self._frozen_tabs = self.tabs.pack_info()
+            self.tabs.pack_forget()
+            self._veil = tk.Frame(self.root, background=theme.BG)
+            self._veil.pack(**self._frozen_tabs)  # same place as the pages, so nothing else moves
+        if self._thaw_after is not None:
+            self.root.after_cancel(self._thaw_after)
+        self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
+
+    def settle_layout(self) -> None:
+        """Bring the tab pages back at once (tests and anything that reads the layout right after a resize)."""
+        if self._thaw_after is not None:
+            self.root.after_cancel(self._thaw_after)
+        self._thaw_tabs()
+
+    def _thaw_tabs(self) -> None:
+        self._thaw_after = None
+        if self._frozen_tabs is None:
+            return
+        self._veil.destroy()
+        self.tabs.pack(**self._frozen_tabs)
+        self._frozen_tabs = None
 
     # --- alerts --------------------------------------------------------------------
     def _on_feed_accept(self, alert_id: int) -> None:

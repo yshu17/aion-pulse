@@ -34,6 +34,7 @@ from watcher.poi import Poi, PoiStore, cluster
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
+RESIZE_SETTLE_MS = 120  # redraw this long after the last window size change
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
 # map themes: the game map (newmap) or the client's radar map («Рельеф»), the choice is kept in config.json
 THEMES = {"game": "Игра", "relief": "Рельеф"}
@@ -227,6 +228,8 @@ class MapView(ttk.Frame):
         self._image = None  # PIL image of the zone
         self._photo = None
         self._render_after: str | None = None
+        self._resize_after: str | None = None
+        self._mob_panel_width_due = False
         self._blink_target: str | None = None  # "poi" (the selected point) or "pin" (the chat's place)
         self._blink_left = 0
         self._blink_dim = False
@@ -323,7 +326,7 @@ class MapView(ttk.Frame):
         self.mob_canvas.configure(yscrollcommand=mob_scroll.set)
         self.mob_content = tk.Frame(self.mob_canvas, bg=theme.SURFACE)
         self._mob_window = self.mob_canvas.create_window((0, 0), window=self.mob_content, anchor="nw")
-        self.mob_canvas.bind("<Configure>", lambda e: self.mob_canvas.itemconfigure(self._mob_window, width=e.width))
+        self.mob_canvas.bind("<Configure>", self._fit_mob_content)
         self.mob_content.bind("<Configure>", lambda _e: self.mob_canvas.configure(scrollregion=self.mob_canvas.bbox("all")))
         self.mob_canvas.bind("<MouseWheel>", lambda e: self.mob_canvas.yview_scroll(-int(e.delta / 120), "units"))
         self.mob_selection = tk.Frame(self.mob_panel, bg=theme.SURFACE_2, padx=12, pady=10)
@@ -879,9 +882,20 @@ class MapView(ttk.Frame):
             else:
                 self._search(0)
 
+    def _fit_mob_content(self, event: tk.Event) -> None:
+        """Set the content width only when it changes: every real change re-lays out all result cards."""
+        if int(self.mob_canvas.itemcget(self._mob_window, "width") or 0) != event.width:
+            self.mob_canvas.itemconfigure(self._mob_window, width=event.width)
+
     def _size_mob_panel(self, event: tk.Event) -> None:
-        if self.mob_panel.winfo_manager():
-            self.mob_panel.configure(width=max(360, round(event.width * 0.40)))
+        """Panel width follows the window only when it settles: each step re-wraps every result card (70 ms)."""
+        self._mob_panel_width_due = True
+        self._schedule_resize()
+
+    def _apply_mob_panel_width(self) -> None:
+        if self._mob_panel_width_due and self.mob_panel.winfo_manager():
+            self.mob_panel.configure(width=max(360, round(self.body.winfo_width() * 0.40)))
+        self._mob_panel_width_due = False
 
     def _run_mob_search(self, preserve_map: bool = False) -> None:
         self._mob_search_after = None
@@ -1275,10 +1289,25 @@ class MapView(ttk.Frame):
 
     # --- events --------------------------------------------------------------------------
     def _on_resize(self) -> None:
+        """Window size changes come in dozens per second while dragging a window edge. The picture is redrawn
+        once, after the size settles, instead of on every step (that was 2-3 fps)."""
         if self.zone is not None:
             self.zoom = max(self.zoom, self._fit_zoom())
             self._clamp()
-            self._schedule_render()
+        self._schedule_resize()
+
+    def _schedule_resize(self) -> None:
+        if self._resize_after is not None:
+            self.after_cancel(self._resize_after)
+        self._resize_after = self.after(RESIZE_SETTLE_MS, self._resize_settled)
+
+    def _resize_settled(self) -> None:
+        self._resize_after = None
+        self._apply_mob_panel_width()
+        if self.zone is not None:
+            self.zoom = max(self.zoom, self._fit_zoom())
+            self._clamp()
+            self.render()
 
     def _on_wheel(self, event: tk.Event) -> None:
         self.zoom_at(ZOOM_STEP if event.delta > 0 else 1 / ZOOM_STEP, event.x, event.y)

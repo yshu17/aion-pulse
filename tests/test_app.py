@@ -729,6 +729,8 @@ def test_fresh_start_keeps_filters_visible_at_600px(tmp_path):
         root.geometry("1000x600")
         root.deiconify()
         root.update()
+        app.settle_layout()  # the tab pages return once a resize settles; tests read the layout now
+        root.update()
         assert not app.cfg.settings_open
         assert not app.settings_card.winfo_manager()
         assert app.settings_btn.winfo_ismapped()
@@ -958,6 +960,8 @@ def test_divider_resizes_item_list_with_minimum_widths(tmp_path):
     try:
         root.deiconify()
         root.geometry("1800x900")
+        root.update()
+        app.settle_layout()  # the tab pages return once a resize settles; tests read the layout now
         root.update()
         app._init_split()
         assert abs(app.items_panel.winfo_width() - 800) <= 2  # saved width restored
