@@ -20,11 +20,18 @@ from watcher.bestiary_widgets import ProfileHeader, ScrollArea, bind_wheel_tree,
 
 PAGE_SIZE = 30
 CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant", "Служебные": "service"}
+FIRST_CARDS = 8  # result cards drawn at once; the rest of the page follows in batches of this size
 RARITY = {
     "junk": "Простой", "common": "Обычный", "rare": "Редкий",
     "legend": "Легендарный", "unique": "Уникальный", "epic": "Эпический",
     "mythic": "Мифический",
 }
+
+
+def _set_wrap(label: tk.Label, width: int) -> None:
+    """Change the wrap width only when it differs: re-setting it made Tk lay the whole list out again."""
+    if int(label.cget("wraplength")) != width:
+        label.configure(wraplength=width)
 
 
 class BestiaryView(ttk.Frame):
@@ -402,7 +409,7 @@ class BestiaryView(ttk.Frame):
         card.info.pack(side="left", fill="x", expand=True)
         card.name = tk.Label(card.info, fg=theme.TEXT, font=theme.font("control_strong"), anchor="w", justify="left")
         card.name.pack(fill="x")
-        card.info.bind("<Configure>", lambda e, label=card.name: label.configure(wraplength=max(100, e.width)))
+        card.info.bind("<Configure>", lambda e, label=card.name: _set_wrap(label, max(100, e.width)))
         card.summary = tk.Label(card.info, fg=theme.MUTED, font=theme.font("small"), anchor="w")
         card.summary.pack(fill="x", pady=(2, 2))
         card.hit = tk.Label(card.info, fg=theme.ACCENT, font=theme.font("small"), anchor="w")
@@ -420,10 +427,21 @@ class BestiaryView(ttk.Frame):
         return card
 
     def _render_results(self, rows: list[dict]) -> None:
+        """The first cards at once, the rest in small batches, so typing and clicking never wait for a full page."""
+        self._render_generation = getattr(self, "_render_generation", 0) + 1
         self._result_rows.clear()
-        while len(self._cards) < len(rows):
+        for card in self._cards[FIRST_CARDS:]:
+            card.npc_id = ""
+            card.outer.pack_forget()
+        self._fill_cards(rows, 0, self._render_generation)
+
+    def _fill_cards(self, rows: list[dict], start: int, generation: int) -> None:
+        if generation != self._render_generation or not self.winfo_exists():
+            return
+        end = min(len(rows), start + FIRST_CARDS)
+        while len(self._cards) < end:
             self._cards.append(self._make_card())
-        for card, row in zip(self._cards, rows):
+        for card, row in zip(self._cards[start:end], rows[start:end]):
             npc_id = card.npc_id = str(row["id"])
             asset = "ui/monster.png" if row["kind"] == "Монстр" else row["icon_asset"]
             card.picture.configure(image=self._load_icon(asset, 48) or "")
@@ -446,9 +464,12 @@ class BestiaryView(ttk.Frame):
             if not card.outer.winfo_manager():
                 card.outer.pack(fill="x", pady=(0, 5))
             self._result_rows[npc_id] = card.outer
-        for card in self._cards[len(rows):]:
-            card.npc_id = ""
-            card.outer.pack_forget()
+        if end < len(rows):
+            self.after(15, lambda: self._fill_cards(rows, end, generation))
+        elif start == 0:
+            for card in self._cards[end:]:
+                card.npc_id = ""
+                card.outer.pack_forget()
 
     def _select_npc(self, npc_id: str) -> None:
         if not self.store:
