@@ -13,7 +13,7 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.bestiary_store import BestiaryStore
-from watcher.bestiary_labels import stat_text
+from watcher.bestiary_labels import plural, stat_text
 from watcher.bestiary_widgets import ProfileHeader, ScrollArea, bind_wheel_tree, wrap_badges
 
 
@@ -83,7 +83,7 @@ class BestiaryView(ttk.Frame):
         self.split.pack(fill="both", expand=True)
         left = ttk.Frame(self.split, style="Card.TFrame", padding=12)
         right = ttk.Frame(self.split, style="Card.TFrame", padding=12)
-        self.split.add(left, stretch="always", minsize=320)
+        self.split.add(left, stretch="always", minsize=430)  # the five group chips and the level row need this
         self.split.add(right, stretch="always", minsize=480)
         self.bind("<Configure>", self._schedule_initial_split, add="+")
 
@@ -292,7 +292,7 @@ class BestiaryView(ttk.Frame):
         if self.split.winfo_width() < 650:
             return
         self._split_set = True
-        self.split.sash_place(0, round(self.split.winfo_width() * 0.33), 0)
+        self.split.sash_place(0, max(430, round(self.split.winfo_width() * 0.33)), 0)
 
     def activate(self) -> None:
         if self._ready:
@@ -583,7 +583,7 @@ class BestiaryView(ttk.Frame):
                 for map_id, count in sorted(counts.items(), key=lambda pair: self.map_names.get(pair[0], pair[0])):
                     row = tk.Frame(block, bg=theme.SURFACE_2)
                     row.pack(fill="x", pady=3)
-                    tk.Label(row, text=f"⌖  {self.map_names.get(map_id, map_id)}  ·  {count} точек",
+                    tk.Label(row, text=f"⌖  {self.map_names.get(map_id, map_id)}  ·  {plural(count, "точка", "точки", "точек")}",
                              bg=theme.SURFACE_2, fg=theme.TEXT, anchor="w").pack(side="left", fill="x", expand=True)
                     if map_id in self.map_names:
                         ttk.Button(row, text="На карте", command=lambda value=map_id: self._show_zone_on_map(value)).pack(side="right")

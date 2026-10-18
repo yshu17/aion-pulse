@@ -472,3 +472,15 @@ def test_dragging_or_zooming_stops_the_flight(root):
     root.after(200, root.quit)
     root.mainloop()
     assert (window.left, window.top) == pytest.approx(grabbed)
+
+
+def test_unreadable_npc_database_does_not_break_the_map(root, tmp_path):
+    """QA: a broken or missing NPC database only switches the NPC search off."""
+    for name, data in (("garbage.sqlite", b"not a database" * 500), ("missing.sqlite", None)):
+        path = tmp_path / name
+        if data is not None:
+            path.write_bytes(data)
+        window = MapView(root, {}, bestiary_database=path)
+        window.search_var.set("страж")
+        window._run_mob_search()
+        assert window.bestiary_database is None

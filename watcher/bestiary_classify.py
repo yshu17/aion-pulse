@@ -2,11 +2,12 @@
 points can take them from.
 
     technical_name(name) -> bool                 test/internal names: «Test_…», «BAb1_…_lv50», English only, 3+ digits glued to letters
-    plan(rows) -> (donors, service)              rows are dicts: id, name, level, category, points, drops, profile
+    plan(rows) -> (donors, service)              rows are dicts: id, name, level, category, points, drops, profile, sig
+                                                 (sig: hashable content of the record: spawn points, goods, drops)
         donors:  {npc id: donor npc id}          a record with no points takes them from a same-named record, or from the
                                                  base of «Новые характеристики …» (compared by word stems: Валона = Валон)
         service: set of npc ids                  technical names and duplicates (same name, level and category as a better
-                                                 record that has the same points or none)
+                                                 record with identical content, so no spawn place, drop or ware is lost)
 """
 
 from __future__ import annotations
@@ -43,6 +44,7 @@ def plan(rows: list[dict]) -> tuple[dict[str, str], set[str]]:
         by_stem[stem_key(row["name"])] = row
     donors: dict[str, str] = {}
     points = {row["id"]: row["points"] for row in rows}
+    sigs = {row["id"]: row["sig"] for row in rows}
     for row in rows:
         if row["points"] or technical_name(row["name"]):
             continue
@@ -53,15 +55,15 @@ def plan(rows: list[dict]) -> tuple[dict[str, str], set[str]]:
         if donor and donor["id"] != row["id"]:
             donors[row["id"]] = donor["id"]
             points[row["id"]] = donor["points"]
+            sigs[row["id"]] = (donor["sig"][0], *row["sig"][1:])  # own wares and drops, the donor's places
     service = {row["id"] for row in rows if technical_name(row["name"])}
     groups: dict[tuple, list[dict]] = {}
     for row in rows:
         if row["id"] not in service:
-            groups.setdefault((row["name"].casefold(), str(row["level"]), row["category"]), []).append(row)
+            groups.setdefault((row["name"].casefold(), str(row["level"]), row["category"], sigs[row["id"]]), []).append(row)
     for group in groups.values():
         group.sort(key=lambda row: (row["profile"], points[row["id"]], row["drops"]), reverse=True)
         best = group[0]
         for row in group[1:]:
-            if points[row["id"]] in (0, points[best["id"]]):
-                service.add(row["id"])
+            service.add(row["id"])
     return donors, service

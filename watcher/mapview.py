@@ -11,6 +11,7 @@ stitched from the local Aion client maps in data/maps/client:
 
 import json
 import math
+import sqlite3
 import tkinter as tk
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -20,6 +21,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.catalog import resource_root
 from watcher.bestiary_store import BestiaryStore
+from watcher.bestiary_labels import plural
 from watcher.bestiary_widgets import bind_wheel_tree
 from watcher.spawn_overlay import enclosing_spawn_circle, paint_spawn_circle
 from watcher.ui_icons import IconSet
@@ -236,6 +238,7 @@ class MapView(ttk.Frame):
 
         bar = self.bar = ttk.Frame(self, padding=(0, 0, 0, 8))  # its width sets the window minimum (ui:28)
         bar.pack(fill="x")
+        bar.bind("<Configure>", self._fit_title, add=True)
         # ui:39: the zoom buttons are packed first, so a narrow window never pushes them off the edge; the zone,
         # search, side, quests and theme controls are one group centred in the rest of the row
         for name, hint, command in (
@@ -415,11 +418,31 @@ class MapView(ttk.Frame):
 
     def _set_title(self, text: str) -> None:
         """Only show the map title when it contains useful text (UI/UX item 18)."""
+        self._title_full = text
         self.title.configure(text=text)
         if text:
             if not self.title.winfo_manager():
                 self.title.pack(side="left", padx=(14, 0))
+            self.after_idle(self._fit_title)
         elif self.title.winfo_manager():
+            self.title.pack_forget()
+
+    def _fit_title(self, _event=None) -> None:
+        """A long name must not be squeezed to two letters in a narrow toolbar: shorten it to what fits, and hide
+        it when even a few letters do not fit (the name is also in the results panel)."""
+        text = getattr(self, "_title_full", "")
+        if not text or not self.winfo_ismapped() or self.bar.winfo_width() < 300:
+            return
+        if not self.title.winfo_manager():
+            self.title.pack(side="left", padx=(14, 0))
+        self.title.configure(text=text)
+        self.update_idletasks()
+        shown = text
+        while len(shown) > 6 and self.title.winfo_reqwidth() > self.title.winfo_width() + 2:
+            shown = shown[:-2].rstrip("… ") + "…"
+            self.title.configure(text=shown)
+            self.update_idletasks()
+        if self.title.winfo_reqwidth() > self.title.winfo_width() + 2:
             self.title.pack_forget()
 
     def center_on(self, image_x: float, image_y: float) -> None:
@@ -821,9 +844,17 @@ class MapView(ttk.Frame):
         if self._bestiary_store is None:
             try:
                 self._bestiary_store = BestiaryStore(self.bestiary_database)
-            except (OSError, ValueError):
+            except (OSError, ValueError, sqlite3.Error):
+                self.bestiary_database = None  # unreadable data: the map keeps working without the NPC search
+                self._hide_mob_results()
                 return
-        rows, total = self._bestiary_store.search(query, limit=20)
+        try:
+            rows, total = self._bestiary_store.search(query, limit=20)
+        except sqlite3.Error:
+            self.bestiary_database = None
+            self._bestiary_store = None
+            self._hide_mob_results()
+            return
         self._mob_rows = rows
         self._mob_search_query = query
         if not rows:
@@ -884,7 +915,7 @@ class MapView(ttk.Frame):
             return
         for map_id, entries in sorted(groups.items(), key=lambda pair: self.zones[pair[0]].name):
             total_points = sum(len(points) for _row, _detail, points in entries)
-            tk.Label(self.mob_content, text=f"⌖  {self.zones[map_id].name}  ·  {total_points} точек",
+            tk.Label(self.mob_content, text=f"⌖  {self.zones[map_id].name}  ·  {plural(total_points, "точка", "точки", "точек")}",
                      bg=theme.SURFACE_2, fg=theme.ACCENT, font=theme.font("control_strong"),
                      anchor="w", padx=12, pady=9).pack(fill="x", padx=8, pady=(8, 4))
             for row, detail, points in entries:
@@ -906,7 +937,7 @@ class MapView(ttk.Frame):
                         tk.Label(chips, text=str(value).upper(), bg=theme.SURFACE_3, fg=color,
                                  font=theme.font("micro"), padx=5, pady=1).pack(side="left", padx=(0, 4))
                 level = f"Ур. {detail['level']}  ·  " if detail.get("level") else ""
-                tk.Label(info, text=f"{level}{len(points)} точек появления", bg=theme.SURFACE_2,
+                tk.Label(info, text=f"{level}{plural(len(points), "точка", "точки", "точек")} появления", bg=theme.SURFACE_2,
                          fg=theme.MUTED, font=theme.font("small"), anchor="w").pack(fill="x")
                 ttk.Button(card, text="⌖  Показать на карте",
                            command=lambda d=detail, m=map_id, p=points: self._show_mob_zone(d, m, p)).pack(fill="x", pady=(9, 0))
@@ -941,7 +972,7 @@ class MapView(ttk.Frame):
         first = points[0]
         self._mob_target = (map_id, float(first["gx"]), float(first["gy"]))
         self.mob_selection_info.configure(
-            text=f"{detail['name']}  ·  {self.zones[map_id].name}\n{len(points)} точек появления"
+            text=f"{detail['name']}  ·  {self.zones[map_id].name}\n{plural(len(points), "точка", "точки", "точек")} появления"
         )
         self.mob_point_button.configure(state="normal")
 

@@ -44,3 +44,10 @@ def race_label(raw_race: str, display_race: str = "") -> str:
         return RACES[value]
     group = faction_for(raw_race, display_race)
     return group if group != "Другие" else "Другое существо"
+
+
+def plural(n: int, one: str, few: str, many: str) -> str:
+    """«1 точка», «3 точки», «5 точек» (Russian plural forms)."""
+    last2, last = n % 100, n % 10
+    word = one if last == 1 and last2 != 11 else few if 2 <= last <= 4 and not 12 <= last2 <= 14 else many
+    return f"{n} {word}"

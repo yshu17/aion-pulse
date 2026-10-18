@@ -125,6 +125,11 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 "name": _text(record.get("name") or record.get("site_name") or record.get("internal_name")) or str(record["id"]),
                 "level": _text(kb.get("level") or record.get("site_level")), "category": record.get("category") or "",
                 "points": len(record.get("points") or []), "drops": len(kb.get("drops") or []), "profile": int(bool(kb)),
+                "sig": (
+                    hash(tuple(sorted((str(p.get("map_id")), round(float(p["gx"])), round(float(p["gy"]))) for p in record.get("points") or []))),
+                    hash(json.dumps(services.get(str(record["id"]), {}).get("stock"), sort_keys=True)),
+                    hash(tuple(str(d.get("item_id")) for d in kb.get("drops") or [])),
+                ),
             })
         donors, service_ids = plan(rows)  # spawn points for records without their own; technical and duplicate records
         by_id = {str(record["id"]): record for record in data["records"]}
