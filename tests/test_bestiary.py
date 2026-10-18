@@ -61,6 +61,8 @@ def test_bestiary_index_supports_links_filters_and_locations(tmp_path):
         rows, count = store.search("меч", category="merchant")  # a merchant is found by a sold item
         assert (count, rows[0]["id"], rows[0]["sold"]) == (1, "220000", "Меч новичка")
         assert store.search("меч", category="monster")[1] == 0
+        rows, count = store.search("прах")  # a mob is found by a dropped item
+        assert (count, rows[0]["id"], rows[0]["dropped"]) == (1, "210065", "Прах рефисмы")
         assert store.races() == ["Элийцы", "Асмодиане", "Балауры", "Другие"]
         assert store.search(race="Другие")[1] == 2
         assert store.search(race="Балауры")[1] == 0

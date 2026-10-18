@@ -32,6 +32,19 @@ def _pack(value: object) -> bytes:
     return zlib.compress(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), 9)
 
 
+def pack_ids(ids: list[int]) -> bytes:
+    """Sorted npc rowids as zlib-compressed varint deltas (read back by BestiaryStore)."""
+    out, previous = bytearray(), 0
+    for value in sorted(set(ids)):
+        delta = value - previous
+        previous = value
+        while delta >= 0x80:
+            out.append(delta & 0x7F | 0x80)
+            delta >>= 7
+        out.append(delta)
+    return zlib.compress(bytes(out), 9)
+
+
 def _pack_detail(value: object) -> bytes:
     packer = zlib.compressobj(9, zdict=DETAIL_DICT)
     return packer.compress(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) + packer.flush()
@@ -76,7 +89,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 service INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE item (
-                item_id TEXT PRIMARY KEY, name TEXT NOT NULL, rarity TEXT NOT NULL, icon TEXT NOT NULL
+                item_id TEXT PRIMARY KEY, name TEXT NOT NULL, rarity TEXT NOT NULL, icon TEXT NOT NULL, name_cf TEXT NOT NULL, npcs BLOB NOT NULL
             );
             CREATE TABLE shared (key TEXT PRIMARY KEY, data BLOB NOT NULL);
             CREATE TABLE npc_stock (npc_id TEXT NOT NULL, name TEXT NOT NULL, shown TEXT NOT NULL);
@@ -124,6 +137,8 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             shared[key] = blob
             return key
 
+        droppers: dict[str, list[int]] = {}  # item id -> rowids of the NPCs that drop it, to find mobs by an item
+        row_number = 0
         items: dict[str, tuple] = {}  # drop items are stored once and referenced by id from every NPC
         for record in data["records"]:
             kb = record.get("kb") or {}
@@ -161,6 +176,10 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 "INSERT INTO npc_stock VALUES (?,?,?)",
                 ((str(record["id"]), name.casefold(), name) for name in {_text(entry.get("name")) for entry in service.get("stock", [])} if name),
             )
+            drops_key = share([str(drop.get("item_id")) for drop in drops]) if drops else ""
+            row_number += 1  # rowid of the npc row below
+            for drop in drops:
+                droppers.setdefault(str(drop.get("item_id")), []).append(row_number)
             detail = {
                 "id": str(record["id"]),
                 "name": name,
@@ -180,7 +199,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 "hp_bar": kb.get("hp_bar"),
                 "icon_asset": record.get("icon_asset") or "",
                 "stats": kb.get("stats") or {},
-                "drops": share([str(drop.get("item_id")) for drop in drops]) if drops else "",
+                "drops": drops_key,
                 "points": points,
                 "points_from": names[donor_id] if donor_id else "",
                 "kb_locations": [
@@ -217,7 +236,10 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                     region = _text((point.get("area") or {}).get("name"))
                     if region:
                         con.execute("INSERT OR IGNORE INTO npc_region VALUES (?,?,?)", (str(record["id"]), map_id, region))
-        con.executemany("INSERT INTO item VALUES (?,?,?,?)", ((key, *value) for key, value in items.items()))
+        con.executemany(
+            "INSERT INTO item VALUES (?,?,?,?,?,?)",
+            ((key, *value, value[0].casefold(), pack_ids(droppers.get(key, []))) for key, value in items.items()),
+        )
         con.executemany("INSERT INTO shared VALUES (?,?)", shared.items())
         areas = areas + [  # a record that takes its points from a donor takes the donor's areas too
             {**area, "npc_id": npc_id} for npc_id, donor_id in donors.items() for area in areas if str(area["npc_id"]) == donor_id
@@ -243,7 +265,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             CREATE INDEX npc_region_filter ON npc_region(map_id,name,npc_id);
             CREATE INDEX npc_service ON npc(service);
             CREATE INDEX npc_stock_npc ON npc_stock(npc_id);
-            PRAGMA user_version=6;
+            PRAGMA user_version=7;
             """
         )
         con.commit()

@@ -414,8 +414,9 @@ class BestiaryView(ttk.Frame):
                 summary += f"  ·  {zone}"
             tk.Label(info, text=summary, bg=bg, fg=theme.MUTED,
                      font=theme.font("small"), anchor="w").pack(fill="x", pady=(2, 2))
-            if row.get("sold"):
-                tk.Label(info, text=f"Продаёт: {row['sold']}", bg=bg, fg=theme.ACCENT,
+            if row.get("sold") or row.get("dropped"):
+                tk.Label(info, text=f"Продаёт: {row['sold']}" if row.get("sold") else f"Добыча: {row['dropped']}",
+                         bg=bg, fg=theme.ACCENT,
                          font=theme.font("small"), anchor="w").pack(fill="x", pady=(0, 2))
             chips = tk.Frame(info, bg=bg)
             chips.pack(fill="x")
@@ -483,7 +484,9 @@ class BestiaryView(ttk.Frame):
         self.drop_query.set("")
         self.stock_query.set("")
         term = self.query.get().strip().casefold()
-        if self.category.get() == "Торговцы" and term and any(term in str(i.get("name", "")).casefold() for i in detail.get("stock") or []):
+        if term and any(term in str(i.get("name", "")).casefold() for i in detail.get("drops") or []):
+            self.drop_query.set(term)  # a mob found by a dropped item: show that item in the drop list
+        if term and any(term in str(i.get("name", "")).casefold() for i in detail.get("stock") or []):
             self.stock_query.set(term)  # a merchant found by an item: show that item in the goods list
         self.copy_button.configure(state="normal")
         self.kb_button.configure(state="normal" if detail.get("kb_url") else "disabled")

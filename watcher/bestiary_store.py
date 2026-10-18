@@ -34,6 +34,19 @@ def unpack_detail(blob: bytes) -> dict:
     return json.loads(unpacker.decompress(blob) + unpacker.flush())
 
 
+def unpack_ids(blob: bytes) -> set[int]:
+    out, value, shift, previous = set(), 0, 0, 0
+    for byte in zlib.decompress(blob):
+        value |= (byte & 0x7F) << shift
+        if byte & 0x80:
+            shift += 7
+        else:
+            previous += value
+            out.add(previous)
+            value = shift = 0
+    return out
+
+
 def search_key(value: str) -> str:
     """Case-insensitive text matching and in-app NPC links."""
     value = value.strip()
@@ -48,7 +61,7 @@ class BestiaryStore:
         self.connection.row_factory = sqlite3.Row
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
         self.version = version
-        if version not in (1, 2, 3, 4, 5, 6):
+        if version not in (1, 2, 3, 4, 5, 6, 7):
             self.close()
             raise ValueError(f"Неизвестный формат базы бестиария: {version}")
 
@@ -90,17 +103,23 @@ class BestiaryStore:
         clauses: list[str] = []
         params: list[object] = []
         term = search_key(text)
-        sold_search = category == "merchant" and self.version >= 6 and not term.isdigit()
+        dropped_by: list[tuple[str, set[int]]] = []
+        by_item = bool(term) and not term.isdigit()
+        sold_search = category in ("merchant", "") and self.version >= 6 and by_item
+        drop_search = category in ("monster", "") and self.version >= 7 and by_item
         escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         if term:
-            # The index also covers internal and localized names and the numeric ID.
-            if sold_search:  # merchants are found by their own name or by an item they sell
-                clauses.append("(n.search_text LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM npc_stock s "
-                               "WHERE s.npc_id=n.id AND s.name LIKE ? ESCAPE '\\'))")
-                params.extend([f"%{escaped}%", f"%{escaped}%"])
-            else:
-                clauses.append("n.search_text LIKE ? ESCAPE '\\'")
+            # The index also covers internal and localized names and the numeric ID; a merchant is also found by
+            # an item it sells and a mob by an item it drops.
+            options = ["n.search_text LIKE ? ESCAPE '\\'"]
+            params.append(f"%{escaped}%")
+            if sold_search:
+                options.append("EXISTS (SELECT 1 FROM npc_stock s WHERE s.npc_id=n.id AND s.name LIKE ? ESCAPE '\\')")
                 params.append(f"%{escaped}%")
+            if drop_search:
+                dropped_by = self._droppers(escaped)
+                options.append("n.rowid IN (SELECT id FROM temp.hit)")
+            clauses.append("(" + " OR ".join(options) + ")")
         if self.version >= 5:  # technical and duplicate records are a group of their own
             clauses.append("n.service = ?")
             params.append(1 if category == "service" else 0)
@@ -142,14 +161,34 @@ class BestiaryStore:
             [*params, limit, offset],
         ).fetchall()
         found = [dict(row) for row in rows]
-        if sold_search and term:  # the sold item that matched, shown on the card
-            for row in found:
+        rowids = dict(self.connection.execute(
+            f"SELECT id,rowid FROM npc WHERE id IN ({','.join('?' * len(found))})", [row["id"] for row in found],
+        )) if drop_search and found else {}
+        for row in found:  # the sold or dropped item that matched, shown on the card
+            row["sold"] = row["dropped"] = ""
+            if not by_item or term in row["name"].casefold():
+                continue
+            if sold_search:
                 hit = self.connection.execute(
                     "SELECT shown FROM npc_stock WHERE npc_id=? AND name LIKE ? ESCAPE '\\' ORDER BY length(name) LIMIT 1",
                     (row["id"], f"%{escaped}%"),
                 ).fetchone()
-                row["sold"] = hit[0] if hit and term not in row["name"].casefold() else ""
+                row["sold"] = hit[0] if hit else ""
+            if drop_search and not row["sold"]:
+                number = rowids[row["id"]]
+                row["dropped"] = next((name for name, numbers in dropped_by if number in numbers), "")
         return found, total
+
+    def _droppers(self, escaped: str) -> list[tuple[str, set[int]]]:
+        """Items whose name contains the text, each with the rowids of the NPCs that drop it; fills temp.hit."""
+        found = [
+            (row[0], unpack_ids(row[1])) for row in self.connection.execute(
+                "SELECT name,npcs FROM item WHERE name_cf LIKE ? ESCAPE '\\' ORDER BY length(name)", (f"%{escaped}%",))
+        ]
+        self.connection.execute("CREATE TEMP TABLE IF NOT EXISTS hit (id INTEGER PRIMARY KEY)")
+        self.connection.execute("DELETE FROM temp.hit")
+        self.connection.executemany("INSERT OR IGNORE INTO temp.hit VALUES (?)", ((n,) for _, ids in found for n in ids))
+        return found
 
     def regions(self, map_id: str = "") -> list[str]:
         if self.version < 3:
