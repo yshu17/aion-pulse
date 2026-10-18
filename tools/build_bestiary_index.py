@@ -79,6 +79,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 item_id TEXT PRIMARY KEY, name TEXT NOT NULL, rarity TEXT NOT NULL, icon TEXT NOT NULL
             );
             CREATE TABLE shared (key TEXT PRIMARY KEY, data BLOB NOT NULL);
+            CREATE TABLE npc_stock (npc_id TEXT NOT NULL, name TEXT NOT NULL, shown TEXT NOT NULL);
             CREATE TABLE npc_zone (
                 npc_id TEXT NOT NULL,
                 map_id TEXT NOT NULL,
@@ -156,6 +157,10 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 items.setdefault(str(drop.get("item_id")), (
                     _text(drop.get("name")), _text(drop.get("rarity")), Path(_text(drop.get("icon"))).name,
                 ))
+            con.executemany(
+                "INSERT INTO npc_stock VALUES (?,?,?)",
+                ((str(record["id"]), name.casefold(), name) for name in {_text(entry.get("name")) for entry in service.get("stock", [])} if name),
+            )
             detail = {
                 "id": str(record["id"]),
                 "name": name,
@@ -237,7 +242,8 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             CREATE INDEX npc_area_id ON npc_area(npc_id, map_id);
             CREATE INDEX npc_region_filter ON npc_region(map_id,name,npc_id);
             CREATE INDEX npc_service ON npc(service);
-            PRAGMA user_version=5;
+            CREATE INDEX npc_stock_npc ON npc_stock(npc_id);
+            PRAGMA user_version=6;
             """
         )
         con.commit()

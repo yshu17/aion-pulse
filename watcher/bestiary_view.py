@@ -110,7 +110,7 @@ class BestiaryView(ttk.Frame):
         chips = tk.Frame(left, bg=theme.SURFACE)
         chips.pack(fill="x", pady=(0, 7))
         self.category_chips: dict[str, tk.Button] = {}
-        for value, title in (("Все группы", "ВСЕ"), ("Монстры", "МОНСТР"), ("NPC", "NPC"), ("Служебные", "СЛУЖЕБНЫЕ")):
+        for value, title in (("Все группы", "ВСЕ"), ("Монстры", "МОНСТР"), ("NPC", "NPC"), ("Торговцы", "ТОРГОВЦЫ"), ("Служебные", "СЛУЖЕБНЫЕ")):
             button = tk.Button(chips, text=title, bd=1, relief="solid", cursor="hand2",
                                font=theme.font("micro"), padx=10, pady=4,
                                command=lambda choice=value: self._choose_category(choice))
@@ -414,6 +414,9 @@ class BestiaryView(ttk.Frame):
                 summary += f"  ·  {zone}"
             tk.Label(info, text=summary, bg=bg, fg=theme.MUTED,
                      font=theme.font("small"), anchor="w").pack(fill="x", pady=(2, 2))
+            if row.get("sold"):
+                tk.Label(info, text=f"Продаёт: {row['sold']}", bg=bg, fg=theme.ACCENT,
+                         font=theme.font("small"), anchor="w").pack(fill="x", pady=(0, 2))
             chips = tk.Frame(info, bg=bg)
             chips.pack(fill="x")
             for label, color in ((row["kind"], theme.PLACE), (row.get("faction") or row["race"], theme.DANGER),
@@ -479,6 +482,9 @@ class BestiaryView(ttk.Frame):
         self.profile_header.show(detail)
         self.drop_query.set("")
         self.stock_query.set("")
+        term = self.query.get().strip().casefold()
+        if self.category.get() == "Торговцы" and term and any(term in str(i.get("name", "")).casefold() for i in detail.get("stock") or []):
+            self.stock_query.set(term)  # a merchant found by an item: show that item in the goods list
         self.copy_button.configure(state="normal")
         self.kb_button.configure(state="normal" if detail.get("kb_url") else "disabled")
         self.source_note.configure(

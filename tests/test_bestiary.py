@@ -46,6 +46,8 @@ def test_bestiary_index_supports_links_filters_and_locations(tmp_path):
         json.dump(records, stream, ensure_ascii=False)
     with gzip.open(areas, "wt", encoding="utf-8") as stream:
         json.dump(regions, stream, ensure_ascii=False)
+    with gzip.open(source.with_name("services.json.gz"), "wt", encoding="utf-8") as stream:
+        json.dump({"npcs": {"220000": {"tabs": ["Оружие"], "stock": [{"item_id": "1", "name": "Меч новичка"}]}}}, stream)
 
     assert build(source, areas, database) == (2, 1)
     store = BestiaryStore(database)
@@ -56,6 +58,9 @@ def test_bestiary_index_supports_links_filters_and_locations(tmp_path):
             assert rows[0]["id"] == "210065"
         assert store.search(category="monster", race="Зверь", rank="Обычный", map_id="210010000")[1] == 1
         assert store.search(category="merchant")[1] == 1
+        rows, count = store.search("меч", category="merchant")  # a merchant is found by a sold item
+        assert (count, rows[0]["id"], rows[0]["sold"]) == (1, "220000", "Меч новичка")
+        assert store.search("меч", category="monster")[1] == 0
         assert store.races() == ["Элийцы", "Асмодиане", "Балауры", "Другие"]
         assert store.search(race="Другие")[1] == 2
         assert store.search(race="Балауры")[1] == 0

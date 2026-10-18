@@ -50,6 +50,8 @@ def main() -> None:
     else:
         tabs.select(view)
         view.activate()
+        if "sold" in output.stem:
+            view.category.set("Торговцы")
         view.query.set(sys.argv[2] if len(sys.argv) > 2 else "страж")
         view._search(reset=True)
         if "stock" in output.stem:

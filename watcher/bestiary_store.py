@@ -48,7 +48,7 @@ class BestiaryStore:
         self.connection.row_factory = sqlite3.Row
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
         self.version = version
-        if version not in (1, 2, 3, 4, 5):
+        if version not in (1, 2, 3, 4, 5, 6):
             self.close()
             raise ValueError(f"Неизвестный формат базы бестиария: {version}")
 
@@ -90,11 +90,17 @@ class BestiaryStore:
         clauses: list[str] = []
         params: list[object] = []
         term = search_key(text)
+        sold_search = category == "merchant" and self.version >= 6 and not term.isdigit()
+        escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         if term:
             # The index also covers internal and localized names and the numeric ID.
-            clauses.append("n.search_text LIKE ? ESCAPE '\\'")
-            escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            params.append(f"%{escaped}%")
+            if sold_search:  # merchants are found by their own name or by an item they sell
+                clauses.append("(n.search_text LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM npc_stock s "
+                               "WHERE s.npc_id=n.id AND s.name LIKE ? ESCAPE '\\'))")
+                params.extend([f"%{escaped}%", f"%{escaped}%"])
+            else:
+                clauses.append("n.search_text LIKE ? ESCAPE '\\'")
+                params.append(f"%{escaped}%")
         if self.version >= 5:  # technical and duplicate records are a group of their own
             clauses.append("n.service = ?")
             params.append(1 if category == "service" else 0)
@@ -135,7 +141,15 @@ class BestiaryStore:
             + " ORDER BY n.has_profile DESC,n.point_count DESC,n.name COLLATE NOCASE,n.id LIMIT ? OFFSET ?",
             [*params, limit, offset],
         ).fetchall()
-        return [dict(row) for row in rows], total
+        found = [dict(row) for row in rows]
+        if sold_search and term:  # the sold item that matched, shown on the card
+            for row in found:
+                hit = self.connection.execute(
+                    "SELECT shown FROM npc_stock WHERE npc_id=? AND name LIKE ? ESCAPE '\\' ORDER BY length(name) LIMIT 1",
+                    (row["id"], f"%{escaped}%"),
+                ).fetchone()
+                row["sold"] = hit[0] if hit and term not in row["name"].casefold() else ""
+        return found, total
 
     def regions(self, map_id: str = "") -> list[str]:
         if self.version < 3:
