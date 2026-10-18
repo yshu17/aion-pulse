@@ -183,6 +183,7 @@ def test_drop_search_preserves_original_item_link(tmp_path, monkeypatch):
             {"item_id": "100", "name": "Меч", "rarity": "rare"},
             {"item_id": "200", "name": "Щит", "rarity": "unique"},
         ]}
+        view.detail_tabs.select(view.drops_tab)  # lists are filled when their tab is open
         view.drop_query.set("ЩИТ")
         assert view.drops.get_children() == ("d1",)
         view.drops.selection_set("d1")

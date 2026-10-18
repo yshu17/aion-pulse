@@ -16,6 +16,7 @@ import tkinter as tk
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from tkinter import font as tkfont
 from tkinter import ttk
 
 from watcher import theme
@@ -292,6 +293,8 @@ class MapView(ttk.Frame):
             self.layer_box.bind("<<ComboboxSelected>>", lambda _e: self._on_layer_selected())
             Hint(self.layer_box, "Слой карты Бездны. Для NPC и подписей правило выбора по высоте в XML клиента не найдено.")
         self.title = ttk.Label(group, text="", style="Title.TLabel")
+        # squeezed after the toolbar changed (a count appeared, a box widened): fit the title again
+        self.title.bind("<Configure>", lambda e: self._fit_title() if self.title.winfo_reqwidth() > e.width + 2 else None)
         self.title.pack(side="left", padx=(14, 0))
         self.title.pack_forget()
         body = self.body = ttk.Frame(self)
@@ -436,14 +439,33 @@ class MapView(ttk.Frame):
         if not self.title.winfo_manager():
             self.title.pack(side="left", padx=(14, 0))
         self.title.configure(text=text)
-        self.update_idletasks()
-        shown = text
-        while len(shown) > 6 and self.title.winfo_reqwidth() > self.title.winfo_width() + 2:
-            shown = shown[:-2].rstrip("… ") + "…"
-            self.title.configure(text=shown)
-            self.update_idletasks()
-        if self.title.winfo_reqwidth() > self.title.winfo_width() + 2:
+        # room left for the title: the toolbar width minus everything else in it (no forced layout pass, which
+        # cost a quarter of a second after every NPC search)
+        def taken(widget: tk.Misc) -> int:
+            padx = widget.pack_info().get("padx", 0)
+            values = padx if isinstance(padx, (tuple, list)) else str(padx).split() if isinstance(padx, str) else (padx, padx)
+            if len(values) == 1:
+                values = (values[0], values[0])
+            return widget.winfo_reqwidth() + sum(int(str(value)) for value in values)
+
+        group = self.title.master
+        available = self.bar.winfo_width() - sum(taken(w) for w in self.bar.pack_slaves() if w is not group)
+        available -= sum(taken(w) for w in group.pack_slaves() if w is not self.title) + 14
+        font = tkfont.Font(font=ttk.Style().lookup("Title.TLabel", "font") or "TkDefaultFont")
+        available -= max(0, self.title.winfo_reqwidth() - font.measure(text))  # the label's own padding
+        if font.measure(text) <= available + 2:
+            return
+        low, high = 0, len(text)
+        while low < high:  # the longest prefix that fits with «…»
+            middle = (low + high + 1) // 2
+            if font.measure(text[:middle].rstrip() + "…") <= available:
+                low = middle
+            else:
+                high = middle - 1
+        if low < 5:
             self.title.pack_forget()
+        else:
+            self.title.configure(text=text[:low].rstrip() + "…")
 
     def center_on(self, image_x: float, image_y: float) -> None:
         width, height = self._canvas_size()
@@ -593,6 +615,17 @@ class MapView(ttk.Frame):
         if self._render_after is None:
             self._render_after = self.after_idle(self.render)
 
+    def _schedule_sharp(self) -> None:
+        if getattr(self, "_sharp_after", None):
+            self.after_cancel(self._sharp_after)
+
+        def sharpen() -> None:
+            self._sharp_after = None
+            self._sharp_due = True
+            self.render()
+
+        self._sharp_after = self.after(160, sharpen)
+
     def render(self) -> None:
         from PIL import Image, ImageTk
 
@@ -608,8 +641,25 @@ class MapView(ttk.Frame):
         view = Image.new("RGB", (width, height), BG_RGB)  # around the map when it is smaller than the window
         part_w, part_h = round((x1 - x0) * self.zoom), round((y1 - y0) * self.zoom)
         if part_w > 0 and part_h > 0:
-            resample = Image.BILINEAR if self.zoom >= 1 else Image.LANCZOS
-            part = self._image.resize((part_w, part_h), resample, box=(x0, y0, x1, y1))
+            if self.zoom >= 1:
+                part = self._image.resize((part_w, part_h), Image.BILINEAR, box=(x0, y0, x1, y1))
+            else:
+                # zoomed out: scale the whole picture once per zoom level, then dragging only crops it
+                # (resizing the visible part on every frame made panning stutter)
+                key = (id(self._image), self.zoom)
+                if getattr(self, "_scaled_key", None) not in (key, key + ("fast",)):
+                    # a new zoom: a fast picture now, the sharp one when the wheel stops
+                    side = max(1, round(size * self.zoom))
+                    self._scaled = self._image.resize((side, side), Image.BILINEAR, reducing_gap=2.0)
+                    self._scaled_key = key + ("fast",)
+                    self._schedule_sharp()
+                elif self._scaled_key == key + ("fast",) and getattr(self, "_sharp_due", False):
+                    side = max(1, round(size * self.zoom))
+                    self._scaled = self._image.resize((side, side), Image.LANCZOS, reducing_gap=2.0)
+                    self._scaled_key = key
+                self._sharp_due = False
+                sx, sy = round(x0 * self.zoom), round(y0 * self.zoom)
+                part = self._scaled.crop((sx, sy, sx + part_w, sy + part_h))
             view.paste(part, (round((x0 - self.left) * self.zoom), round((y0 - self.top) * self.zoom)))
         circle = enclosing_spawn_circle(self.spawn_areas)
         if circle:

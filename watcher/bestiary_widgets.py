@@ -10,12 +10,16 @@ from watcher import theme
 from watcher.bestiary_labels import stat_text
 
 
-def wrap_badges(frame: tk.Frame) -> None:
-    """Wrap badges to the available width, including after window resizing."""
+def wrap_badges(frame: tk.Frame):
+    """Wrap badges to the available width, including after window resizing. Badges with no text are hidden.
+    Returns the arrange function, to call after the badge texts change."""
     def arrange(_event=None):
         width = max(1, frame.winfo_width())
         x = y = height = 0
         for child in frame.winfo_children():
+            if isinstance(child, tk.Label) and not child.cget("text"):
+                child.place_forget()
+                continue
             w, h = child.winfo_reqwidth(), child.winfo_reqheight()
             if x and x + w > width:
                 x, y = 0, y + height + 4
@@ -26,6 +30,7 @@ def wrap_badges(frame: tk.Frame) -> None:
         frame.configure(height=y + height)
     frame.bind("<Configure>", arrange)
     frame.after_idle(arrange)
+    return arrange
 
 
 def bind_wheel_tree(widget: tk.Misc, canvas: tk.Canvas) -> None:

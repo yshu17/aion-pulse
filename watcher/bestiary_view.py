@@ -6,6 +6,7 @@ import math
 import sqlite3
 import tkinter as tk
 import webbrowser
+from types import SimpleNamespace
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
@@ -166,6 +167,8 @@ class BestiaryView(ttk.Frame):
         self.results.bind("<Configure>", lambda e: self.results.itemconfigure(self._results_window, width=e.width))
         self.results.bind("<MouseWheel>", lambda e: self.results.yview_scroll(-int(e.delta / 120), "units"))
         self._result_rows: dict[str, tk.Frame] = {}
+        self._cards: list[SimpleNamespace] = []  # reused result cards
+        self._stale: set[str] = set()  # detail lists not filled yet for the selected NPC (filled when shown)
 
         self.profile_header = ProfileHeader(right, self.icons_dir)
         self.profile_header.pack(fill="x", pady=(0, 4))
@@ -185,6 +188,7 @@ class BestiaryView(ttk.Frame):
 
         self.detail_tabs = ttk.Notebook(right)
         self.detail_tabs.pack(fill="both", expand=True)
+        self.detail_tabs.bind("<<NotebookTabChanged>>", self._fill_visible)
         overview = ttk.Frame(self.detail_tabs)
         self.detail_tabs.add(overview, text="Обзор")
         self.overview_scroll = ScrollArea(overview)
@@ -194,14 +198,14 @@ class BestiaryView(ttk.Frame):
         self.summary_panel = ttk.Frame(self.overview_scroll.content)
         self.summary_panel.pack(fill="both", expand=True, pady=(8, 0))
 
-        drops_tab = ttk.Frame(self.detail_tabs)
+        drops_tab = self.drops_tab = ttk.Frame(self.detail_tabs)
         self.detail_tabs.add(drops_tab, text="Добыча")
         drop_search = ttk.Frame(drops_tab, padding=(0, 7))
         drop_search.pack(fill="x")
         ttk.Label(drop_search, text="Найти предмет").pack(side="left", padx=(0, 8))
         self.drop_query = tk.StringVar()
         ttk.Entry(drop_search, textvariable=self.drop_query).pack(side="left", fill="x", expand=True)
-        self.drop_query.trace_add("write", lambda *_: self._fill_drops(self._detail or {}))
+        self.drop_query.trace_add("write", lambda *_: self._list_changed("drops"))
         drop_body = ttk.Frame(drops_tab)
         drop_body.pack(fill="both", expand=True)
         self.drops = ttk.Treeview(
@@ -224,7 +228,7 @@ class BestiaryView(ttk.Frame):
         self.drop_count = ttk.Label(drops_tab, text="", style="Muted.TLabel", wraplength=450)
         self.drop_count.pack(side="bottom", anchor="w", pady=(6, 0), before=drop_body)
 
-        places_tab = ttk.Frame(self.detail_tabs)
+        places_tab = self.places_tab = ttk.Frame(self.detail_tabs)
         self.detail_tabs.add(places_tab, text="Локации")
         places_body = ttk.Frame(places_tab)
         places_body.pack(fill="both", expand=True)
@@ -261,7 +265,7 @@ class BestiaryView(ttk.Frame):
         stock_search.pack(fill="x", pady=(0, 7))
         ttk.Label(stock_search, text="Найти товар").pack(side="left", padx=(0, 8))
         ttk.Entry(stock_search, textvariable=self.stock_query).pack(side="left", fill="x", expand=True)
-        self.stock_query.trace_add("write", lambda *_: self._fill_stock(self._detail or {}))
+        self.stock_query.trace_add("write", lambda *_: self._list_changed("stock"))
         stock_body = ttk.Frame(stock)
         stock_body.pack(fill="both", expand=True)
         self.stock = ttk.Treeview(stock_body, columns=("name", "group", "mode"), show="tree headings", style="BestiaryItems.Treeview")
@@ -385,61 +389,77 @@ class BestiaryView(ttk.Frame):
                              activebackground=theme.ACCENT_SUBTLE,
                              highlightbackground=theme.ACCENT if active else theme.BORDER)
 
+    def _make_card(self) -> SimpleNamespace:
+        """One result card; cards are reused between searches (creating and destroying ~40 widgets per card made
+        every search and page switch take half a second)."""
+        card = SimpleNamespace(npc_id="")
+        card.outer = tk.Frame(self.result_frame, padx=1, pady=1, cursor="hand2")
+        card.inner = tk.Frame(card.outer, padx=8, pady=7)
+        card.inner.pack(fill="x")
+        card.picture = tk.Label(card.inner, width=50, height=50)
+        card.picture.pack(side="left", padx=(0, 9))
+        card.info = tk.Frame(card.inner)
+        card.info.pack(side="left", fill="x", expand=True)
+        card.name = tk.Label(card.info, fg=theme.TEXT, font=theme.font("control_strong"), anchor="w", justify="left")
+        card.name.pack(fill="x")
+        card.info.bind("<Configure>", lambda e, label=card.name: label.configure(wraplength=max(100, e.width)))
+        card.summary = tk.Label(card.info, fg=theme.MUTED, font=theme.font("small"), anchor="w")
+        card.summary.pack(fill="x", pady=(2, 2))
+        card.hit = tk.Label(card.info, fg=theme.ACCENT, font=theme.font("small"), anchor="w")
+        card.chips = tk.Frame(card.info)
+        card.chips.pack(fill="x")
+        card.chip_labels = [
+            tk.Label(card.chips, bg=theme.SURFACE_2, fg=color, font=theme.font("micro"), padx=5, pady=1)
+            for color in (theme.PLACE, theme.DANGER, theme.MUTED)
+        ]
+        card.arrange = wrap_badges(card.chips)
+        for widget in (card.outer, card.inner, card.picture, card.info, card.chips, card.name, card.summary,
+                       card.hit, *card.chip_labels):
+            widget.bind("<Button-1>", lambda _e, c=card: self._select_npc(c.npc_id))
+        bind_wheel_tree(card.outer, self.results)
+        return card
+
     def _render_results(self, rows: list[dict]) -> None:
-        for child in self.result_frame.winfo_children():
-            child.destroy()
         self._result_rows.clear()
-        for row in rows:
-            npc_id = str(row["id"])
-            selected = npc_id == self._selected_id
-            bg = theme.ACCENT_SUBTLE if selected else theme.SURFACE
-            border = theme.ACCENT if selected else theme.BORDER
-            outer = tk.Frame(self.result_frame, bg=border, padx=1, pady=1, cursor="hand2")
-            outer.pack(fill="x", pady=(0, 5))
-            inner = tk.Frame(outer, bg=bg, padx=8, pady=7)
-            inner.pack(fill="x")
+        while len(self._cards) < len(rows):
+            self._cards.append(self._make_card())
+        for card, row in zip(self._cards, rows):
+            npc_id = card.npc_id = str(row["id"])
             asset = "ui/monster.png" if row["kind"] == "Монстр" else row["icon_asset"]
-            icon = self._load_icon(asset, 48)
-            picture = tk.Label(inner, image=icon, bg=bg, width=50, height=50)
-            picture.pack(side="left", padx=(0, 9))
-            info = tk.Frame(inner, bg=bg)
-            info.pack(side="left", fill="x", expand=True)
-            name_label = tk.Label(info, text=row["name"], bg=bg, fg=theme.TEXT,
-                     font=theme.font("control_strong"), anchor="w", justify="left")
-            name_label.pack(fill="x")
-            info.bind("<Configure>", lambda e, label=name_label: label.configure(wraplength=max(100, e.width)))
+            card.picture.configure(image=self._load_icon(asset, 48) or "")
+            card.name.configure(text=row["name"])
             summary = f"Уровень {row['level']}" if row["level"] else "Уровень не указан"
             zone = row["zone_names"].split(", ", 1)[0]
-            if zone:
-                summary += f"  ·  {zone}"
-            tk.Label(info, text=summary, bg=bg, fg=theme.MUTED,
-                     font=theme.font("small"), anchor="w").pack(fill="x", pady=(2, 2))
-            if row.get("sold") or row.get("dropped"):
-                tk.Label(info, text=f"Продаёт: {row['sold']}" if row.get("sold") else f"Добыча: {row['dropped']}",
-                         bg=bg, fg=theme.ACCENT,
-                         font=theme.font("small"), anchor="w").pack(fill="x", pady=(0, 2))
-            chips = tk.Frame(info, bg=bg)
-            chips.pack(fill="x")
-            for label, color in ((row["kind"], theme.PLACE), (row.get("faction") or row["race"], theme.DANGER),
-                                 (row["rank"], theme.MUTED)):
-                if label:
-                    tk.Label(chips, text=str(label).upper(), bg=theme.SURFACE_2, fg=color,
-                             font=theme.font("micro"), padx=5, pady=1)
-            wrap_badges(chips)
-            for widget in (outer, inner, picture, info, chips, *info.winfo_children(), *chips.winfo_children()):
-                widget.bind("<Button-1>", lambda _e, value=npc_id: self._select_npc(value))
-            self._result_rows[npc_id] = outer
-        bind_wheel_tree(self.result_frame, self.results)
+            card.summary.configure(text=summary + (f"  ·  {zone}" if zone else ""))
+            hit = f"Продаёт: {row['sold']}" if row.get("sold") else f"Добыча: {row['dropped']}" if row.get("dropped") else ""
+            card.hit.configure(text=hit)
+            if hit and not card.hit.winfo_manager():
+                card.hit.pack(fill="x", pady=(0, 2), before=card.chips)
+            elif not hit and card.hit.winfo_manager():
+                card.hit.pack_forget()
+            for label, text in zip(card.chip_labels, (row["kind"], row.get("faction") or row["race"], row["rank"])):
+                label.configure(text=str(text or "").upper())
+            card.arrange()
+            selected = npc_id == self._selected_id
+            card.outer.configure(bg=theme.ACCENT if selected else theme.BORDER)
+            self._set_card_bg(card.inner, theme.ACCENT_SUBTLE if selected else theme.SURFACE)
+            if not card.outer.winfo_manager():
+                card.outer.pack(fill="x", pady=(0, 5))
+            self._result_rows[npc_id] = card.outer
+        for card in self._cards[len(rows):]:
+            card.npc_id = ""
+            card.outer.pack_forget()
 
     def _select_npc(self, npc_id: str) -> None:
         if not self.store:
             return
-        for row_id, frame in self._result_rows.items():
+        for row_id in {self._selected_id, npc_id}:  # restyle only the card losing and the card getting the selection
+            frame = self._result_rows.get(row_id)
+            if frame is None:
+                continue
             active = row_id == npc_id
             frame.configure(bg=theme.ACCENT if active else theme.BORDER)
-            inner = frame.winfo_children()[0]
-            bg = theme.ACCENT_SUBTLE if active else theme.SURFACE
-            self._set_card_bg(inner, bg)
+            self._set_card_bg(frame.winfo_children()[0], theme.ACCENT_SUBTLE if active else theme.SURFACE)
         if npc_id == self._selected_id:
             return
         self._select_result(npc_id)
@@ -480,6 +500,7 @@ class BestiaryView(ttk.Frame):
             return
         self._selected_id = npc_id
         self._detail = detail
+        self._stale = {"drops", "places", "stock"}  # long lists are filled when their tab is opened
         self.profile_header.show(detail)
         self.drop_query.set("")
         self.stock_query.set("")
@@ -499,12 +520,25 @@ class BestiaryView(ttk.Frame):
             state="normal" if detail.get("role") == "merchant" or detail.get("kind") == "Торговец" else "hidden",
         )
         self._fill_overview(detail)
-        self._fill_drops(detail)
-        self._fill_places(detail)
         self._fill_summary(detail)
-        self._fill_stock(detail)
         self.detail_tabs.select(self.stock_tab if detail.get("stock") else 0)
+        self._fill_visible()
         self.overview_scroll.refresh()
+
+    def _list_changed(self, name: str) -> None:
+        self._stale.add(name)
+        self._fill_visible()
+
+    def _fill_visible(self, _event=None) -> None:
+        """Fill the open tab's list if the selected NPC changed or its filter did since it was last filled."""
+        if not self._detail:
+            return
+        current = self.detail_tabs.select()
+        for name, tab, fill in (("drops", self.drops_tab, self._fill_drops), ("places", self.places_tab, self._fill_places),
+                                ("stock", self.stock_tab, self._fill_stock)):
+            if name in self._stale and current == str(tab):
+                self._stale.discard(name)
+                fill(self._detail)
 
     def _clear_detail(self) -> None:
         self._selected_id = ""
@@ -606,8 +640,35 @@ class BestiaryView(ttk.Frame):
                  if area["map_id"] == map_id]
         self.on_map(map_id, float(selected["gx"]), float(selected["gy"]), self._detail["name"], points, areas)
 
+    def _overview_widgets(self) -> SimpleNamespace:
+        """Overview labels are created once and reused for every NPC (rebuilding them cost most of a click)."""
+        if getattr(self, "_overview", None) is None:
+            panel = self.info_panel
+            ov = self._overview = SimpleNamespace(cells=[])
+            ov.intro = tk.Label(panel, bg=theme.SURFACE, fg=theme.TEXT, justify="left", anchor="w", wraplength=450,
+                                font=theme.font("body"), padx=12, pady=10)
+            ov.intro.bind("<Configure>", lambda e: ov.intro.configure(wraplength=max(200, e.width - 24)))
+            ov.note = tk.Label(panel, text="Подробные характеристики пока не загружены.", bg=theme.SURFACE,
+                               fg=theme.MUTED, wraplength=400, justify="left")
+            ov.message = tk.Label(panel, bg=theme.SURFACE, fg=theme.TEXT, wraplength=450, justify="left")
+        return self._overview
+
+    def _stat_cell(self, index: int) -> SimpleNamespace:
+        ov = self._overview_widgets()
+        while len(ov.cells) <= index:
+            cell = SimpleNamespace(frame=tk.Frame(self.info_panel, bg=theme.SURFACE_2, padx=12, pady=9))
+            cell.name = tk.Label(cell.frame, bg=theme.SURFACE_2, fg=theme.MUTED, font=theme.font("micro"), anchor="w")
+            cell.name.pack(fill="x")
+            cell.value = tk.Label(cell.frame, bg=theme.SURFACE_2, fg=theme.TEXT, font=theme.font("control_strong"),
+                                  anchor="w", justify="left")
+            cell.value.pack(fill="x", pady=(3, 0))
+            cell.frame.bind("<Configure>", lambda e, target=cell.value: target.configure(wraplength=max(80, e.width - 24)))
+            ov.cells.append(cell)
+        return ov.cells[index]
+
     def _fill_overview(self, detail: dict) -> None:
-        self._write_overview("")
+        ov = self._overview_widgets()
+        ov.message.grid_remove()
         stats = detail.get("stats") or {}
         rows = [("Уровень", detail.get("level") or "Не указан"),
                 ("Ранг", detail.get("rank") or "Не указан"),
@@ -621,31 +682,32 @@ class BestiaryView(ttk.Frame):
             description += "\nТорговые разделы: " + ", ".join(filter(None, groups))
         first_row = 0
         if description.strip():
-            intro = tk.Label(self.info_panel, text=description.strip(), bg=theme.SURFACE, fg=theme.TEXT,
-                             justify="left", anchor="w", wraplength=450, font=theme.font("body"), padx=12, pady=10)
-            intro.grid(row=0, column=0, columnspan=2, sticky="ew")
-            intro.bind("<Configure>", lambda e: intro.configure(wraplength=max(200, e.width-24)))
+            ov.intro.configure(text=description.strip())
+            ov.intro.grid(row=0, column=0, columnspan=2, sticky="ew")
             first_row = 1
+        else:
+            ov.intro.grid_remove()
         for index, (name, value) in enumerate(rows):
-            cell = tk.Frame(self.info_panel, bg=theme.SURFACE_2, padx=12, pady=9)
-            cell.grid(row=first_row + index // 2, column=index % 2, sticky="nsew", padx=1, pady=1)
-            tk.Label(cell, text=str(name).upper(), bg=theme.SURFACE_2, fg=theme.MUTED,
-                     font=theme.font("micro"), anchor="w").pack(fill="x")
-            label = tk.Label(cell, text=stat_text(value), bg=theme.SURFACE_2, fg=theme.TEXT,
-                             font=theme.font("control_strong"), anchor="w", justify="left")
-            label.pack(fill="x", pady=(3, 0))
-            cell.bind("<Configure>", lambda e, target=label: target.configure(wraplength=max(80, e.width - 24)))
-        if not stats:
-            tk.Label(self.info_panel, text="Подробные характеристики пока не загружены.",
-                     bg=theme.SURFACE, fg=theme.MUTED, wraplength=400, justify="left").grid(
-                         row=first_row + len(rows) // 2 + 1, column=0, columnspan=2, sticky="w", pady=8)
+            cell = self._stat_cell(index)
+            cell.name.configure(text=str(name).upper())
+            cell.value.configure(text=stat_text(value))
+            cell.frame.grid(row=first_row + index // 2, column=index % 2, sticky="nsew", padx=1, pady=1)
+        for cell in ov.cells[len(rows):]:
+            cell.frame.grid_remove()
+        if stats:
+            ov.note.grid_remove()
+        else:
+            ov.note.grid(row=first_row + len(rows) // 2 + 1, column=0, columnspan=2, sticky="w", pady=8)
 
     def _write_overview(self, text: str) -> None:
-        for child in self.info_panel.winfo_children():
-            child.destroy()
+        ov = self._overview_widgets()
+        for widget in (ov.intro, ov.note, *(cell.frame for cell in ov.cells)):
+            widget.grid_remove()
         if text:
-            tk.Label(self.info_panel, text=text, bg=theme.SURFACE, fg=theme.TEXT,
-                     wraplength=450, justify="left").grid(sticky="w", padx=12, pady=12)
+            ov.message.configure(text=text)
+            ov.message.grid(row=0, column=0, columnspan=2, sticky="w", padx=12, pady=12)
+        else:
+            ov.message.grid_remove()
 
     def _fill_drops(self, detail: dict) -> None:
         self.drops.delete(*self.drops.get_children())
