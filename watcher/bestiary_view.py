@@ -18,7 +18,7 @@ from watcher.bestiary_widgets import ProfileHeader, ScrollArea, bind_wheel_tree,
 
 
 PAGE_SIZE = 30
-CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant"}
+CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant", "Служебные": "service"}
 RARITY = {
     "junk": "Простой", "common": "Обычный", "rare": "Редкий",
     "legend": "Легендарный", "unique": "Уникальный", "epic": "Эпический",
@@ -110,7 +110,7 @@ class BestiaryView(ttk.Frame):
         chips = tk.Frame(left, bg=theme.SURFACE)
         chips.pack(fill="x", pady=(0, 7))
         self.category_chips: dict[str, tk.Button] = {}
-        for value, title in (("Все группы", "ВСЕ"), ("Монстры", "МОНСТР"), ("NPC", "NPC")):
+        for value, title in (("Все группы", "ВСЕ"), ("Монстры", "МОНСТР"), ("NPC", "NPC"), ("Служебные", "СЛУЖЕБНЫЕ")):
             button = tk.Button(chips, text=title, bd=1, relief="solid", cursor="hand2",
                                font=theme.font("micro"), padx=10, pady=4,
                                command=lambda choice=value: self._choose_category(choice))
@@ -567,6 +567,10 @@ class BestiaryView(ttk.Frame):
                     location_text = "По базе KB: " + ", ".join(filter(None, locations)) if locations else empty
                     tk.Label(block, text=location_text, bg=theme.SURFACE_2, fg=theme.MUTED, wraplength=400, justify="left",
                              anchor="w", font=theme.font("small")).pack(fill="x")
+                if counts and detail.get("points_from"):
+                    tk.Label(block, text=f"Места взяты у одноимённой записи «{detail['points_from']}».", bg=theme.SURFACE_2,
+                             fg=theme.MUTED, wraplength=400, justify="left", anchor="w",
+                             font=theme.font("small")).pack(fill="x")
                 for map_id, count in sorted(counts.items(), key=lambda pair: self.map_names.get(pair[0], pair[0])):
                     row = tk.Frame(block, bg=theme.SURFACE_2)
                     row.pack(fill="x", pady=3)
@@ -774,11 +778,9 @@ class BestiaryView(ttk.Frame):
             with Image.open(path) as raw:
                 image = raw.convert("RGBA")
                 if asset.startswith(("items/", "client/")) and image.size == (64, 64):
-                    # Game item tiles use a 40px frame inside a padded 64px texture.
-                    # Crop only when both outer strips really are uniform padding.
-                    strips = (image.crop((40, 0, 64, 64)), image.crop((0, 40, 64, 64)))
-                    if all(all(hi-lo <= 16 for lo, hi in strip.getextrema()) for strip in strips):
-                        image = image.crop((0, 0, 40, 40))
+                    # Game item tiles are 40px tiles in a padded 64px texture: always cut the padding off
+                    # (a uniform-strip test misses tiles with dark frames and left them small).
+                    image = image.crop((0, 0, 40, 40))
                 from PIL import ImageOps
                 image = ImageOps.contain(image, (size, size), Image.Resampling.LANCZOS)
                 photo = ImageTk.PhotoImage(image, master=self)

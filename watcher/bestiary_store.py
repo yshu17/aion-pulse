@@ -48,7 +48,7 @@ class BestiaryStore:
         self.connection.row_factory = sqlite3.Row
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
         self.version = version
-        if version not in (1, 2, 3, 4):
+        if version not in (1, 2, 3, 4, 5):
             self.close()
             raise ValueError(f"Неизвестный формат базы бестиария: {version}")
 
@@ -95,6 +95,9 @@ class BestiaryStore:
             clauses.append("n.search_text LIKE ? ESCAPE '\\'")
             escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             params.append(f"%{escaped}%")
+        if self.version >= 5:  # technical and duplicate records are a group of their own
+            clauses.append("n.service = ?")
+            params.append(1 if category == "service" else 0)
         if category == "monster":
             clauses.append("n.category = 'monster'")
         elif category == "npc":

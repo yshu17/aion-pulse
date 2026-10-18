@@ -18,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from watcher.bestiary_classify import plan
 from watcher.bestiary_store import DETAIL_DICT
 from watcher.bestiary_labels import faction_for, race_label
 from tools.build_bestiary_data import SITE_MAP_IDS
@@ -71,7 +72,8 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 point_count INTEGER NOT NULL,
                 drop_count INTEGER NOT NULL,
                 has_profile INTEGER NOT NULL,
-                detail BLOB NOT NULL
+                detail BLOB NOT NULL,
+                service INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE item (
                 item_id TEXT PRIMARY KEY, name TEXT NOT NULL, rarity TEXT NOT NULL, icon TEXT NOT NULL
@@ -101,6 +103,18 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             """
         )
         zones = data["zones"]
+        rows = []
+        for record in data["records"]:
+            kb = record.get("kb") or {}
+            rows.append({
+                "id": str(record["id"]),
+                "name": _text(record.get("name") or record.get("site_name") or record.get("internal_name")) or str(record["id"]),
+                "level": _text(kb.get("level") or record.get("site_level")), "category": record.get("category") or "",
+                "points": len(record.get("points") or []), "drops": len(kb.get("drops") or []), "profile": int(bool(kb)),
+            })
+        donors, service_ids = plan(rows)  # spawn points for records without their own; technical and duplicate records
+        by_id = {str(record["id"]): record for record in data["records"]}
+        names = {row["id"]: row["name"] for row in rows}
         shared: dict[str, bytes] = {}  # identical drop and stock lists are stored once
 
         def share(value: list) -> str:
@@ -115,6 +129,9 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             service = services.get(str(record["id"]), {})
             badges = kb.get("badges") or {}
             points = record.get("points") or []
+            donor_id = donors.get(str(record["id"]))
+            if donor_id:
+                points = by_id[donor_id].get("points") or []
             mapped_ids = sorted({str(point["map_id"]) for point in points if point.get("map_id")})
             zone_names = [str(zones.get(map_id, map_id)) for map_id in mapped_ids]
             for location in kb.get("locations") or []:
@@ -160,6 +177,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 "stats": kb.get("stats") or {},
                 "drops": share([str(drop.get("item_id")) for drop in drops]) if drops else "",
                 "points": points,
+                "points_from": names[donor_id] if donor_id else "",
                 "kb_locations": [
                     {"slug": loc.get("slug"), "name": loc.get("name"), "count": len(loc.get("points") or [])}
                     for loc in kb.get("locations") or []
@@ -172,12 +190,12 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 if label not in detail["stats"] and value is not None:
                     detail["stats"][label] = str(value)
             con.execute(
-                "INSERT INTO npc VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO npc VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     str(record["id"]), name, search_text, category,
                     role, kind, race, faction, rank,
                     _text(detail["level"]), _text(detail["icon_asset"]), ", ".join(zone_names),
-                    len(points), len(drops), int(bool(kb)), _pack_detail(detail),
+                    len(points), len(drops), int(bool(kb)), _pack_detail(detail), int(str(record["id"]) in service_ids),
                 ),
             )
             con.executemany(
@@ -196,6 +214,9 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                         con.execute("INSERT OR IGNORE INTO npc_region VALUES (?,?,?)", (str(record["id"]), map_id, region))
         con.executemany("INSERT INTO item VALUES (?,?,?,?)", ((key, *value) for key, value in items.items()))
         con.executemany("INSERT INTO shared VALUES (?,?)", shared.items())
+        areas = areas + [  # a record that takes its points from a donor takes the donor's areas too
+            {**area, "npc_id": npc_id} for npc_id, donor_id in donors.items() for area in areas if str(area["npc_id"]) == donor_id
+        ]
         area_rows = [
             (
                 str(area["npc_id"]), str(area["map_id"]), str(area["area_id"]), int(area["point_count"]),
@@ -215,7 +236,8 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             CREATE INDEX npc_zone_map ON npc_zone(map_id, npc_id);
             CREATE INDEX npc_area_id ON npc_area(npc_id, map_id);
             CREATE INDEX npc_region_filter ON npc_region(map_id,name,npc_id);
-            PRAGMA user_version=4;
+            CREATE INDEX npc_service ON npc(service);
+            PRAGMA user_version=5;
             """
         )
         con.commit()
