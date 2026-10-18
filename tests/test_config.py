@@ -78,3 +78,16 @@ def test_save_is_atomic_and_leaves_no_temporary_file(tmp_path):
     save_config(path, Config(keywords=["б"]))
     assert load_config(path).keywords == ["б"]
     assert not (tmp_path / "config.json.tmp").exists()
+
+
+def test_one_folder_build_keeps_settings_outside_its_folder(tmp_path, monkeypatch):
+    """A rebuild replaces the build folder: config.json must live next to it, not inside."""
+    import sys
+    from watcher.config import app_root
+    build = tmp_path / "Pulse-Local"
+    (build / "_internal").mkdir(parents=True)
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(build / "Pulse-Local.exe"))
+    assert app_root() == tmp_path
+    (build / "_internal").rmdir()  # a one-file exe keeps it next to itself
+    assert app_root() == build

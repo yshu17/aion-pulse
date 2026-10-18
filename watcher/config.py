@@ -11,8 +11,11 @@ DEFAULT_GAME_DIR = r"C:\aMain\Games\AION Imperia\Aion Empire"
 
 
 def app_root() -> Path:
+    """Folder of config.json. A one-folder build keeps it next to its folder, so a rebuild (which replaces the
+    folder) never deletes the settings."""
     if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
+        exe_dir = Path(sys.executable).resolve().parent
+        return exe_dir.parent if (exe_dir / "_internal").is_dir() else exe_dir
     return Path(__file__).resolve().parent.parent
 
 
