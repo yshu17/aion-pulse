@@ -14,7 +14,8 @@ from tkinter import filedialog, ttk
 from watcher import theme
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
-from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, resource_root
+from watcher.bestiary_view import BestiaryView
+from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, local_bestiary_dir, resource_root
 from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
 from watcher.reminders import due_reminders, occurrences_between
 from watcher.schedule_tab import (LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range,
@@ -37,7 +38,7 @@ from watcher.notify_tab import NotifyPanel
 from watcher.schedule_custom import Custom
 from watcher.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
 from watcher.updater import API as RELEASE_API, latest_release, newer
-from watcher.version import APP_NAME, VERSION
+from watcher.version import APP_NAME, VERSION, build_label
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
@@ -163,7 +164,7 @@ class App:
 
     def _build_ui(self) -> None:
         root = self.root
-        root.title(f"{APP_NAME} {VERSION}")
+        root.title(f"{APP_NAME} {VERSION}{build_label()}")
         root.geometry("1400x860")
         root.minsize(1000, 600)
         theme.apply_dark_theme(root, resource_root() / "data" / "ui")
@@ -385,6 +386,7 @@ class App:
         self.all_chat.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.all_chat, text="Весь чат")
         maps_dir = resource_root() / "data" / "maps"
+        bestiary_dir = local_bestiary_dir()  # NPC data is loaded from outside the program; no data, no tab
         self.map_view = MapView(
             self.tabs,
             self.zones,
@@ -397,10 +399,23 @@ class App:
             on_theme=self._on_map_theme,
             side=self.cfg.map_side,
             on_side=self._on_map_side,
+            bestiary_database=bestiary_dir / "npcs.sqlite" if bestiary_dir else None,
+            bestiary_icons=bestiary_dir / "icons" if bestiary_dir else None,
         )
         self.map_view.motion_enabled = lambda: not self.cfg.reduce_motion
         self.map_view.configure(padding=(0, 12, 0, 0))
         self.tabs.add(self.map_view, text="Карта")
+        self.bestiary_view = None
+        if bestiary_dir:
+            self.bestiary_view = BestiaryView(
+                self.tabs,
+                bestiary_dir / "npcs.sqlite",
+                bestiary_dir / "icons",
+                {map_id: zone.name for map_id, zone in self.zones.items()},
+                on_map=self._open_bestiary_point,
+            )
+            self.bestiary_view.configure(padding=(0, 12, 0, 0))
+            self.tabs.add(self.bestiary_view, text="NPC / Бестиарий")
         # SN-7: the server schedule — what runs now and next, and the events of any weekday
         self.schedule_tab = ScheduleTab(
             self.tabs, load_events(resource_root() / "data" / "schedule.json"),
@@ -550,6 +565,8 @@ class App:
             self.all_chat.deactivate()
         if self.tabs.select() == str(self.map_view):
             self.map_view.activate()
+        if self.bestiary_view and self.tabs.select() == str(self.bestiary_view):
+            self.bestiary_view.activate()
 
     # --- alerts --------------------------------------------------------------------
     def _on_feed_accept(self, alert_id: int) -> None:
@@ -1105,6 +1122,25 @@ class App:
         self._hide_tooltip()
         self.tabs.select(self.map_view)
         self.map_view.show(Place(map_id, x, y, label))
+
+    def _open_bestiary_point(
+        self, map_id: str, x: float, y: float, label: str,
+        points: list[dict], areas: list[dict],
+    ) -> None:
+        """Open a client spawn point selected in the Bestiary."""
+        self.tabs.select(self.map_view)
+        self.map_view.show(
+            Place(map_id, x, y, label, "Точка появления из файлов клиента; серверная расстановка не подтверждена"),
+            others=[
+                Place(map_id, float(point["gx"]), float(point["gy"]), label, "Другая точка появления")
+                for point in points
+                if (float(point["gx"]), float(point["gy"])) != (x, y)
+            ],
+            source_label="Точка появления",
+            spawn_areas=[area["polygon"] for area in areas],
+        )
+        self.map_view.search_var.set(label)
+        self.map_view._run_mob_search(preserve_map=True)
 
     def _process(self, lines: list[str]) -> None:
         now = time.monotonic()

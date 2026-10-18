@@ -19,6 +19,9 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.catalog import resource_root
+from watcher.bestiary_store import BestiaryStore
+from watcher.bestiary_widgets import bind_wheel_tree
+from watcher.spawn_overlay import enclosing_spawn_circle, paint_spawn_circle
 from watcher.ui_icons import IconSet
 from watcher.hint import Hint
 from watcher.mapcard import NEARBY_TYPES, PointCard
@@ -182,12 +185,21 @@ class MapView(ttk.Frame):
         on_theme: Callable[[str], None] | None = None,
         side: str = "dark",
         on_side: Callable[[str], None] | None = None,
+        bestiary_database: Path | None = None,
+        bestiary_icons: Path | None = None,
     ) -> None:
         super().__init__(parent)
         self.zones = zones
         self.ui_icons = IconSet(self, resource_root() / "data" / "ui" / "icons")
         self.poi = (poi or PoiStore({}, {})).projected({map_id: z.to_image for map_id, z in zones.items()})
         self.icons_dir = icons_dir or Path(".")
+        self.bestiary_database = bestiary_database
+        self.bestiary_icons = bestiary_icons
+        self._bestiary_store: BestiaryStore | None = None
+        self._mob_search_after: str | None = None
+        self._mob_search_query = ""
+        self._mob_rows: list[dict] = []
+        self._mob_icons: dict[str, object] = {}
         self.on_show_quests = on_show_quests or (lambda _on: None)
         self.theme = map_theme if map_theme in THEMES else "game"
         self.on_theme = on_theme or (lambda _theme: None)
@@ -204,6 +216,8 @@ class MapView(ttk.Frame):
         self.current_layer: int | None = None
         self.place: Place | None = None
         self.others: list[Place] = []
+        self._external_places = False  # the selected Bestiary mob's other client spawn points
+        self.spawn_areas: list[list[list[float]]] = []  # approximate image-pixel polygons for a selected mob
         self.zoom = 1.0  # screen px per map image px
         self.left = 0.0  # map image px at the canvas's left / top edge
         self.top = 0.0
@@ -277,7 +291,7 @@ class MapView(ttk.Frame):
         self.title = ttk.Label(group, text="", style="Title.TLabel")
         self.title.pack(side="left", padx=(14, 0))
         self.title.pack_forget()
-        body = ttk.Frame(self)
+        body = self.body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         self._matches: list = []
         self._match_index = -1
@@ -285,6 +299,41 @@ class MapView(ttk.Frame):
         self.selected: Poi | None = None
         self.point_card = PointCard(body, get_icon=lambda t: self._poi_icon(t, 20))
         self.point_card.pack(side="right", fill="y", padx=(10, 0))
+        self.mob_panel = tk.Frame(body, bg=theme.SURFACE, width=440)
+        self.mob_panel.pack_propagate(False)
+        self.mob_header = tk.Frame(self.mob_panel, bg=theme.SURFACE, padx=12, pady=12)
+        self.mob_header.pack(fill="x")
+        tk.Label(self.mob_header, text="Результаты поиска", bg=theme.SURFACE, fg=theme.TEXT,
+                 font=theme.font("title"), anchor="w").pack(fill="x")
+        self.mob_subtitle = tk.Label(self.mob_header, text="", bg=theme.SURFACE, fg=theme.MUTED,
+                                     font=theme.font("small"), anchor="w", wraplength=370)
+        self.mob_subtitle.pack(fill="x", pady=(5, 0))
+        panel_body = tk.Frame(self.mob_panel, bg=theme.SURFACE)
+        panel_body.pack(fill="both", expand=True)
+        self.mob_canvas = tk.Canvas(panel_body, bg=theme.SURFACE, highlightthickness=0, borderwidth=0)
+        self.mob_canvas.pack(side="left", fill="both", expand=True)
+        mob_scroll = ttk.Scrollbar(panel_body, orient="vertical", command=self.mob_canvas.yview)
+        mob_scroll.pack(side="right", fill="y")
+        self.mob_canvas.configure(yscrollcommand=mob_scroll.set)
+        self.mob_content = tk.Frame(self.mob_canvas, bg=theme.SURFACE)
+        self._mob_window = self.mob_canvas.create_window((0, 0), window=self.mob_content, anchor="nw")
+        self.mob_canvas.bind("<Configure>", lambda e: self.mob_canvas.itemconfigure(self._mob_window, width=e.width))
+        self.mob_content.bind("<Configure>", lambda _e: self.mob_canvas.configure(scrollregion=self.mob_canvas.bbox("all")))
+        self.mob_canvas.bind("<MouseWheel>", lambda e: self.mob_canvas.yview_scroll(-int(e.delta / 120), "units"))
+        self.mob_selection = tk.Frame(self.mob_panel, bg=theme.SURFACE_2, padx=12, pady=10)
+        self.mob_selection.pack(fill="x", padx=8, pady=8)
+        self.mob_selection_title = tk.Label(self.mob_selection, text="Область появления", bg=theme.SURFACE_2,
+                                             fg=theme.ACCENT, font=theme.font("control_strong"), anchor="w")
+        self.mob_selection_title.pack(fill="x")
+        self.mob_selection_info = tk.Label(self.mob_selection, text="Выберите результат", bg=theme.SURFACE_2,
+                                            fg=theme.MUTED, font=theme.font("small"), anchor="w", wraplength=350)
+        self.mob_selection_info.pack(fill="x", pady=(5, 7))
+        self.mob_point_button = ttk.Button(self.mob_selection, text="➤  Перейти к точке",
+                                            command=self._go_to_mob_point)
+        self.mob_point_button.pack(fill="x")
+        self.mob_point_button.configure(state="disabled")
+        self._mob_target: tuple[str, float, float] | None = None
+        body.bind("<Configure>", self._size_mob_panel, add="+")
         card = ttk.Frame(body, style="Card.TFrame", padding=6)
         card.pack(side="left", fill="both", expand=True)
         self.canvas = tk.Canvas(card, background=theme.BG, highlightthickness=0, borderwidth=0, cursor="fleur")
@@ -315,7 +364,8 @@ class MapView(ttk.Frame):
             if default is not None:
                 self.open_zone(default)
         else:
-            self._refresh_pins()
+            if not self._external_places:
+                self._refresh_pins()
             self.render()
 
     def open_zone(self, map_id: str) -> None:
@@ -325,6 +375,8 @@ class MapView(ttk.Frame):
             return
         self._cancel_fly()
         self.place = None
+        self._external_places = False
+        self.spawn_areas = []
         self.selected = None
         self._stop_blink()
         self.point_card.clear()
@@ -334,10 +386,16 @@ class MapView(ttk.Frame):
         self.update_idletasks()
         self._fit()
 
-    def show(self, place: Place, others: Iterable[Place] | None = None) -> None:
+    def show(
+        self, place: Place, others: Iterable[Place] | None = None,
+        source_label: str = "Место из чата",
+        spawn_areas: Iterable[list[list[float]]] = (),
+    ) -> None:
         self._cancel_fly()
         zone = self.zones.get(place.map_id)
         self.place = place
+        self._external_places = others is not None
+        self.spawn_areas = list(spawn_areas)
         if zone is None:
             self._set_title(f"{place.label}  ·  карты этой зоны нет")
             return
@@ -347,7 +405,7 @@ class MapView(ttk.Frame):
         self._set_title(place.label)
         self.selected = None
         self.point_card.show(
-            "Место из чата", place.label, place.x, place.y, place.note, self.nearby(zone.map_id, place.x, place.y)
+            source_label, place.label, place.x, place.y, place.note, self.nearby(zone.map_id, place.x, place.y)
         )
         self.update_idletasks()
         if self.zoom < self._fit_zoom() * 2:
@@ -530,6 +588,10 @@ class MapView(ttk.Frame):
             resample = Image.BILINEAR if self.zoom >= 1 else Image.LANCZOS
             part = self._image.resize((part_w, part_h), resample, box=(x0, y0, x1, y1))
             view.paste(part, (round((x0 - self.left) * self.zoom), round((y0 - self.top) * self.zoom)))
+        circle = enclosing_spawn_circle(self.spawn_areas)
+        if circle:
+            cx, cy, radius = circle
+            view = paint_spawn_circle(view, self.to_screen(cx, cy), radius * self.zoom)
         self._photo = ImageTk.PhotoImage(view, master=self.canvas)
         canvas = self.canvas
         canvas.delete("all")
@@ -537,7 +599,7 @@ class MapView(ttk.Frame):
         self._draw_labels(width, height)
         self._draw_poi(width, height)
         self._avoid_label_poi(width, height)  # ui:33: area text must not cover map icons
-        for index, other in enumerate(self.others):
+        for index, other in enumerate(self.others if self.zoom >= self._fit_zoom() * 1.7 else []):
             sx, sy = self.to_screen(*self.zone.to_image(other.x, other.y))
             canvas.create_oval(sx - 6, sy - 6, sx + 6, sy + 6, fill=OTHER_PIN, outline=theme.PLACE_OUTLINE, width=2,
                                tags=("other", f"other_{index}"))
@@ -656,7 +718,9 @@ class MapView(ttk.Frame):
             if other is not None and other < len(self.others) and self.zone is not None:
                 place = self.others[other]
                 self.selected = None
-                self.point_card.show("Место из чата", place.label, place.x, place.y, place.note,
+                self.point_card.show(
+                    "Точка появления" if self._external_places else "Место из чата",
+                    place.label, place.x, place.y, place.note,
                                      self.nearby(self.zone.map_id, place.x, place.y))
                 return
 
@@ -725,12 +789,170 @@ class MapView(ttk.Frame):
         """Search box: next (1) / previous (-1) / first (0) match; shows «2 / 7» or «нет»."""
         query = self.search_var.get().strip()
         query = "" if query == SEARCH_PLACEHOLDER else query
+        if self.bestiary_database and query:
+            self._run_mob_search()
+            if self._mob_rows:
+                self.search_count.configure(text=f"{len(self._mob_rows)} NPC")
+                return "break"
         self.search_count.configure(text=self.search(query, step) if query else "")
         return "break"
 
     def _on_search_key(self, event: tk.Event) -> None:
         if event.keysym not in ("Return", "Escape", "Shift_L", "Shift_R"):
-            self._search(0)
+            if self.bestiary_database:
+                if self._mob_search_after:
+                    self.after_cancel(self._mob_search_after)
+                self._mob_search_after = self.after(220, self._run_mob_search)
+            else:
+                self._search(0)
+
+    def _size_mob_panel(self, event: tk.Event) -> None:
+        if self.mob_panel.winfo_manager():
+            self.mob_panel.configure(width=max(360, round(event.width * 0.40)))
+
+    def _run_mob_search(self, preserve_map: bool = False) -> None:
+        self._mob_search_after = None
+        query = self.search_var.get().strip()
+        if query == SEARCH_PLACEHOLDER:
+            query = ""
+        if not self.bestiary_database or len(query) < 2:
+            self._hide_mob_results()
+            return
+        if self._bestiary_store is None:
+            try:
+                self._bestiary_store = BestiaryStore(self.bestiary_database)
+            except (OSError, ValueError):
+                return
+        rows, total = self._bestiary_store.search(query, limit=20)
+        self._mob_rows = rows
+        self._mob_search_query = query
+        if not rows:
+            self._hide_mob_results()
+            self.search_count.configure(text=self.search(query, 0))
+            return
+        self.point_card.pack_forget()
+        if not self.mob_panel.winfo_manager():
+            self.mob_panel.pack(side="right", fill="y", padx=(10, 0))
+        self._mob_target = None
+        self.mob_selection_info.configure(text="Выберите результат")
+        self.mob_point_button.configure(state="disabled")
+        self.mob_panel.configure(width=max(360, round(self.body.winfo_width() * 0.40)))
+        self.mob_subtitle.configure(text=f"По запросу: «{query}»  ·  {total} NPC")
+        groups: dict[str, list[tuple[dict, dict, list[dict]]]] = {}
+        for row in rows:
+            detail = self._bestiary_store.detail(row["id"])
+            if not detail:
+                continue
+            points_by_zone: dict[str, list[dict]] = {}
+            for point in detail.get("points") or []:
+                map_id = str(point.get("map_id") or "")
+                if map_id in self.zones:
+                    points_by_zone.setdefault(map_id, []).append(point)
+            for map_id, points in points_by_zone.items():
+                groups.setdefault(map_id, []).append((row, detail, points))
+        self._render_mob_results(groups)
+        if not preserve_map and groups:
+            first_zone = min(groups, key=lambda map_id: self.zones[map_id].name)
+            first = groups[first_zone][0]
+            self._show_mob_zone(first[1], first_zone, first[2])
+        elif preserve_map and self.place:
+            for row, detail, points in groups.get(self.place.map_id, []):
+                if detail["name"] == self.place.label:
+                    self._set_mob_selection(detail, self.place.map_id, points)
+                    break
+        self.search_count.configure(text=f"{total} NPC")
+
+    def _hide_mob_results(self) -> None:
+        self._mob_rows = []
+        self._mob_search_query = ""
+        self._mob_target = None
+        if self.mob_panel.winfo_manager():
+            self.mob_panel.pack_forget()
+            self.point_card.pack(side="right", fill="y", padx=(10, 0))
+        if self._external_places:
+            self.spawn_areas = []
+            self._external_places = False
+            self._refresh_pins()
+            self._schedule_render()
+
+    def _render_mob_results(self, groups: dict[str, list[tuple[dict, dict, list[dict]]]]) -> None:
+        for child in self.mob_content.winfo_children():
+            child.destroy()
+        if not groups:
+            tk.Label(self.mob_content, text="Для найденных NPC нет точек на доступных картах.",
+                     bg=theme.SURFACE, fg=theme.MUTED, wraplength=350, justify="left").pack(anchor="w", padx=12, pady=12)
+            return
+        for map_id, entries in sorted(groups.items(), key=lambda pair: self.zones[pair[0]].name):
+            total_points = sum(len(points) for _row, _detail, points in entries)
+            tk.Label(self.mob_content, text=f"⌖  {self.zones[map_id].name}  ·  {total_points} точек",
+                     bg=theme.SURFACE_2, fg=theme.ACCENT, font=theme.font("control_strong"),
+                     anchor="w", padx=12, pady=9).pack(fill="x", padx=8, pady=(8, 4))
+            for row, detail, points in entries:
+                card = tk.Frame(self.mob_content, bg=theme.SURFACE_2, padx=10, pady=10)
+                card.pack(fill="x", padx=8, pady=(0, 7))
+                top = tk.Frame(card, bg=theme.SURFACE_2)
+                top.pack(fill="x")
+                icon = self._mob_icon(detail)
+                tk.Label(top, image=icon, bg=theme.SURFACE_2, width=56, height=56).pack(side="left", padx=(0, 9))
+                info = tk.Frame(top, bg=theme.SURFACE_2)
+                info.pack(side="left", fill="x", expand=True)
+                tk.Label(info, text=detail["name"], bg=theme.SURFACE_2, fg=theme.TEXT,
+                         font=theme.font("control_strong"), anchor="w").pack(fill="x")
+                chips = tk.Frame(info, bg=theme.SURFACE_2)
+                chips.pack(anchor="w", pady=(3, 0))
+                for key, color in (("kind", theme.PLACE), ("faction", theme.DANGER), ("rank", theme.TEXT)):
+                    value = detail.get(key)
+                    if value:
+                        tk.Label(chips, text=str(value).upper(), bg=theme.SURFACE_3, fg=color,
+                                 font=theme.font("micro"), padx=5, pady=1).pack(side="left", padx=(0, 4))
+                level = f"Ур. {detail['level']}  ·  " if detail.get("level") else ""
+                tk.Label(info, text=f"{level}{len(points)} точек появления", bg=theme.SURFACE_2,
+                         fg=theme.MUTED, font=theme.font("small"), anchor="w").pack(fill="x")
+                ttk.Button(card, text="⌖  Показать на карте",
+                           command=lambda d=detail, m=map_id, p=points: self._show_mob_zone(d, m, p)).pack(fill="x", pady=(9, 0))
+        bind_wheel_tree(self.mob_content, self.mob_canvas)
+        self.mob_canvas.yview_moveto(0)
+
+    def _mob_icon(self, detail: dict):
+        asset = "ui/monster.png" if detail.get("category") == "monster" else detail.get("icon_asset") or ""
+        if asset in self._mob_icons:
+            return self._mob_icons[asset]
+        path = (self.bestiary_icons or Path(".")) / asset
+        image = load_icon(path, 54, self.mob_canvas) if path.is_file() else None
+        self._mob_icons[asset] = image
+        return image
+
+    def _show_mob_zone(self, detail: dict, map_id: str, points: list[dict]) -> None:
+        if not points:
+            return
+        first = points[0]
+        x, y = float(first["gx"]), float(first["gy"])
+        areas = [a["polygon"] for a in (self._bestiary_store.areas(detail["id"]) if self._bestiary_store else [])
+                 if a["map_id"] == map_id]
+        self.show(Place(map_id, x, y, detail["name"], "Точка появления из файлов клиента"),
+                  others=[Place(map_id, float(p["gx"]), float(p["gy"]), detail["name"])
+                          for p in points[1:]], source_label="Точка появления", spawn_areas=areas)
+        self._fit()
+        self._set_mob_selection(detail, map_id, points)
+
+    def _set_mob_selection(self, detail: dict, map_id: str, points: list[dict]) -> None:
+        if not points:
+            return
+        first = points[0]
+        self._mob_target = (map_id, float(first["gx"]), float(first["gy"]))
+        self.mob_selection_info.configure(
+            text=f"{detail['name']}  ·  {self.zones[map_id].name}\n{len(points)} точек появления"
+        )
+        self.mob_point_button.configure(state="normal")
+
+    def _go_to_mob_point(self) -> None:
+        if not self._mob_target or not self.zone:
+            return
+        map_id, x, y = self._mob_target
+        if self.zone.map_id != map_id:
+            return
+        self.zoom = min(MAX_ZOOM, self._fit_zoom() * 2.2)
+        self.center_on(*self.zone.to_image(x, y))
 
     def _show_placeholder(self) -> None:
         if not self.search_var.get():

@@ -1,4 +1,5 @@
 from watcher.app import plural, split_keywords
+from watcher.catalog import local_bestiary_dir
 
 
 def test_split_keywords():
@@ -1059,11 +1060,12 @@ def test_settings_button_fits_at_the_minimum_window_width(tmp_path):
 
 
 def test_schedule_tab_is_in_the_app(tmp_path):
-    """SN-7: «Расписание» is the fourth tab and reads data/schedule.json."""
+    """SN-7: «Расписание» remains available after the Bestiary tab."""
     root, app, calls, say = _nag_app(tmp_path)
     try:
         names = [app.tabs.tab(t, "text") for t in app.tabs.tabs()]
-        assert names == ["Поиск", "Весь чат", "Карта", "Расписание"]  # notifications live in «Настройки» (13.10)
+        wanted = ["Поиск", "Весь чат", "Карта", "NPC / Бестиарий", "Расписание"]
+        assert names == (wanted if local_bestiary_dir() else [n for n in wanted if n != "NPC / Бестиарий"])
         assert len(app.schedule_tab.events) > 0
         assert app.schedule_tab.next_box.winfo_children()
     finally:

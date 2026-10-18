@@ -13,6 +13,17 @@ def resource_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def local_bestiary_dir() -> Path | None:
+    """Folder with the NPC / Bestiary data, which is not part of the program: `bestiary/` next to the exe
+    (or `local/bestiary/` in the project). None when it is not there, so the tab is simply not shown."""
+    if getattr(sys, "frozen", False):
+        base = Path(sys.executable).resolve().parent
+        candidates = [base / "bestiary", base / "local" / "bestiary"]
+    else:
+        candidates = [Path(__file__).resolve().parent.parent / "local" / "bestiary"]
+    return next((folder for folder in candidates if (folder / "npcs.sqlite").is_file()), None)
+
+
 CATEGORY_ORDER = [
     "Лата", "Кольчуга", "Кожа", "Ткань", "Оружие", "Щиты", "Крылья", "Украшения", "Головные уборы",
     "Изготовление", "Припасы", "Прочее",
