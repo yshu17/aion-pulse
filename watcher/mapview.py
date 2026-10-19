@@ -36,7 +36,7 @@ MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
 MOB_JOBS_PER_TICK = 4  # result headers and cards built per tick
-ZOOM_GLIDE = 0.1  # share of the remaining zoom distance covered by each frame (a third of the first version)
+ZOOM_GLIDE = 0.45  # share of the remaining zoom distance covered by each frame: ~9 frames, about a quarter of a second
 ZOOM_FRAME_MS = 10
 RESIZE_SETTLE_MS = 120  # redraw this long after the last window size change
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
