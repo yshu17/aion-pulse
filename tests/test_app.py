@@ -1385,3 +1385,28 @@ def test_window_snapshot_is_an_image_of_the_widget_size_or_none(tmp_path):
         assert capture_widget(tk.Frame(root)) is None  # never shown: nothing to capture
     finally:
         root.destroy()
+
+
+def test_the_frozen_picture_follows_the_window_size_during_a_drag(tmp_path, monkeypatch):
+    """While the edge is dragged the captured frame is stretched to the current size: the content moves with it."""
+    import watcher.app as module
+    from PIL import Image
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.update()
+        app.settle_layout()
+        root.update()
+        monkeypatch.setattr(module, "capture_widget", lambda widget: Image.new("RGB", (100, 80), "#123456"))
+        sizes = []
+        for step in range(6):
+            root.geometry(f"{1100 + step * 20}x{760 + step * 10}")
+            root.update()
+            if app._frozen_tabs is not None and app._veil_photo is not None:
+                sizes.append((app._veil_photo.width(), app._veil_photo.height()))
+        assert len(set(sizes)) >= 3  # the picture was re-stretched step by step
+        assert all(w > 100 and h > 80 for w, h in sizes)  # to the window, not the captured size
+        app.settle_layout()
+    finally:
+        root.destroy()
