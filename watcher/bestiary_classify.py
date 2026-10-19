@@ -1,6 +1,7 @@
 """Bestiary data hygiene without Tk or files: which records are technical, and where a record without spawn
 points can take them from.
 
+    is_main_npc(badge_type, role, has_goods) -> bool  merchant or functionary: the only NPCs listed for MAIN_ONLY_ZONES
     above_max_level(level, category) -> bool      a monster above level 55 (the server's cap), kept out of sight
     technical_name(name) -> bool                 test/internal names: «Test_…», «BAb1_…_lv50», English only, 3+ digits glued to letters
     plan(rows) -> (donors, service)              rows are dicts: id, name, level, category, points, drops, profile, sig
@@ -27,6 +28,18 @@ def above_max_level(level: object, category: str) -> bool:
     """A monster above MAX_MOB_LEVEL; a level that is not a number is never above it."""
     text = str(level or "").strip()
     return category == "monster" and text.isdigit() and int(text) > MAX_MOB_LEVEL
+
+
+MAIN_ONLY_ZONES = {"Элизиум"}  # zones listed for the NPCs a player deals with, not for every resident and guard
+MAIN_KINDS = {"торговец", "функционер"}  # what the site calls them
+MAIN_ROLES = {"merchant", "coin_merchant", "vendor", "broker", "teleport", "warehouse", "stigma", "stigma_master",
+              "postbox", "bindstone"}  # what the client says they do
+
+
+def is_main_npc(badge_type: str, role: str, has_goods: bool) -> bool:
+    """Merchants and functionaries (gatekeepers, warehouse keepers, the stigma master, brokers…), not residents,
+    guards or generic NPCs. A merchant with a goods list counts whatever the site calls it."""
+    return (has_goods or badge_type.strip().casefold() in MAIN_KINDS or role.strip().casefold() in MAIN_ROLES)
 
 
 NEW_STATS = "новые характеристики "

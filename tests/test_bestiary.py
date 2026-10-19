@@ -446,3 +446,27 @@ def test_wheel_over_the_gap_between_cards_scrolls_the_list(tmp_path):
         view.destroy()
     finally:
         root.destroy()
+
+
+def test_zone_npc_points_for_elysium_only_for_npcs_with_a_function():
+    from tools.add_zone_npc_points import add_points, has_function
+
+    assert has_function("Merchant") and has_function("Teleport") and has_function("TELEPORT") and has_function("Stigma_master")
+    assert not has_function("") and not has_function("Guard")
+    catalog = {"zones": {}, "records": [{"id": "1", "name": "Торговец"}, {"id": "2", "name": "Стражник"},
+                                         {"id": "3", "name": "Арена-NPC"}]}
+    flat = {"x": [1.0, 0.0], "y": [1.0, 0.0], "size": 3000}
+    maps = {map_id: flat for map_id in ("110010000", "110020000", "110070000", "120020000", "120080000")}
+    import tools.add_zone_npc_points as module
+    original = module.world_npcs
+    module.world_npcs = lambda extract, code: {"lc1": [("1", 100.0, 200.0, 5.0), ("2", 110.0, 210.0, 5.0)],
+                                               "arena_l_lobby": [("3", 50.0, 60.0, 1.0)]}.get(code, [])
+    try:
+        counts = add_points(catalog, maps, None, {"1": "Merchant", "2": "", "3": ""})
+        add_points(catalog, maps, None, {"1": "Merchant", "2": "", "3": ""})  # again: nothing repeated
+    finally:
+        module.world_npcs = original
+    by_id = {r["id"]: r.get("points", []) for r in catalog["records"]}
+    assert len(by_id["1"]) == 1 and by_id["2"] == []  # Elysium: the guard has no function, so no point
+    assert len(by_id["3"]) == 1  # the arena takes every NPC
+    assert counts[("lc1", "skipped: no function")] == 1

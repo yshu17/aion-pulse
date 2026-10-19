@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from watcher.bestiary_classify import above_max_level, plan
+from watcher.bestiary_classify import MAIN_ONLY_ZONES, above_max_level, is_main_npc, plan
 from watcher.bestiary_store import DETAIL_DICT
 from watcher.bestiary_labels import faction_for, race_label
 from tools.build_bestiary_data import SITE_MAP_IDS
@@ -192,9 +192,17 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
             donor_id = donors.get(str(record["id"]))
             if donor_id:
                 points = by_id[donor_id].get("points") or []
+            main = is_main_npc(_text(badges.get("type")), _text(record.get("role") or service.get("role")),
+                               bool(service.get("tabs") or service.get("stock")))
+            if not main:  # a capital keeps only the NPCs a player deals with: no pets, monsters or residents on it
+                points = [p for p in points if str(zones.get(str(p.get("map_id")), "")) not in MAIN_ONLY_ZONES]
             mapped_ids = sorted({str(point["map_id"]) for point in points if point.get("map_id")})
             zone_names = [str(zones.get(map_id, map_id)) for map_id in mapped_ids]
-            for location in kb.get("locations") or []:
+            # the site lists every resident and guard of a capital: such a zone keeps only the NPCs a player deals
+            # with (and any NPC the client places on its map)
+            locations = [loc for loc in kb.get("locations") or []
+                         if main or _text(loc.get("name")) not in MAIN_ONLY_ZONES or _text(loc.get("name")) in zone_names]
+            for location in locations:
                 name = _text(location.get("name"))
                 if name and name not in zone_names:
                     zone_names.append(name)
@@ -270,7 +278,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                 "INSERT OR IGNORE INTO npc_zone VALUES (?,?,?)",
                 ((str(record["id"]), map_id, str(zones.get(map_id, map_id))) for map_id in mapped_ids),
             )
-            for location in kb.get("locations") or []:
+            for location in locations:
                 location_name = _text(location.get("name") or location.get("slug"))
                 slug = _text(location.get("slug")).casefold()
                 map_id = SITE_MAP_IDS.get(slug) or next((key for key, value in zones.items() if value == location_name), "kb:" + slug)

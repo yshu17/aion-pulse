@@ -48,3 +48,12 @@ def test_monsters_above_level_55_are_service_records():
     assert not above_max_level("55", "monster")  # 55 stays visible
     assert not above_max_level("60", "npc")  # only monsters
     assert not above_max_level("", "monster") and not above_max_level("55+", "monster")
+
+
+def test_main_npcs_are_merchants_and_functionaries():
+    from watcher.bestiary_classify import MAIN_ONLY_ZONES, is_main_npc
+    assert is_main_npc("Торговец", "", False) and is_main_npc("Функционер", "", False)
+    assert is_main_npc("", "merchant", False) and is_main_npc("Житель", "", True)  # goods make a merchant
+    assert is_main_npc("НПС", "postbox", False) and is_main_npc("Житель", "stigma_master", False)  # the client knows better
+    assert not is_main_npc("Житель", "", False) and not is_main_npc("Стражник", "", False) and not is_main_npc("НПС", "", False)
+    assert "Элизиум" in MAIN_ONLY_ZONES
