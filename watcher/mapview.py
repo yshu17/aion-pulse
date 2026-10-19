@@ -46,9 +46,9 @@ SIDES = {"dark": "Асмодиане", "light": "Элийцы"}
 # Silentera Tunnel entrances only (tools/build_poi.py).
 # the «Метки» menu: group -> (title, point types). Every group can be switched off; there is no «all» entry
 FILTER_GROUPS = {
-    "buildings": ("Здания", ("fortress", "artifact", "tunnel", "portal", "raid_boss")),
+    "buildings": ("Здания", ("fortress", "artifact", "portal", "raid_boss")),
     "dungeons": ("Подземелья", ("dungeon",)),
-    "rifts": ("Пространственные разломы", ("direct_portal",)),
+    "rifts": ("Пространственные разломы", ("direct_portal", "tunnel")),  # tunnel: the passes into the Silentera tunnel
     "merchants": ("Торговцы", ("merchant", "coin_merchant", "vendor")),
     "teleports": ("Телепорты", ("teleport",)),
     "services": ("Склад, стигмы, почта", ("warehouse", "stigma", "postbox", "bindstone")),

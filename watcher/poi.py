@@ -109,15 +109,20 @@ def cluster(
     radius_px: float,
     key: Callable[[Poi], str] | None = None,
 ) -> list[tuple[float, float, list[Poi]]]:
-    """Group points with the same key (default: the type) that fall into one screen cell of radius_px.
+    """Group points with the same key (default: the type) that fall into one cell of radius_px.
 
     Returns (screen x, screen y, members); the position is the members' mean on screen.
+
+    The cells are laid out from the map's own origin (where to_screen puts image point 0, 0), not from the corner of
+    the screen. Dragging the map moves every point and the origin alike, so the same points share a cell however the
+    map is panned: no icon merges or splits, counts do not appear and vanish, and the mean does not jump.
     """
     key = key or (lambda p: p.type)
+    origin_x, origin_y = to_screen(0.0, 0.0)
     cells: dict[tuple[str, int, int], list[tuple[float, float, Poi]]] = {}
     for p in points:
         sx, sy = to_screen(p.x, p.y)
-        cell = (key(p), math.floor(sx / radius_px), math.floor(sy / radius_px))
+        cell = (key(p), math.floor((sx - origin_x) / radius_px), math.floor((sy - origin_y) / radius_px))
         cells.setdefault(cell, []).append((sx, sy, p))
     out = []
     for members in cells.values():
