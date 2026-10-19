@@ -390,8 +390,7 @@ class App:
             get_minutes=lambda: self.cfg.history_min,
             show_system=self.cfg.chat_system,
             on_settings=self._on_chat_settings,
-            toolbar_parent=root,
-            spec_items=spec_items,
+            spec_items=spec_items,  # the toolbar is the first row of the page: the tab row has no room for it
             grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
@@ -577,12 +576,8 @@ class App:
     def _on_tab_changed(self) -> None:
         self.root.after_idle(lambda: refresh_pointer_cursor(self.root))  # the page under the pointer changed
         if self.tabs.select() == str(self.all_chat):
-            # the tab's own controls sit in the free space of the tab row, right side
-            self.all_chat.toolbar.place(in_=self.tabs, relx=1.0, x=-2, y=2, anchor="ne")
-            self.all_chat.toolbar.lift()
             self.all_chat.activate()
         else:
-            self.all_chat.toolbar.place_forget()
             self.all_chat.deactivate()
         if self.tabs.select() == str(self.map_view):
             self.map_view.activate()

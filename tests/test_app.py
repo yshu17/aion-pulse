@@ -646,20 +646,20 @@ def test_one_history_choice_drives_search_and_all_chat(tmp_path):
         root.destroy()
 
 
-def test_all_chat_toolbar_sits_in_tab_row_only_on_its_tab(tmp_path):
+def test_all_chat_toolbar_is_the_first_row_of_its_page_not_over_the_tab_row(tmp_path):
+    """With nine tabs the tab row has no free space: the controls sit on the page, never over the tab labels."""
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
-        app.all_chat.activate = lambda: None
-        app.all_chat.deactivate = lambda: None
-        toolbar = app.all_chat.toolbar
-        assert toolbar.master is not app.all_chat
-        assert not toolbar.winfo_manager()
+        root.deiconify()
+        root.geometry("1000x700")
+        root.update()
+        app.settle_layout()
         app.tabs.select(app.all_chat)
-        app._on_tab_changed()
-        assert toolbar.winfo_manager() == "place"
-        app.tabs.select(app.search_tab)
-        app._on_tab_changed()
-        assert not toolbar.winfo_manager()
+        root.update()
+        toolbar = app.all_chat.toolbar
+        assert toolbar.master is app.all_chat and toolbar.winfo_manager() == "pack"
+        last = app.tabs.bbox(len(app.tabs.tabs()) - 1)  # (x, y, width, height) of the last tab
+        assert toolbar.winfo_rooty() >= app.tabs.winfo_rooty() + last[1] + last[3]  # below the tab labels
     finally:
         root.destroy()
 
