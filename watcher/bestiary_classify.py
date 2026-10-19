@@ -32,7 +32,7 @@ def technical_name(name: str) -> bool:
 def stem_key(name: str) -> tuple[str, ...]:
     """Word stems of a name, order-free, so «хранителя Валона» and «Хранитель Валон» agree."""
     words = re.findall(r"[а-яёa-z0-9]+", name.casefold())
-    return tuple(sorted(word[:max(4, len(word) - 2)] for word in words))
+    return tuple(sorted(word[:-1] if len(word) > 3 and word[-1] in "аяуюыиеоьй" else word for word in words))
 
 
 def plan(rows: list[dict]) -> tuple[dict[str, str], set[str]]:

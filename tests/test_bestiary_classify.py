@@ -15,6 +15,7 @@ def test_technical_names():
 
 def test_stem_key_ignores_case_endings_and_order():
     assert stem_key("хранителя Валона") == stem_key("Хранитель Валон") == stem_key("Валон хранитель")
+    assert stem_key("Натараза") == stem_key("Натараз")  # a one-letter ending of a longer name
 
 
 def test_new_stats_variant_takes_points_and_duplicates_are_service():

@@ -10,6 +10,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import math
 import sqlite3
 import zlib
 import sys
@@ -50,6 +51,34 @@ def _pack_detail(value: object) -> bytes:
     return packer.compress(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) + packer.flush()
 
 
+def apply_manual_points(data: dict, areas: list, manual: dict, to_image) -> int:
+    """Add hand-set spawn points (game x, y on a map) to records the client data has no place for.
+
+    manual = {"<npc id>": {"map_id": "220070000", "points": [[game x, game y], ...]}}; to_image(map_id, x, y) turns a
+    game position into map pixels. The record gets the points and a small area around each, so the map shows the
+    pin and the circle like for any other mob. Returns the number of points added.
+    """
+    by_id = {str(record["id"]): record for record in data["records"]}
+    added = 0
+    for npc_id, entry in manual.items():
+        record = by_id.get(str(npc_id))
+        if record is None or not entry.get("points"):
+            continue
+        map_id = str(entry["map_id"])
+        for number, (game_x, game_y) in enumerate(entry["points"]):
+            image_x, image_y = to_image(map_id, float(game_x), float(game_y))
+            record.setdefault("points", []).append({
+                "mob_id": str(npc_id), "x": round(image_x, 2), "y": round(image_y, 2), "gx": float(game_x),
+                "gy": float(game_y), "gz": 0.0, "source": "manual", "map_id": map_id,
+            })
+            ring = [[round(image_x + 40 * math.cos(a * math.pi / 4), 2), round(image_y + 40 * math.sin(a * math.pi / 4), 2)]
+                    for a in range(8)]
+            areas.append({"npc_id": str(npc_id), "map_id": map_id, "area_id": f"manual-{number}", "point_count": 1,
+                          "center": [round(image_x, 2), round(image_y, 2)], "area_names": [], "polygon": ring})
+            added += 1
+    return added
+
+
 def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
     with gzip.open(source, "rt", encoding="utf-8") as stream:
         data = json.load(stream)
@@ -60,6 +89,16 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
     if services_path.exists():
         with gzip.open(services_path, "rt", encoding="utf-8") as stream:
             services = json.load(stream).get("npcs", {})
+
+    manual_path = source.with_name("manual_points.json")
+    if manual_path.exists():  # places set by hand where the client has none (local file, not in the repository)
+        from watcher.catalog import resource_root
+        from watcher.mapview import load_zones
+        from watcher.parser import MAP_NAMES
+
+        zones_by_id = load_zones(resource_root() / "data" / "maps", MAP_NAMES)
+        manual = json.loads(manual_path.read_text(encoding="utf-8"))
+        apply_manual_points(data, areas, manual, lambda map_id, x, y: zones_by_id[map_id].to_image(x, y))
 
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(".tmp")

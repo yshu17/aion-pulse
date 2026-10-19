@@ -333,3 +333,17 @@ def test_divider_cursor_does_not_leak_into_the_panes(tmp_path):
         view.destroy()
     finally:
         root.destroy()
+
+
+def test_manual_points_give_a_record_a_pin_and_a_circle_area():
+    from tools.build_bestiary_index import apply_manual_points
+
+    data = {"records": [{"id": 1, "name": "Босс", "points": []}, {"id": 2, "name": "Другой"}]}
+    areas = []
+    added = apply_manual_points(data, areas, {"1": {"map_id": "220070000", "points": [[1421, 1346]]}, "9": {"map_id": "x", "points": [[1, 2]]}},
+                                lambda map_id, x, y: (y, x))
+    assert added == 1  # an id that is not in the data is skipped
+    point = data["records"][0]["points"][0]
+    assert (point["gx"], point["gy"], point["x"], point["y"], point["source"]) == (1421.0, 1346.0, 1346.0, 1421.0, "manual")
+    assert "points" not in data["records"][1]
+    assert areas[0]["npc_id"] == "1" and areas[0]["center"] == [1346.0, 1421.0] and len(areas[0]["polygon"]) == 8

@@ -91,7 +91,7 @@ class BestiaryView(ttk.Frame):
         )
         self.split = tk.PanedWindow(
             self, orient="horizontal", sashwidth=10, sashcursor="sb_h_double_arrow",
-            background=theme.BG, borderwidth=0, opaqueresize=True,
+            background=theme.BG, borderwidth=0, opaqueresize=False,
         )
         self.split.pack(fill="both", expand=True)
         left = ttk.Frame(self.split, style="Card.TFrame", padding=12)

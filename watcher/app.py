@@ -335,7 +335,7 @@ class App:
         self.status_var = tk.StringVar()  # full status text; the folder row shows a short form
 
         self.tabs = ttk.Notebook(root)
-        # While the window is dragged the tab pages are taken out of the layout (the page keeps its state); they come
+        # While the window is dragged its content is taken out of the layout (every page keeps its state); it comes
         # back once the size settles. Tk re-lays out every page on each size step: 150-300 ms per step, 2-3 fps.
         self._frozen_tabs: dict | None = None
         self._thaw_after: str | None = None
@@ -349,7 +349,7 @@ class App:
             orient="horizontal",
             sashwidth=12,
             sashcursor="sb_h_double_arrow",
-            opaqueresize=True,
+            opaqueresize=False,  # a rubber band while dragging, one layout on release
             background=theme.BG,
             borderwidth=0,
         )
@@ -583,13 +583,19 @@ class App:
     def _on_root_resize(self, event: tk.Event) -> None:
         if event.widget is not self.root:
             return
+        if self._frozen_tabs is None and self._thaw_after is None:
+            # a single size change (showing the window, a programmatic resize) is not a drag: just watch for the next
+            self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
+            return
         if self._frozen_tabs is None:
-            picture = capture_widget(self.tabs)  # the last frame, to show while the pages are out of the layout
-            self._frozen_tabs = self.tabs.pack_info()
-            self.tabs.pack_forget()
+            # a second change in quick succession: the window edge is being dragged. The whole window content (header and pages) leaves the layout and a picture of it stands in
+            picture = capture_widget(self.root)
+            self._frozen_tabs = [(widget, widget.pack_info()) for widget in self.root.pack_slaves()]
+            for widget, _info in self._frozen_tabs:
+                widget.pack_forget()
             self._veil = tk.Frame(self.root, background=theme.BG)
             self._veil.pack_propagate(False)
-            self._veil.pack(**self._frozen_tabs)  # same place as the pages, so nothing else moves
+            self._veil.pack(fill="both", expand=True)
             self._veil_photo = None
             if picture is not None:
                 from PIL import ImageTk
@@ -601,16 +607,17 @@ class App:
 
     def settle_layout(self) -> None:
         """Bring the tab pages back at once (tests and anything that reads the layout right after a resize)."""
-        if self._thaw_after is not None:
+        if getattr(self, "_thaw_after", None) is not None:  # not set yet while the window is still being built
             self.root.after_cancel(self._thaw_after)
         self._thaw_tabs()
 
     def _thaw_tabs(self) -> None:
         self._thaw_after = None
-        if self._frozen_tabs is None:
+        if getattr(self, "_frozen_tabs", None) is None:
             return
         self._veil.destroy()
-        self.tabs.pack(**self._frozen_tabs)
+        for widget, info in self._frozen_tabs:  # in the original order, so nothing moves
+            widget.pack(**info)
         self._frozen_tabs = None
         self.root.after_idle(lambda: refresh_pointer_cursor(self.root))
 
@@ -1101,6 +1108,7 @@ class App:
 
     def _show_settings(self, open_: bool) -> None:
         """The «Настройки» card under the control row; the button names the action and shows the state."""
+        self.settle_layout()  # the window content must be in place before the card is packed after the control row
         if open_:
             self.settings_card.pack(fill="x", padx=16, pady=(0, 6), after=self.control_bar)
         else:
@@ -1111,6 +1119,7 @@ class App:
         )
 
     def _toggle_settings(self) -> None:
+        self.settle_layout()
         self.cfg.settings_open = not self.cfg.settings_open
         self._fold_settings(self.cfg.settings_open)
         save_config(self.config_path, self.cfg)

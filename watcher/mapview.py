@@ -413,7 +413,9 @@ class MapView(ttk.Frame):
         self, place: Place, others: Iterable[Place] | None = None,
         source_label: str = "Место из чата",
         spawn_areas: Iterable[list[list[float]]] = (),
+        fit_all: bool = False,
     ) -> None:
+        """Show a place. fit_all: end on the whole zone in one drawing instead of flying to the place first."""
         self._cancel_fly()
         zone = self.zones.get(place.map_id)
         self.place = place
@@ -431,6 +433,13 @@ class MapView(ttk.Frame):
             source_label, place.label, place.x, place.y, place.note, self.nearby(zone.map_id, place.x, place.y)
         )
         self.update_idletasks()
+        if fit_all:
+            self._cancel_zoom()
+            self.zoom = self._fit_zoom()
+            self._clamp()
+            self._start_blink("pin")
+            self.render()
+            return
         if self.zoom < self._fit_zoom() * 2:
             self.zoom = min(MAX_ZOOM, self._fit_zoom() * 2)
         self._start_blink("pin")
@@ -1162,8 +1171,7 @@ class MapView(ttk.Frame):
                  if a["map_id"] == map_id]
         self.show(Place(map_id, x, y, detail["name"], "Точка появления из файлов клиента"),
                   others=[Place(map_id, float(p["gx"]), float(p["gy"]), detail["name"])
-                          for p in points[1:]], source_label="Точка появления", spawn_areas=areas)
-        self._fit()
+                          for p in points[1:]], source_label="Точка появления", spawn_areas=areas, fit_all=True)
         self._set_mob_selection(detail, map_id, points)
 
     def _set_mob_selection(self, detail: dict, map_id: str, points: list[dict]) -> None:
