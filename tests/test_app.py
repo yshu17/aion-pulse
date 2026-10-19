@@ -1346,3 +1346,42 @@ def test_settings_card_folds_smoothly_and_ends_in_the_right_state(tmp_path):
         assert not app.settings_card.winfo_manager()
     finally:
         app._on_close()
+
+
+def test_dragging_the_window_edge_shows_the_last_frame_in_place_of_the_pages(tmp_path, monkeypatch):
+    """The pages leave the layout while the size changes; a picture of them stands in, then they come back."""
+    import watcher.app as module
+    from PIL import Image
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.update()
+        app.settle_layout()  # showing the window was itself a resize
+        root.update()
+        monkeypatch.setattr(module, "capture_widget", lambda widget: Image.new("RGB", (40, 30), "#123456"))
+        root.geometry("1210x810")
+        root.update()
+        assert app._frozen_tabs is not None and not app.tabs.winfo_manager()
+        assert app._veil.winfo_children() and app._veil_photo is not None  # the picture is in the veil
+        app.settle_layout()
+        root.update()
+        assert app.tabs.winfo_manager() == "pack" and not app._veil.winfo_exists()
+    finally:
+        root.destroy()
+
+
+def test_window_snapshot_is_an_image_of_the_widget_size_or_none(tmp_path):
+    import tkinter as tk
+    from watcher.snapshot import capture_widget
+
+    root = tk.Tk()
+    try:
+        frame = tk.Frame(root, width=200, height=120, background="#336699")
+        frame.pack()
+        root.update()
+        picture = capture_widget(frame)
+        assert picture is None or picture.size == (200, 120)  # None where PrintWindow is not available
+        assert capture_widget(tk.Frame(root)) is None  # never shown: nothing to capture
+    finally:
+        root.destroy()

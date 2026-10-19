@@ -45,8 +45,10 @@ class BottomAnchor:
     def update(self) -> None:
         height = self.text.winfo_height()
         content = text_height(self.text, "2.0", "end")
-        spare = height - content - 2 * int(str(self.text.cget("pady"))) - 4
-        self.text.tag_configure("spacer", spacing1=max(0, spare))
+        spare = max(0, height - content - 2 * int(str(self.text.cget("pady"))) - 4)
+        if spare != getattr(self, "_spare", None):  # re-setting the same spacing still makes Tk re-lay out every line
+            self._spare = spare
+            self.text.tag_configure("spacer", spacing1=spare)
 
 
 class ItemLinker:

@@ -122,6 +122,19 @@ class SpecTooltip:
                     highlightthickness=1,
                     highlightbackground=theme.ACCENT if bonus else LINE,
                 ).pack(side="left", padx=(0, 6))
+        elif kind == "recipe":
+            for number, recipe in enumerate(block["recipes"]):
+                if number:
+                    tk.Frame(parent, background=LINE, height=1).pack(fill="x", pady=4)
+                title = "Создаётся по рецепту"
+                if recipe.get("skill"):
+                    title += f": {recipe['skill']}" + (f", {recipe['level']}" if recipe.get("level") else "")
+                self._label(parent, title, theme.ACCENT, weight="bold").pack(fill="x")
+                for name, quantity in recipe["ingredients"]:
+                    self._label(parent, f"•  {name}" + (f"  ×{quantity}" if quantity > 1 else ""), theme.TEXT).pack(
+                        fill="x", padx=(8, 0))
+                if recipe.get("count", 1) > 1:
+                    self._label(parent, f"Создаётся предметов: {recipe['count']}", theme.MUTED).pack(fill="x")
         elif kind == "set":
             for name in block["items"]:
                 self._label(parent, f"•  {name}", theme.ACCENT).pack(fill="x", padx=(8, 0))

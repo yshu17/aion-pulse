@@ -12,7 +12,9 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from watcher import theme
+from watcher.bestiary_widgets import refresh_pointer_cursor
 from watcher.mapview import RESIZE_SETTLE_MS
+from watcher.snapshot import capture_widget
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
@@ -45,6 +47,7 @@ from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
 from watcher.parser import MAP_NAMES, ChatMessage, display_text, parse_line, places_in
 from watcher.series import SeriesTracker
+from watcher.recipes import load_recipes, with_recipe
 from watcher.specs import load_specs
 from watcher.tailer import LogTailer
 from watcher.tooltip import SpecTooltip
@@ -116,6 +119,7 @@ class App:
         self.item_by_id = {item.id: item for item in self.watch_items}
         self.icons_dir = data_dir / "icons"
         self.specs = load_specs(data_dir / "item_specs.json.gz")
+        self.recipes = load_recipes(data_dir / "recipes.json.gz")  # empty until the recipe data is added
         self.matcher = Matcher(
             self.cfg.keywords,
             self.cfg.cooldown_sec,
@@ -561,6 +565,7 @@ class App:
             save_config(self.config_path, self.cfg)
 
     def _on_tab_changed(self) -> None:
+        self.root.after_idle(lambda: refresh_pointer_cursor(self.root))  # the page under the pointer changed
         if self.tabs.select() == str(self.all_chat):
             # the tab's own controls sit in the free space of the tab row, right side
             self.all_chat.toolbar.place(in_=self.tabs, relx=1.0, x=-2, y=2, anchor="ne")
@@ -578,10 +583,17 @@ class App:
         if event.widget is not self.root:
             return
         if self._frozen_tabs is None:
+            picture = capture_widget(self.tabs)  # the last frame, to show while the pages are out of the layout
             self._frozen_tabs = self.tabs.pack_info()
             self.tabs.pack_forget()
             self._veil = tk.Frame(self.root, background=theme.BG)
+            self._veil.pack_propagate(False)
             self._veil.pack(**self._frozen_tabs)  # same place as the pages, so nothing else moves
+            self._veil_photo = None
+            if picture is not None:
+                from PIL import ImageTk
+                self._veil_photo = ImageTk.PhotoImage(picture, master=self.root)
+                tk.Label(self._veil, image=self._veil_photo, background=theme.BG, borderwidth=0).place(x=0, y=0)
         if self._thaw_after is not None:
             self.root.after_cancel(self._thaw_after)
         self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
@@ -599,6 +611,7 @@ class App:
         self._veil.destroy()
         self.tabs.pack(**self._frozen_tabs)
         self._frozen_tabs = None
+        self.root.after_idle(lambda: refresh_pointer_cursor(self.root))
 
     # --- alerts --------------------------------------------------------------------
     def _on_feed_accept(self, alert_id: int) -> None:
@@ -796,6 +809,8 @@ class App:
             return
         x, y = self.root.winfo_pointerxy()
         item = self.item_by_id.get(item_id)
+        if len(self.recipes):
+            spec = with_recipe(spec, self.recipes.for_item(spec.get("name", ""), item_id))
         self.tooltip.show(spec, self._icon_for(item) if item else None, x, y)
 
     def _hide_tooltip(self) -> None:

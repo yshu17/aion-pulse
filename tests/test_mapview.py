@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 
 import pytest
@@ -75,12 +76,15 @@ def test_show_centres_on_place_and_zoom_keeps_point_under_cursor(root):
     before = window.zoom
     image_point = (window.left + 100 / window.zoom, window.top + 120 / window.zoom)
     window.zoom_at(1.25, 100, 120)
-    assert window.zoom > before
+    assert window.zoom > before  # the first frame of the glide runs at once
+    window.finish_zoom()
+    assert window.zoom == pytest.approx(before * 1.25)
     assert window.to_screen(*image_point) == pytest.approx((100, 120), abs=1)
     window.render()
     assert window.canvas.find_withtag("pin") and window.canvas.find_withtag("other")
     for _ in range(40):
         window.zoom_at(0.5, 10, 10)
+    window.finish_zoom()
     assert window.zoom == pytest.approx(window._fit_zoom())  # never smaller than the whole map
 
 
@@ -483,4 +487,84 @@ def test_unreadable_npc_database_does_not_break_the_map(root, tmp_path):
         window = MapView(root, {}, bestiary_database=path)
         window.search_var.set("страж")
         window._run_mob_search()
+        window.wait_for_mob_search()
         assert window.bestiary_database is None
+
+
+
+def test_wheel_zoom_glides_in_frames_and_keeps_the_point_under_the_cursor(root):
+    window = MapView(root, zones())
+    window.pack(fill="both", expand=True)
+    window.open_zone("220070000")
+    root.update()
+    window.zoom = window._fit_zoom() * 2
+    before = window.zoom
+    image_point = (window.left + 300 / window.zoom, window.top + 200 / window.zoom)
+    window.zoom_at(1.25, 300, 200)
+    window.zoom_at(1.25, 300, 200)  # two clicks in a row add up
+    seen = [window.zoom]
+    deadline = time.monotonic() + 3
+    while window._zoom_after is not None and time.monotonic() < deadline:
+        root.update()
+        seen.append(window.zoom)
+    assert window.zoom == pytest.approx(before * 1.25 * 1.25)
+    assert len(set(round(z, 6) for z in seen)) > 3  # it passed through in-between levels
+    assert seen == sorted(seen)  # and never went back
+    assert window.to_screen(*image_point) == pytest.approx((300, 200), abs=1.5)
+
+
+def test_zoom_jumps_when_motion_is_off(root):
+    window = MapView(root, zones())
+    window.open_zone("220070000")
+    window.motion_enabled = lambda: False
+    before = window.zoom
+    window.zoom_at(1.25, 50, 50)
+    assert window.zoom == pytest.approx(before * 1.25) and window._zoom_after is None
+
+
+def test_npc_search_runs_in_the_background_and_builds_cards_in_batches(root, tmp_path, monkeypatch):
+    """The map stays responsive: the search is answered by a thread, the result cards appear tick by tick."""
+    import watcher.mapview as module
+    from watcher.search_worker import SearchWorker
+
+    class FakeStore:
+        def __init__(self, path): pass
+        def search(self, text="", *args, **kwargs):
+            time.sleep(0.05)
+            return [{"id": str(i)} for i in range(9)], 9
+        def detail(self, npc_id):
+            return {"id": npc_id, "name": f"Моб {npc_id}", "kind": "Монстр", "level": "5", "category": "monster",
+                    "points": [{"map_id": "220070000", "gx": 100.0, "gy": 100.0}]}
+        def areas(self, npc_id): return []
+        def close(self): pass
+
+    monkeypatch.setattr(module, "BestiaryStore", FakeStore)
+    monkeypatch.setattr(module, "SearchWorker", lambda path: SearchWorker(path, store_factory=FakeStore))
+    window = MapView(root, zones(), bestiary_database=tmp_path / "fake.sqlite")
+    window.pack(fill="both", expand=True)
+    window.open_zone("220070000")
+    root.update()
+    window.search_var.set("моб")
+    window._run_mob_search()
+    assert window._mob_polling and not window.mob_content.winfo_children()  # returned at once, nothing built yet
+    ticks = []
+    real = window._run_mob_jobs
+    window._run_mob_jobs = lambda jobs, start, generation: (ticks.append(start), real(jobs, start, generation))
+    window.wait_for_mob_search()
+    cards = [w for w in window.mob_content.winfo_children() if isinstance(w, tk.Frame)]
+    assert len(cards) == 9
+    assert len(ticks) >= 3  # the list was built in several ticks, not in one
+    window.destroy()
+
+
+def test_map_cursor_is_a_hand_only_while_dragging_and_plain_otherwise(root):
+    window = MapView(root, zones())
+    window.pack(fill="both", expand=True)
+    window.open_zone("220070000")
+    root.update()
+    assert str(window.canvas.cget("cursor")) == ""  # not stuck on fleur
+    press = type("E", (), {"x": 50, "y": 50})()
+    window._on_press(press)
+    assert str(window.canvas.cget("cursor")) == "fleur"
+    window._on_release(type("E", (), {"x": 90, "y": 90})())
+    assert str(window.canvas.cget("cursor")) == ""

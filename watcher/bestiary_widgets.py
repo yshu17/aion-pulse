@@ -10,6 +10,19 @@ from watcher import theme
 from watcher.bestiary_labels import stat_text
 
 
+def refresh_pointer_cursor(widget: tk.Misc) -> None:
+    """Tk recomputes the cursor only when the pointer moves, so a cursor stays a hand or an arrow after the widget
+    under the pointer was hidden, replaced or repainted. Re-applying the cursor of the widget now under the pointer
+    makes Tk look again."""
+    try:
+        x, y = widget.winfo_pointerxy()
+        under = widget.winfo_containing(x, y)
+        if under is not None:
+            under.configure(cursor=under.cget("cursor"))
+    except (tk.TclError, KeyError):
+        pass
+
+
 def wrap_badges(frame: tk.Frame):
     """Wrap badges to the available width, including after window resizing. Badges with no text are hidden.
     Returns the arrange function, to call after the badge texts change. Nothing is re-placed or resized when the

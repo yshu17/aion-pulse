@@ -17,6 +17,7 @@ from watcher.parser import ChatMessage
 from watcher.textview import BottomAnchor, CopyMenu, ItemLinker
 from watcher.ui_icons import IconSet
 
+RELAYOUT_DELAY_MS = 40  # wait for the last size change before re-anchoring the rows
 PENDING_BRIGHT = theme.PENDING_BRIGHT
 PENDING_DIM = theme.PENDING_DIM
 ACCEPTED_BG = theme.ACCEPTED_BG
@@ -82,7 +83,8 @@ class MatchFeed(ttk.Frame):
         self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades, on_place=on_place)
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.copy = CopyMenu(self.text)
-        self.text.bind("<Configure>", lambda _e: self._relayout())
+        self._relayout_after: str | None = None
+        self.text.bind("<Configure>", lambda _e: self._schedule_relayout())
         self.empty = EmptyState(self.text, IconSet(self, resource_root() / "data" / "ui" / "icons"))
 
     @property
@@ -285,8 +287,18 @@ class MatchFeed(ttk.Frame):
             _x, y, _w, height, _base = info
             holder.place(x=right, y=y + height // 2 - pady, anchor="e")
 
+    def _schedule_relayout(self) -> None:
+        """Resizing (a window edge, the divider) sends dozens of Configure events; each relayout re-lays out every
+        row (about 30 ms). One relayout shortly after the last event is enough."""
+        if self._relayout_after is not None:
+            self.after_cancel(self._relayout_after)
+        self._relayout_after = self.after(RELAYOUT_DELAY_MS, self._relayout)
+
     def _relayout(self) -> None:
         """Keep the rows pushed to the bottom and the checkboxes at the right edge."""
+        self._relayout_after = None
+        if not self.winfo_exists():
+            return
         self.anchor.update()
         self._place_holders()
 

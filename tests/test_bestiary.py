@@ -216,3 +216,98 @@ def test_padded_item_icon_is_cropped_before_scaling(tmp_path):
         assert result.getpixel((31, 31))[:3] == (220, 10, 20)
     finally:
         root.destroy()
+
+
+def _view_with_fake_store(tmp_path, delay):
+    """A BestiaryView whose search runs in the worker thread against a store that answers after `delay` s."""
+    import time
+    import tkinter as tk
+    from types import SimpleNamespace
+    import watcher.bestiary_view as module
+    from watcher.search_worker import SearchWorker
+
+    class FakeStore:
+        def __init__(self, path): pass
+        def search(self, text="", *args, **kwargs):
+            time.sleep(delay)
+            return [{"id": "1", "name": text, "kind": "Монстр", "race": "", "rank": "", "level": "5",
+                     "icon_asset": "", "zone_names": "", "faction": "", "point_count": 0, "drop_count": 0,
+                     "has_profile": 0, "sold": "", "dropped": ""}], 1
+        def close(self): pass
+
+    root = tk.Tk()
+    view = module.BestiaryView(root, tmp_path / "x.sqlite", tmp_path, {}, lambda *a: None)
+    view.pack()
+    view.store = SimpleNamespace(search=None, close=lambda: None, detail=lambda i: None, regions=lambda m="": [])
+    view._select_npc = lambda i: None
+    view._worker.close()
+    view._worker = SearchWorker(tmp_path / "x.sqlite", store_factory=FakeStore)
+    return root, view, module
+
+
+def test_fast_search_shows_no_loading_indicator(tmp_path, monkeypatch):
+    root, view, module = _view_with_fake_store(tmp_path, delay=0.02)
+    try:
+        monkeypatch.setattr(module, "LOADING_DELAY_MS", 300)
+        view.query.set("кабан")
+        view._search(reset=True)
+        shown = []
+        end = __import__("time").monotonic() + 3
+        while view._polling and __import__("time").monotonic() < end:
+            root.update()
+            shown.append(view._loading.winfo_ismapped())
+        assert not any(shown)  # a search under the delay shows nothing
+        assert "из 1 NPC" in view.page_label.cget("text")
+    finally:
+        view.destroy()
+        root.destroy()
+
+
+def test_slow_search_shows_loading_and_hides_it_when_done(tmp_path, monkeypatch):
+    import time
+    root, view, module = _view_with_fake_store(tmp_path, delay=0.5)
+    try:
+        monkeypatch.setattr(module, "LOADING_DELAY_MS", 100)
+        view.query.set("кабан")
+        view._search(reset=True)
+        end = time.monotonic() + 3
+        seen = False
+        while view._polling and time.monotonic() < end:
+            root.update()
+            seen = seen or view._loading.winfo_ismapped()
+            time.sleep(0.01)
+        assert seen and not view._loading.winfo_ismapped()
+        assert str(view._loading.cget("cursor")) == "watch"
+    finally:
+        view.destroy()
+        root.destroy()
+
+
+def test_typing_fast_shows_only_the_last_search(tmp_path, monkeypatch):
+    root, view, module = _view_with_fake_store(tmp_path, delay=0.1)
+    try:
+        for text in ("к", "ка", "каб", "каба", "кабан"):
+            view.query.set(text)
+            view._search(reset=True)
+        view.wait_for_search()
+        assert next(iter(view._result_rows)) == "1"
+        assert view._cards[0].name.cget("text") == "кабан"  # the answer to the newest request
+    finally:
+        view.destroy()
+        root.destroy()
+
+
+def test_refresh_pointer_cursor_never_raises_and_keeps_the_cursor(tmp_path):
+    import tkinter as tk
+    from watcher.bestiary_widgets import refresh_pointer_cursor
+
+    root = tk.Tk()
+    try:
+        label = tk.Label(root, text="x", cursor="hand2")
+        label.pack()
+        root.update()
+        refresh_pointer_cursor(label)  # whatever is under the pointer, no error
+        refresh_pointer_cursor(root)
+        assert str(label.cget("cursor")) == "hand2"
+    finally:
+        root.destroy()

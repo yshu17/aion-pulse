@@ -14,12 +14,15 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.bestiary_store import BestiaryStore
+from watcher.search_worker import SearchWorker
 from watcher.bestiary_labels import plural, stat_text
-from watcher.bestiary_widgets import ProfileHeader, ScrollArea, bind_wheel_tree, wrap_badges
+from watcher.bestiary_widgets import ProfileHeader, ScrollArea, bind_wheel_tree, refresh_pointer_cursor, wrap_badges
 
 
 PAGE_SIZE = 30
 CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant", "Служебные": "service"}
+LOADING_DELAY_MS = 1000  # a faster search shows nothing
+POLL_MS = 25
 FIRST_CARDS = 8  # result cards drawn at once; the rest of the page follows in batches of this size
 RARITY = {
     "junk": "Простой", "common": "Обычный", "rare": "Редкий",
@@ -175,6 +178,12 @@ class BestiaryView(ttk.Frame):
         self.results.bind("<MouseWheel>", lambda e: self.results.yview_scroll(-int(e.delta / 120), "units"))
         self._result_rows: dict[str, tk.Frame] = {}
         self._cards: list[SimpleNamespace] = []  # reused result cards
+        self._worker = SearchWorker(self.database)  # searches run off the UI thread
+        self._seq = 0  # number of the newest search request
+        self._polling = False
+        self._loading_after: str | None = None
+        self._loading = tk.Label(self, text="Загрузка…", bg=theme.SURFACE, fg=theme.MUTED, font=theme.font("body"),
+                                 cursor="watch")  # covers the list only when a search takes over a second
         self._stale: set[str] = set()  # detail lists not filled yet for the selected NPC (filled when shown)
 
         self.profile_header = ProfileHeader(right, self.icons_dir)
@@ -350,13 +359,59 @@ class BestiaryView(ttk.Frame):
         if low is not None and high is not None and low > high:
             self.page_label.configure(text="Уровень «от» больше «до»")
             return
-        rows, self._total = self.store.search(
-            self.query.get(), CATEGORY[self.category.get()],
+        self._seq += 1
+        self._worker.submit(
+            self._seq, self.query.get(), CATEGORY[self.category.get()],
             "" if self.race.get() == "Все расы" else self.race.get(),
             "" if self.rank.get() == "Все ранги" else self.rank.get(),
             self._zone_ids.get(self.zone.get(), ""), self._offset, PAGE_SIZE,
             min_level=low, max_level=high, region="" if self.region.get() == "Все районы" else self.region.get(),
         )
+        if self._loading_after is None:  # the indicator appears only when a search is really slow
+            self._loading_after = self.after(LOADING_DELAY_MS, self._show_loading)
+        if not self._polling:
+            self._polling = True
+            self.after(POLL_MS, self._poll_search)
+
+    def _poll_search(self) -> None:
+        """Pick up the newest finished search; answers to requests that were already replaced are dropped."""
+        if not self.winfo_exists():
+            return
+        result = self._worker.latest()
+        if result is not None and result.seq == self._seq:
+            self._polling = False
+            self._hide_loading()
+            self._apply_results(result)
+            return
+        self.after(POLL_MS, self._poll_search)
+
+    def _show_loading(self) -> None:
+        self._loading_after = None
+        self._loading.place(in_=self.results, relx=0, rely=0, relwidth=1, relheight=1)
+        self._loading.lift()
+
+    def _hide_loading(self) -> None:
+        if self._loading_after is not None:
+            self.after_cancel(self._loading_after)
+            self._loading_after = None
+        if self._loading.winfo_ismapped():
+            self._loading.place_forget()
+            refresh_pointer_cursor(self)
+
+    def wait_for_search(self, timeout: float = 5.0) -> None:
+        """Run the event loop until the last requested search is shown (tests, scripts)."""
+        import time
+        end = time.monotonic() + timeout
+        while self._polling and time.monotonic() < end:
+            self.update()
+            time.sleep(0.005)
+
+    def _apply_results(self, result) -> None:
+        rows, self._total = result.rows, result.total
+        if result.error:
+            self.page_label.configure(text="Поиск не удался")
+            self._clear_detail()
+            return
         self._render_results(rows)
         first = self._offset + 1 if rows else 0
         last = self._offset + len(rows)
@@ -466,10 +521,12 @@ class BestiaryView(ttk.Frame):
             self._result_rows[npc_id] = card.outer
         if end < len(rows):
             self.after(15, lambda: self._fill_cards(rows, end, generation))
-        elif start == 0:
-            for card in self._cards[end:]:
-                card.npc_id = ""
-                card.outer.pack_forget()
+        else:
+            if start == 0:
+                for card in self._cards[end:]:
+                    card.npc_id = ""
+                    card.outer.pack_forget()
+            self.after_idle(lambda: refresh_pointer_cursor(self))  # the card under the pointer may be another one now
 
     def _select_npc(self, npc_id: str) -> None:
         if not self.store:
@@ -886,6 +943,8 @@ class BestiaryView(ttk.Frame):
             self.after_cancel(self._after)
         if self._split_after:
             self.after_cancel(self._split_after)
+        self._polling = False
+        self._worker.close()
         if self.store:
             self.store.close()
             self.store = None

@@ -24,6 +24,7 @@ from watcher.catalog import resource_root
 from watcher.bestiary_store import BestiaryStore
 from watcher.bestiary_labels import plural
 from watcher.bestiary_widgets import bind_wheel_tree
+from watcher.search_worker import SearchWorker
 from watcher.spawn_overlay import enclosing_spawn_circle, paint_spawn_circle
 from watcher.ui_icons import IconSet
 from watcher.hint import Hint
@@ -34,6 +35,9 @@ from watcher.poi import Poi, PoiStore, cluster
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
+MOB_JOBS_PER_TICK = 4  # result headers and cards built per tick
+ZOOM_GLIDE = 0.3  # share of the remaining zoom distance covered by each frame
+ZOOM_FRAME_MS = 16
 RESIZE_SETTLE_MS = 120  # redraw this long after the last window size change
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
 # map themes: the game map (newmap) or the client's radar map («Рельеф»), the choice is kept in config.json
@@ -229,6 +233,16 @@ class MapView(ttk.Frame):
         self._photo = None
         self._render_after: str | None = None
         self._resize_after: str | None = None
+        self._mob_worker: SearchWorker | None = None  # NPC searches run off the UI thread
+        self._mob_seq = 0
+        self._mob_pending: tuple[int, str, bool] | None = None
+        self._mob_polling = False
+        self._mob_render_after: str | None = None
+        self._mob_generation = 0
+        self._zoom_after: str | None = None  # frame timer of a zoom glide
+        self._zoom_target = 1.0
+        self._gliding = False  # a zoom glide is running: cheap scaling
+        self._zoom_anchor = (0.0, 0.0)
         self._mob_panel_width_due = False
         self._blink_target: str | None = None  # "poi" (the selected point) or "pin" (the chat's place)
         self._blink_left = 0
@@ -345,7 +359,7 @@ class MapView(ttk.Frame):
         body.bind("<Configure>", self._size_mob_panel, add="+")
         card = ttk.Frame(body, style="Card.TFrame", padding=6)
         card.pack(side="left", fill="both", expand=True)
-        self.canvas = tk.Canvas(card, background=theme.BG, highlightthickness=0, borderwidth=0, cursor="fleur")
+        self.canvas = tk.Canvas(card, background=theme.BG, highlightthickness=0, borderwidth=0)  # fleur only while dragging
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda _e: self._on_resize())
         self.canvas.bind("<MouseWheel>", self._on_wheel)
@@ -488,6 +502,7 @@ class MapView(ttk.Frame):
             self._clamp()
             self.render()
             return
+        self._cancel_zoom()
         self._cancel_fly()
         self._fly_frame = 0
 
@@ -518,16 +533,59 @@ class MapView(ttk.Frame):
             self._fly_after = None
 
     def zoom_at(self, factor: float, screen_x: float, screen_y: float) -> None:
-        """Zoom keeping the map point under (screen_x, screen_y) in place."""
+        """Zoom keeping the map point under (screen_x, screen_y) in place. The zoom glides to its new level over
+        about ten frames (a wheel click moves the target, several clicks in a row add up); without motion it jumps."""
         self._cancel_fly()
-        new = max(self._fit_zoom(), min(MAX_ZOOM, self.zoom * factor))
+        base = self._zoom_target if self._zoom_after is not None else self.zoom
+        self._zoom_target = max(self._fit_zoom(), min(MAX_ZOOM, base * factor))
+        self._zoom_anchor = (screen_x, screen_y)
+        if not self.motion_enabled():
+            self._zoom_step(1.0)
+            return
+        if self._zoom_after is None:
+            self._zoom_frame()
+
+    def _zoom_step(self, share: float) -> None:
+        """Move `share` of the way to the target zoom, the point under the anchor staying where it is."""
+        screen_x, screen_y = self._zoom_anchor
+        new = self.zoom + (self._zoom_target - self.zoom) * share
+        if abs(new - self._zoom_target) < self._zoom_target * 0.002:
+            new = self._zoom_target
         image_x = self.left + screen_x / self.zoom
         image_y = self.top + screen_y / self.zoom
         self.zoom = new
         self.left = image_x - screen_x / new
         self.top = image_y - screen_y / new
         self._clamp()
-        self._schedule_render()
+
+    def _zoom_frame(self) -> None:
+        self._zoom_after = None
+        if not self.winfo_exists():
+            return
+        self._gliding = True
+        self._zoom_step(ZOOM_GLIDE)
+        self.render()
+        if self.zoom != self._zoom_target:
+            self._zoom_after = self.after(ZOOM_FRAME_MS, self._zoom_frame)
+        else:
+            self._gliding = False
+            self._schedule_render()  # the final, sharp picture
+
+    def finish_zoom(self) -> None:
+        """Jump to the target zoom now (tests, and anything that needs the final level)."""
+        self._cancel_zoom()
+        if self.zoom != getattr(self, "_zoom_target", self.zoom):
+            self._zoom_step(1.0)
+            self._schedule_render()
+
+    def _cancel_zoom(self) -> None:
+        self._gliding = False
+        if self._zoom_after is not None:
+            try:
+                self.after_cancel(self._zoom_after)
+            except tk.TclError:
+                pass
+            self._zoom_after = None
 
     def _refresh_pins(self, others: Iterable[Place] | None = None) -> None:
         places = self.get_places() if others is None else others
@@ -644,7 +702,7 @@ class MapView(ttk.Frame):
         view = Image.new("RGB", (width, height), BG_RGB)  # around the map when it is smaller than the window
         part_w, part_h = round((x1 - x0) * self.zoom), round((y1 - y0) * self.zoom)
         if part_w > 0 and part_h > 0:
-            if self.zoom >= 1:
+            if self.zoom >= 1 or self._gliding:  # while the zoom glides, scale only what is visible: one cheap pass
                 part = self._image.resize((part_w, part_h), Image.BILINEAR, box=(x0, y0, x1, y1))
             else:
                 # zoomed out: scale the whole picture once per zoom level, then dragging only crops it
@@ -774,6 +832,7 @@ class MapView(ttk.Frame):
     def _on_release(self, event: tk.Event) -> None:
         start = self._drag
         self._drag = None
+        self.canvas.configure(cursor="")
         if start is not None and abs(event.x - start[0]) < 4 and abs(event.y - start[1]) < 4:
             self._on_click(event)
 
@@ -903,22 +962,54 @@ class MapView(ttk.Frame):
         if query == SEARCH_PLACEHOLDER:
             query = ""
         if not self.bestiary_database or len(query) < 2:
+            self._mob_pending = None  # an answer still on its way must not bring the panel back
+            self._hide_mob_results()
+            return
+        if self._mob_worker is None:
+            self._mob_worker = SearchWorker(self.bestiary_database)
+        self._mob_seq += 1
+        self._mob_pending = (self._mob_seq, query, preserve_map)
+        self._mob_worker.submit(self._mob_seq, query, limit=20)
+        if not self._mob_polling:
+            self._mob_polling = True
+            self.after(25, self._poll_mob_search)
+
+    def _poll_mob_search(self) -> None:
+        """Pick up the newest finished NPC search; answers to replaced requests are dropped."""
+        if not self.winfo_exists():
+            return
+        result = self._mob_worker.latest() if self._mob_worker else None
+        if result is not None and self._mob_pending and result.seq == self._mob_pending[0]:
+            _seq, query, preserve_map = self._mob_pending
+            self._mob_pending = None
+            self._mob_polling = False
+            self._finish_mob_search(query, result, preserve_map)
+            return
+        self.after(25, self._poll_mob_search)
+
+    def wait_for_mob_search(self, timeout: float = 5.0) -> None:
+        """Run the event loop until the last NPC search is shown (tests, scripts)."""
+        import time
+        end = time.monotonic() + timeout
+        while (self._mob_polling or self._mob_render_after is not None) and time.monotonic() < end:
+            self.update()
+            time.sleep(0.005)
+
+    def _finish_mob_search(self, query: str, result, preserve_map: bool) -> None:
+        if result.error:
+            self.bestiary_database = None  # unreadable data: the map keeps working without the NPC search
+            self._mob_worker.close()
+            self._mob_worker = None
             self._hide_mob_results()
             return
         if self._bestiary_store is None:
             try:
                 self._bestiary_store = BestiaryStore(self.bestiary_database)
             except (OSError, ValueError, sqlite3.Error):
-                self.bestiary_database = None  # unreadable data: the map keeps working without the NPC search
+                self.bestiary_database = None
                 self._hide_mob_results()
                 return
-        try:
-            rows, total = self._bestiary_store.search(query, limit=20)
-        except sqlite3.Error:
-            self.bestiary_database = None
-            self._bestiary_store = None
-            self._hide_mob_results()
-            return
+        rows, total = result.rows, result.total
         self._mob_rows = rows
         self._mob_search_query = query
         if not rows:
@@ -958,6 +1049,7 @@ class MapView(ttk.Frame):
         self.search_count.configure(text=f"{total} NPC")
 
     def _hide_mob_results(self) -> None:
+        self._mob_generation += 1  # cards still being built are dropped
         self._mob_rows = []
         self._mob_search_query = ""
         self._mob_target = None
@@ -971,42 +1063,86 @@ class MapView(ttk.Frame):
             self._schedule_render()
 
     def _render_mob_results(self, groups: dict[str, list[tuple[dict, dict, list[dict]]]]) -> None:
-        for child in self.mob_content.winfo_children():
-            child.destroy()
+        """Header and card builders run a few at a time, so a long result list never freezes the map."""
+        self._swap_mob_content()
+        if self._mob_render_after is not None:
+            self.after_cancel(self._mob_render_after)
+            self._mob_render_after = None
         if not groups:
             tk.Label(self.mob_content, text="Для найденных NPC нет точек на доступных картах.",
                      bg=theme.SURFACE, fg=theme.MUTED, wraplength=350, justify="left").pack(anchor="w", padx=12, pady=12)
             return
+        jobs: list[Callable[[], None]] = []
         for map_id, entries in sorted(groups.items(), key=lambda pair: self.zones[pair[0]].name):
             total_points = sum(len(points) for _row, _detail, points in entries)
-            tk.Label(self.mob_content, text=f"⌖  {self.zones[map_id].name}  ·  {plural(total_points, "точка", "точки", "точек")}",
-                     bg=theme.SURFACE_2, fg=theme.ACCENT, font=theme.font("control_strong"),
-                     anchor="w", padx=12, pady=9).pack(fill="x", padx=8, pady=(8, 4))
+            jobs.append(lambda m=map_id, n=total_points: self._mob_header(m, n))
             for row, detail, points in entries:
-                card = tk.Frame(self.mob_content, bg=theme.SURFACE_2, padx=10, pady=10)
-                card.pack(fill="x", padx=8, pady=(0, 7))
-                top = tk.Frame(card, bg=theme.SURFACE_2)
-                top.pack(fill="x")
-                icon = self._mob_icon(detail)
-                tk.Label(top, image=icon, bg=theme.SURFACE_2, width=56, height=56).pack(side="left", padx=(0, 9))
-                info = tk.Frame(top, bg=theme.SURFACE_2)
-                info.pack(side="left", fill="x", expand=True)
-                tk.Label(info, text=detail["name"], bg=theme.SURFACE_2, fg=theme.TEXT,
-                         font=theme.font("control_strong"), anchor="w").pack(fill="x")
-                chips = tk.Frame(info, bg=theme.SURFACE_2)
-                chips.pack(anchor="w", pady=(3, 0))
-                for key, color in (("kind", theme.PLACE), ("faction", theme.DANGER), ("rank", theme.TEXT)):
-                    value = detail.get(key)
-                    if value:
-                        tk.Label(chips, text=str(value).upper(), bg=theme.SURFACE_3, fg=color,
-                                 font=theme.font("micro"), padx=5, pady=1).pack(side="left", padx=(0, 4))
-                level = f"Ур. {detail['level']}  ·  " if detail.get("level") else ""
-                tk.Label(info, text=f"{level}{plural(len(points), "точка", "точки", "точек")} появления", bg=theme.SURFACE_2,
-                         fg=theme.MUTED, font=theme.font("small"), anchor="w").pack(fill="x")
-                ttk.Button(card, text="⌖  Показать на карте",
-                           command=lambda d=detail, m=map_id, p=points: self._show_mob_zone(d, m, p)).pack(fill="x", pady=(9, 0))
+                jobs.append(lambda d=detail, m=map_id, p=points: self._mob_card(d, m, p))
+        self._mob_generation += 1
+        self._run_mob_jobs(jobs, 0, self._mob_generation)
+
+    def _swap_mob_content(self) -> None:
+        """A fresh list container instead of destroying a hundred old widgets at once (that was a 100 ms freeze);
+        the old one is taken apart a few widgets at a time."""
+        old = self.mob_content
+        old.unbind("<Configure>")
+        new = self.mob_content = tk.Frame(self.mob_canvas, bg=theme.SURFACE)
+        new.bind("<Configure>", lambda _e: self.mob_canvas.configure(scrollregion=self.mob_canvas.bbox("all")))
+        self.mob_canvas.itemconfigure(self._mob_window, window=new)
+        old.lower()
+        self._discard_mob_content(old)
+
+    def _discard_mob_content(self, old: tk.Misc) -> None:
+        if not old.winfo_exists():
+            return
+        children = old.winfo_children()
+        for child in children[:6]:
+            child.destroy()
+        if len(children) > 6:
+            self.after(10, lambda: self._discard_mob_content(old))
+        else:
+            old.destroy()
+
+    def _run_mob_jobs(self, jobs: list, start: int, generation: int) -> None:
+        self._mob_render_after = None
+        if generation != self._mob_generation or not self.winfo_exists():
+            return
+        for job in jobs[start:start + MOB_JOBS_PER_TICK]:
+            job()
         bind_wheel_tree(self.mob_content, self.mob_canvas)
-        self.mob_canvas.yview_moveto(0)
+        if start == 0:
+            self.mob_canvas.yview_moveto(0)
+        if start + MOB_JOBS_PER_TICK < len(jobs):
+            self._mob_render_after = self.after(8, lambda: self._run_mob_jobs(jobs, start + MOB_JOBS_PER_TICK, generation))
+
+    def _mob_header(self, map_id: str, total_points: int) -> None:
+        tk.Label(self.mob_content, text=f"⌖  {self.zones[map_id].name}  ·  {plural(total_points, "точка", "точки", "точек")}",
+                 bg=theme.SURFACE_2, fg=theme.ACCENT, font=theme.font("control_strong"),
+                 anchor="w", padx=12, pady=9).pack(fill="x", padx=8, pady=(8, 4))
+
+    def _mob_card(self, detail: dict, map_id: str, points: list[dict]) -> None:
+        card = tk.Frame(self.mob_content, bg=theme.SURFACE_2, padx=10, pady=10)
+        card.pack(fill="x", padx=8, pady=(0, 7))
+        top = tk.Frame(card, bg=theme.SURFACE_2)
+        top.pack(fill="x")
+        icon = self._mob_icon(detail)
+        tk.Label(top, image=icon, bg=theme.SURFACE_2, width=56, height=56).pack(side="left", padx=(0, 9))
+        info = tk.Frame(top, bg=theme.SURFACE_2)
+        info.pack(side="left", fill="x", expand=True)
+        tk.Label(info, text=detail["name"], bg=theme.SURFACE_2, fg=theme.TEXT,
+                 font=theme.font("control_strong"), anchor="w").pack(fill="x")
+        chips = tk.Frame(info, bg=theme.SURFACE_2)
+        chips.pack(anchor="w", pady=(3, 0))
+        for key, color in (("kind", theme.PLACE), ("faction", theme.DANGER), ("rank", theme.TEXT)):
+            value = detail.get(key)
+            if value:
+                tk.Label(chips, text=str(value).upper(), bg=theme.SURFACE_3, fg=color,
+                         font=theme.font("micro"), padx=5, pady=1).pack(side="left", padx=(0, 4))
+        level = f"Ур. {detail['level']}  ·  " if detail.get("level") else ""
+        tk.Label(info, text=f"{level}{plural(len(points), "точка", "точки", "точек")} появления", bg=theme.SURFACE_2,
+                 fg=theme.MUTED, font=theme.font("small"), anchor="w").pack(fill="x")
+        ttk.Button(card, text="⌖  Показать на карте",
+                   command=lambda d=detail, m=map_id, p=points: self._show_mob_zone(d, m, p)).pack(fill="x", pady=(9, 0))
 
     def _mob_icon(self, detail: dict):
         asset = "ui/monster.png" if detail.get("category") == "monster" else detail.get("icon_asset") or ""
@@ -1039,6 +1175,13 @@ class MapView(ttk.Frame):
             text=f"{detail['name']}  ·  {self.zones[map_id].name}\n{plural(len(points), "точка", "точки", "точек")} появления"
         )
         self.mob_point_button.configure(state="normal")
+
+    def destroy(self) -> None:
+        self._mob_pending = None
+        if self._mob_worker is not None:
+            self._mob_worker.close()
+            self._mob_worker = None
+        super().destroy()
 
     def _go_to_mob_point(self) -> None:
         if not self._mob_target or not self.zone:
@@ -1326,7 +1469,9 @@ class MapView(ttk.Frame):
 
     def _on_press(self, event: tk.Event) -> None:
         self._cancel_fly()  # the user takes the map: the flight's remaining frames must not pull it back (ui:30)
+        self._cancel_zoom()
         self._drag = (event.x, event.y, self.left, self.top)
+        self.canvas.configure(cursor="fleur")
 
     def _on_drag(self, event: tk.Event) -> None:
         if self._drag is None:
@@ -1343,6 +1488,7 @@ class MapView(ttk.Frame):
 
     def _fit(self) -> None:
         self._cancel_fly()
+        self._cancel_zoom()
         self.zoom = self._fit_zoom()
         self._clamp()
         self.render()

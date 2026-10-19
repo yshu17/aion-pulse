@@ -46,7 +46,7 @@ def main() -> None:
         tabs.select(map_view)
         map_view.activate()
         map_view.search_var.set(sys.argv[2] if len(sys.argv) > 2 else "страж")
-        map_view._run_mob_search()
+        map_view._run_mob_search(); map_view.wait_for_mob_search()
     else:
         tabs.select(view)
         view.activate()
@@ -54,6 +54,7 @@ def main() -> None:
             view.category.set("Монстры" if "found" in output.stem else "Торговцы")
         view.query.set(sys.argv[2] if len(sys.argv) > 2 else "страж")
         view._search(reset=True)
+        view.wait_for_search()
         if "stock" in output.stem:
             view.detail_tabs.select(view.stock_tab)
         elif "drops" in output.stem:
