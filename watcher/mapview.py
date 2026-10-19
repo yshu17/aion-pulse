@@ -96,6 +96,7 @@ class Zone:
     labels: tuple[tuple[float, float, str, str], ...] = ()  # area names: (image x, image y, text, level)
     relief: Path | None = None  # the «Рельеф» theme: the radar map cut to the same frame (tools/build_relief.py)
     layers: tuple[tuple[int, str, Path], ...] = ()  # Abyss layer id, display name and map image
+    label_layers: tuple[int | None, ...] = ()  # the Abyss layer of each label (same order), None: every layer
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
@@ -141,6 +142,7 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
     except (OSError, ValueError):
         return {}
     labels = load_labels(Path(maps_dir) / "labels.tsv")
+    label_layers = load_label_layers(Path(maps_dir) / "labels.tsv")
     zones = {}
     for map_id, info in index.items():
         path = Path(maps_dir) / info["file"]
@@ -153,6 +155,7 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
                 relief if (relief := Path(maps_dir) / "relief" / path.name).is_file() else None,
                 tuple((int(layer["id"]), layer.get("name", f"Слой {layer['id']}"), Path(maps_dir) / layer["file"])
                       for layer in info.get("layers", []) if (Path(maps_dir) / layer["file"]).is_file()),
+                tuple(label_layers.get(map_id, [])),
             )
     return zones
 
@@ -167,13 +170,33 @@ def load_labels(path: Path) -> dict[str, list[tuple[float, float, str, str]]]:
         return {}
     for line in lines:
         parts = line.split("\t")
-        if line.startswith("#") or len(parts) != 5 or parts[1] not in LABEL_LEVELS:
+        if line.startswith("#") or len(parts) not in (5, 6) or parts[1] not in LABEL_LEVELS:
             continue
         try:
             zones.setdefault(parts[0], []).append((float(parts[2]), float(parts[3]), parts[4].replace("|", "\n"),
                                                    parts[1]))
         except ValueError:
             continue
+    return zones
+
+
+def load_label_layers(path: Path) -> dict[str, list[int | None]]:
+    """The optional 6th column of labels.tsv (tools/assign_abyss_layers.py): the Abyss layer of each label, in the
+    same order as load_labels gives them; None where a label has no layer."""
+    zones: dict[str, list[int | None]] = {}
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    for line in lines:
+        parts = line.split("	")
+        if line.startswith("#") or len(parts) not in (5, 6) or parts[1] not in LABEL_LEVELS:
+            continue
+        try:
+            float(parts[2]), float(parts[3])
+        except ValueError:
+            continue
+        zones.setdefault(parts[0], []).append(int(parts[5]) if len(parts) == 6 and parts[5].isdigit() else None)
     return zones
 
 
@@ -264,6 +287,7 @@ class MapView(ttk.Frame):
             ("plus", "Увеличить масштаб (или колесо мыши)", lambda: self._zoom_center(ZOOM_STEP)),
             ("minus", "Уменьшить масштаб (или колесо мыши)", lambda: self._zoom_center(1 / ZOOM_STEP)),
             ("house", "Показать всю карту (карту можно тянуть мышью)", self._fit),
+            ("trash", "Очистить карту: метки, точки появления и результаты поиска", self.clear_all),
         ):
             button = ttk.Button(bar, image=self.ui_icons.get(name, "muted"), command=command, padding=(6, 5))
             button.pack(side="right", padx=(6, 0))
@@ -319,6 +343,7 @@ class MapView(ttk.Frame):
         self._matches: list = []
         self._match_index = -1
         self._match_query = ""
+        self._pins_cleared = False  # «Очистить карту» hides the chat's pins until a place is shown again
         self.selected: Poi | None = None
         self.point_card = PointCard(body, get_icon=lambda t: self._poi_icon(t, 20))
         self.point_card.pack(side="right", fill="y", padx=(10, 0))
@@ -391,6 +416,27 @@ class MapView(ttk.Frame):
                 self._refresh_pins()
             self.render()
 
+    def clear_all(self) -> None:
+        """«Очистить карту»: the place and its pins, the selected point, spawn areas, the NPC search and its results.
+        The zone and the zoom stay; the chat's pins come back with the next place shown."""
+        self._cancel_fly()
+        self._mob_pending = None
+        self.place = None
+        self.others = []
+        self._external_places = False
+        self._pins_cleared = True
+        self.spawn_areas = []
+        self.selected = None
+        self._stop_blink(redraw=False)
+        self.point_card.clear()
+        self._hide_mob_results()
+        self._matches, self._match_query, self._match_index = [], "", -1
+        self.search_var.set("")
+        self.search_count.configure(text="")
+        self._show_placeholder()
+        self._set_title("")
+        self.render()
+
     def open_zone(self, map_id: str) -> None:
         """Browse a zone: the whole map, pins of the chat's places, no selected place."""
         zone = self.zones.get(map_id)
@@ -418,6 +464,7 @@ class MapView(ttk.Frame):
         """Show a place. fit_all: end on the whole zone in one drawing instead of flying to the place first."""
         self._cancel_fly()
         zone = self.zones.get(place.map_id)
+        self._pins_cleared = False  # a new place: the chat's pins are shown again
         self.place = place
         self._external_places = others is not None
         self.spawn_areas = list(spawn_areas)
@@ -597,7 +644,7 @@ class MapView(ttk.Frame):
             self._zoom_after = None
 
     def _refresh_pins(self, others: Iterable[Place] | None = None) -> None:
-        places = self.get_places() if others is None else others
+        places = self.get_places() if others is None and not self._pins_cleared else others or []
         map_id = self.zone.map_id if self.zone is not None else None
         self.others = [p for p in places if p.map_id == map_id and p != self.place]
 
@@ -764,6 +811,12 @@ class MapView(ttk.Frame):
         if self._blink_dim:
             canvas.itemconfigure("blink", state="hidden")
 
+    def _label_on_layer(self, index: int) -> bool:
+        """An Abyss area name is drawn only on its own layer; labels without a layer on every one."""
+        layers = self.zone.label_layers if self.zone is not None else ()
+        layer = layers[index] if index < len(layers) else None
+        return layer is None or self.current_layer is None or layer == self.current_layer
+
     def _draw_labels(self, width: int, height: int) -> None:
         """Area names, like the game map: white text with a dark outline; size follows the zoom.
 
@@ -775,7 +828,7 @@ class MapView(ttk.Frame):
         fonts = {"main": (theme.FONT_FAMILY, size + 1, "bold"), "zoom": (theme.FONT_FAMILY, size - 1, "bold")}
         close = self.zoom * self.zone.size >= LABELS_ZOOM_WIDTH
         for index, (image_x, image_y, text, level) in enumerate(self.zone.labels):
-            if level == "zoom" and not close:
+            if level == "zoom" and not close or not self._label_on_layer(index):
                 continue
             font = fonts[level]
             sx, sy = self.to_screen(image_x, image_y)
@@ -878,8 +931,8 @@ class MapView(ttk.Frame):
         if step == 0 or query != self._match_query:
             words = normalize(query).split()
             points = self.poi.search(self.zone.map_id, query, self.layers, self.side, self.current_layer)
-            areas = [(x, y, text) for x, y, text, _level in self.zone.labels
-                     if all(w in normalize(text) for w in words)]
+            areas = [(x, y, text) for index, (x, y, text, _level) in enumerate(self.zone.labels)
+                     if self._label_on_layer(index) and all(w in normalize(text) for w in words)]
             self._matches = list(points) + areas
             self._match_query = query
             self._match_index = -1

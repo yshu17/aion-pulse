@@ -27,7 +27,12 @@ def test_game_maps_follow_the_client_zonemap_framing():
     assert set(found) >= {"220010000", "220030000", "220020000", "220050000", "220040000", "220070000",
                           "210050000", "600010000", "120010000"}
     assert found["220070000"].name == "Келькмарос"
-    assert all(z.path.parent.name == "client" and z.size == 3072 for z in found.values())
+    assert all(z.path.parent.name == "client" for z in found.values())
+    # the game's own maps are 3072 px; Elysium uses the radar picture (its newmap does not match the NPCs), the
+    # temples and sacred arenas their small radar pictures enlarged (tools/build_radar_zone.py, add_small_zones.py)
+    radar = {"110010000", "110020000", "120020000", "110070000", "120080000"}
+    assert all(z.size == 3072 for map_id, z in found.items() if map_id not in radar)
+    assert {"110020000", "120020000", "110070000", "120080000"} <= set(found)
     # Altgard: aiondb puts teleporter 203678 (client game x 2681.14, y 1023.92) at svg (960.92, 2140.14) of 2790
     k = 3072 / 2790
     x, y = found["220030000"].to_image(2681.1377, 1023.9208)
@@ -413,9 +418,11 @@ def test_quest_givers_toggle_and_card_lists_quests(root):
 
 def test_relief_theme_uses_the_radar_map_in_the_same_frame(root):
     all_zones = zones()
-    # The Abyss has three game layers but no matching radar/relief asset yet.
+    # The Abyss has three game layers but no matching radar/relief asset yet; the zones drawn from a radar
+    # picture have it as their map already
+    radar = {"400010000", "110010000", "110020000", "120020000", "110070000", "120080000"}
     assert all(z.relief is not None and z.relief.is_file()
-               for map_id, z in all_zones.items() if map_id != "400010000")
+               for map_id, z in all_zones.items() if map_id not in radar)
     saved = []
     view = MapView(root, all_zones, map_theme="game", on_theme=saved.append)
     view.open_zone("220070000")
@@ -568,3 +575,43 @@ def test_map_cursor_is_a_hand_only_while_dragging_and_plain_otherwise(root):
     assert str(window.canvas.cget("cursor")) == "fleur"
     window._on_release(type("E", (), {"x": 90, "y": 90})())
     assert str(window.canvas.cget("cursor")) == ""
+
+
+def test_clear_all_removes_pins_areas_search_and_results(root):
+    window = MapView(root, zones())
+    window.pack(fill="both", expand=True)
+    root.update()
+    window.show(Place("220070000", 1421, 1346, "Натараз"), others=[Place("220070000", 1500, 1400, "x")],
+                spawn_areas=[[[100, 100], [140, 100], [120, 140]]])
+    window.search_var.set("страж")
+    window._mob_rows = [{"id": "1"}]
+    window.clear_all()
+    root.update()
+    assert window.place is None and window.others == [] and window.spawn_areas == [] and window.selected is None
+    assert window.search_var.get() in ("", "Найти: NPC, район") and not window.title.cget("text")
+    assert not window.mob_panel.winfo_manager() and window._mob_rows == []
+    assert not window.canvas.find_withtag("pin") and not window.canvas.find_withtag("other")
+    window.show(Place("220070000", 1421, 1346, "Натараз"))  # the next place brings the pins back
+    assert window._pins_cleared is False
+
+
+def test_every_npc_point_of_elysium_and_the_new_zones_is_on_its_map():
+    """Elysium's points were partly off its picture (market, port); the new zones are framed around their NPCs."""
+    from watcher.poi import PoiStore
+    found = zones()
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    for map_id in ("110010000", "110020000", "120020000", "110070000", "120080000"):
+        zone = found[map_id]
+        points = store.in_zone(map_id, set(store.types), "", None)
+        assert points, map_id
+        for p in points:
+            x, y = zone.to_image(p.gx, p.gy)
+            assert 0 <= x <= zone.size and 0 <= y <= zone.size, (zone.name, p.name)
+
+
+def test_abyss_points_and_area_names_belong_to_one_layer():
+    from watcher.poi import PoiStore
+    zone = zones()["400010000"]
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    assert all(p.layer in (1, 2, 3) for p in store.in_zone("400010000", set(store.types), "", None))
+    assert zone.label_layers and all(layer in (1, 2, 3) for layer in zone.label_layers)
