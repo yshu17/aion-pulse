@@ -22,7 +22,10 @@ from watcher.bestiary_widgets import (
 
 
 PAGE_SIZE = 30
-CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant", "Служебные": "service"}
+CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant", "Служебные": "service",
+            "Низкоуровневые": "low"}
+SORTS = {"Сначала с профилем": "", "Уровень ↑": "level_asc", "Уровень ↓": "level_desc",
+         "Имя А → Я": "name_asc", "Имя Я → А": "name_desc"}
 LOADING_DELAY_MS = 1000  # a faster search shows nothing
 POLL_MS = 25
 FIRST_CARDS = 8  # result cards drawn at once; the rest of the page follows in batches of this size
@@ -130,12 +133,13 @@ class BestiaryView(ttk.Frame):
         chips = tk.Frame(left, bg=theme.SURFACE)
         chips.pack(fill="x", pady=(0, 7))
         self.category_chips: dict[str, tk.Button] = {}
-        for value, title in (("Все группы", "ВСЕ"), ("Монстры", "МОНСТР"), ("NPC", "NPC"), ("Торговцы", "ТОРГОВЦЫ"), ("Служебные", "СЛУЖЕБНЫЕ")):
+        for value, title in (("Все группы", "ВСЕ"), ("Монстры", "МОНСТР"), ("NPC", "NPC"), ("Торговцы", "ТОРГОВЦЫ"),
+                             ("Служебные", "СЛУЖЕБНЫЕ"), ("Низкоуровневые", "НИЖЕ 40 УР.")):
             button = tk.Button(chips, text=title, bd=1, relief="solid", cursor="hand2",
                                font=theme.font("micro"), padx=10, pady=4,
                                command=lambda choice=value: self._choose_category(choice))
-            button.pack(side="left", padx=(0, 6))
             self.category_chips[value] = button
+        wrap_badges(chips)  # six groups: they wrap to a second row in a narrow panel
         self._update_category_chips()
         choices = (
             (self.category, list(CATEGORY), 14),
@@ -164,6 +168,13 @@ class BestiaryView(ttk.Frame):
             entry.pack(side="left")
             entry.bind("<KeyRelease>", self._schedule_search)
         ttk.Button(levels, text="Сброс", command=self._reset_filters, width=6).pack(side="right")
+        sorting = ttk.Frame(filters)
+        sorting.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        ttk.Label(sorting, text="Сортировка").pack(side="left", padx=(0, 8))
+        self.sort = tk.StringVar(value=next(iter(SORTS)))
+        sort_box = ttk.Combobox(sorting, textvariable=self.sort, values=list(SORTS), state="readonly", width=20)
+        sort_box.pack(side="left", fill="x", expand=True)
+        sort_box.bind("<<ComboboxSelected>>", lambda _e: self._search(reset=True))
         paging = ttk.Frame(left)
         paging.pack(fill="x", pady=(7, 7))
         self.page_label = ttk.Label(paging, text="", style="Muted.TLabel")
@@ -183,6 +194,7 @@ class BestiaryView(ttk.Frame):
         self.result_frame = tk.Frame(self.results, bg=theme.SURFACE)
         self._results_window = self.results.create_window((0, 0), window=self.result_frame, anchor="nw")
         self.result_frame.bind("<Configure>", lambda _e: self.results.configure(scrollregion=self.results.bbox("all")))
+        bind_wheel_tree(self.result_frame, self.results)  # the gaps between cards scroll the list too
         self.results.bind("<Configure>", lambda e: self.results.itemconfigure(self._results_window, width=e.width))
         self.results.bind("<MouseWheel>", lambda e: self.results.yview_scroll(-int(e.delta / 120), "units"))
         self._result_rows: dict[str, tk.Frame] = {}
@@ -379,6 +391,8 @@ class BestiaryView(ttk.Frame):
             "" if self.rank.get() == "Все ранги" else self.rank.get(),
             self._zone_ids.get(self.zone.get(), ""), self._offset, PAGE_SIZE,
             min_level=low, max_level=high, region="" if self.region.get() == "Все районы" else self.region.get(),
+            order=SORTS.get(self.sort.get(), ""),
+            hide_low=CATEGORY[self.category.get()] not in ("low", "service"),  # low-level mobs: their own group
         )
         if self._loading_after is None:  # the indicator appears only when a search is really slow
             self._loading_after = self.after(LOADING_DELAY_MS, self._show_loading)
@@ -445,6 +459,7 @@ class BestiaryView(ttk.Frame):
 
     def _reset_filters(self) -> None:
         self.category.set("Все группы")
+        self.sort.set(next(iter(SORTS)))
         self.race.set("Все расы")
         self.rank.set("Все ранги")
         self.zone.set("Все локации")

@@ -17,6 +17,8 @@ import re
 
 _LATIN = re.compile(r"[A-Za-z]")
 _CYRILLIC = re.compile(r"[А-Яа-яЁё]")
+_WORD = re.compile(r"[^\s\-,.()«»\"']+")
+_ROMAN = re.compile(r"[IVXLC]+")
 _DIGIT_RUN = re.compile(r"[^\W\d_]\d{3,}|\d{3,}[^\W\d_]")  # digits glued to letters: «NPC123», «Страж123»
 MAX_MOB_LEVEL = 55  # monsters above this level are not on the server yet: kept in the service group
 
@@ -36,7 +38,11 @@ def technical_name(name: str) -> bool:
         return True  # empty or digits and punctuation only
     if "_" in text or "test" in text.casefold() or _DIGIT_RUN.search(text):
         return True
-    return bool(_LATIN.search(text)) and not _CYRILLIC.search(text)  # English names
+    if _LATIN.search(text) and not _CYRILLIC.search(text):
+        return True  # English names
+    # a Latin word inside a Russian name: «LF3 элементаль», «Прозрачный NPC open IDStation», «GM Еvent». Roman
+    # numerals do not count, nor does one stray Latin letter (a typo in a real name such as «Барoшунг»)
+    return any(len(_LATIN.findall(word)) >= 2 and not _ROMAN.fullmatch(word) for word in _WORD.findall(text))
 
 
 def stem_key(name: str) -> tuple[str, ...]:

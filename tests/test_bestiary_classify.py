@@ -9,7 +9,11 @@ def _row(npc_id, name, points=0, level="55", category="monster", drops=0, profil
 def test_technical_names():
     for name in ("Test_главный монстр 1", "BAb1_Страж_Асмодианин_lv50", "Guard", "NPC123", "123", "", "a_b"):
         assert technical_name(name), name
-    for name in ("Хранитель Валон", "Драконид-страж 47-го легиона", "Стражник-воитель", "Торговец 100%"):
+    for name in ("LF3 элементаль ветра (3 ур.) 36", "Прозрачный NPC open 2 врата", "GM Еvent керубим",
+                 "Длиннорогий олень Miner", "Сторож балауров (вкл. PvP)"):
+        assert technical_name(name), name
+    for name in ("Хранитель Валон", "Драконид-страж 47-го легиона", "Стражник-воитель", "Торговец 100%",
+                 "Барoшунг", "Страж II", "Камень печати IV"):
         assert not technical_name(name), name
 
 

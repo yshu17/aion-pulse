@@ -34,6 +34,27 @@ def unpack_detail(blob: bytes) -> dict:
     return json.loads(unpacker.decompress(blob) + unpacker.flush())
 
 
+LOW_LEVEL = 40  # monsters below this level have a group of their own
+_LEVEL = "CASE WHEN n.level GLOB '[0-9]*' THEN CAST(n.level AS INTEGER) END"
+ORDERS = {
+    "": "n.has_profile DESC,n.point_count DESC,n.name COLLATE RU,n.id",
+    "level_asc": f"{_LEVEL} IS NULL,{_LEVEL},n.name COLLATE RU,n.id",  # no level: at the end either way
+    "level_desc": f"{_LEVEL} IS NULL,{_LEVEL} DESC,n.name COLLATE RU,n.id",
+    "name_asc": "n.name COLLATE RU,n.id",
+    "name_desc": "n.name COLLATE RU DESC,n.id",
+}
+
+
+def _russian_key(text: str) -> str:
+    return text.casefold().replace("ё", "е")
+
+
+def _russian_order(a: str, b: str) -> int:
+    """Russian alphabetical order, case-blind, «ё» with «е» (SQLite's NOCASE only knows ASCII: «Ё» came before «А»)."""
+    a, b = _russian_key(a), _russian_key(b)
+    return (a > b) - (a < b)
+
+
 def unpack_ids(blob: bytes) -> set[int]:
     out, value, shift, previous = set(), 0, 0, 0
     for byte in zlib.decompress(blob):
@@ -59,6 +80,7 @@ class BestiaryStore:
         self.path = Path(path)
         self.connection = sqlite3.connect(f"file:{self.path.as_posix()}?mode=ro", uri=True)
         self.connection.row_factory = sqlite3.Row
+        self.connection.create_collation("RU", _russian_order)
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
         self.version = version
         if version not in (1, 2, 3, 4, 5, 6, 7):
@@ -99,7 +121,10 @@ class BestiaryStore:
         self, text: str = "", category: str = "", race: str = "", rank: str = "",
         map_id: str = "", offset: int = 0, limit: int = 150,
         min_level: int | None = None, max_level: int | None = None, region: str = "",
+        order: str = "", hide_low: bool = False,
     ) -> tuple[list[dict], int]:
+        """order: "" (profiles and mobs with places first), level_asc, level_desc, name_asc, name_desc.
+        category "low": monsters below LOW_LEVEL; hide_low keeps them out of every other group."""
         clauses: list[str] = []
         params: list[object] = []
         term = search_key(text)
@@ -123,6 +148,11 @@ class BestiaryStore:
         if self.version >= 5:  # technical and duplicate records are a group of their own
             clauses.append("n.service = ?")
             params.append(1 if category == "service" else 0)
+        low = f"(n.category = 'monster' AND n.level GLOB '[0-9]*' AND CAST(n.level AS INTEGER) < {LOW_LEVEL})"
+        if category == "low":
+            clauses.append(low)
+        elif hide_low:
+            clauses.append(f"NOT {low}")
         if category == "monster":
             clauses.append("n.category = 'monster'")
         elif category == "npc":
@@ -157,7 +187,7 @@ class BestiaryStore:
             "SELECT n.id,n.name,n.kind,n.race,n.rank,n.level,n.icon_asset,n.zone_names,"
             + ("n.faction," if self.version >= 2 else "'' AS faction,")
             + "n.point_count,n.drop_count,n.has_profile FROM npc n" + where
-            + " ORDER BY n.has_profile DESC,n.point_count DESC,n.name COLLATE NOCASE,n.id LIMIT ? OFFSET ?",
+            + " ORDER BY " + ORDERS.get(order, ORDERS[""]) + " LIMIT ? OFFSET ?",
             [*params, limit, offset],
         ).fetchall()
         found = [dict(row) for row in rows]

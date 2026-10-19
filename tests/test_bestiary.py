@@ -392,3 +392,57 @@ def test_app_shows_a_short_preview_for_items_without_a_spec(tmp_path):
             assert shown[-1]["name"] != "x"  # the full spec, not the short one
     finally:
         root.destroy()
+
+
+def _mobs_database(tmp_path, mobs):
+    """A real index built from a few monsters: (id, name, level)."""
+    source, areas, database = tmp_path / "npcs.json.gz", tmp_path / "areas.json.gz", tmp_path / "npcs.sqlite"
+    records = {"zones": {}, "records": [
+        {"id": npc_id, "name": name, "site_name": name, "local_name": "", "internal_name": "", "category": "monster",
+         "role": "", "race": "beast", "site_level": level, "icon_asset": "", "kb_url": "", "kb_status": "client_only",
+         "points": [], "kb": None}
+        for npc_id, name, level in mobs]}
+    with gzip.open(source, "wt", encoding="utf-8") as stream:
+        json.dump(records, stream, ensure_ascii=False)
+    with gzip.open(areas, "wt", encoding="utf-8") as stream:
+        json.dump({"areas": []}, stream)
+    build(source, areas, database)
+    return BestiaryStore(database)
+
+
+def test_sorting_by_level_and_by_name_both_ways(tmp_path):
+    store = _mobs_database(tmp_path, [("1", "Волк", 45), ("2", "Аист", 52), ("3", "Ёж", 41), ("4", "Бык", None)])
+    try:
+        names = lambda order: [r["name"] for r in store.search("", "monster", order=order)[0]]
+        assert names("level_asc") == ["Ёж", "Волк", "Аист", "Бык"]  # no level: last
+        assert names("level_desc") == ["Аист", "Волк", "Ёж", "Бык"]
+        assert names("name_asc")[:2] == ["Аист", "Бык"] and names("name_desc")[-2:] == ["Бык", "Аист"]
+    finally:
+        store.close()
+
+
+def test_monsters_below_40_have_their_own_group(tmp_path):
+    store = _mobs_database(tmp_path, [("1", "Кабан", 5), ("2", "Волк", 39), ("3", "Медведь", 40), ("4", "Лось", 55)])
+    try:
+        names = lambda **kw: sorted(r["name"] for r in store.search("", **kw)[0])
+        assert names(category="low") == ["Волк", "Кабан"]
+        assert names(category="", hide_low=True) == ["Лось", "Медведь"]  # every other group leaves them out
+        assert names(category="monster", hide_low=True) == ["Лось", "Медведь"]
+        assert len(names(category="")) == 4  # the map's search still finds them
+    finally:
+        store.close()
+
+
+def test_wheel_over_the_gap_between_cards_scrolls_the_list(tmp_path):
+    import tkinter as tk
+    from watcher.bestiary_view import BestiaryView
+
+    root = tk.Tk()
+    try:
+        view = BestiaryView(root, tmp_path / "missing.sqlite", tmp_path, {}, lambda *a: None)
+        view.pack(fill="both", expand=True)
+        root.geometry("900x600")
+        assert view.result_frame.bind("<MouseWheel>")  # the container itself, not only the cards
+        view.destroy()
+    finally:
+        root.destroy()
