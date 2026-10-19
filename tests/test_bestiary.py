@@ -347,3 +347,48 @@ def test_manual_points_give_a_record_a_pin_and_a_circle_area():
     assert (point["gx"], point["gy"], point["x"], point["y"], point["source"]) == (1421.0, 1346.0, 1346.0, 1421.0, "manual")
     assert "points" not in data["records"][1]
     assert areas[0]["npc_id"] == "1" and areas[0]["center"] == [1346.0, 1421.0] and len(areas[0]["polygon"]) == 8
+
+
+def test_hovering_a_drop_or_goods_row_asks_for_the_item_preview(tmp_path):
+    """The Bestiary lists show the same item tooltip as «Поиск»: entering a row reports its item, leaving hides it."""
+    import tkinter as tk
+    from watcher.bestiary_view import BestiaryView
+
+    root = tk.Tk()
+    try:
+        seen = []
+        view = BestiaryView(root, tmp_path / "missing.sqlite", tmp_path, {}, lambda *a: None,
+                            on_item_enter=lambda item, icon: seen.append(item), on_item_leave=lambda: seen.append(None))
+        view._detail = {"drops": [{"item_id": "100", "name": "Меч", "rarity": "rare"}],
+                        "stock": [{"item_id": "200", "name": "Щит", "rarity": "common", "icon_asset": ""}]}
+        assert view._list_item("d0")[0] == {"item_id": "100", "name": "Меч", "rarity": "rare"}
+        assert view._list_item("s0")[0]["item_id"] == "200"
+        assert view._list_item("d5") is None and view._list_item("") is None
+        event = type("E", (), {"y": 5})()
+        view.drops.identify_row = lambda y: "d0"
+        view._hover_list(view.drops, event)
+        view._hover_list(view.drops, event)  # the same row: asked once
+        view._leave_list()
+        assert seen == [{"item_id": "100", "name": "Меч", "rarity": "rare"}, None]
+        view.destroy()
+    finally:
+        root.destroy()
+
+
+def test_app_shows_a_short_preview_for_items_without_a_spec(tmp_path):
+    import sys
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent))
+    from test_app import _nag_app
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        shown = []
+        app.tooltip.show = lambda spec, icon, x, y: shown.append(spec)
+        app._show_item_tooltip({"item_id": "no-such-id", "name": "Странный камень", "rarity": "epic"}, None)
+        assert shown[0]["name"] == "Странный камень" and shown[0]["grade"] == "epic"
+        known = next(iter(app.specs._raw)) if hasattr(app.specs, "_raw") and app.specs._raw else None
+        if known:
+            app._show_item_tooltip({"item_id": known, "name": "x", "rarity": ""}, None)
+            assert shown[-1]["name"] != "x"  # the full spec, not the short one
+    finally:
+        root.destroy()

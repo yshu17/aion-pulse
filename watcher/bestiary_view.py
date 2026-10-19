@@ -50,8 +50,14 @@ class BestiaryView(ttk.Frame):
         self, parent: tk.Misc, database: Path, icons_dir: Path,
         map_names: dict[str, str],
         on_map: Callable[[str, float, float, str, list[dict], list[dict]], None],
+        on_item_enter: Callable[[dict, object], None] | None = None,
+        on_item_leave: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(parent)
+        # item preview, the same tooltip as in «Поиск»: (item {item_id, name, rarity}, its icon) and hide
+        self.on_item_enter = on_item_enter or (lambda item, icon: None)
+        self.on_item_leave = on_item_leave or (lambda: None)
+        self._hover_row: str | None = None
         self.database = Path(database)
         self.icons_dir = Path(icons_dir)
         self.map_names = map_names
@@ -242,6 +248,8 @@ class BestiaryView(ttk.Frame):
         self.drops.configure(yscrollcommand=drop_scroll.set)
         for rarity, color in theme.GRADE_COLORS.items():
             self.drops.tag_configure(rarity, foreground=color)
+        self.drops.bind("<Motion>", lambda e: self._hover_list(self.drops, e))
+        self.drops.bind("<Leave>", lambda _e: self._leave_list())
         self.drops.bind("<Double-1>", self._open_item)
         self.drops.bind("<Return>", self._open_item)
         self.drop_count = ttk.Label(drops_tab, text="", style="Muted.TLabel", wraplength=450)
@@ -298,6 +306,8 @@ class BestiaryView(ttk.Frame):
         self.stock.configure(yscrollcommand=stock_scroll.set)
         for rarity, color in theme.GRADE_COLORS.items():
             self.stock.tag_configure(rarity, foreground=color)
+        self.stock.bind("<Motion>", lambda e: self._hover_list(self.stock, e))
+        self.stock.bind("<Leave>", lambda _e: self._leave_list())
         self.stock.bind("<Double-1>", self._open_stock_item)
         self.stock.bind("<Return>", self._open_stock_item)
         self.stock_note = ttk.Label(stock, text="", style="Muted.TLabel", wraplength=500)
@@ -679,6 +689,11 @@ class BestiaryView(ttk.Frame):
                     name.bind("<Configure>", lambda e, label=name: label.configure(wraplength=max(120, e.width - 10)))
                     if item.get("item_id"):
                         name.bind("<Button-1>", lambda _e, value=item["item_id"]: webbrowser.open(f"https://kb.aionempire.com/items/{value}"))
+                    preview = ({"item_id": str(item.get("item_id") or ""), "name": item.get("name") or "",
+                                "rarity": item.get("rarity") or ""}, self._load_icon(asset, 40))
+                    for widget in (name, icon_box, *icon_box.winfo_children()):
+                        widget.bind("<Enter>", lambda _e, p=preview: self.on_item_enter(*p), add="+")
+                        widget.bind("<Leave>", lambda _e: self.on_item_leave(), add="+")
                 if len(drops) > len(entries):
                     ttk.Button(block, text=f"Показать все {len(drops)} предметов →",
                                command=lambda: self.detail_tabs.select(1)).pack(anchor="e")
@@ -819,6 +834,37 @@ class BestiaryView(ttk.Frame):
                               values=(item.get("name", ""), item.get("group", ""), item.get("trade_mode", "")))
         self.stock_note.configure(text=f"Показано {len(self.stock.get_children())} из {len(items)}. Ассортимент из клиента; на сервере возможны отличия."
                                   if items else "Для этого NPC список товаров в клиенте не найден.")
+
+    def _list_item(self, row: str) -> tuple[dict, object] | None:
+        """The item behind a drop («d<n>») or goods («s<n>») row, with the icon the row shows."""
+        if not row or not self._detail:
+            return None
+        items = self._detail.get("drops" if row[0] == "d" else "stock") or []
+        try:
+            item = items[int(row[1:])]
+        except (IndexError, ValueError):
+            return None
+        if row[0] == "d":
+            icon = self._load_icon(f"items/{Path(item.get('icon') or '').name}", 40)
+        else:
+            icon = self._load_icon(item.get("icon_asset", ""), 40)
+        return {"item_id": str(item.get("item_id") or ""), "name": item.get("name") or "",
+                "rarity": item.get("rarity") or ""}, icon
+
+    def _hover_list(self, tree: ttk.Treeview, event: tk.Event) -> None:
+        row = tree.identify_row(event.y)
+        if row == self._hover_row:
+            return
+        self._hover_row = row
+        found = self._list_item(row)
+        if found is None:
+            self.on_item_leave()
+        else:
+            self.on_item_enter(*found)
+
+    def _leave_list(self) -> None:
+        self._hover_row = None
+        self.on_item_leave()
 
     def _open_stock_item(self, _event=None) -> None:
         selected = self.stock.selection()

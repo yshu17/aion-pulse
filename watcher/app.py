@@ -427,6 +427,8 @@ class App:
                 bestiary_dir / "icons",
                 {map_id: zone.name for map_id, zone in self.zones.items()},
                 on_map=self._open_bestiary_point,
+                on_item_enter=self._schedule_item_tooltip,
+                on_item_leave=self._hide_tooltip,
             )
             self.bestiary_view.configure(padding=(0, 12, 0, 0))
             self.tabs.add(self.bestiary_view, text="NPC / Бестиарий")
@@ -837,6 +839,23 @@ class App:
         if len(self.recipes):
             spec = with_recipe(spec, self.recipes.for_item(spec.get("name", ""), item_id))
         self.tooltip.show(spec, self._icon_for(item) if item else None, x, y)
+
+    def _schedule_item_tooltip(self, item: dict, icon) -> None:
+        """Preview of an item from the Bestiary lists: its full spec when there is one, else name, rarity and icon."""
+        self._hide_tooltip()
+        self._tooltip_after = self.root.after(TOOLTIP_DELAY_MS, self._show_item_tooltip, item, icon)
+
+    def _show_item_tooltip(self, item: dict, icon) -> None:
+        self._tooltip_after = None
+        spec = self.specs.get(item["item_id"]) or {
+            "name": item["name"], "grade": item["rarity"],
+            "blocks": [{"kind": "text", "text": "Подробное описание предмета не загружено.", "style": "muted"}],
+        }
+        if len(self.recipes):
+            spec = with_recipe(spec, self.recipes.for_item(spec.get("name", ""), item["item_id"]))
+        x, y = self.root.winfo_pointerxy()
+        watched = self.item_by_id.get(item["item_id"])
+        self.tooltip.show(spec, self._icon_for(watched) if watched else icon, x, y)
 
     def _hide_tooltip(self) -> None:
         if self._tooltip_after is not None:
