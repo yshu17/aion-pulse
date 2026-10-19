@@ -13,9 +13,8 @@ from tkinter import filedialog, ttk
 
 from watcher import theme
 from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
-from watcher.mapview import RESIZE_SETTLE_MS
 from watcher.snapshot import capture_widget
-from watcher.win_sizing import install_sizing_hook
+from watcher.win_sizing import primary_button_down
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
@@ -52,6 +51,8 @@ from watcher.recipes import load_recipes, with_recipe
 from watcher.specs import load_specs
 from watcher.tailer import LogTailer
 from watcher.tooltip import SpecTooltip
+
+SIZING_POLL_MS = 40  # while the window edge is dragged, how often the mouse button is checked
 
 MAX_ROWS = 500
 MAX_PLACES = 300  # place links remembered for the map's pins
@@ -340,8 +341,7 @@ class App:
         # back once the size settles. Tk re-lays out every page on each size step: 150-300 ms per step, 2-3 fps.
         self._frozen_tabs: dict | None = None
         self._thaw_after: str | None = None
-        # Windows tells when an edge drag starts and ends; elsewhere the size changes themselves are watched
-        self._sizing_hook = install_sizing_hook(root, self._freeze_window, self.settle_layout)
+        self._last_size: tuple[int, int] | None = None
         root.bind("<Configure>", self._on_root_resize, add="+")
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 16))
         self.search_tab = ttk.Frame(self.tabs, padding=(0, 12, 0, 0))
@@ -584,17 +584,25 @@ class App:
             self.bestiary_view.activate()
 
     def _on_root_resize(self, event: tk.Event) -> None:
-        """Without the Windows hook: two size changes in quick succession mean a drag; the content returns after a pause."""
-        if event.widget is not self.root or self._sizing_hook:
+        if event.widget is not self.root:
             return
-        if self._frozen_tabs is None and self._thaw_after is None:
-            # a single size change (showing the window, a programmatic resize) is not a drag: just watch for the next
-            self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
+        size = (event.width, event.height)
+        changed, self._last_size = size != self._last_size, size  # a move of the window changes no size
+        if not changed or self._frozen_tabs is not None:
             return
-        self._freeze_window()
-        if self._thaw_after is not None:
-            self.root.after_cancel(self._thaw_after)
-        self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
+        if primary_button_down():
+            # the size changes while the mouse button is held: the edge is being dragged. Nothing is drawn until the
+            # button is released, however long the hand pauses
+            self._freeze_window()
+            self._thaw_after = self.root.after(SIZING_POLL_MS, self._poll_sizing)
+
+    def _poll_sizing(self) -> None:
+        """Keep the still frame while the button is held; the release brings the content back, laid out once."""
+        self._thaw_after = None
+        if primary_button_down():
+            self._thaw_after = self.root.after(SIZING_POLL_MS, self._poll_sizing)
+        else:
+            self._thaw_tabs()
 
     def _freeze_window(self) -> None:
         """Take the whole window content (header and pages, every page keeps its state) out of the layout and show one

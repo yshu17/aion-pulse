@@ -1377,66 +1377,43 @@ def test_a_missing_or_unreadable_icon_does_not_stop_the_window(tmp_path):
         root.destroy()
 
 
-def test_windows_edge_drag_freezes_the_content_until_the_mouse_is_released(tmp_path):
-    """WM_SIZING (each step of an edge drag) stops the drawing; WM_EXITSIZEMOVE (mouse released) brings it back once.
-    No timer: a slow drag or a pause in it never redraws the content halfway."""
-    import ctypes
+def test_edge_drag_freezes_while_the_button_is_held_and_draws_once_on_release(tmp_path, monkeypatch):
+    """A size change with the mouse button held is a drag: one still frame, nothing drawn per step, no timer that
+    brings the content back during a pause; the release lays it out once."""
     import time
-    from watcher.win_sizing import WM_EXITSIZEMOVE, WM_SIZING
-
-    root, app, _calls, _say = _nag_app(tmp_path)
-    try:
-        root.deiconify()
-        root.update()
-        if not app._sizing_hook:
-            return  # not Windows
-        user32 = ctypes.windll.user32
-        hwnd = user32.GetParent(root.winfo_id()) or root.winfo_id()
-        user32.SendMessageW(hwnd, WM_SIZING, 8, 0)
-        root.update()
-        assert app._frozen_tabs is not None and not app.tabs.winfo_manager()
-        root.geometry("1150x780")
-        root.update()
-        time.sleep(0.3)  # a pause in the drag, longer than any timer
-        root.update()
-        assert app._frozen_tabs is not None  # still frozen: only the release ends it
-        user32.SendMessageW(hwnd, WM_EXITSIZEMOVE, 0, 0)
-        root.update()
-        assert app._frozen_tabs is None and app.tabs.winfo_manager() == "pack"
-    finally:
-        root.destroy()
-
-
-def _send(root, message):
-    import ctypes
-    user32 = ctypes.windll.user32
-    user32.SendMessageW(user32.GetParent(root.winfo_id()) or root.winfo_id(), message, 8, 0)
-
-
-def test_edge_drag_shows_one_still_frame_and_does_no_work_per_step(tmp_path, monkeypatch):
-    """During the drag the content is out of the layout and one captured frame stands in; it is captured once."""
     import watcher.app as module
     from PIL import Image
-    from watcher.win_sizing import WM_EXITSIZEMOVE, WM_SIZING
 
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
         root.deiconify()
         root.update()
-        if not app._sizing_hook:
-            return
+        button = {"down": False}
+        monkeypatch.setattr(module, "primary_button_down", lambda: button["down"])
         captures = []
         monkeypatch.setattr(module, "capture_widget", lambda widget: captures.append(1) or Image.new("RGB", (100, 80), "#123456"))
+        root.geometry("1180x790")  # no button held: a programmatic resize, nothing frozen
+        root.update()
+        assert app._frozen_tabs is None
+        button["down"] = True
         photos = set()
         for step in range(6):
-            _send(root, WM_SIZING)
             root.geometry(f"{1100 + step * 20}x{760 + step * 10}")
             root.update()
             photos.add(str(app._veil_photo))
-        assert len(captures) == 1 and len(photos) == 1  # captured once, not touched again
-        assert app._veil.winfo_children()  # the picture stands in for the content
-        _send(root, WM_EXITSIZEMOVE)
+        assert app._frozen_tabs is not None and not app.tabs.winfo_manager()
+        assert len(captures) == 1 and len(photos) == 1  # captured once, nothing redrawn per step
+        time.sleep(0.3)  # a pause in the drag
+        root.update()
+        assert app._frozen_tabs is not None
+        button["down"] = False  # the mouse is released
+        time.sleep(0.1)
         root.update()
         assert app._frozen_tabs is None and app.tabs.winfo_manager() == "pack" and not app._veil.winfo_exists()
     finally:
         root.destroy()
+
+
+def test_primary_button_check_is_a_plain_bool():
+    from watcher.win_sizing import primary_button_down
+    assert primary_button_down() in (True, False)

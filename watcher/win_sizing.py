@@ -1,64 +1,27 @@
-"""Know when the user drags the window edge, from Windows itself (WM_SIZING / WM_EXITSIZEMOVE).
+"""Is the window edge being dragged right now? Answered by asking Windows whether the mouse button is held.
 
-Tk only sees the resulting size changes, one after another, and cannot tell a drag from a pause in it. Windows sends
-WM_SIZING for every step of an edge drag (never for a plain move or maximize) and WM_EXITSIZEMOVE when the mouse is
-released. The program stops drawing its content at the first and draws it once at the second.
+A window size change while the primary mouse button is down is a drag of the edge or corner (a plain move does not
+change the size, maximize and snap happen on release). The drag ends when the button is released, whatever pauses
+the hand makes on the way.
 
-    install_sizing_hook(root, on_start, on_end) -> bool   False where it is not Windows or the hook cannot be set
+An earlier version replaced the window procedure to catch WM_SIZING; calling back into Python from there broke the
+interpreter's thread state inside Tk and crashed the program. This only reads the button state: a plain call, no
+callback.
+
+    primary_button_down() -> bool      False where it is not Windows
 """
 
 from __future__ import annotations
 
-import tkinter as tk
-from collections.abc import Callable
-
-WM_SIZING = 0x0214
-WM_EXITSIZEMOVE = 0x0232
-WM_NCDESTROY = 0x0082
-GWLP_WNDPROC = -4
+VK_LBUTTON, VK_RBUTTON = 0x01, 0x02
+SM_SWAPBUTTON = 23
 
 
-def install_sizing_hook(root: tk.Misc, on_start: Callable[[], None], on_end: Callable[[], None]) -> bool:
+def primary_button_down() -> bool:
     try:
         import ctypes
-        from ctypes import wintypes as wt
         user32 = ctypes.windll.user32
     except (ImportError, AttributeError, OSError):
         return False
-    LRESULT = ctypes.c_ssize_t
-    WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wt.HWND, ctypes.c_uint, wt.WPARAM, wt.LPARAM)
-    user32.SetWindowLongPtrW.restype = ctypes.c_void_p
-    user32.SetWindowLongPtrW.argtypes = [wt.HWND, ctypes.c_int, ctypes.c_void_p]
-    user32.CallWindowProcW.restype = LRESULT
-    user32.CallWindowProcW.argtypes = [ctypes.c_void_p, wt.HWND, ctypes.c_uint, wt.WPARAM, wt.LPARAM]
-    user32.GetParent.restype = wt.HWND
-    user32.GetParent.argtypes = [wt.HWND]
-    try:
-        root.update_idletasks()
-        hwnd = user32.GetParent(root.winfo_id()) or root.winfo_id()
-    except tk.TclError:
-        return False
-    state = {"sizing": False, "old": None}
-
-    def proc(handle, message, wparam, lparam):
-        try:
-            if message == WM_SIZING and not state["sizing"]:
-                state["sizing"] = True
-                on_start()
-            elif message == WM_EXITSIZEMOVE and state["sizing"]:
-                state["sizing"] = False
-                on_end()
-        except Exception:  # a Python error must never break the window's own message handling
-            pass
-        result = user32.CallWindowProcW(state["old"], handle, message, wparam, lparam)
-        if message == WM_NCDESTROY:  # the window is gone: put the original procedure back
-            user32.SetWindowLongPtrW(handle, GWLP_WNDPROC, state["old"])
-        return result
-
-    callback = WNDPROC(proc)
-    old = user32.SetWindowLongPtrW(hwnd, GWLP_WNDPROC, ctypes.cast(callback, ctypes.c_void_p))
-    if not old:
-        return False
-    state["old"] = old
-    root._sizing_hook = (callback, state)  # keep the callback alive as long as the window
-    return True
+    button = VK_RBUTTON if user32.GetSystemMetrics(SM_SWAPBUTTON) else VK_LBUTTON
+    return bool(user32.GetAsyncKeyState(button) & 0x8000)
