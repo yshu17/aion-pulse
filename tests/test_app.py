@@ -1348,29 +1348,6 @@ def test_settings_card_folds_smoothly_and_ends_in_the_right_state(tmp_path):
         app._on_close()
 
 
-def test_dragging_the_window_edge_shows_the_last_frame_in_place_of_the_pages(tmp_path, monkeypatch):
-    """The pages leave the layout while the size changes; a picture of them stands in, then they come back."""
-    import watcher.app as module
-    from PIL import Image
-
-    root, app, _calls, _say = _nag_app(tmp_path)
-    try:
-        root.deiconify()
-        root.update()
-        app.settle_layout()  # showing the window was itself a resize
-        root.update()
-        monkeypatch.setattr(module, "capture_widget", lambda widget: Image.new("RGB", (40, 30), "#123456"))
-        root.geometry("1210x810")
-        root.update()
-        assert app._frozen_tabs is not None and not app.tabs.winfo_manager()
-        assert app._veil.winfo_children() and app._veil_photo is not None  # the picture is in the veil
-        app.settle_layout()
-        root.update()
-        assert app.tabs.winfo_manager() == "pack" and not app._veil.winfo_exists()
-    finally:
-        root.destroy()
-
-
 def test_window_snapshot_is_an_image_of_the_widget_size_or_none(tmp_path):
     import tkinter as tk
     from watcher.snapshot import capture_widget
@@ -1387,33 +1364,6 @@ def test_window_snapshot_is_an_image_of_the_widget_size_or_none(tmp_path):
         root.destroy()
 
 
-def test_a_drag_does_no_work_per_step_the_frozen_picture_stays_as_it_was(tmp_path, monkeypatch):
-    """The edge moves, nothing is redrawn: the one captured frame stays, the content is laid out after the drag."""
-    import watcher.app as module
-    from PIL import Image
-
-    root, app, _calls, _say = _nag_app(tmp_path)
-    try:
-        root.deiconify()
-        root.update()
-        app.settle_layout()
-        root.update()
-        captures = []
-        monkeypatch.setattr(module, "capture_widget", lambda widget: captures.append(1) or Image.new("RGB", (100, 80), "#123456"))
-        photos = set()
-        for step in range(6):
-            root.geometry(f"{1100 + step * 20}x{760 + step * 10}")
-            root.update()
-            if app._frozen_tabs is not None:
-                photos.add(str(app._veil_photo))
-        assert len(captures) == 1 and len(photos) == 1  # captured once, not touched again
-        app.settle_layout()
-        root.update()
-        assert app._frozen_tabs is None and app.tabs.winfo_manager() == "pack"
-    finally:
-        root.destroy()
-
-
 def test_a_missing_or_unreadable_icon_does_not_stop_the_window(tmp_path):
     import tkinter as tk
     from watcher.window_icon import load_app_icon
@@ -1423,5 +1373,70 @@ def test_a_missing_or_unreadable_icon_does_not_stop_the_window(tmp_path):
         assert load_app_icon(root, tmp_path) == ()  # no files: the default icon stays, no exception
         (tmp_path / "aion_app_16.png").write_bytes(b"not a png")
         assert load_app_icon(root, tmp_path) == ()
+    finally:
+        root.destroy()
+
+
+def test_windows_edge_drag_freezes_the_content_until_the_mouse_is_released(tmp_path):
+    """WM_SIZING (each step of an edge drag) stops the drawing; WM_EXITSIZEMOVE (mouse released) brings it back once.
+    No timer: a slow drag or a pause in it never redraws the content halfway."""
+    import ctypes
+    import time
+    from watcher.win_sizing import WM_EXITSIZEMOVE, WM_SIZING
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.update()
+        if not app._sizing_hook:
+            return  # not Windows
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetParent(root.winfo_id()) or root.winfo_id()
+        user32.SendMessageW(hwnd, WM_SIZING, 8, 0)
+        root.update()
+        assert app._frozen_tabs is not None and not app.tabs.winfo_manager()
+        root.geometry("1150x780")
+        root.update()
+        time.sleep(0.3)  # a pause in the drag, longer than any timer
+        root.update()
+        assert app._frozen_tabs is not None  # still frozen: only the release ends it
+        user32.SendMessageW(hwnd, WM_EXITSIZEMOVE, 0, 0)
+        root.update()
+        assert app._frozen_tabs is None and app.tabs.winfo_manager() == "pack"
+    finally:
+        root.destroy()
+
+
+def _send(root, message):
+    import ctypes
+    user32 = ctypes.windll.user32
+    user32.SendMessageW(user32.GetParent(root.winfo_id()) or root.winfo_id(), message, 8, 0)
+
+
+def test_edge_drag_shows_one_still_frame_and_does_no_work_per_step(tmp_path, monkeypatch):
+    """During the drag the content is out of the layout and one captured frame stands in; it is captured once."""
+    import watcher.app as module
+    from PIL import Image
+    from watcher.win_sizing import WM_EXITSIZEMOVE, WM_SIZING
+
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.update()
+        if not app._sizing_hook:
+            return
+        captures = []
+        monkeypatch.setattr(module, "capture_widget", lambda widget: captures.append(1) or Image.new("RGB", (100, 80), "#123456"))
+        photos = set()
+        for step in range(6):
+            _send(root, WM_SIZING)
+            root.geometry(f"{1100 + step * 20}x{760 + step * 10}")
+            root.update()
+            photos.add(str(app._veil_photo))
+        assert len(captures) == 1 and len(photos) == 1  # captured once, not touched again
+        assert app._veil.winfo_children()  # the picture stands in for the content
+        _send(root, WM_EXITSIZEMOVE)
+        root.update()
+        assert app._frozen_tabs is None and app.tabs.winfo_manager() == "pack" and not app._veil.winfo_exists()
     finally:
         root.destroy()

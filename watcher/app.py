@@ -15,6 +15,7 @@ from watcher import theme
 from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
 from watcher.mapview import RESIZE_SETTLE_MS
 from watcher.snapshot import capture_widget
+from watcher.win_sizing import install_sizing_hook
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
@@ -339,6 +340,8 @@ class App:
         # back once the size settles. Tk re-lays out every page on each size step: 150-300 ms per step, 2-3 fps.
         self._frozen_tabs: dict | None = None
         self._thaw_after: str | None = None
+        # Windows tells when an edge drag starts and ends; elsewhere the size changes themselves are watched
+        self._sizing_hook = install_sizing_hook(root, self._freeze_window, self.settle_layout)
         root.bind("<Configure>", self._on_root_resize, add="+")
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 16))
         self.search_tab = ttk.Frame(self.tabs, padding=(0, 12, 0, 0))
@@ -581,29 +584,35 @@ class App:
             self.bestiary_view.activate()
 
     def _on_root_resize(self, event: tk.Event) -> None:
-        if event.widget is not self.root:
+        """Without the Windows hook: two size changes in quick succession mean a drag; the content returns after a pause."""
+        if event.widget is not self.root or self._sizing_hook:
             return
         if self._frozen_tabs is None and self._thaw_after is None:
             # a single size change (showing the window, a programmatic resize) is not a drag: just watch for the next
             self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
             return
-        if self._frozen_tabs is None:
-            # a second change in quick succession: the window edge is being dragged. The whole window content (header and pages) leaves the layout and a picture of it stands in
-            picture = capture_widget(self.root)
-            self._frozen_tabs = [(widget, widget.pack_info()) for widget in self.root.pack_slaves()]
-            for widget, _info in self._frozen_tabs:
-                widget.pack_forget()
-            self._veil = tk.Frame(self.root, background=theme.BG)
-            self._veil.pack_propagate(False)
-            self._veil.pack(fill="both", expand=True)
-            self._veil_photo = None
-            if picture is not None:  # one still frame, nothing is computed while the edge moves
-                from PIL import ImageTk
-                self._veil_photo = ImageTk.PhotoImage(picture, master=self.root)
-                tk.Label(self._veil, image=self._veil_photo, background=theme.BG, borderwidth=0).place(x=0, y=0)
+        self._freeze_window()
         if self._thaw_after is not None:
             self.root.after_cancel(self._thaw_after)
         self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
+
+    def _freeze_window(self) -> None:
+        """Take the whole window content (header and pages, every page keeps its state) out of the layout and show one
+        still picture of it: nothing is laid out or drawn while the edge moves."""
+        if self._frozen_tabs is not None:
+            return
+        picture = capture_widget(self.root)
+        self._frozen_tabs = [(widget, widget.pack_info()) for widget in self.root.pack_slaves()]
+        for widget, _info in self._frozen_tabs:
+            widget.pack_forget()
+        self._veil = tk.Frame(self.root, background=theme.BG)
+        self._veil.pack_propagate(False)
+        self._veil.pack(fill="both", expand=True)
+        self._veil_photo = None
+        if picture is not None:
+            from PIL import ImageTk
+            self._veil_photo = ImageTk.PhotoImage(picture, master=self.root)
+            tk.Label(self._veil, image=self._veil_photo, background=theme.BG, borderwidth=0).place(x=0, y=0)
 
     def settle_layout(self) -> None:
         """Bring the tab pages back at once (tests and anything that reads the layout right after a resize)."""
