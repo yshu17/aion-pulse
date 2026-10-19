@@ -49,8 +49,9 @@ class Config:
     filter_level_min: int = 0  # item list: lowest level shown, 0 = any
     filter_level_max: int = 0  # item list: highest level shown, 0 = any
     items_width: int = 0  # «Поиск» tab: width of the item list (divider position), 0 = natural
-    map_quests: bool = True  # «Карта»: show NPCs with quests (the «Задания» check box)
-    map_hidden: list[str] = field(default_factory=list)  # «Карта», menu «Метки»: kinds of points switched off
+    map_quests: bool = True  # «Карта»: NPCs with quests are shown (kept in step with the «Задания» entry of «Метки»)
+    # «Карта», menu «Метки»: kinds of points switched off. The rifts were never drawn before: off until asked for
+    map_hidden: list[str] = field(default_factory=lambda: ["rifts"])
     settings_open: bool = False  # first launch leaves the 600 px content usable; saved choices still load
     map_side: str = "dark"  # «Карта»: whose fortress NPCs and quest givers are shown, "dark" / "light"
     game_check: bool = True  # stop watching (and warn) when the game process aion.bin is not running

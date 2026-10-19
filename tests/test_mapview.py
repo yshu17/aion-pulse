@@ -166,7 +166,7 @@ def test_fixed_point_set_without_gathering_or_quests(root):
     view.render()
     assert not hasattr(view, "panel")  # no layer panel any more
     assert {"teleport", "warehouse", "merchant", "artifact"} <= view.layers
-    hidden = {"direct_portal", "quest_point"} | {t for t in store.types if t.startswith("gather_")}
+    hidden = {"quest_point"} | {t for t in store.types if t.startswith("gather_")}  # rifts are a menu entry now
     assert {"tunnel", "portal"} <= view.layers  # the Silentera entrances, Abyss gates and tunnel exits
     assert not view.layers & hidden
     shown = {m.type for _x, _y, members in view._drawn for m in members}
@@ -402,17 +402,17 @@ def test_quest_givers_toggle_and_card_lists_quests(root):
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     saved = []
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons",
-                   show_quests=True, on_show_quests=saved.append)
+                   on_filters=saved.append)
     quest_types = {"quest_give", "quest_important", "quest_event"}
-    assert quest_types & view.layers and view.quests_var.get() is True
+    assert quest_types & view.layers and not hasattr(view, "quests_var")  # the check box is an entry of «Метки» now
     giver = next(p for p in view.poi.in_zone("220070000", quest_types))
     view.select(giver)
     assert view.point_card.note.cget("text").startswith("Задания (")
-    view.quests_var.set(False)
-    view._on_quests_toggled()
-    assert not quest_types & view.layers and saved == [False]
+    view._filter_vars["quests"].set(False)
+    view._on_filters_changed()
+    assert not quest_types & view.layers and saved == [["quests"]]
     assert view.search(giver.name, 0) in ("нет", "") or view.selected.type not in quest_types
-    hidden = MapView(root, zones(), poi=store, show_quests=False)
+    hidden = MapView(root, zones(), poi=store, hidden_groups=["quests"])
     assert not quest_types & hidden.layers
 
 
@@ -628,8 +628,9 @@ def test_marks_menu_switches_kinds_of_points_without_an_all_entry(root):
     saved = []
     window = MapView(root, zones(), poi=None, on_filters=saved.append)
     menu = window.filter_menu
-    assert [menu.entrycget(i, "label") for i in range(4)] == ["Здания", "Торговцы", "Телепорты", "Склад, стигмы, почта"]
-    assert menu.index("end") == 3  # four entries and nothing like «show all»
+    assert [menu.entrycget(i, "label") for i in range(7)] == [
+        "Здания", "Подземелья", "Пространственные разломы", "Торговцы", "Телепорты", "Склад, стигмы, почта", "Задания"]
+    assert menu.index("end") == 6  # seven entries and nothing like «show all»
     window._filter_vars["merchants"].set(False)
     window._on_filters_changed()
     assert saved == [["merchants"]]
@@ -639,7 +640,7 @@ def test_marks_menu_switches_kinds_of_points_without_an_all_entry(root):
 def test_marks_filter_hides_the_chosen_kinds_and_is_restored_from_config(root):
     from watcher.poi import PoiStore
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
-    window = MapView(root, zones(), poi=store, hidden_groups=["merchants", "buildings"])
+    window = MapView(root, zones(), poi=store, hidden_groups=["merchants", "buildings", "dungeons"])
     assert not {"merchant", "coin_merchant", "vendor", "fortress", "dungeon"} & window.layers
     assert {"teleport", "warehouse", "stigma"} <= window.layers
     window._filter_vars["merchants"].set(True)
@@ -656,3 +657,20 @@ def test_toolbar_is_at_the_left_and_the_theme_switch_is_gone(root):
     assert group.winfo_x() < 20  # not centred in the bar
     assert not hasattr(window, "theme_box") and not hasattr(window, "theme_var")
 
+
+
+def test_dungeons_rifts_and_quests_are_menu_entries_and_the_check_box_is_gone(root):
+    from watcher.poi import PoiStore
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    assert store.types["direct_portal"]["name"] == "Пространственный разлом"
+    window = MapView(root, zones(), poi=store, hidden_groups=["rifts"])
+    assert "dungeon" in window.layers and "direct_portal" not in window.layers  # rifts off by default (config)
+    window._filter_vars["rifts"].set(True)
+    window._on_filters_changed()
+    assert "direct_portal" in window.layers
+    window._filter_vars["dungeons"].set(False)
+    window._on_filters_changed()
+    assert "dungeon" not in window.layers and "fortress" in window.layers  # the buildings are a group of their own
+    assert [w for w in window.zone_box.master.winfo_children() if "Checkbutton" in w.winfo_class()] == []
+    rifts = window.poi.in_zone("220040000", {"direct_portal"})
+    assert len(rifts) > 0 and all(p.type == "direct_portal" for p in rifts)  # Beluslan has them

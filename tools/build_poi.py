@@ -39,7 +39,7 @@ TYPES = {
     "raid_boss": ("landmark", "Рейдовый босс"),
     "tunnel": ("landmark", "Проход в тоннель Силентера"),
     "portal": ("landmark", "Портал"),
-    "direct_portal": ("landmark", "Точка перемещения"),
+    "direct_portal": ("landmark", "Пространственный разлом"),  # the client's directportal_Start / _Destination
     "gather_herb": ("gather", "Травы"),
     "gather_plant": ("gather", "Растения"),
     "gather_berry": ("gather", "Ягоды"),

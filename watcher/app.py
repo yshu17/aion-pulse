@@ -408,11 +408,9 @@ class App:
             get_places=lambda: list(self.places),
             poi=PoiStore.load(maps_dir / "poi.json"),
             icons_dir=maps_dir / "icons",
-            show_quests=self.cfg.map_quests,
-            on_show_quests=self._on_map_quests,
             side=self.cfg.map_side,
             on_side=self._on_map_side,
-            hidden_groups=self.cfg.map_hidden,
+            hidden_groups=[*self.cfg.map_hidden, *([] if self.cfg.map_quests else ["quests"])],
             on_filters=self._on_map_filters,
             bestiary_database=bestiary_dir / "npcs.sqlite" if bestiary_dir else None,
             bestiary_icons=bestiary_dir / "icons" if bestiary_dir else None,
@@ -1144,10 +1142,6 @@ class App:
                     self.feed.add(msg, hits)
         self.feed.add_note(f"— выше история за {self.cfg.history_min} мин, ниже новые сообщения —")
 
-    def _on_map_quests(self, on: bool) -> None:
-        self.cfg.map_quests = on
-        save_config(self.config_path, self.cfg)
-
     def _show_settings(self, open_: bool) -> None:
         """The «Настройки» card under the control row; the button names the action and shows the state."""
         self.settle_layout()  # the window content must be in place before the card is packed after the control row
@@ -1204,7 +1198,8 @@ class App:
                              enabled=not self.cfg.reduce_motion, done=finish)
 
     def _on_map_filters(self, hidden: list[str]) -> None:
-        self.cfg.map_hidden = hidden
+        self.cfg.map_hidden = [g for g in hidden if g != "quests"]
+        self.cfg.map_quests = "quests" not in hidden
         save_config(self.config_path, self.cfg)
 
     def _on_map_side(self, side: str) -> None:

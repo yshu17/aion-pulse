@@ -13,3 +13,10 @@ def no_network(monkeypatch):
     def offline(url, method, timeout=10):
         raise OSError("tests run offline")
     monkeypatch.setattr("watcher.app.http_fetch", offline, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def mouse_button_is_up(monkeypatch):
+    """A window resize while the real mouse button is held freezes the window (the edge drag). The tests must not depend
+    on the physical mouse: the button is up unless a test says otherwise."""
+    monkeypatch.setattr("watcher.app.primary_button_down", lambda: False, raising=False)

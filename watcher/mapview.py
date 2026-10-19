@@ -46,15 +46,18 @@ SIDES = {"dark": "Асмодиане", "light": "Элийцы"}
 # Silentera Tunnel entrances only (tools/build_poi.py).
 # the «Метки» menu: group -> (title, point types). Every group can be switched off; there is no «all» entry
 FILTER_GROUPS = {
-    "buildings": ("Здания", ("fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss")),
+    "buildings": ("Здания", ("fortress", "artifact", "tunnel", "portal", "raid_boss")),
+    "dungeons": ("Подземелья", ("dungeon",)),
+    "rifts": ("Пространственные разломы", ("direct_portal",)),
     "merchants": ("Торговцы", ("merchant", "coin_merchant", "vendor")),
     "teleports": ("Телепорты", ("teleport",)),
     "services": ("Склад, стигмы, почта", ("warehouse", "stigma", "postbox", "bindstone")),
+    "quests": ("Задания", ("quest_give", "quest_important", "quest_event")),
 }
 CAPITALS = {"110010000", "120010000"}  # Elysium, Pandaemonium
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
-               "fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss")
-QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests; a check box shows / hides them
+               "fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss", "direct_portal")
+QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests (the «Задания» entry of the menu)
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 # landmarks drawn this many times the usual size: siege fortresses and the way into the Silentera tunnel
 # +85 %, dungeon entrances +50 %, artifacts +25 %
@@ -216,8 +219,6 @@ class MapView(ttk.Frame):
         get_places: Callable[[], Iterable[Place]] = list,
         poi: PoiStore | None = None,
         icons_dir: Path | None = None,
-        show_quests: bool = True,
-        on_show_quests: Callable[[bool], None] | None = None,
         side: str = "dark",
         on_side: Callable[[str], None] | None = None,
         hidden_groups: Iterable[str] = (),
@@ -237,14 +238,13 @@ class MapView(ttk.Frame):
         self._mob_search_query = ""
         self._mob_rows: list[dict] = []
         self._mob_icons: dict[str, object] = {}
-        self.on_show_quests = on_show_quests or (lambda _on: None)
         self.side = side if side in SIDES else "dark"
         self.on_side = on_side or (lambda _side: None)
         self.on_filters = on_filters or (lambda _hidden: None)
         self.motion_enabled: Callable[[], bool] = lambda: True
         self.layers: set[str] = set()
         self._hidden_groups = {g for g in hidden_groups if g in FILTER_GROUPS}  # kinds of points switched off
-        self._set_layers(show_quests)
+        self._set_layers()
         self._poi_icons: dict[tuple[str, int], object] = {}
         self._drawn: list[tuple[float, float, list[Poi]]] = []
         self._spots: dict[Poi, tuple[float, float]] = {}  # where each single point's icon was drawn
@@ -322,10 +322,6 @@ class MapView(ttk.Frame):
                                      width=11)
         self.side_box.pack(side="left", padx=(12, 0))
         self.side_box.bind("<<ComboboxSelected>>", lambda _e: self._on_side_selected())
-        self.quests_var = tk.BooleanVar(value=show_quests)
-        if any(t in self.poi.types for t in QUEST_TYPES):
-            ttk.Checkbutton(group, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
-                            command=self._on_quests_toggled).pack(side="left", padx=(12, 0))
         self._filter_vars = {g: tk.BooleanVar(value=g not in self._hidden_groups) for g in FILTER_GROUPS}
         self.filter_button = ttk.Button(group, text="Метки", compound="right", width=0,
                                         image=self.ui_icons.get("caret-down", "muted"),
@@ -955,10 +951,9 @@ class MapView(ttk.Frame):
             self.fly_to(x, y)
         return f"{self._match_index + 1} / {len(self._matches)}"
 
-    def _set_layers(self, show_quests: bool) -> None:
+    def _set_layers(self) -> None:
         hidden = {t for g in self._hidden_groups for t in FILTER_GROUPS[g][1]}
-        shown = [t for t in SHOWN_TYPES if t not in hidden] + (list(QUEST_TYPES) if show_quests else [])
-        self.layers = {t for t in shown if t in self.poi.types}
+        self.layers = {t for t in SHOWN_TYPES + QUEST_TYPES if t not in hidden and t in self.poi.types}
 
     def _zone_choices(self) -> list[str]:
         """The zone list of the chosen side: the zones both sides share and that side's own."""
@@ -971,8 +966,8 @@ class MapView(ttk.Frame):
     def _on_filters_changed(self) -> None:
         """The «Метки» menu: which kinds of points are drawn (buildings, merchants, teleports, services)."""
         self._hidden_groups = {g for g, var in self._filter_vars.items() if not var.get()}
-        self._set_layers(bool(self.quests_var.get()))
-        if self.selected is not None and self.selected.type not in self.layers | set(QUEST_TYPES):
+        self._set_layers()
+        if self.selected is not None and self.selected.type not in self.layers:
             self.selected = None
             self.point_card.clear()
         self._match_query = ""
@@ -997,17 +992,6 @@ class MapView(ttk.Frame):
             self.point_card.show(kind, p.name or kind, p.gx, p.gy, p.note, self.nearby(p.zone, p.gx, p.gy, p))
         self._match_query = ""
         self.on_side(self.side)
-        self._schedule_render()
-
-    def _on_quests_toggled(self) -> None:
-        """«Задания» check box: NPCs with quests (from aiondb links, see tools/build_poi.py) on or off."""
-        on = bool(self.quests_var.get())
-        self._set_layers(on)
-        if self.selected is not None and self.selected.type not in self.layers:
-            self.selected = None
-            self.point_card.clear()
-        self._match_query = ""
-        self.on_show_quests(on)
         self._schedule_render()
 
     def _search(self, step: int) -> str:
