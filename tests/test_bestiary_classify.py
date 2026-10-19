@@ -1,4 +1,4 @@
-from watcher.bestiary_classify import plan, stem_key, technical_name
+from watcher.bestiary_classify import above_max_level, plan, stem_key, technical_name
 
 
 def _row(npc_id, name, points=0, level="55", category="monster", drops=0, profile=1, sig=None):
@@ -37,3 +37,10 @@ def test_plural_forms():
     from watcher.bestiary_labels import plural
     assert [plural(n, "точка", "точки", "точек") for n in (1, 2, 5, 11, 21, 112)] == [
         "1 точка", "2 точки", "5 точек", "11 точек", "21 точка", "112 точек"]
+
+
+def test_monsters_above_level_55_are_service_records():
+    assert above_max_level("56", "monster") and above_max_level(60, "monster")
+    assert not above_max_level("55", "monster")  # 55 stays visible
+    assert not above_max_level("60", "npc")  # only monsters
+    assert not above_max_level("", "monster") and not above_max_level("55+", "monster")

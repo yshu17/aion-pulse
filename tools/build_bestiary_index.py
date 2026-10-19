@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from watcher.bestiary_classify import plan
+from watcher.bestiary_classify import above_max_level, plan
 from watcher.bestiary_store import DETAIL_DICT
 from watcher.bestiary_labels import faction_for, race_label
 from tools.build_bestiary_data import SITE_MAP_IDS
@@ -263,7 +263,7 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
                     str(record["id"]), name, search_text, category,
                     role, kind, race, faction, rank,
                     _text(detail["level"]), _text(detail["icon_asset"]), ", ".join(zone_names),
-                    len(points), len(drops), int(bool(kb)), _pack_detail(detail), int(str(record["id"]) in service_ids),
+                    len(points), len(drops), int(bool(kb)), _pack_detail(detail), int(str(record["id"]) in service_ids or above_max_level(detail["level"], category)),
                 ),
             )
             con.executemany(

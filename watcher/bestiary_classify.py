@@ -1,6 +1,7 @@
 """Bestiary data hygiene without Tk or files: which records are technical, and where a record without spawn
 points can take them from.
 
+    above_max_level(level, category) -> bool      a monster above level 55 (the server's cap), kept out of sight
     technical_name(name) -> bool                 test/internal names: «Test_…», «BAb1_…_lv50», English only, 3+ digits glued to letters
     plan(rows) -> (donors, service)              rows are dicts: id, name, level, category, points, drops, profile, sig
                                                  (sig: hashable content of the record: spawn points, goods, drops)
@@ -17,6 +18,15 @@ import re
 _LATIN = re.compile(r"[A-Za-z]")
 _CYRILLIC = re.compile(r"[А-Яа-яЁё]")
 _DIGIT_RUN = re.compile(r"[^\W\d_]\d{3,}|\d{3,}[^\W\d_]")  # digits glued to letters: «NPC123», «Страж123»
+MAX_MOB_LEVEL = 55  # monsters above this level are not on the server yet: kept in the service group
+
+
+def above_max_level(level: object, category: str) -> bool:
+    """A monster above MAX_MOB_LEVEL; a level that is not a number is never above it."""
+    text = str(level or "").strip()
+    return category == "monster" and text.isdigit() and int(text) > MAX_MOB_LEVEL
+
+
 NEW_STATS = "новые характеристики "
 
 
