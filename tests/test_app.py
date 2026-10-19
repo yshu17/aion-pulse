@@ -1387,8 +1387,8 @@ def test_window_snapshot_is_an_image_of_the_widget_size_or_none(tmp_path):
         root.destroy()
 
 
-def test_the_frozen_picture_follows_the_window_size_during_a_drag(tmp_path, monkeypatch):
-    """While the edge is dragged the captured frame is stretched to the current size: the content moves with it."""
+def test_a_drag_does_no_work_per_step_the_frozen_picture_stays_as_it_was(tmp_path, monkeypatch):
+    """The edge moves, nothing is redrawn: the one captured frame stays, the content is laid out after the drag."""
     import watcher.app as module
     from PIL import Image
 
@@ -1398,15 +1398,30 @@ def test_the_frozen_picture_follows_the_window_size_during_a_drag(tmp_path, monk
         root.update()
         app.settle_layout()
         root.update()
-        monkeypatch.setattr(module, "capture_widget", lambda widget: Image.new("RGB", (100, 80), "#123456"))
-        sizes = []
+        captures = []
+        monkeypatch.setattr(module, "capture_widget", lambda widget: captures.append(1) or Image.new("RGB", (100, 80), "#123456"))
+        photos = set()
         for step in range(6):
             root.geometry(f"{1100 + step * 20}x{760 + step * 10}")
             root.update()
-            if app._frozen_tabs is not None and app._veil_photo is not None:
-                sizes.append((app._veil_photo.width(), app._veil_photo.height()))
-        assert len(set(sizes)) >= 3  # the picture was re-stretched step by step
-        assert all(w > 100 and h > 80 for w, h in sizes)  # to the window, not the captured size
+            if app._frozen_tabs is not None:
+                photos.add(str(app._veil_photo))
+        assert len(captures) == 1 and len(photos) == 1  # captured once, not touched again
         app.settle_layout()
+        root.update()
+        assert app._frozen_tabs is None and app.tabs.winfo_manager() == "pack"
+    finally:
+        root.destroy()
+
+
+def test_a_missing_or_unreadable_icon_does_not_stop_the_window(tmp_path):
+    import tkinter as tk
+    from watcher.window_icon import load_app_icon
+
+    root = tk.Tk()
+    try:
+        assert load_app_icon(root, tmp_path) == ()  # no files: the default icon stays, no exception
+        (tmp_path / "aion_app_16.png").write_bytes(b"not a png")
+        assert load_app_icon(root, tmp_path) == ()
     finally:
         root.destroy()

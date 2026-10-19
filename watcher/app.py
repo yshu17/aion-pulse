@@ -597,29 +597,13 @@ class App:
             self._veil.pack_propagate(False)
             self._veil.pack(fill="both", expand=True)
             self._veil_photo = None
-            self._veil_source = picture  # the frame as it was; stretched to the current size at every step
-            self._veil_label = None
-            self._veil_size = None
-            if picture is not None:
-                self._veil_label = tk.Label(self._veil, background=theme.BG, borderwidth=0)
-                self._veil_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self._stretch_veil(event.width, event.height)
-        elif self._veil_label is not None:
-            self._stretch_veil(event.width, event.height)  # the picture follows the window edge
+            if picture is not None:  # one still frame, nothing is computed while the edge moves
+                from PIL import ImageTk
+                self._veil_photo = ImageTk.PhotoImage(picture, master=self.root)
+                tk.Label(self._veil, image=self._veil_photo, background=theme.BG, borderwidth=0).place(x=0, y=0)
         if self._thaw_after is not None:
             self.root.after_cancel(self._thaw_after)
         self._thaw_after = self.root.after(RESIZE_SETTLE_MS, self._thaw_tabs)
-
-    def _stretch_veil(self, width: int, height: int) -> None:
-        """Scale the captured frame to the window size: dragging the edge stretches the content smoothly, like the
-        system's own live resize, at a few milliseconds a step."""
-        from PIL import Image, ImageTk
-        if width < 2 or height < 2 or (width, height) == getattr(self, "_veil_size", None):
-            return
-        self._veil_size = (width, height)
-        self._veil_photo = ImageTk.PhotoImage(
-            self._veil_source.resize((width, height), Image.BILINEAR), master=self.root)
-        self._veil_label.configure(image=self._veil_photo)
 
     def settle_layout(self) -> None:
         """Bring the tab pages back at once (tests and anything that reads the layout right after a resize)."""
