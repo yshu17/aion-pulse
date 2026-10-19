@@ -14,6 +14,7 @@ from tkinter import filedialog, ttk
 from watcher import theme
 from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
 from watcher.snapshot import capture_widget
+from watcher.soon_tab import COMING_SOON, ComingSoonTab
 from watcher.win_sizing import primary_button_down
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
@@ -462,6 +463,11 @@ class App:
         self.root.after_idle(self._report_missed_reminders)
         self._remind_after = self.root.after(REMIND_MS, self._check_reminders)
         self.tabs.add(self.schedule_tab, text="Расписание")
+        # announced tabs, filled in future updates
+        self.soon_tabs = [ComingSoonTab(self.tabs, label, title, text, resource_root() / "data" / "ui" / "icons")
+                          for label, title, text in COMING_SOON]
+        for page in self.soon_tabs:
+            self.tabs.add(page, text=page.label)
         self.tabs.bind("<<NotebookTabChanged>>", lambda _e: self._on_tab_changed())
 
         root.bind_all("<MouseWheel>", self._on_mouse_wheel, add="+")

@@ -1068,7 +1068,8 @@ def test_schedule_tab_is_in_the_app(tmp_path):
     root, app, calls, say = _nag_app(tmp_path)
     try:
         names = [app.tabs.tab(t, "text") for t in app.tabs.tabs()]
-        wanted = ["Поиск", "Весь чат", "Карта", "NPC / Бестиарий", "Расписание"]
+        wanted = ["Поиск", "Весь чат", "Карта", "NPC / Бестиарий", "Расписание",
+                  "Крафт", "Броня", "Стигмы", "Гайды"]
         assert names == (wanted if local_bestiary_dir() else [n for n in wanted if n != "NPC / Бестиарий"])
         assert len(app.schedule_tab.events) > 0
         assert app.schedule_tab.next_box.winfo_children()
@@ -1417,3 +1418,40 @@ def test_edge_drag_freezes_while_the_button_is_held_and_draws_once_on_release(tm
 def test_primary_button_check_is_a_plain_bool():
     from watcher.win_sizing import primary_button_down
     assert primary_button_down() in (True, False)
+
+
+
+def test_future_tabs_are_announced_and_empty(tmp_path):
+    """Крафт, калькуляторы и гайды: tabs with a «в разработке» page, nothing else yet."""
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        assert [page.title for page in app.soon_tabs] == ["Крафт", "Калькулятор брони", "Калькулятор стигм", "Гайды"]
+        assert [app.tabs.tab(page, "text") for page in app.soon_tabs] == ["Крафт", "Броня", "Стигмы", "Гайды"]
+        for page in app.soon_tabs:
+            app.tabs.select(page)
+            root.update()
+            assert page.description.cget("text")
+    finally:
+        root.destroy()
+
+
+def test_all_tabs_fit_the_tab_row_at_the_minimum_window_width(tmp_path):
+    """Nine tabs at the narrowest window (1000 px): every tab is on screen, the last one is not cut off."""
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        root.deiconify()
+        root.geometry("1000x600")
+        root.update()
+        app.settle_layout()
+        root.update()
+        width = app.tabs.winfo_width()
+        found = set()
+        for x in range(0, width, 4):
+            index = app.tabs.tk.call(app.tabs._w, "identify", "tab", x, 12)
+            if index != "":
+                found.add(int(index))
+        assert found == set(range(len(app.tabs.tabs())))
+        last_x = max(x for x in range(0, width, 2) if app.tabs.tk.call(app.tabs._w, "identify", "tab", x, 12) != "")
+        assert last_x < width - 2  # the last tab ends inside the row
+    finally:
+        root.destroy()
