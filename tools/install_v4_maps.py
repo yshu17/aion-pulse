@@ -26,9 +26,7 @@ def main() -> int:
     frames = {row["zone"]: row for row in rows(RAW / "zone_map_frames.tsv")}
     zone_codes = ("lf1", "lf1a", "lf2", "lf2a", "lf3", "lc1")
     client_dir = ROOT / "data" / "maps" / "client"
-    relief_dir = ROOT / "data" / "maps" / "relief"
     client_dir.mkdir(parents=True, exist_ok=True)
-    relief_dir.mkdir(parents=True, exist_ok=True)
 
     for code in zone_codes:
         frame = frames[code]
@@ -38,13 +36,10 @@ def main() -> int:
             continue
         map_id = frame["map_id"]
         source = EXTRACT / "newmap" / f"{code}.jpg"
-        radar = EXTRACT / "radar" / f"{code}.jpg"
         if not source.is_file():
             print(f"{code}: skipped; newmap raster is missing")
             continue
         shutil.copy2(source, client_dir / source.name)
-        if radar.is_file():
-            shutil.copy2(radar, relief_dir / radar.name)
         kx, ky = 3072 / width, 3072 / height
         maps[map_id] = {
             "file": f"client/{source.name}", "size": 3072,

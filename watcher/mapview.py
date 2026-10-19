@@ -40,12 +40,18 @@ ZOOM_GLIDE = 0.45  # share of the remaining zoom distance covered by each frame:
 ZOOM_FRAME_MS = 10
 RESIZE_SETTLE_MS = 120  # redraw this long after the last window size change
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
-# map themes: the game map (newmap) or the client's radar map («Рельеф»), the choice is kept in config.json
-THEMES = {"game": "Игра", "relief": "Рельеф"}
 # whose NPCs the map shows where the two sides differ: fortress NPCs (the owner's stand) and quest givers
 SIDES = {"dark": "Асмодиане", "light": "Элийцы"}
 
 # Silentera Tunnel entrances only (tools/build_poi.py).
+# the «Метки» menu: group -> (title, point types). Every group can be switched off; there is no «all» entry
+FILTER_GROUPS = {
+    "buildings": ("Здания", ("fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss")),
+    "merchants": ("Торговцы", ("merchant", "coin_merchant", "vendor")),
+    "teleports": ("Телепорты", ("teleport",)),
+    "services": ("Склад, стигмы, почта", ("warehouse", "stigma", "postbox", "bindstone")),
+}
+CAPITALS = {"110010000", "120010000"}  # Elysium, Pandaemonium
 SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
                "fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss")
 QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests; a check box shows / hides them
@@ -94,9 +100,9 @@ class Zone:
     kx: tuple[float, float]
     ky: tuple[float, float]
     labels: tuple[tuple[float, float, str, str], ...] = ()  # area names: (image x, image y, text, level)
-    relief: Path | None = None  # the «Рельеф» theme: the radar map cut to the same frame (tools/build_relief.py)
     layers: tuple[tuple[int, str, Path], ...] = ()  # Abyss layer id, display name and map image
     label_layers: tuple[int | None, ...] = ()  # the Abyss layer of each label (same order), None: every layer
+    side: str = ""  # "dark" (Asmodian), "light" (Elyos), "" a zone both sides share (maps.json, from the client)
 
     def to_image(self, x: float, y: float) -> tuple[float, float]:
         return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
@@ -152,10 +158,10 @@ def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
                 map_id, names.get(map_id, map_id), path, int(info["size"]), kx, ky,
                 tuple((kx[0] * gy + kx[1], ky[0] * gx + ky[1], text, level)
                       for gx, gy, text, level in labels.get(map_id, [])),
-                relief if (relief := Path(maps_dir) / "relief" / path.name).is_file() else None,
                 tuple((int(layer["id"]), layer.get("name", f"Слой {layer['id']}"), Path(maps_dir) / layer["file"])
                       for layer in info.get("layers", []) if (Path(maps_dir) / layer["file"]).is_file()),
                 tuple(label_layers.get(map_id, [])),
+                info.get("side", "") if info.get("side", "") in SIDES else "",
             )
     return zones
 
@@ -212,10 +218,10 @@ class MapView(ttk.Frame):
         icons_dir: Path | None = None,
         show_quests: bool = True,
         on_show_quests: Callable[[bool], None] | None = None,
-        map_theme: str = "game",
-        on_theme: Callable[[str], None] | None = None,
         side: str = "dark",
         on_side: Callable[[str], None] | None = None,
+        hidden_groups: Iterable[str] = (),
+        on_filters: Callable[[list[str]], None] | None = None,
         bestiary_database: Path | None = None,
         bestiary_icons: Path | None = None,
     ) -> None:
@@ -232,12 +238,12 @@ class MapView(ttk.Frame):
         self._mob_rows: list[dict] = []
         self._mob_icons: dict[str, object] = {}
         self.on_show_quests = on_show_quests or (lambda _on: None)
-        self.theme = map_theme if map_theme in THEMES else "game"
-        self.on_theme = on_theme or (lambda _theme: None)
         self.side = side if side in SIDES else "dark"
         self.on_side = on_side or (lambda _side: None)
+        self.on_filters = on_filters or (lambda _hidden: None)
         self.motion_enabled: Callable[[], bool] = lambda: True
         self.layers: set[str] = set()
+        self._hidden_groups = {g for g in hidden_groups if g in FILTER_GROUPS}  # kinds of points switched off
         self._set_layers(show_quests)
         self._poi_icons: dict[tuple[str, int], object] = {}
         self._drawn: list[tuple[float, float, list[Poi]]] = []
@@ -293,9 +299,9 @@ class MapView(ttk.Frame):
             button.pack(side="right", padx=(6, 0))
             Hint(button, hint)
         group = ttk.Frame(bar)
-        group.pack(side="left", expand=True)
+        group.pack(side="left")  # at the left edge, not centred
         self.zone_var = tk.StringVar()
-        self.zone_box = ttk.Combobox(group, textvariable=self.zone_var, values=list(self._by_name), state="readonly",
+        self.zone_box = ttk.Combobox(group, textvariable=self.zone_var, values=self._zone_choices(), state="readonly",
                                      width=16)
         self.zone_box.pack(side="left")
         self.zone_box.bind("<<ComboboxSelected>>", lambda _e: self.open_zone(self._by_name[self.zone_var.get()]))
@@ -320,12 +326,18 @@ class MapView(ttk.Frame):
         if any(t in self.poi.types for t in QUEST_TYPES):
             ttk.Checkbutton(group, text=" Задания", variable=self.quests_var, style="Plain.TCheckbutton",
                             command=self._on_quests_toggled).pack(side="left", padx=(12, 0))
-        self.theme_var = tk.StringVar(value=THEMES[self.theme])
-        if any(z.relief is not None for z in zones.values()):
-            self.theme_box = ttk.Combobox(group, textvariable=self.theme_var, values=list(THEMES.values()),
-                                          state="readonly", width=8)
-            self.theme_box.pack(side="left", padx=(12, 0))
-            self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._on_theme_selected())
+        self._filter_vars = {g: tk.BooleanVar(value=g not in self._hidden_groups) for g in FILTER_GROUPS}
+        self.filter_button = ttk.Button(group, text="Метки", compound="right", width=0,
+                                        image=self.ui_icons.get("caret-down", "muted"),
+                                        command=self._open_filter_menu)
+        self.filter_menu = tk.Menu(self.filter_button, tearoff=False, background=theme.SURFACE_2, foreground=theme.TEXT,
+                                   activebackground=theme.ACCENT, activeforeground=theme.ACCENT_TEXT,
+                                   selectcolor=theme.ACCENT, borderwidth=1, font=theme.font("control"))
+        for key, (title, _types) in FILTER_GROUPS.items():
+            self.filter_menu.add_checkbutton(label=title, variable=self._filter_vars[key],
+                                             command=self._on_filters_changed)
+        self.filter_button.pack(side="left", padx=(12, 0))
+        Hint(self.filter_button, "Какие метки показывать на карте")
         self.layer_var = tk.StringVar()
         self.layer_box = ttk.Combobox(group, textvariable=self.layer_var, state="readonly", width=12)
         if any(z.layers for z in zones.values()):
@@ -663,18 +675,9 @@ class MapView(ttk.Frame):
         from PIL import Image
 
         layer_path = next((path for layer_id, _name, path in self.zone.layers if layer_id == self.current_layer), None)
-        path = (self.zone.relief if self.theme == "relief" and self.zone.relief is not None else
-                layer_path or self.zone.path)
+        path = layer_path or self.zone.path
         with Image.open(path) as image:
             self._image = image.convert("RGB")
-
-    def _on_theme_selected(self) -> None:
-        """«Игра» / «Рельеф»: both pictures share the frame, so the view and the points stay where they are."""
-        self.theme = next(key for key, name in THEMES.items() if name == self.theme_var.get())
-        self.on_theme(self.theme)
-        if self.zone is not None:
-            self._load_image()
-            self.render()
 
     def _sync_layer_box(self) -> None:
         if self.zone is None or not self.zone.layers:
@@ -953,12 +956,37 @@ class MapView(ttk.Frame):
         return f"{self._match_index + 1} / {len(self._matches)}"
 
     def _set_layers(self, show_quests: bool) -> None:
-        shown = SHOWN_TYPES + (QUEST_TYPES if show_quests else ())
+        hidden = {t for g in self._hidden_groups for t in FILTER_GROUPS[g][1]}
+        shown = [t for t in SHOWN_TYPES if t not in hidden] + (list(QUEST_TYPES) if show_quests else [])
         self.layers = {t for t in shown if t in self.poi.types}
+
+    def _zone_choices(self) -> list[str]:
+        """The zone list of the chosen side: the zones both sides share and that side's own."""
+        return [name for name, map_id in self._by_name.items() if self.zones[map_id].side in ("", self.side)]
+
+    def _open_filter_menu(self) -> None:
+        button = self.filter_button
+        self.filter_menu.tk_popup(button.winfo_rootx(), button.winfo_rooty() + button.winfo_height())
+
+    def _on_filters_changed(self) -> None:
+        """The «Метки» menu: which kinds of points are drawn (buildings, merchants, teleports, services)."""
+        self._hidden_groups = {g for g, var in self._filter_vars.items() if not var.get()}
+        self._set_layers(bool(self.quests_var.get()))
+        if self.selected is not None and self.selected.type not in self.layers | set(QUEST_TYPES):
+            self.selected = None
+            self.point_card.clear()
+        self._match_query = ""
+        self.on_filters(sorted(self._hidden_groups))
+        self._schedule_render()
 
     def _on_side_selected(self) -> None:
         """«Асмодиане» / «Элийцы»: fortress NPCs of that side (as if it owned the fortresses) and its quest givers."""
         self.side = next(key for key, name in SIDES.items() if name == self.side_var.get())
+        self.zone_box.configure(values=self._zone_choices())
+        if self.zone is not None and self.zone.side not in ("", self.side):  # a zone of the other side: its capital
+            capital = next((m for m, z in self.zones.items() if z.side == self.side and m in CAPITALS), None)
+            if capital is not None:
+                self.open_zone(capital)
         if self.selected is not None and self.selected.side and self.selected.side != self.side:
             self.selected = None
             self._stop_blink(redraw=False)

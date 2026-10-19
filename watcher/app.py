@@ -410,10 +410,10 @@ class App:
             icons_dir=maps_dir / "icons",
             show_quests=self.cfg.map_quests,
             on_show_quests=self._on_map_quests,
-            map_theme=self.cfg.map_theme,
-            on_theme=self._on_map_theme,
             side=self.cfg.map_side,
             on_side=self._on_map_side,
+            hidden_groups=self.cfg.map_hidden,
+            on_filters=self._on_map_filters,
             bestiary_database=bestiary_dir / "npcs.sqlite" if bestiary_dir else None,
             bestiary_icons=bestiary_dir / "icons" if bestiary_dir else None,
         )
@@ -1203,8 +1203,8 @@ class App:
                              lambda h: card.configure(height=max(1, int(h))),
                              enabled=not self.cfg.reduce_motion, done=finish)
 
-    def _on_map_theme(self, theme: str) -> None:
-        self.cfg.map_theme = theme
+    def _on_map_filters(self, hidden: list[str]) -> None:
+        self.cfg.map_hidden = hidden
         save_config(self.config_path, self.cfg)
 
     def _on_map_side(self, side: str) -> None:

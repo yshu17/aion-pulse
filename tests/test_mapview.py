@@ -416,30 +416,6 @@ def test_quest_givers_toggle_and_card_lists_quests(root):
     assert not quest_types & hidden.layers
 
 
-def test_relief_theme_uses_the_radar_map_in_the_same_frame(root):
-    all_zones = zones()
-    # The Abyss has three game layers but no matching radar/relief asset yet; the zones drawn from a radar
-    # picture have it as their map already
-    radar = {"400010000", "110010000", "110020000", "120020000", "110070000", "120080000"}
-    assert all(z.relief is not None and z.relief.is_file()
-               for map_id, z in all_zones.items() if map_id not in radar)
-    saved = []
-    view = MapView(root, all_zones, map_theme="game", on_theme=saved.append)
-    view.open_zone("220070000")
-    game_pixel = view._image.getpixel((1500, 1500))
-    view.zoom, view.left, view.top = 2.0, 900.0, 700.0
-    view.theme_var.set("Рельеф")
-    view._on_theme_selected()
-    assert saved == ["relief"] and view.theme == "relief"
-    assert view._image.size == (3072, 3072) and view._image.getpixel((1500, 1500)) != game_pixel
-    assert (view.zoom, view.left, view.top) == (2.0, 900.0, 700.0)  # same frame: the view stays put
-    view.open_zone("120010000")
-    assert view.zone.relief.name == "dc1.jpg"
-    relief = MapView(root, all_zones, map_theme="relief")
-    relief.open_zone("220070000")
-    assert relief.theme_var.get() == "Рельеф" and relief._image.getpixel((1500, 1500)) != game_pixel
-
-
 def test_area_label_moves_away_from_poi_icon(root):
     from types import SimpleNamespace
 
@@ -500,6 +476,7 @@ def test_unreadable_npc_database_does_not_break_the_map(root, tmp_path):
 
 
 def test_wheel_zoom_glides_in_frames_and_keeps_the_point_under_the_cursor(root):
+    root.geometry("1400x900")
     window = MapView(root, zones())
     window.pack(fill="both", expand=True)
     window.open_zone("220070000")
@@ -615,3 +592,67 @@ def test_abyss_points_and_area_names_belong_to_one_layer():
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     assert all(p.layer in (1, 2, 3) for p in store.in_zone("400010000", set(store.types), "", None))
     assert zone.label_layers and all(layer in (1, 2, 3) for layer in zone.label_layers)
+
+
+def test_zone_list_follows_the_race_common_zones_and_that_races_own(root):
+    window = MapView(root, zones(), side="dark")
+    names = set(window.zone_box.cget("values"))
+    assert {"Пандемониум", "Альтгард", "Келькмарос", "Ингисон", "Арэшурат", "Тоннель Силентера"} <= names  # own + common
+    assert not {"Элизиум", "Фоэта", "Бертрон"} & names  # the other race's zones are not offered
+    window.side_var.set("Элийцы")
+    window._on_side_selected()
+    names = set(window.zone_box.cget("values"))
+    assert {"Элизиум", "Фоэта", "Келькмарос", "Арэшурат"} <= names and not {"Пандемониум", "Альтгард"} & names
+
+
+def test_switching_the_race_leaves_a_zone_of_the_other_race_for_the_capital(root):
+    window = MapView(root, zones(), side="dark")
+    window.open_zone("220030000")  # Altgard
+    window.side_var.set("Элийцы")
+    window._on_side_selected()
+    assert window.zone.map_id == "110010000"  # Elysium
+    window.open_zone("220070000")  # Gelkmaros: shared, stays
+    window.side_var.set("Асмодиане")
+    window._on_side_selected()
+    assert window.zone.map_id == "220070000"
+
+
+def test_every_zone_has_a_race_from_the_client():
+    found = zones()
+    assert found["120010000"].side == "dark" and found["110010000"].side == "light"
+    assert found["220070000"].side == "" and found["400010000"].side == "" and found["600010000"].side == ""
+    assert found["120020000"].side == "dark" and found["110070000"].side == "light"  # temples and arenas
+
+
+def test_marks_menu_switches_kinds_of_points_without_an_all_entry(root):
+    saved = []
+    window = MapView(root, zones(), poi=None, on_filters=saved.append)
+    menu = window.filter_menu
+    assert [menu.entrycget(i, "label") for i in range(4)] == ["Здания", "Торговцы", "Телепорты", "Склад, стигмы, почта"]
+    assert menu.index("end") == 3  # four entries and nothing like «show all»
+    window._filter_vars["merchants"].set(False)
+    window._on_filters_changed()
+    assert saved == [["merchants"]]
+    assert not {"merchant", "coin_merchant", "vendor"} & window.layers or not window.poi.types  # off (no data here)
+
+
+def test_marks_filter_hides_the_chosen_kinds_and_is_restored_from_config(root):
+    from watcher.poi import PoiStore
+    store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
+    window = MapView(root, zones(), poi=store, hidden_groups=["merchants", "buildings"])
+    assert not {"merchant", "coin_merchant", "vendor", "fortress", "dungeon"} & window.layers
+    assert {"teleport", "warehouse", "stigma"} <= window.layers
+    window._filter_vars["merchants"].set(True)
+    window._on_filters_changed()
+    assert {"merchant", "vendor"} <= window.layers and "fortress" not in window.layers
+
+
+def test_toolbar_is_at_the_left_and_the_theme_switch_is_gone(root):
+    window = MapView(root, zones())
+    window.pack(fill="both", expand=True)
+    root.geometry("1300x700")
+    root.update()
+    group = window.zone_box.master
+    assert group.winfo_x() < 20  # not centred in the bar
+    assert not hasattr(window, "theme_box") and not hasattr(window, "theme_var")
+

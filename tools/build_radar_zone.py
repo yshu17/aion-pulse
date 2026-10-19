@@ -7,7 +7,6 @@ radar picture to a square around everything the zone has (points and area names,
 
     python tools/build_radar_zone.py lc1 110010000 [margin]     -> data/maps/client/lc1_radar.jpg + maps.json entry
 
-The «Рельеф» theme is the radar picture itself, so the zone's relief copy is removed.
 """
 
 from __future__ import annotations
@@ -63,7 +62,6 @@ def main() -> int:
     margin = float(sys.argv[3]) if len(sys.argv) > 3 else 160.0
     points = zone_points(map_id)
     entry = install(code, map_id, ROOT / "client_extract" / "radar" / f"{code}.jpg", points, margin)
-    (MAPS / "relief" / f"{code}.jpg").unlink(missing_ok=True)
     print(f"{code} ({map_id}): {len(points)} points, map {entry['size']} px, frame x {entry['x']} y {entry['y']}")
     return 0
 
