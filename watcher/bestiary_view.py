@@ -16,7 +16,9 @@ from watcher import theme
 from watcher.bestiary_store import BestiaryStore
 from watcher.search_worker import SearchWorker
 from watcher.bestiary_labels import plural, stat_text
-from watcher.bestiary_widgets import ProfileHeader, ScrollArea, bind_wheel_tree, refresh_pointer_cursor, wrap_badges
+from watcher.bestiary_widgets import (
+    ProfileHeader, ScrollArea, bind_wheel_tree, keep_pane_cursor, refresh_pointer_cursor, wrap_badges,
+)
 
 
 PAGE_SIZE = 30
@@ -96,6 +98,7 @@ class BestiaryView(ttk.Frame):
         right = ttk.Frame(self.split, style="Card.TFrame", padding=12)
         self.split.add(left, stretch="always", minsize=430)  # the five group chips and the level row need this
         self.split.add(right, stretch="always", minsize=480)
+        keep_pane_cursor(self.split, left, right)
         self.bind("<Configure>", self._schedule_initial_split, add="+")
 
         ttk.Label(left, text="Бестиарий", style="Title.TLabel").pack(anchor="w", pady=(0, 12))

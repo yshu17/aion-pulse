@@ -311,3 +311,25 @@ def test_refresh_pointer_cursor_never_raises_and_keeps_the_cursor(tmp_path):
         assert str(label.cget("cursor")) == "hand2"
     finally:
         root.destroy()
+
+
+def test_divider_cursor_does_not_leak_into_the_panes(tmp_path):
+    """The double arrow of the divider stuck over the whole right pane (children inherit the paned window's cursor)."""
+    import tkinter as tk
+    from watcher.bestiary_view import BestiaryView
+
+    root = tk.Tk()
+    try:
+        view = BestiaryView(root, tmp_path / "missing.sqlite", tmp_path, {}, lambda *a: None)
+        view.pack(fill="both", expand=True)
+        root.update()
+        for pane in (root.nametowidget(name) for name in view.split.panes()):
+            assert str(pane.cget("cursor")) == "arrow"
+        view.split.configure(cursor="sb_h_double_arrow")  # what Tk does while the pointer is on the divider
+        pane = root.nametowidget(view.split.panes()[1])
+        pane.event_generate("<Enter>")
+        root.update()
+        assert str(view.split.cget("cursor")) == "arrow"  # entering a pane takes it back
+        view.destroy()
+    finally:
+        root.destroy()

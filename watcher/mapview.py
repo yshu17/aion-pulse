@@ -36,8 +36,8 @@ MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
 ZOOM_STEP = 1.25
 MOB_JOBS_PER_TICK = 4  # result headers and cards built per tick
-ZOOM_GLIDE = 0.3  # share of the remaining zoom distance covered by each frame
-ZOOM_FRAME_MS = 16
+ZOOM_GLIDE = 0.1  # share of the remaining zoom distance covered by each frame (a third of the first version)
+ZOOM_FRAME_MS = 10
 RESIZE_SETTLE_MS = 120  # redraw this long after the last window size change
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
 # map themes: the game map (newmap) or the client's radar map («Рельеф»), the choice is kept in config.json
@@ -549,7 +549,7 @@ class MapView(ttk.Frame):
         """Move `share` of the way to the target zoom, the point under the anchor staying where it is."""
         screen_x, screen_y = self._zoom_anchor
         new = self.zoom + (self._zoom_target - self.zoom) * share
-        if abs(new - self._zoom_target) < self._zoom_target * 0.002:
+        if abs(new - self._zoom_target) < self._zoom_target * 0.004:
             new = self._zoom_target
         image_x = self.left + screen_x / self.zoom
         image_y = self.top + screen_y / self.zoom

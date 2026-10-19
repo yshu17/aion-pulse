@@ -10,6 +10,17 @@ from watcher import theme
 from watcher.bestiary_labels import stat_text
 
 
+def keep_pane_cursor(split: tk.PanedWindow, *panes: tk.Misc) -> None:
+    """The divider's double arrow must not leak into the panes. Tk sets it on the paned window itself while the
+    pointer is on the divider and children without a cursor of their own inherit it; if the pointer leaves the
+    divider by jumping onto a pane, Tk never takes it back. An explicit arrow on every pane stops the inheritance,
+    and entering a pane puts the paned window's own cursor back."""
+    split.configure(cursor="arrow")
+    for pane in panes:
+        pane.configure(cursor="arrow")
+        pane.bind("<Enter>", lambda _e: split.configure(cursor="arrow"), add="+")
+
+
 def refresh_pointer_cursor(widget: tk.Misc) -> None:
     """Tk recomputes the cursor only when the pointer moves, so a cursor stays a hand or an arrow after the widget
     under the pointer was hidden, replaced or repainted. Re-applying the cursor of the widget now under the pointer

@@ -12,7 +12,7 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from watcher import theme
-from watcher.bestiary_widgets import refresh_pointer_cursor
+from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
 from watcher.mapview import RESIZE_SETTLE_MS
 from watcher.snapshot import capture_widget
 from watcher.alerts import AlertTracker
@@ -358,6 +358,7 @@ class App:
         self.split.add(column, stretch="always")
         self._build_items_panel(self.split)
         self.split.add(self.items_panel, stretch="never")
+        keep_pane_cursor(self.split, column, self.items_panel)
         self.split.bind("<ButtonRelease-1>", lambda _e: self._on_split_moved(), add="+")
         root.after_idle(self._init_split)
         self._build_counters(header)
