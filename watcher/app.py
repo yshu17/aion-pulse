@@ -40,14 +40,18 @@ from core.notify.notify_center import Notification, NotificationAction, Notifica
 from core.notify.notify_settings import apply as apply_notify_settings
 from watcher.notify_tab import NotifyPanel
 from core.schedule.schedule_custom import Custom
-from core.schedule.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
+from core.schedule.schedule_update import ARTICLE, http_fetch, known_fingerprint, site_fingerprint
 from core.update.selfupdate import can_install, download, install, pick_asset, remove_old
-from core.update.updater import latest_release, newer, release_api
+from core.update.updater import latest_release, release_api
 from watcher.version import APP_NAME, REPO, VERSION, build_label
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from core.map.poi import PoiStore
 from core.chat.session import QUIET, LogFeed, WatchSession
+from core.chat.status import (GAME_OFF, STATUS_CHARS, STOPPED, empty_feed, error_status, game_off_note,
+                              not_found_status, read_error_status, search_hint, status_chip, watching_status)
+from core.notify.notices import release_notice, route_action, schedule_check_notice
+from core.text import plural, split_keywords  # noqa: F401  (kept importable from here)
 from core.items.recipes import load_recipes, with_recipe
 from core.items.specs import load_specs
 from watcher.tooltip import SpecTooltip
@@ -73,38 +77,19 @@ SEARCH_MODES = {
 }
 UI_TICK_MS = 500
 GAME_CHECK_SEC = 5  # while watching: how often to look for the game process
-GAME_OFF = "Игра не запущена — слежение остановлено"
 
 
 REMIND_MS = 30_000  # SN-8: how often the schedule reminders are checked
 REMIND_REPEAT_S = 180  # SN-8: an unanswered reminder comes back after this, until the event ends
 MISSED_DAYS = 7  # SN-8: events missed while the program was closed are reported for at most a week back
-STATUS_CHARS = 20  # the status chip keeps one width, so the keywords field does not jump; full text in its hint
+CHIP_STYLES = {"live": "Live.Chip.TLabel", "warn": "Warn.Chip.TLabel", "error": "Error.Chip.TLabel",
+               "idle": "Idle.Chip.TLabel"}
 
 
 def short_status(text: str) -> tuple[str, str]:
-    """Compact status for the folder row and its label style."""
-    if text.startswith("Слежу"):
-        hint = text.split("  ·  ", 1)[1] if "  ·  " in text else ""
-        return ("Слежу" + (f"  ·  {hint}" if hint else ""), "Live.Chip.TLabel")
-    if text.startswith("Игра не запущена"):
-        return "Игра не запущена", "Warn.Chip.TLabel"
-    if text.startswith("Chat.log не найден"):
-        return "Chat.log не найден", "Warn.Chip.TLabel"
-    if text.startswith("Ошибка"):
-        return (text if len(text) <= STATUS_CHARS else text[:STATUS_CHARS - 1] + "…"), "Error.Chip.TLabel"
-    return "Не слежу", "Idle.Chip.TLabel"
-
-
-def plural(n: int, one: str, few: str, many: str) -> str:
-    """«1 слово», «3 слова», «5 слов» (Russian plural forms)."""
-    last2, last = n % 100, n % 10
-    word = one if last == 1 and last2 != 11 else few if 2 <= last <= 4 and not 12 <= last2 <= 14 else many
-    return f"{n} {word}"
-
-
-def split_keywords(text: str) -> list[str]:
-    return [part.strip() for part in text.split(",") if part.strip()]
+    """Compact status for the folder row and its label style (the text and its kind come from core.chat.status)."""
+    short, kind = status_chip(text)
+    return short, CHIP_STYLES[kind]
 
 
 class App:
@@ -162,7 +147,7 @@ class App:
         )
         apply_notify_settings(self.cfg, self.notifications, self.toasts)
         self.toasts.start()
-        self._set_status(self._config_notice or "Остановлен")
+        self._set_status(self._config_notice or STOPPED)
         self._update_counters()
         self._feed_empty_state()
         self._ui_after = root.after(UI_TICK_MS, self._ui_tick)
@@ -539,24 +524,12 @@ class App:
         """The empty feed says what will appear there and what is being looked for (UI/UX item 12)."""
         if self.feed.rows:
             return
-        words, items = len(self.cfg.keywords), len(self.cfg.watch_items)
-        missing = self._search_hint()
-        hint = (f"Сейчас {missing}" if missing else
-                f"Ищу: {plural(words, 'слово', 'слова', 'слов')}, {plural(items, 'предмет', 'предмета', 'предметов')}")
-        if self.running:
-            self.feed.show_empty("magnifying-glass", "Слежу — совпадений пока нет", hint)
-        else:
-            self.feed.show_empty("magnifying-glass", "Нажми Start — здесь появятся совпадения", hint)
+        title, hint = empty_feed(self.running, self.cfg.search_mode, self.cfg.keywords, self.cfg.watch_items)
+        self.feed.show_empty("magnifying-glass", title, hint)
 
     def _search_hint(self) -> str:
         """What the chosen search mode is missing, e.g. «нет ключевых слов»."""
-        mode = self.cfg.search_mode
-        no_words = not self.cfg.keywords and mode in ("words", "and", "or")
-        no_items = not self.cfg.watch_items and mode in ("items", "and", "or")
-        if mode == "or" and not (no_words and no_items):
-            return ""
-        missing = [text for flag, text in ((no_words, "нет ключевых слов"), (no_items, "не отмечены предметы")) if flag]
-        return ", ".join(missing)
+        return search_hint(self.cfg.search_mode, self.cfg.keywords, self.cfg.watch_items)
 
     def _on_react_selected(self) -> None:
         self.cfg.react_sec = REACT_CHOICES.get(self.react_var.get(), DEFAULT_REACT_SEC)
@@ -659,27 +632,30 @@ class App:
     def _on_toast_action(self, event: Notification, action: str) -> None:
         """SN-4: «Принять» on a chat toast accepts its alerts; «Проверить снова» restarts watching; other actions open
         the source tab."""
-        if action == "site":
+        key = event.repeat_key or event.id
+        route = route_action(action, key, self._release_note[0] if self._release_note else None,
+                             self._update_note[0] if self._update_note else None)
+        if route == "open_site":
             webbrowser.open(ARTICLE)
-        elif action == "install" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
+        elif route == "install":
             self._ask_install()
-        elif action == "release" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
+        elif route == "open_release":
             webbrowser.open(self._release_note[2])
-        elif action == "accept" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
+        elif route == "release_seen":
             self.cfg.update_seen = self._release_note[1]  # this release is known: no toast at the next start
             save_config(self.config_path, self.cfg)
             self._release_note = None
-        elif action == "accept" and self._update_note and (event.repeat_key or event.id) == self._update_note[0]:
+        elif route == "schedule_seen":
             self.cfg.schedule_seen = self._update_note[1]  # SN-9: this site version is known, no toast at start
             save_config(self.config_path, self.cfg)
             self._update_note = None
-        elif action == "accept":
+        elif route == "accept_alerts":
             alerts = self.alert_bridge.toast_accepted(event)
             for alert_id in alerts:
                 self._accept(alert_id)
             if alerts:
                 self._after_alert_change()
-        elif action == "retry":
+        elif route == "retry":
             self.start()
         else:
             self._open_notification(event)
@@ -1068,7 +1044,7 @@ class App:
             self._after_id = None
         self.log_feed = None
         self.start_btn.configure(text="Start", style="Accent.TButton")
-        self._set_status("Остановлен")
+        self._set_status(STOPPED)
         self._feed_empty_state()
 
     def _game_closed(self) -> bool:
@@ -1082,7 +1058,7 @@ class App:
         if self.running:
             self.stop()
         self._set_status(GAME_OFF)
-        self.feed.add_note(f"— {datetime.now():%H:%M} {GAME_OFF}: запусти игру и нажми Start —")
+        self.feed.add_note(game_off_note(f"{datetime.now():%H:%M}"))
         return True
 
     def _schedule(self, delay_ms: int) -> None:
@@ -1100,11 +1076,11 @@ class App:
                 self.log_feed = LogFeed(str(path), self.cfg.history_min)
             history, lines = self.log_feed.poll()
         except FileNotFoundError:
-            self._set_status(f"Chat.log не найден: {path}")
+            self._set_status(not_found_status(str(path)))
             self._schedule(RETRY_MS)
             return
         except OSError as exc:
-            self._set_status(f"Ошибка чтения: {exc}")
+            self._set_status(read_error_status(exc))
             self._schedule(self.cfg.poll_interval_ms)
             return
         try:
@@ -1114,11 +1090,10 @@ class App:
         except Exception as exc:
             # the status line shows one line; errors.log keeps the traceback, once per distinct error
             self._last_error = log_exception(self.error_log, "_tick", self._last_error)
-            self._set_status(f"Ошибка: {exc}")
+            self._set_status(error_status(exc))
         else:
             self._last_error = ""
-            hint = self._search_hint()
-            self._set_status(f"Слежу за {path}" + (f"  ·  {hint}" if hint else ""))
+            self._set_status(watching_status(str(path), self._search_hint()))
             self._feed_empty_state()
         self._schedule(self.cfg.poll_interval_ms)
 
@@ -1272,16 +1247,11 @@ class App:
 
     def _on_release_result(self, result: tuple[tuple[str, str] | None, dict | None]) -> None:
         found, asset = result
-        if found is None or not newer(found[0], VERSION) or found[0] == self.cfg.update_seen:
+        notice = release_notice(found, asset is not None, VERSION, self.cfg.update_seen)
+        if notice is None:
             return
-        if asset is not None:  # the stable exe can install it: the user decides, the program only asks
-            actions = [NotificationAction("install", "Обновить сейчас"), NotificationAction("release", "Открыть релиз"),
-                       NotificationAction("accept", "Позже")]
-            text = "Pulse скачает Pulse.exe с GitHub, проверит контрольную сумму и перезапустится. Ничего без твоего «да»."
-        else:
-            actions = [NotificationAction("release", "Открыть релиз"), NotificationAction("accept", "Понятно")]
-            text = "Открой страницу релиза и скачай новый Pulse.exe. Программа сама ничего не скачивает."
-        note = self.notifications.notify("app", "event", f"Доступна новая версия {found[0]}", text, actions)
+        note = self.notifications.notify(notice.source, notice.kind, notice.title, notice.text,
+                                         [NotificationAction(*pair) for pair in notice.actions])
         if note is not None:
             self._release_note = (note.id, found[0], found[1])
             self._release_asset = asset
@@ -1334,21 +1304,13 @@ class App:
         self._on_close()  # the new copy is already starting; this one saves its settings and goes
 
     def _on_update_result(self, status: str, value: str, manual: bool) -> None:
-        if status == "err":
-            if manual:
-                self.notifications.notify("schedule", "warning", "Не удалось проверить расписание", value[:120])
+        notice = schedule_check_notice(status, value, self.schedule_known, self.cfg.schedule_seen, manual)
+        if notice is None:
             return
-        verdict = decide(self.schedule_known, value, self.cfg.schedule_seen, manual)
-        if verdict == "same":
-            self.notifications.notify("schedule", "event", "Расписание актуально",
-                                      "Картинка в базе знаний та же, по которой составлена сетка программы.")
-        elif verdict == "changed":
-            note = self.notifications.notify(
-                "schedule", "event", "Расписание на сайте обновилось",
-                "Картинка в базе знаний новая — сверь сетку; data/schedule.json правится вручную.",
-                [NotificationAction("site", "Открыть статью"), NotificationAction("accept", "Понятно")])
-            if note is not None:
-                self._update_note = (note.id, value)
+        note = self.notifications.notify(notice.source, notice.kind, notice.title, notice.text,
+                                         [NotificationAction(*pair) for pair in notice.actions])
+        if note is not None and notice.actions:
+            self._update_note = (note.id, value)
 
     def _open_zone(self, map_id: str) -> None:
         """SN-7 «на карте»: the zone of a schedule event on the «Карта» tab."""

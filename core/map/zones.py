@@ -8,6 +8,7 @@ gives {map id: Zone}. A Zone converts game coordinates to image pixels: `to_imag
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -120,3 +121,14 @@ def load_label_layers(path: Path) -> dict[str, list[int | None]]:
             continue
         zones.setdefault(parts[0], []).append(int(parts[5]) if len(parts) == 6 and parts[5].isdigit() else None)
     return zones
+
+
+def enclosing_spawn_circle(polygons) -> tuple[float, float, float] | None:
+    """Merge all selected groups in one zone into a circle covering their points."""
+    points = [(float(x), float(y)) for polygon in polygons for x, y in polygon]
+    if not points:
+        return None
+    cx = (min(x for x, _ in points) + max(x for x, _ in points)) / 2
+    cy = (min(y for _, y in points) + max(y for _, y in points)) / 2
+    radius = max(24.0, max(math.hypot(x-cx, y-cy) for x, y in points) + 12)
+    return cx, cy, radius

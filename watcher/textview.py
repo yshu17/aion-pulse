@@ -5,15 +5,11 @@ import tkinter as tk
 from collections.abc import Callable, Mapping
 
 from watcher import theme
-from core.chat.matcher import highlight_segments, normalize
-from core.chat.parser import LINK_CLOSE, LINK_OPEN, split_place
+from core.chat.segments import HIGHLIGHT_NAMES, LINKS, message_segments  # noqa: F401  (message layout is core)
 
 ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
-# item link | place / quest / «where» link (see parser.clean_text)
-LINKS = re.compile(rf"\[([^\[\]]+)\]|{LINK_OPEN}([^{LINK_OPEN}{LINK_CLOSE}]+){LINK_CLOSE}")
 SELECT_BG = theme.SELECT_BG  # mouse selection in the chat views
 PLACE_COLOR = theme.PLACE  # place links, like the game's teal «Место»
-HIGHLIGHT_NAMES = re.compile(r"рудр", re.IGNORECASE)  # item links worth spotting in the chat
 ITEM_COLOR = theme.ACCENT  # «рыжий», like epic item links in the game
 
 
@@ -82,46 +78,25 @@ class ItemLinker:
             text.tag_raise("hit")
 
     def parts(self, message: str, hits: list[str] | None = None) -> list:
-        """Insert-ready (chunk, tags, ...) for a message; hits are highlighted as matches."""
-        hits = hits or []
+        """Insert-ready (chunk, tags, ...) for a message; hits are highlighted as matches (core.chat.segments)."""
         parts: list = []
-        pos = 0
-        for match in LINKS.finditer(message):
-            if match.group(1) is None:  # place / quest / «where» link
-                parts += self._plain(message[pos : match.start()], hits)
-                shown, place = split_place(match.group(2))
+        for segment in message_segments(message, hits, self.spec_items, self.grades):
+            if segment.kind == "place":
                 tags: tuple = ("place",)
-                if place is not None and self.on_place is not None:
-                    tags += (self._place_tag(place, shown),)
-                parts += [f"<{shown}>", tags]
-                pos = match.end()
-                continue
-            name = match.group(1)
-            item_id = self.spec_items.get(name)
-            if item_id is None and not HIGHLIGHT_NAMES.search(name):
-                continue
-            parts += self._plain(message[pos : match.start()], hits)
-            tags: tuple = ("item",)
-            if item_id is not None:
-                grade = self.grades.get(item_id)
-                if grade in theme.GRADE_COLORS:
-                    tags += (f"grade_{grade}",)
-                tags += (self._tag(item_id),)
-            if any(normalize(h) in normalize(name) for h in hits if h.strip()):
-                tags += ("hit",)
-            parts += [f"<{name}>", tags]
-            pos = match.end()
-        parts += self._plain(message[pos:], hits)
+                if segment.place is not None and self.on_place is not None:
+                    tags += (self._place_tag(segment.place, segment.text[1:-1]),)
+            elif segment.kind == "item":
+                tags = ("item",)
+                if segment.item_id is not None:
+                    if segment.grade in theme.GRADE_COLORS:
+                        tags += (f"grade_{segment.grade}",)
+                    tags += (self._tag(segment.item_id),)
+                if segment.hit:
+                    tags += ("hit",)
+            else:
+                tags = ("hit",) if segment.hit else ()
+            parts += [segment.text, tags]
         return parts
-
-    @staticmethod
-    def _plain(chunk: str, hits: list[str]) -> list:
-        if not hits:
-            return [chunk, ()]
-        out: list = []
-        for piece, is_hit in highlight_segments(chunk, hits):
-            out += [piece, ("hit",) if is_hit else ()]
-        return out or ["", ()]
 
     def _place_tag(self, place: tuple[str, float, float], shown: str) -> str:
         self._places += 1

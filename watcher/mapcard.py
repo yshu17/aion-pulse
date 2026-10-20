@@ -4,14 +4,11 @@ import tkinter as tk
 from collections.abc import Callable
 from tkinter import ttk
 
+from core.text import metres_text  # noqa: F401  (kept importable from here)
 from watcher import theme
 
 EMPTY = "Кликни по значку на карте или найди точку поиском — здесь появится карточка и что рядом"
 NEARBY_TYPES = ["teleport", "bindstone", "warehouse", "merchant", "stigma", "artifact"]
-
-
-def metres_text(metres: float) -> str:
-    return f"{round(metres)} м" if metres < 1000 else f"{metres / 1000:.1f} км"
 
 
 class PointCard(ttk.Frame):

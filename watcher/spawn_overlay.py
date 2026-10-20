@@ -1,18 +1,7 @@
-"""Geometry and rendering for one approximate spawn-area circle; no Tk state."""
+"""Rendering of one approximate spawn-area circle (the geometry is core.map.zones.enclosing_spawn_circle)."""
 from __future__ import annotations
 
-import math
-
-
-def enclosing_spawn_circle(polygons) -> tuple[float, float, float] | None:
-    """Merge all selected groups in one zone into a circle covering their points."""
-    points = [(float(x), float(y)) for polygon in polygons for x, y in polygon]
-    if not points:
-        return None
-    cx = (min(x for x, _ in points) + max(x for x, _ in points)) / 2
-    cy = (min(y for _, y in points) + max(y for _, y in points)) / 2
-    radius = max(24.0, max(math.hypot(x-cx, y-cy) for x, y in points) + 12)
-    return cx, cy, radius
+from core.map.zones import enclosing_spawn_circle  # noqa: F401  (kept importable from here)
 
 
 def paint_spawn_circle(image, center: tuple[float, float], radius: float):
