@@ -16,25 +16,18 @@ from watcher import theme
 from core.bestiary.bestiary_store import BestiaryStore
 from core.bestiary.search_worker import SearchWorker
 from core.bestiary.bestiary_labels import plural, stat_text
+from core.bestiary.card import (CATEGORY, KB_ITEM_URL, RARITY, SORTS, drops_empty_text, drops_note, filter_drops,  # noqa: F401
+                                filter_stock, locations_text, overview_rows, overview_text, place_counts,
+                                points_from_text, stock_note)
 from watcher.bestiary_widgets import (
     ProfileHeader, ScrollArea, bind_wheel_tree, keep_pane_cursor, refresh_pointer_cursor, wrap_badges,
 )
 
 
 PAGE_SIZE = 30
-CATEGORY = {"Все группы": "", "Монстры": "monster", "NPC": "npc", "Торговцы": "merchant", "Служебные": "service",
-            "Низкоуровневые": "low"}
-SORTS = {"Сначала с профилем": "", "Уровень ↑": "level_asc", "Уровень ↓": "level_desc",
-         "Имя А → Я": "name_asc", "Имя Я → А": "name_desc"}
 LOADING_DELAY_MS = 1000  # a faster search shows nothing
 POLL_MS = 25
 FIRST_CARDS = 8  # result cards drawn at once; the rest of the page follows in batches of this size
-RARITY = {
-    "junk": "Простой", "common": "Обычный", "rare": "Редкий",
-    "legend": "Легендарный", "unique": "Уникальный", "epic": "Эпический",
-    "mythic": "Мифический",
-}
-
 
 def _set_wrap(label: tk.Label, width: int) -> None:
     """Change the wrap width only when it differs: re-setting it made Tk lay the whole list out again."""
@@ -673,9 +666,8 @@ class BestiaryView(ttk.Frame):
         points = detail.get("points") or []
         self.header_map_button.configure(state="normal" if any(str(p.get("map_id")) in self.map_names for p in points) else "disabled")
         sections = (
-            ("Добыча", drops[:5], "В профиле KB нет списка добычи." if detail.get("kb_status") == "loaded"
-             else "Сведения о добыче пока не загружены."),
-            ("Локации", [], "Точки появления в файлах клиента не найдены."),
+            ("Добыча", drops[:5], drops_empty_text(detail)),
+            ("Локации", [], ""),
         )
         for heading, entries, empty in sections:
             block = tk.Frame(self.summary_panel, bg=theme.SURFACE_2, padx=12, pady=9)
@@ -703,7 +695,7 @@ class BestiaryView(ttk.Frame):
                     name.grid(row=0, column=1, sticky="ew")
                     name.bind("<Configure>", lambda e, label=name: label.configure(wraplength=max(120, e.width - 10)))
                     if item.get("item_id"):
-                        name.bind("<Button-1>", lambda _e, value=item["item_id"]: webbrowser.open(f"https://kb.aionempire.com/items/{value}"))
+                        name.bind("<Button-1>", lambda _e, value=item["item_id"]: webbrowser.open(KB_ITEM_URL.format(value)))
                     preview = ({"item_id": str(item.get("item_id") or ""), "name": item.get("name") or "",
                                 "rarity": item.get("rarity") or ""}, self._load_icon(asset, 40))
                     for widget in (name, icon_box, *icon_box.winfo_children()):
@@ -713,19 +705,15 @@ class BestiaryView(ttk.Frame):
                     ttk.Button(block, text=f"Показать все {len(drops)} предметов →",
                                command=lambda: self.detail_tabs.select(1)).pack(anchor="e")
             else:
-                counts: dict[str, int] = defaultdict(int)
-                for point in points:
-                    counts[str(point.get("map_id") or "")] += 1
+                counts = place_counts(detail, self.map_names)
                 if not counts:
-                    locations = [loc.get("name") or loc.get("slug") for loc in detail.get("kb_locations") or []]
-                    location_text = "По базе KB: " + ", ".join(filter(None, locations)) if locations else empty
-                    tk.Label(block, text=location_text, bg=theme.SURFACE_2, fg=theme.MUTED, wraplength=400, justify="left",
+                    tk.Label(block, text=locations_text(detail), bg=theme.SURFACE_2, fg=theme.MUTED, wraplength=400, justify="left",
                              anchor="w", font=theme.font("small")).pack(fill="x")
                 if counts and detail.get("points_from"):
-                    tk.Label(block, text=f"Места взяты у одноимённой записи «{detail['points_from']}».", bg=theme.SURFACE_2,
+                    tk.Label(block, text=points_from_text(detail), bg=theme.SURFACE_2,
                              fg=theme.MUTED, wraplength=400, justify="left", anchor="w",
                              font=theme.font("small")).pack(fill="x")
-                for map_id, count in sorted(counts.items(), key=lambda pair: self.map_names.get(pair[0], pair[0])):
+                for map_id, count in counts:
                     row = tk.Frame(block, bg=theme.SURFACE_2)
                     row.pack(fill="x", pady=3)
                     tk.Label(row, text=f"⌖  {self.map_names.get(map_id, map_id)}  ·  {plural(count, "точка", "точки", "точек")}",
@@ -781,16 +769,10 @@ class BestiaryView(ttk.Frame):
         ov = self._overview_widgets()
         ov.message.grid_remove()
         stats = detail.get("stats") or {}
-        rows = [("Уровень", detail.get("level") or "Не указан"),
-                ("Ранг", detail.get("rank") or "Не указан"),
-                *stats.items(), ("Принадлежность", detail.get("faction") or "Другие"),
-                ("Вид", detail.get("race") or "Не указан")]
+        rows = overview_rows(detail)
         self.info_panel.columnconfigure(0, weight=1, uniform="stats")
         self.info_panel.columnconfigure(1, weight=1, uniform="stats")
-        description = "\n".join(value for value in (detail.get("title"), detail.get("description")) if value)
-        if detail.get("stock"):
-            groups = list(dict.fromkeys(item.get("group", "") for item in detail["stock"]))
-            description += "\nТорговые разделы: " + ", ".join(filter(None, groups))
+        description = overview_text(detail)
         first_row = 0
         if description.strip():
             ov.intro.configure(text=description.strip())
@@ -822,9 +804,7 @@ class BestiaryView(ttk.Frame):
 
     def _fill_drops(self, detail: dict) -> None:
         self.drops.delete(*self.drops.get_children())
-        for index, item in enumerate(detail.get("drops") or []):
-            if self.drop_query.get().strip().casefold() not in str(item.get("name") or "").casefold():
-                continue
+        for index, item in filter_drops(detail, self.drop_query.get()):
             asset = f"items/{Path(item.get('icon') or '').name}"
             icon = self._load_icon(asset, 32)
             rarity = str(item.get("rarity") or "")
@@ -832,23 +812,16 @@ class BestiaryView(ttk.Frame):
                 "", "end", iid=f"d{index}", image=icon or "", tags=(rarity,),
                 values=(item.get("name") or item.get("item_id") or "Без названия", RARITY.get(rarity, rarity)),
             )
-        total = len(detail.get("drops") or [])
-        self.drop_count.configure(text=f"Показано {len(self.drops.get_children())} из {total}. Шансы выпадения не указаны."
-                                  if total else "В профиле нет списка добычи." if detail.get("kb_status") == "loaded"
-                                  else "Сведения о добыче пока не загружены.")
+        self.drop_count.configure(text=drops_note(len(self.drops.get_children()), detail))
 
     def _fill_stock(self, detail: dict) -> None:
         self.stock.delete(*self.stock.get_children())
-        term = self.stock_query.get().strip().casefold()
         items = detail.get("stock") or []
-        for index, item in enumerate(items):
-            if term not in (item.get("name", "") + " " + item.get("group", "")).casefold():
-                continue
+        for index, item in filter_stock(detail, self.stock_query.get()):
             icon = self._load_icon(item.get("icon_asset", ""), 32)
             self.stock.insert("", "end", iid=f"s{index}", image=icon or "", tags=(item.get("rarity", ""),),
                               values=(item.get("name", ""), item.get("group", ""), item.get("trade_mode", "")))
-        self.stock_note.configure(text=f"Показано {len(self.stock.get_children())} из {len(items)}. Ассортимент из клиента; на сервере возможны отличия."
-                                  if items else "Для этого NPC список товаров в клиенте не найден.")
+        self.stock_note.configure(text=stock_note(len(self.stock.get_children()), len(items)))
 
     def _list_item(self, row: str) -> tuple[dict, object] | None:
         """The item behind a drop («d<n>») or goods («s<n>») row, with the icon the row shows."""

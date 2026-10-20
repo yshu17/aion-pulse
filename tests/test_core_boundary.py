@@ -16,7 +16,7 @@ CORE_GROUPS = {
     "chat": ["tailer", "parser", "matcher", "series", "alerts", "categories", "session", "segments", "status"],
     "notify": ["notify_center", "alert_bridge", "notify_settings", "notices"],
     "schedule": ["reminders", "schedule_view", "schedule_custom", "schedule_update", "timing", "reminder_flow"],
-    "bestiary": ["bestiary_labels", "bestiary_classify", "bestiary_store", "search_worker"],
+    "bestiary": ["bestiary_labels", "bestiary_classify", "bestiary_store", "search_worker", "card"],
     "map": ["poi", "zones"],
     "items": ["specs", "recipes", "catalog", "browser"],
     "settings": ["config"],
