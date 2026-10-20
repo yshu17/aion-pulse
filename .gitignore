@@ -34,3 +34,22 @@ UI_UX_IMPROVEMENT_PLAN.md
 REPORT_SN23.md
 DOWNLOADS.md
 local/
+# plan pages tooling: builds the local docs/ plans, not part of the program
+tools/build_feature_drafts.py
+tools/build_master_plan.py
+tools/build_plans_site.py
+tools/build_telegram_plan.py
+tools/build_ui_ux_plan.py
+tools/check_plans.py
+tools/check_project.py
+tools/plan_*.py
+tests/test_check_plans.py
+tests/test_plan_*.py
+# window snapshots for task reports
+tools/ui_snapshots.py
+tools/evidence_shots.py
+tools/preview_toasts.py
+tests/test_ui_snapshots.py
+# stable build output and the personal to-do list
+/Pulse.exe
+TODO_NEXT.md
