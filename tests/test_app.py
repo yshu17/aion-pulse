@@ -1455,3 +1455,33 @@ def test_all_tabs_fit_the_tab_row_at_the_minimum_window_width(tmp_path):
         assert last_x < width - 2  # the last tab ends inside the row
     finally:
         root.destroy()
+
+
+def test_new_release_offers_install_only_with_the_stable_asset_and_asks_before_downloading(tmp_path, monkeypatch):
+    import watcher.app as module
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        asset = {"url": "https://github.com/x/y/Pulse.exe", "size": 3, "sha256": "a" * 64}
+        app._on_release_result((("v9.9.9", "https://github.com/x/y/releases/tag/v9.9.9"), asset))
+        assert app._release_note is not None and app._release_asset == asset  # the toast offers «Обновить сейчас»
+        asked, started = [], []
+        monkeypatch.setattr(module.messagebox, "askyesno", lambda *a, **k: asked.append(a) or False)
+        monkeypatch.setattr(module, "download", lambda *a, **k: started.append(a))  # no network in tests
+        app._ask_install()
+        assert asked and started == [] and not app._install_busy  # the user said no: nothing downloads
+        monkeypatch.setattr(module.messagebox, "askyesno", lambda *a, **k: True)
+        app._ask_install()
+        assert started and app._install_busy  # the user said yes: the download starts (stubbed here)
+        app._install_busy = False
+        app._on_install_result("error", "test", "")  # the failure path shows a message, nothing is replaced
+    finally:
+        root.destroy()
+
+
+def test_release_without_checksum_is_a_page_not_an_install(tmp_path):
+    root, app, _calls, _say = _nag_app(tmp_path)
+    try:
+        app._on_release_result((("v9.9.9", "https://github.com/x/y/releases/tag/v9.9.9"), None))
+        assert app._release_note is not None and app._release_asset is None
+    finally:
+        root.destroy()

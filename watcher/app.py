@@ -2,6 +2,7 @@
 
 import json
 import queue
+import sys
 import threading
 import time
 import webbrowser
@@ -9,7 +10,7 @@ import tkinter as tk
 from collections import deque
 from datetime import datetime, timedelta
 from pathlib import Path
-from tkinter import filedialog, ttk
+from tkinter import filedialog, messagebox, ttk
 
 from watcher import theme
 from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
@@ -41,6 +42,7 @@ from watcher.notify_settings import apply as apply_notify_settings
 from watcher.notify_tab import NotifyPanel
 from watcher.schedule_custom import Custom
 from watcher.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
+from watcher.selfupdate import can_install, download, install, pick_asset, remove_old
 from watcher.updater import API as RELEASE_API, latest_release, newer
 from watcher.version import APP_NAME, VERSION, build_label
 from watcher.toasts import ToastManager
@@ -451,6 +453,11 @@ class App:
         if self.cfg.schedule_check:
             self.root.after(5000, lambda: self.check_schedule_update(False))
         self._release_results: queue.Queue = queue.Queue()
+        self._install_results: queue.Queue = queue.Queue()  # ("progress", done, total) / ("ready", path) / ("error", text)
+        self._install_busy = False
+        self._release_asset: dict | None = None  # the release's Pulse.exe, when this copy can install it
+        if can_install(self._current_exe()):
+            remove_old(self._current_exe())  # the copy the last update replaced
         self._release_note: tuple[int, str, str] | None = None  # toast id, tag, release page
         if self.cfg.update_check:
             self.root.after(8000, self.check_release)
@@ -658,6 +665,8 @@ class App:
         the source tab."""
         if action == "site":
             webbrowser.open(ARTICLE)
+        elif action == "install" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
+            self._ask_install()
         elif action == "release" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
             webbrowser.open(self._release_note[2])
         elif action == "accept" and self._release_note and (event.repeat_key or event.id) == self._release_note[0]:
@@ -699,6 +708,8 @@ class App:
             self._on_update_result(*self._update_results.get_nowait())
         while hasattr(self, "_release_results") and not self._release_results.empty():
             self._on_release_result(self._release_results.get_nowait())
+        while hasattr(self, "_install_results") and not self._install_results.empty():
+            self._on_install_result(*self._install_results.get_nowait())
         current = time.monotonic() if now is None else now
         expired = self.tracker.expire(current)
         for alert_id in expired:
@@ -1292,20 +1303,75 @@ class App:
         def work() -> None:
             try:
                 body, _headers = http_fetch(RELEASE_API, "GET")
-                self._release_results.put(latest_release(body))
+                found = latest_release(body)
+                asset = pick_asset(body) if can_install(self._current_exe()) else None
+                self._release_results.put((found, asset))
             except Exception:
-                self._release_results.put(None)
+                self._release_results.put((None, None))
         threading.Thread(target=work, daemon=True).start()
 
-    def _on_release_result(self, found: tuple[str, str] | None) -> None:
+    def _current_exe(self) -> Path:
+        return Path(sys.executable)
+
+    def _on_release_result(self, result: tuple[tuple[str, str] | None, dict | None]) -> None:
+        found, asset = result
         if found is None or not newer(found[0], VERSION) or found[0] == self.cfg.update_seen:
             return
-        note = self.notifications.notify(
-            "app", "event", f"Доступна новая версия {found[0]}",
-            "Открой страницу релиза и скачай новый Pulse.exe. Программа сама ничего не скачивает.",
-            [NotificationAction("release", "Открыть релиз"), NotificationAction("accept", "Понятно")])
+        if asset is not None:  # the stable exe can install it: the user decides, the program only asks
+            actions = [NotificationAction("install", "Обновить сейчас"), NotificationAction("release", "Открыть релиз"),
+                       NotificationAction("accept", "Позже")]
+            text = "Pulse скачает Pulse.exe с GitHub, проверит контрольную сумму и перезапустится. Ничего без твоего «да»."
+        else:
+            actions = [NotificationAction("release", "Открыть релиз"), NotificationAction("accept", "Понятно")]
+            text = "Открой страницу релиза и скачай новый Pulse.exe. Программа сама ничего не скачивает."
+        note = self.notifications.notify("app", "event", f"Доступна новая версия {found[0]}", text, actions)
         if note is not None:
             self._release_note = (note.id, found[0], found[1])
+            self._release_asset = asset
+
+    def _ask_install(self) -> None:
+        """«Обновить сейчас»: the user confirms in a dialog; then the download runs in the background."""
+        asset = getattr(self, "_release_asset", None)
+        if asset is None or self._install_busy:
+            return
+        if not messagebox.askyesno(
+                "Обновить Pulse?",
+                "Pulse скачает новую версию с GitHub и перезапустится.\n\nТекущие совпадения и настройки сохранятся.",
+                parent=self.root):
+            return
+        self._install_busy = True
+        self.status_var.set("Загружаю обновление…")
+        current = self._current_exe()
+        new = current.with_name("Pulse.update")
+
+        def work() -> None:
+            try:
+                download(asset, new, lambda done, total: self._install_results.put(("progress", done, total)))
+                self._install_results.put(("ready", str(new), ""))
+            except (OSError, ValueError) as exc:
+                self._install_results.put(("error", str(exc), ""))
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_install_result(self, kind: str, a, b) -> None:
+        if kind == "progress":
+            if b:
+                self.status_var.set(f"Загружаю обновление… {round(100 * a / b)}%")
+            return
+        self._install_busy = False
+        if kind == "error":
+            self.status_var.set("")
+            messagebox.showerror("Обновление не установлено", f"Скачать или проверить обновление не удалось:\n{a}",
+                                 parent=self.root)
+            return
+        current = self._current_exe()
+        try:
+            install(current, Path(a))
+        except OSError as exc:
+            self.status_var.set("")
+            messagebox.showerror("Обновление не установлено", f"Не удалось заменить Pulse.exe:\n{exc}",
+                                 parent=self.root)
+            return
+        self._on_close()  # the new copy is already starting; this one saves its settings and goes
 
     def _on_update_result(self, status: str, value: str, manual: bool) -> None:
         if status == "err":
