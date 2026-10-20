@@ -23,7 +23,7 @@ def main() -> None:
     output = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("build/bestiary-ui.png")
     output.parent.mkdir(parents=True, exist_ok=True)
     root = tk.Tk()
-    root.title("Пульс 1.0.0 — просмотр Бестиария")
+    root.title("Пульс 1.1.0 — просмотр Бестиария")
     root.geometry((sys.argv[3] if len(sys.argv) > 3 else "1396x1000") + "+20+20")
     theme.apply_dark_theme(root)
     tabs = ttk.Notebook(root)
