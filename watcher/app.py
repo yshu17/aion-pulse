@@ -20,7 +20,8 @@ from watcher.win_sizing import primary_button_down
 from watcher.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
-from watcher.catalog import WatchItem, is_listed, load_item_names, load_watch_items, local_bestiary_dir, resource_root
+from watcher.catalog import (WatchItem, is_listed, load_item_names, load_link_names, load_watch_items, local_bestiary_dir,
+                             resource_root)
 from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
 from watcher.reminders import due_reminders, occurrences_between
 from watcher.schedule_tab import (LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range,
@@ -48,7 +49,7 @@ from watcher.version import APP_NAME, VERSION, build_label
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from watcher.poi import PoiStore
-from watcher.parser import MAP_NAMES, ChatMessage, display_text, parse_line, places_in
+from watcher.parser import ChatMessage, display_text, parse_line, places_in
 from watcher.series import SeriesTracker
 from watcher.recipes import load_recipes, with_recipe
 from watcher.specs import load_specs
@@ -120,6 +121,7 @@ class App:
         self.ui_icons = IconSet(root, resource_root() / "data" / "ui" / "icons")
         data_dir = resource_root() / "data"
         self.item_names = load_item_names(data_dir / "item_names.tsv")
+        self.map_names, self.quest_names = load_link_names(data_dir)  # chat links: zone and quest names
         self.watch_items = load_watch_items(data_dir / "watch_items.csv")
         self.item_by_id = {item.id: item for item in self.watch_items}
         self.icons_dir = data_dir / "icons"
@@ -137,7 +139,7 @@ class App:
         self.tracker = AlertTracker(self.cfg.react_sec)
         self._toasted_alerts: set[int] = set()  # SN-4: alerts already shown in a toast
         self.series = SeriesTracker()
-        self.zones = load_zones(data_dir / "maps", MAP_NAMES)
+        self.zones = load_zones(data_dir / "maps", self.map_names)
         self.places: deque[Place] = deque(maxlen=MAX_PLACES)  # place links seen in «Поиск группы»
         self.tailer: LogTailer | None = None
         self.running = False
@@ -389,6 +391,8 @@ class App:
             self.tabs,
             get_path=lambda: str(self.cfg.chat_log_path()),
             names=self.item_names,
+            map_names=self.map_names,
+            quest_names=self.quest_names,
             get_minutes=lambda: self.cfg.history_min,
             show_system=self.cfg.chat_system,
             on_settings=self._on_chat_settings,
@@ -1140,7 +1144,7 @@ class App:
         """Matches from before Start: listed in the feed, but no sound, no alert, not counted."""
         now = time.monotonic()
         for line in lines:
-            msg = parse_line(line, self.item_names)
+            msg = parse_line(line, self.item_names, maps=self.map_names, quests=self.quest_names)
             if msg is not None:
                 self._remember_places(msg)
                 hits = self.matcher.check(msg, now)
@@ -1246,7 +1250,7 @@ class App:
         now = time.monotonic()
         matched: list[tuple[ChatMessage, list[str]]] = []
         for line in lines:
-            msg = parse_line(line, self.item_names)
+            msg = parse_line(line, self.item_names, maps=self.map_names, quests=self.quest_names)
             if msg is None:
                 continue
             self._remember_places(msg)

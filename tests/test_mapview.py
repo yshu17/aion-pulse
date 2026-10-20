@@ -4,9 +4,8 @@ import tkinter as tk
 import pytest
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.catalog import load_link_names, resource_root
 from watcher.mapview import MapView, Place, load_zones
-from watcher.parser import MAP_NAMES
 
 
 @pytest.fixture
@@ -18,7 +17,7 @@ def root():
 
 
 def zones():
-    return load_zones(resource_root() / "data" / "maps", MAP_NAMES)
+    return load_zones(resource_root() / "data" / "maps", load_link_names(resource_root() / "data")[0])
 
 
 def test_game_maps_follow_the_client_zonemap_framing():
@@ -59,7 +58,7 @@ def test_points_follow_the_zone_transform(root):
 
 
 def test_missing_maps_dir_gives_no_zones(tmp_path):
-    assert load_zones(tmp_path, MAP_NAMES) == {}
+    assert load_zones(tmp_path, load_link_names(resource_root() / "data")[0]) == {}
 
 
 def test_show_centres_on_place_and_zoom_keeps_point_under_cursor(root):

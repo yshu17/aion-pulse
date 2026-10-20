@@ -1,8 +1,8 @@
 """ADR-001 step 1: the core modules stay free of Tk, of the screens and of Windows-only shell code.
 
 Core = modules that the future launcher needs (see docs/ADR-001-core-package.md, section 11 for the groups). They may
-import the standard library and each other; `parser` may read bundled data through `watcher.catalog` for now
-(ADR-001 moves that to parameters at step 2, then `catalog` leaves the allowed list).
+import the standard library and each other. Since step 2 no core module reads the bundled data by itself: names and
+paths come in as parameters (`parser` gets map and quest names from `catalog.load_link_names`).
 """
 
 import ast
@@ -20,7 +20,7 @@ CORE_GROUPS = {
     "telegram": ["tgbatch"],
 }
 CORE = [module for group in CORE_GROUPS.values() for module in group]
-ALLOWED_WATCHER = set(CORE) | {"catalog"}  # catalog: parser's data loader, removed at ADR-001 step 2
+ALLOWED_WATCHER = set(CORE)
 FORBIDDEN_TOP = {"tkinter", "PIL", "ctypes", "winsound", "winreg"}  # screens and Windows-only shell stay outside
 
 

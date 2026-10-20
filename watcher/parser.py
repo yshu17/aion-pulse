@@ -1,4 +1,11 @@
-"""Parse Aion Chat.log lines: any channel (ChatLine) and the «Поиск группы» search view (ChatMessage)."""
+"""Parse Aion Chat.log lines: any channel (ChatLine) and the «Поиск группы» search view (ChatMessage).
+
+Core module (ADR-001): reads no files. Names come in as mappings «id -> name»:
+    names   item and recipe names     [item:166000103] -> [Меч Фланаса]
+    maps    map (zone) names          [pos:Место;220070000 …] -> ⟪Место · Келькмарос¦220070000 x y⟫
+    quests  quest names               [quest:2058] -> ⟪Задание: …⟫
+Missing mappings keep the link readable with its id. The program loads them with `catalog.load_link_names`.
+"""
 
 import re
 from collections.abc import Mapping
@@ -26,28 +33,8 @@ LINK_OPEN, LINK_CLOSE = "⟪", "⟫"
 POS_SEP = "¦"  # a place link keeps «map x y» after this mark: ⟪Место · Келькмарос¦220070000 2010.1 1315.8⟫
 
 
-def _load_map_names() -> dict[str, str]:
-    """Map id -> official Russian zone name (data/map_names.tsv, from aidb.ru)."""
-    from watcher.catalog import load_item_names, resource_root
-
-    return load_item_names(resource_root() / "data" / "map_names.tsv")  # same «id<TAB>name» format
-
-
-MAP_NAMES = _load_map_names()
-
-
-def _load_quest_names() -> dict[str, str]:
-    """Quest id -> name (data/quest_names.tsv, from kb.aionempire.com/quests)."""
-    from watcher.catalog import load_item_names, resource_root
-
-    return load_item_names(resource_root() / "data" / "quest_names.tsv")
-
-
-QUEST_NAMES = _load_quest_names()
-
-
-def _quest(match: re.Match) -> str:
-    name = QUEST_NAMES.get(match.group(1))
+def _quest(match: re.Match, quests: Mapping[str, str]) -> str:
+    name = quests.get(match.group(1))
     return f"{LINK_OPEN}Задание: {name}{LINK_CLOSE}" if name else f"{LINK_OPEN}Задание {match.group(1)}{LINK_CLOSE}"
 
 
@@ -76,10 +63,10 @@ class ChatLine:
         return self.nick is not None
 
 
-def _place(match: re.Match) -> str:
+def _place(match: re.Match, maps: Mapping[str, str]) -> str:
     label, map_id, x, y = match.groups()
     label = label or "Место"
-    region = MAP_NAMES.get(map_id)
+    region = maps.get(map_id)
     shown = f"{label} · {region}" if region else label
     return f"{LINK_OPEN}{shown}{POS_SEP}{map_id} {x} {y}{LINK_CLOSE}"
 
@@ -125,24 +112,26 @@ def _unknown_item(item_id: str) -> str:
     return f"Предмет {item_id}" if item_id else "Предмет"
 
 
-def clean_text(text: str, names: Mapping[str, str] | None = None) -> str:
+def clean_text(text: str, names: Mapping[str, str] | None = None, *, maps: Mapping[str, str] | None = None,
+               quests: Mapping[str, str] | None = None) -> str:
     """Drop [cmd:...] markup and make links readable.
 
     Item / recipe links become [name] ([Предмет 166000103] if the id is not in the catalog); place, quest and «where» links become
     ⟪Место · Келькмарос⟫, ⟪Задание 2058⟫, ⟪text⟫; runs of «???» (smileys) are dropped.
     """
-    names = names or {}
+    names, maps, quests = names or {}, maps or {}, quests or {}
     text = _CUT_LINK_RE.sub(_cut_link, text.rstrip())
     text = _CMD_RE.sub("", text)
     text = _ITEM_RE.sub(lambda m: f"[{names.get(m.group(1)) or _unknown_item(m.group(1))}]", text)
-    text = _POS_RE.sub(_place, text)
-    text = _QUEST_RE.sub(_quest, text)
+    text = _POS_RE.sub(lambda m: _place(m, maps), text)
+    text = _QUEST_RE.sub(lambda m: _quest(m, quests), text)
     text = _WHERE_RE.sub(lambda m: f"{LINK_OPEN}{m.group(1).strip()}{LINK_CLOSE}", text)
     text = _SPACES_RE.sub(" ", _EMOTES_RE.sub("", text))
     return text.strip()
 
 
-def parse_any_line(line: str, names: Mapping[str, str] | None = None) -> ChatLine | None:
+def parse_any_line(line: str, names: Mapping[str, str] | None = None, *, maps: Mapping[str, str] | None = None,
+                   quests: Mapping[str, str] | None = None) -> ChatLine | None:
     """Split a timestamped log line into channel, nick and text. None for lines without a time."""
     line = line.rstrip("\r\n")
     match = _TIME_RE.match(line)
@@ -168,7 +157,7 @@ def parse_any_line(line: str, names: Mapping[str, str] | None = None) -> ChatLin
         time=time,
         channel=channel,
         nick=nick,
-        text=clean_text(rest, names),
+        text=clean_text(rest, names, maps=maps, quests=quests),
         raw=line,
         item_ids=item_ids,
         color=color,
@@ -176,9 +165,10 @@ def parse_any_line(line: str, names: Mapping[str, str] | None = None) -> ChatLin
     )
 
 
-def parse_line(line: str, names: Mapping[str, str] | None = None) -> ChatMessage | None:
+def parse_line(line: str, names: Mapping[str, str] | None = None, *, maps: Mapping[str, str] | None = None,
+               quests: Mapping[str, str] | None = None) -> ChatMessage | None:
     """Return the message for a player line in «Поиск группы», else None."""
-    parsed = parse_any_line(line, names)
+    parsed = parse_any_line(line, names, maps=maps, quests=quests)
     if parsed is None or parsed.nick is None or not (parsed.channel or "").startswith(LFG_PREFIX):
         return None
     return ChatMessage(

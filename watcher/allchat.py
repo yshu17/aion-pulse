@@ -74,11 +74,14 @@ class AllChatView(ttk.Frame):
         grades: Mapping[str, str] | None = None,
         on_place: Callable[[str, float, float, str], None] | None = None,
         motion_enabled: Callable[[], bool] | None = None,
+        map_names: Mapping[str, str] | None = None,
+        quest_names: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(parent)
         self.get_path = get_path
         self.get_minutes = get_minutes  # history period, shared with the search tab («История»)
         self.names = names
+        self.map_names, self.quest_names = map_names or {}, quest_names or {}  # zone and quest links
         self.on_settings = on_settings
         self.motion_enabled = motion_enabled or (lambda: True)
         self._links = (spec_items, on_item_enter, on_item_leave, grades, on_place)
@@ -234,7 +237,7 @@ class AllChatView(ttk.Frame):
         show_system = self.system_var.get()
         rows = []
         for raw in raw_lines:
-            line = parse_any_line(raw, self.names)
+            line = parse_any_line(raw, self.names, maps=self.map_names, quests=self.quest_names)
             if line is None:
                 continue
             if line.is_player:

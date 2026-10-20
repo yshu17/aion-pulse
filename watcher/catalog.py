@@ -84,6 +84,15 @@ def load_item_names(path: Path) -> dict[str, str]:
     return names
 
 
+def load_link_names(data_dir: Path) -> tuple[dict[str, str], dict[str, str]]:
+    """Map and quest names for chat links: (map id -> zone name, quest id -> name).
+
+    data/map_names.tsv (official zone names, aidb.ru) and data/quest_names.tsv (kb.aionempire.com/quests), both
+    `id<TAB>name`. Missing files give empty mappings: the parser then shows ids.
+    """
+    return load_item_names(data_dir / "map_names.tsv"), load_item_names(data_dir / "quest_names.tsv")
+
+
 def load_watch_items(path: Path) -> list[WatchItem]:
     """Read watch_items.csv (id,name,level[,category,grade,icon,kind]). A missing file gives an empty list."""
     try:

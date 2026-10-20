@@ -15,7 +15,7 @@ from watcher import theme
 from watcher.bestiary_view import BestiaryView
 from watcher.catalog import local_bestiary_dir, resource_root
 from watcher.mapview import MapView, load_zones
-from watcher.parser import MAP_NAMES
+from watcher.catalog import load_link_names
 from watcher.poi import PoiStore
 
 
@@ -30,7 +30,7 @@ def main() -> None:
     tabs.pack(fill="both", expand=True)
     maps = resource_root() / "data" / "maps"
     bestiary = local_bestiary_dir()
-    zones = load_zones(maps, MAP_NAMES)
+    zones = load_zones(maps, load_link_names(maps.parent)[0])
     map_view = MapView(
         tabs, zones, poi=PoiStore.load(maps / "poi.json"), icons_dir=maps / "icons",
         bestiary_database=bestiary / "npcs.sqlite", bestiary_icons=bestiary / "icons",

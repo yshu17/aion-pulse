@@ -1,5 +1,8 @@
 from watcher.parser import ChatMessage, clean_text, parse_line
 
+MAPS = {"220070000": "Келькмарос", "210050000": "Ингисон"}  # passed in: the core reads no data files
+QUESTS = {"2058": "Уничтожение повстанцев Ривара"}
+
 CMD_LINE = (
     "2026.10.08 18:43:17 : [3.Поиск группы] [charname:Tiyamate;1.0000 0.6941 0.6941]: "
     "[cmd:Tiyamate;sxFsA1JTuwlRMeXXcsGOGIhtgp+mUuuHulz+ZUdiohM=]WTB MMK 2.2KK SM++++++++++++++ "
@@ -161,7 +164,7 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
     )
     from watcher.parser import display_text
 
-    assert display_text(clean_text(text, names)) == (
+    assert display_text(clean_text(text, names, maps=MAPS, quests=QUESTS)) == (
         "Форт <Место · Келькмарос> <Место> кв <Задание: Уничтожение повстанцев Ривара> лег <sweet bunny> "
         "[Рецепт: клик] [Монета] го? ??"
     )
@@ -170,7 +173,7 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
 def test_pos_link_at_line_start_is_not_a_channel():
     from watcher.parser import parse_any_line
 
-    line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут")
+    line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут", maps=MAPS)
     assert line.channel is None and line.text == "⟪Место · Келькмарос¦220070000 1 2⟫ тут"
 
 
@@ -191,8 +194,23 @@ def test_unknown_quest_keeps_number():
 def test_place_link_keeps_coordinates():
     from watcher.parser import clean_text, split_place
 
-    text = clean_text("[pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Босс;0 210050000 978.8 1265.0 0.0 0]")
+    text = clean_text("[pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Босс;0 210050000 978.8 1265.0 0.0 0]", maps=MAPS)
     links = [part.split("⟫")[0] for part in text.split("⟪")[1:]]
     assert split_place(links[0]) == ("Место · Келькмарос", ("220070000", 2010.1, 1315.8))
     assert split_place(links[1]) == ("Босс · Ингисон", ("210050000", 978.8, 1265.0))
     assert split_place("sweet bunny") == ("sweet bunny", None)
+
+
+def test_without_names_links_keep_ids_and_plain_labels():
+    """ADR-001 step 2: no names given, no files read; place and quest links stay readable."""
+    assert clean_text("[pos:Место;220070000 1 2 0 0] кв [quest:2058]") == "⟪Место¦220070000 1 2⟫ кв ⟪Задание 2058⟫"
+    msg = parse_line("2026.10.08 18:42:00 : [3.Поиск группы] [charname:A;1 1 1]: го [quest:2058]", quests=QUESTS)
+    assert msg.text == "го ⟪Задание: Уничтожение повстанцев Ривара⟫"
+
+
+def test_bundled_link_names_load_from_the_data_folder():
+    from watcher.catalog import load_link_names, resource_root
+
+    maps, quests = load_link_names(resource_root() / "data")
+    assert maps["220070000"] == "Келькмарос" and quests["2058"] == "Уничтожение повстанцев Ривара"
+    assert load_link_names(resource_root() / "no-such-folder") == ({}, {})
