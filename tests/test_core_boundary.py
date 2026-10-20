@@ -41,7 +41,7 @@ def core_files() -> list[Path]:
 
 
 def test_every_core_module_is_in_its_group():
-    found = {(p.parent.name, p.stem) for p in core_files() if p.stem != "__init__"}
+    found = {(p.parent.name, p.stem) for p in core_files() if p.stem != "__init__" and p.parent.name != "core"}
     assert found == {(group, module) for group, modules in CORE_GROUPS.items() for module in modules}
 
 
@@ -66,3 +66,7 @@ def test_core_works_copied_alone(tmp_path):
     code += "".join(f"importlib.import_module({name!r})\n" for name in modules)
     result = subprocess.run([sys.executable, "-I", "-c", code], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+    run_main = "import runpy, sys\nsys.path.insert(0, '.')\nrunpy.run_module('core', run_name='__main__')\n"
+    answer = subprocess.run([sys.executable, "-I", "-c", run_main], cwd=tmp_path, capture_output=True, text=True,
+                            encoding="utf-8", input='{"id": 1, "method": "core.version"}\n')
+    assert answer.returncode == 0 and '"version"' in answer.stdout, answer.stderr  # the JSON entry point runs alone
