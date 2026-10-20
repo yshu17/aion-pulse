@@ -333,6 +333,7 @@ python tools/fake_chat.py <тестовый лог> "текст" [ник]   # р
 build_exe.bat                                            # стабильная сборка Pulse.exe
 build_local.bat                                          # тестовая сборка Pulse-Local.exe с Бестиарием
 python tools/release.py                                  # релиз: версия, сборка, SHA256 в описании, тег, GitHub release
+build_core.bat                                           # pulse-core.exe: одно ядро без окна, JSON по stdin/stdout
 ```
 
 **Устройство.** Логика вынесена в пакет `core/` — это чистый Python без Tkinter и Windows API,
@@ -342,7 +343,9 @@ python tools/release.py                                  # релиз: верс�
 Описание — [`core/README.md`](core/README.md).
 
 Другая программа (не на Python) вызывает ядро отдельным процессом: `python -m core` принимает JSON-запросы
-построчно и отвечает JSON. Список методов — [`core/API.md`](core/API.md).
+построчно и отвечает JSON; то же умеет `pulse-core.exe` без установленного Python. Список методов —
+[`core/API.md`](core/API.md), типы для TypeScript — [`core/api.d.ts`](core/api.d.ts), форматы данных —
+[`core/DATA.md`](core/DATA.md).
 
 | Группа `core/` | Что делает |
 |---|---|
