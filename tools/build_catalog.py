@@ -2,7 +2,7 @@
 
 Writes:
   data/watch_items.csv     id,name,level,category,grade,icon,kind — catalog; the «Что искать» list
-                           shows its listed part (see watcher.catalog.is_listed)
+                           shows its listed part (see core.items.catalog.is_listed)
   data/item_specs.json.gz  item id -> tooltip spec (compact JSON text, parsed on demand)
   data/icons/<icon>.png    one picture per distinct site icon, 56 px
 Dev tool (needs Pillow). Usage: python tools/build_catalog.py <cache.jsonl> [<cache.jsonl> ...]
@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from watcher.catalog import CATEGORY_ORDER, category_for  # noqa: E402
+from core.items.catalog import CATEGORY_ORDER, category_for  # noqa: E402
 
 SITE = "https://kb.aionempire.com"
 HEADERS = {"User-Agent": "Mozilla/5.0", "Cookie": "PLAY_LANG=ru"}

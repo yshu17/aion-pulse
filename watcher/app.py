@@ -20,9 +20,9 @@ from watcher.win_sizing import primary_button_down
 from core.chat.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
-from watcher.catalog import (WatchItem, is_listed, load_item_names, load_link_names, load_watch_items, local_bestiary_dir,
-                             resource_root)
-from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
+from core.items.catalog import WatchItem, is_listed, load_item_names, load_link_names, load_watch_items
+from watcher.paths import local_bestiary_dir, resource_root
+from core.settings.config import OVERLAY_POPUP_ENABLED, read_config, save_config
 from core.schedule.reminders import due_reminders, occurrences_between
 from watcher.schedule_tab import (LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range,
                                   to_local)
@@ -43,9 +43,9 @@ from core.notify.notify_settings import apply as apply_notify_settings
 from watcher.notify_tab import NotifyPanel
 from core.schedule.schedule_custom import Custom
 from core.schedule.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
-from watcher.selfupdate import can_install, download, install, pick_asset, remove_old
-from watcher.updater import API as RELEASE_API, latest_release, newer
-from watcher.version import APP_NAME, VERSION, build_label
+from core.update.selfupdate import can_install, download, install, pick_asset, remove_old
+from core.update.updater import latest_release, newer, release_api
+from watcher.version import APP_NAME, REPO, VERSION, build_label
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from core.map.poi import PoiStore
@@ -1306,7 +1306,7 @@ class App:
         """Ask GitHub for the latest release in the background; a private repo or no network gives no answer."""
         def work() -> None:
             try:
-                body, _headers = http_fetch(RELEASE_API, "GET")
+                body, _headers = http_fetch(release_api(REPO), "GET")
                 found = latest_release(body)
                 asset = pick_asset(body) if can_install(self._current_exe()) else None
                 self._release_results.put((found, asset))

@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from tkinter import ttk
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.paths import resource_root
 from watcher.emptystate import EmptyState
 from core.chat.parser import ChatMessage
 from watcher.textview import BottomAnchor, CopyMenu, ItemLinker

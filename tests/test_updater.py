@@ -1,4 +1,4 @@
-from watcher.updater import latest_release, newer, parse_version
+from core.update.updater import latest_release, newer, parse_version
 
 
 def test_versions_compare_numerically():
@@ -10,3 +10,9 @@ def test_release_json_gives_tag_and_page():
     body = '{"tag_name": "v1.1.0", "html_url": "https://github.com/x/y/releases/tag/v1.1.0"}'
     assert latest_release(body) == ("v1.1.0", "https://github.com/x/y/releases/tag/v1.1.0")
     assert latest_release("{}") is None
+
+
+def test_release_address_comes_from_the_repository_name():
+    from core.update.updater import release_api
+
+    assert release_api("owner/name") == "https://api.github.com/repos/owner/name/releases/latest"

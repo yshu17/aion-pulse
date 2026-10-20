@@ -92,9 +92,9 @@ def build(source: Path, areas_source: Path, output: Path) -> tuple[int, int]:
 
     manual_path = source.with_name("manual_points.json")
     if manual_path.exists():  # places set by hand where the client has none (local file, not in the repository)
-        from watcher.catalog import resource_root
+        from watcher.paths import resource_root
         from watcher.mapview import load_zones
-        from watcher.catalog import load_link_names
+        from core.items.catalog import load_link_names
 
         zones_by_id = load_zones(resource_root() / "data" / "maps", load_link_names(resource_root() / "data")[0])
         manual = json.loads(manual_path.read_text(encoding="utf-8"))

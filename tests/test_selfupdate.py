@@ -5,8 +5,8 @@ import sys
 
 import pytest
 
-from watcher import selfupdate
-from watcher.selfupdate import can_install, download, install, pick_asset, remove_old
+from core.update import selfupdate
+from core.update.selfupdate import can_install, download, install, pick_asset, remove_old
 
 DATA = b"new exe bytes"
 SHA = hashlib.sha256(DATA).hexdigest()

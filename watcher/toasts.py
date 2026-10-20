@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageTk
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.paths import resource_root
 from core.notify.notify_center import Notification, NotificationCenter
 from watcher.toast_native import WindowsDesktop, WorkArea
 

@@ -14,7 +14,7 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.paths import resource_root
 from watcher.hint import Hint
 from watcher.ui_icons import IconSet
 from core.schedule.reminders import DAYS

@@ -3,7 +3,7 @@ import tkinter as tk
 import pytest
 
 from watcher import theme
-from watcher.catalog import WatchItem
+from core.items.catalog import WatchItem
 from watcher.itemlist import ROW_H, ItemList
 
 

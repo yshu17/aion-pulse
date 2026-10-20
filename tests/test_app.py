@@ -1,5 +1,5 @@
 from watcher.app import plural, split_keywords
-from watcher.catalog import local_bestiary_dir
+from watcher.paths import local_bestiary_dir
 
 
 def test_split_keywords():
@@ -231,7 +231,7 @@ def test_watched_item_link_alerts_and_shows_name(tmp_path):
     root.withdraw()
     try:
         app = App(root, cfg_path)
-        from watcher.catalog import is_listed
+        from core.items.catalog import is_listed
 
         listed = [item for item in app.watch_items if is_listed(item)]
         assert len(app.item_list.order) == len(listed) >= 49
@@ -1032,7 +1032,7 @@ def test_overlay_setting_is_disabled_and_does_not_show_a_popup(tmp_path):
     """ui:40: the always-on-top setting is shown disabled and has no effect; the saved value is kept."""
     import json
 
-    from watcher.config import OVERLAY_POPUP_ENABLED
+    from core.settings.config import OVERLAY_POPUP_ENABLED
 
     assert OVERLAY_POPUP_ENABLED is False
     root, app, calls, say = _nag_app(tmp_path, nag_popup=True)

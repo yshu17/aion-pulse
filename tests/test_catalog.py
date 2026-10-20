@@ -1,4 +1,5 @@
-from watcher.catalog import WatchItem, load_item_names, load_watch_items, resource_root
+from core.items.catalog import WatchItem, load_item_names, load_watch_items
+from watcher.paths import resource_root
 
 
 def test_load_item_names(tmp_path):
@@ -23,7 +24,7 @@ def test_load_watch_items(tmp_path):
 def test_bundled_data_present():
     data = resource_root() / "data"
     items = load_watch_items(data / "watch_items.csv")
-    from watcher.catalog import is_listed
+    from core.items.catalog import is_listed
 
     assert len(items) > 25000  # equipment from level 45, plus materials, supplies and misc for chat links
     listed = [item for item in items if is_listed(item)]
@@ -36,7 +37,7 @@ def test_bundled_data_present():
     assert names["100000893"] == "Клинок Рудры"
     with_icon = [item for item in items if (data / "icons" / f"{item.icon}.png").is_file()]
     assert len(with_icon) > 0.9 * len(items)  # a few icons are missing on the site; placeholder then
-    from watcher.catalog import CATEGORY_ORDER
+    from core.items.catalog import CATEGORY_ORDER
 
     assert by_id["187000018"].name == "Крылья Рудры" and by_id["187000018"].category == "Крылья"
     assert by_id["110600968"].category == "Лата"
@@ -44,7 +45,7 @@ def test_bundled_data_present():
 
 
 def test_category_for():
-    from watcher.catalog import category_for
+    from core.items.catalog import category_for
 
     assert category_for("Латная броня", "Кираса Рудры") == "Лата"
     assert category_for("Кольчужная броня", "Рукавицы Рудры") == "Кольчуга"

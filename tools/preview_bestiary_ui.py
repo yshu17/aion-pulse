@@ -13,9 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from watcher import theme
 from watcher.bestiary_view import BestiaryView
-from watcher.catalog import local_bestiary_dir, resource_root
+from watcher.paths import local_bestiary_dir, resource_root
 from watcher.mapview import MapView, load_zones
-from watcher.catalog import load_link_names
+from core.items.catalog import load_link_names
 from core.map.poi import PoiStore
 
 

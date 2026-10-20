@@ -4,7 +4,7 @@ import ctypes
 import tkinter as tk
 
 from watcher.app import App
-from watcher.config import app_root
+from watcher.paths import app_root
 
 
 def enable_dpi_awareness() -> None:

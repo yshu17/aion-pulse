@@ -4,7 +4,8 @@ import tkinter as tk
 import pytest
 
 from watcher import theme
-from watcher.catalog import load_link_names, resource_root
+from core.items.catalog import load_link_names
+from watcher.paths import resource_root
 from watcher.mapview import MapView, Place, load_zones
 
 

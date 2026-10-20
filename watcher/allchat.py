@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from tkinter import ttk
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.paths import resource_root
 from watcher.emptystate import EmptyState
 from watcher.ui_icons import IconSet
 from core.chat.parser import ChatLine, parse_any_line

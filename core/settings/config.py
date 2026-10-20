@@ -1,22 +1,15 @@
-"""config.json next to the exe (or the project folder when run from source)."""
+"""The settings model of Pulse and reading / writing config.json (the path is a parameter).
+
+Portable core: no path of its own. A value of the wrong type falls back to its default, a broken file
+is kept as config.json.broken-<time>. `watcher.paths.app_root()` says where the file lives."""
 
 import json
 import os
-import sys
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
 from pathlib import Path
 
 DEFAULT_GAME_DIR = r"C:\aMain\Games\AION Imperia\Aion Empire"
-
-
-def app_root() -> Path:
-    """Folder of config.json. A one-folder build keeps it next to its folder, so a rebuild (which replaces the
-    folder) never deletes the settings."""
-    if getattr(sys, "frozen", False):
-        exe_dir = Path(sys.executable).resolve().parent
-        return exe_dir.parent if (exe_dir / "_internal").is_dir() else exe_dir
-    return Path(__file__).resolve().parent.parent
 
 
 # ui:40: the always-on-top popup is temporarily off. The setting stays in config.json and shows as disabled in the UI.

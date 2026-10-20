@@ -3,7 +3,7 @@
 import json
 from types import SimpleNamespace
 
-from watcher.config import Config, read_config
+from core.settings.config import Config, read_config
 from core.notify.notify_center import NotificationCenter
 from core.notify.notify_settings import SOURCES, apply
 

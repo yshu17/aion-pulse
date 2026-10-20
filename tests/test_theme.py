@@ -4,7 +4,7 @@ from tkinter import ttk
 import pytest
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.paths import resource_root
 
 UI_DIR = resource_root() / "data" / "ui"
 

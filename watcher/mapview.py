@@ -20,7 +20,7 @@ from tkinter import font as tkfont
 from tkinter import ttk
 
 from watcher import theme
-from watcher.catalog import resource_root
+from watcher.paths import resource_root
 from core.bestiary.bestiary_store import BestiaryStore
 from core.bestiary.bestiary_labels import plural
 from watcher.bestiary_widgets import bind_wheel_tree

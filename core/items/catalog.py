@@ -1,27 +1,10 @@
-"""Bundled item data: id -> name catalog and the list of items the user can watch."""
+"""Item data: id -> name catalog, the list of items the user can watch, names for chat links.
+
+Portable core: every loader takes its path as a parameter and gives empty data for a missing file."""
 
 import csv
-import sys
 from dataclasses import dataclass
 from pathlib import Path
-
-
-def resource_root() -> Path:
-    """Folder holding data/: inside the PyInstaller bundle when frozen, else the project."""
-    if getattr(sys, "frozen", False):
-        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-    return Path(__file__).resolve().parent.parent
-
-
-def local_bestiary_dir() -> Path | None:
-    """Folder with the NPC / Bestiary data, which is not part of the program: `bestiary/` next to the exe
-    (or next to the build folder, or `local/bestiary/` in the project). None when it is not there, so the tab is simply not shown."""
-    if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent
-        candidates = [base / "bestiary", base.parent / "bestiary", base / "local" / "bestiary"]  # parent: onedir build
-    else:
-        candidates = [Path(__file__).resolve().parent.parent / "local" / "bestiary"]
-    return next((folder for folder in candidates if (folder / "npcs.sqlite").is_file()), None)
 
 
 CATEGORY_ORDER = [

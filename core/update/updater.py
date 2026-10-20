@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import json
 
-from watcher.version import REPO
 
-API = f"https://api.github.com/repos/{REPO}/releases/latest"
+
+def release_api(repo: str) -> str:
+    """The GitHub API address of the latest release of «owner/name»."""
+    return f"https://api.github.com/repos/{repo}/releases/latest"
 
 
 def parse_version(text: str) -> tuple[int, ...]:

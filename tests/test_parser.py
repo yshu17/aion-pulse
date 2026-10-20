@@ -209,7 +209,8 @@ def test_without_names_links_keep_ids_and_plain_labels():
 
 
 def test_bundled_link_names_load_from_the_data_folder():
-    from watcher.catalog import load_link_names, resource_root
+    from core.items.catalog import load_link_names
+    from watcher.paths import resource_root
 
     maps, quests = load_link_names(resource_root() / "data")
     assert maps["220070000"] == "Келькмарос" and quests["2058"] == "Уничтожение повстанцев Ривара"

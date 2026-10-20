@@ -16,8 +16,8 @@ from tkinter import font as tkfont
 from tkinter import ttk
 
 from watcher import theme
-from watcher.catalog import CATEGORY_ORDER, WatchItem
-from watcher.catalog import resource_root
+from core.items.catalog import CATEGORY_ORDER, WatchItem
+from watcher.paths import resource_root
 from watcher.ui_icons import IconSet
 from watcher.hint import Hint
 from core.chat.matcher import normalize

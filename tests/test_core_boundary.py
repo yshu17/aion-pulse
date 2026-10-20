@@ -18,7 +18,9 @@ CORE_GROUPS = {
     "schedule": ["reminders", "schedule_view", "schedule_custom", "schedule_update"],
     "bestiary": ["bestiary_labels", "bestiary_classify", "bestiary_store", "search_worker"],
     "map": ["poi"],
-    "items": ["specs", "recipes"],
+    "items": ["specs", "recipes", "catalog"],
+    "settings": ["config"],
+    "update": ["updater", "selfupdate"],
     "telegram": ["tgbatch"],
 }
 FORBIDDEN_TOP = {"tkinter", "PIL", "ctypes", "winsound", "winreg", "watcher"}
