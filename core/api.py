@@ -24,7 +24,19 @@ from pathlib import Path
 
 from core import __version__
 from core.chat.parser import parse_any_line, parse_line
+from core.chat.segments import message_segments
 from core.chat.session import LogFeed, WatchSession
+from core.chat.status import empty_feed, search_hint, status_chip
+from core.items.recipes import load_recipes, with_recipe
+from core.items.specs import load_specs
+from core.map.poi import cluster
+from core.notify.notices import release_notice, route_action, schedule_check_notice
+from core.notify.notify_center import NotificationAction, NotificationCenter
+from core.notify.notify_settings import SOURCES
+from core.schedule.schedule_custom import Custom, parse_text, to_text
+from core.schedule.schedule_update import http_fetch, known_fingerprint, site_fingerprint
+from core.settings.config import Config, read_config, save_config
+from core.telegram.tgbatch import ChatBatcher
 from core.items.browser import ItemBrowser, ItemFilter
 from core.items.catalog import load_item_names, load_link_names, load_watch_items
 from core.map.poi import PoiStore
@@ -68,6 +80,14 @@ class CoreApi:
         self.session = WatchSession()
         self.feed: LogFeed | None = None
         self.planner = ReminderPlanner()
+        self.base_events: list[dict] = []
+        self.custom: Custom | None = None
+        self.specs = {}
+        self.recipes = None
+        self.schedule_data: dict = {}
+        self._now = 0.0  # the caller's monotonic clock, as last given in `now`
+        self.center = NotificationCenter(clock=lambda: self._now)
+        self.batcher = ChatBatcher()
         self.methods: dict[str, Callable[[dict], object]] = {
             "core.version": self.version,
             "data.open": self.open_data,
@@ -97,6 +117,48 @@ class CoreApi:
             "bestiary.search": self.bestiary_search,
             "bestiary.detail": lambda p: self._bestiary().detail(str(p["npc_id"])),
             "update.check": lambda p: self._release(p),
+            # chat display and status
+            "chat.segments": lambda p: message_segments(p["text"], p.get("hits"), self._spec_names(), self._grades()),
+            "chat.status_chip": lambda p: dict(zip(("short", "kind"), status_chip(p["text"]))),
+            "chat.empty_feed": lambda p: dict(zip(("title", "hint"), empty_feed(
+                bool(p.get("running")), p.get("mode", "or"), p.get("keywords", []), p.get("watch_items", [])))),
+            "chat.search_hint": lambda p: search_hint(p.get("mode", "or"), p.get("keywords", []),
+                                                      p.get("watch_items", [])),
+            # notifications
+            "notify.post": self.notify_post,
+            "notify.next": self.notify_next,
+            "notify.acknowledge": lambda p: {"ok": self.center.acknowledge(int(p["id"]))},
+            "notify.snooze": lambda p: {"ok": self._at(p) or self.center.snooze(int(p["id"]), float(p["seconds"]))},
+            "notify.settings": self.notify_settings,
+            "notify.state": lambda p: {"queued": self.center.queued, "unread": self.center.unread,
+                                       "dnd": self.center.do_not_disturb, "sources": [s for s, _ in SOURCES]},
+            "notice.release": lambda p: release_notice(tuple(p["found"]) if p.get("found") else None,
+                                                       bool(p.get("can_install")), p["current"], p.get("seen", "")),
+            "notice.schedule_check": lambda p: schedule_check_notice(p["status"], p["value"], p.get("known", ""),
+                                                                     p.get("seen", ""), bool(p.get("manual"))),
+            "notice.route": lambda p: route_action(p["action"], p.get("key"), p.get("release_key"),
+                                                   p.get("schedule_key")),
+            # own schedule events
+            "schedule.custom_open": self.custom_open,
+            "schedule.custom_add": lambda p: self._custom_change(lambda c: c.add(p["event"])),
+            "schedule.custom_add_days": lambda p: self._custom_change(lambda c: c.add_days(p["event"], p["days"])),
+            "schedule.custom_edit": lambda p: self._custom_change(lambda c: c.edit(p["old"], p["new"])),
+            "schedule.custom_remove": lambda p: self._custom_change(lambda c: c.remove(p["event"])),
+            "schedule.to_text": lambda p: to_text(p.get("events", self.events)),
+            "schedule.parse_text": lambda p: dict(zip(("events", "errors"), parse_text(p["text"]))),
+            "schedule.site_check": self.site_check,
+            # items, settings, map, bestiary, telegram
+            "items.spec": self.item_spec,
+            "settings.read": lambda p: dict(zip(("config", "notice"), read_config(Path(p["path"])))),
+            "settings.save": self.settings_save,
+            "map.cluster": self.map_cluster,
+            "bestiary.filters": lambda p: {"races": self._bestiary().races(), "ranks": self._bestiary().ranks(),
+                                           "zones": self._bestiary().zones()},
+            "bestiary.regions": lambda p: self._bestiary().regions(p.get("map_id", "")),
+            "bestiary.areas": lambda p: self._bestiary().areas(str(p["npc_id"])),
+            "telegram.add": lambda p: self._tg_add(p),
+            "telegram.poll": lambda p: {"messages": self.batcher.poll(float(p.get("now", 0))),
+                                        "queued": self.batcher.queued, "dropped": self.batcher.dropped},
         }
 
     # --- dispatch ----------------------------------------------------------------------
@@ -131,7 +193,14 @@ class CoreApi:
         self.zones = load_zones(data / "maps", self.map_names)
         self.poi = PoiStore.load(data / "maps" / "poi.json").projected(
             {map_id: zone.to_image for map_id, zone in self.zones.items()})  # x, y: pixels of the zone picture
-        self.events = load_events(data / "schedule.json")
+        self.base_events = load_events(data / "schedule.json")
+        self.events = self.custom.merge(self.base_events) if self.custom is not None else list(self.base_events)
+        try:
+            self.schedule_data = json.loads((data / "schedule.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            self.schedule_data = {}
+        self.specs = load_specs(data / "item_specs.json.gz")
+        self.recipes = load_recipes(data / "recipes.json.gz")
         self.session.item_names, self.session.map_names = self.item_names, self.map_names
         self.session.quest_names = self.quest_names
         return {"items": len(self.item_names), "watch_items": len(self.watch_items), "zones": len(self.zones),
@@ -242,3 +311,100 @@ class CoreApi:
         if found is None:
             return {"tag": None, "url": None, "newer": False}
         return {"tag": found[0], "url": found[1], "newer": newer(found[0], params.get("current", "0"))}
+
+    # --- chat display ------------------------------------------------------------------
+    def _spec_names(self) -> dict[str, str]:
+        """Item name -> id for the items with a tooltip (a link to them is drawn as an item)."""
+        return {item.name: item.id for item in self.watch_items if item.id in self.specs}
+
+    def _grades(self) -> dict[str, str]:
+        return {item.id: item.grade for item in self.watch_items}
+
+    # --- notifications -----------------------------------------------------------------
+    def _at(self, params: dict) -> None:
+        if "now" in params:
+            self._now = float(params["now"])
+
+    def notify_post(self, params: dict):
+        self._at(params)
+        actions = [NotificationAction(a, label) for a, label in params.get("actions", [])]
+        return self.center.notify(params["source"], params["kind"], params["title"], params.get("text", ""), actions,
+                                  sound=bool(params.get("sound", True)), repeat_after=params.get("repeat_after"))
+
+    def notify_next(self, params: dict) -> list:
+        """Due repeats and snoozes are queued, then every notification waiting to be shown is returned."""
+        self._at(params)
+        self.center.tick()
+        shown = []
+        while (event := self.center.pop_next()) is not None:
+            shown.append(event)
+        return shown
+
+    def notify_settings(self, params: dict) -> dict:
+        off, mute = set(params.get("off", [])), set(params.get("mute", []))
+        for source, _label in SOURCES:
+            self.center.set_source(source, enabled=source not in off, sound=source not in mute)
+        self.center.do_not_disturb = bool(params.get("dnd", False))
+        return {"ok": True}
+
+    # --- own schedule events -----------------------------------------------------------
+    def custom_open(self, params: dict) -> dict:
+        """The user's own events and edits (schedule_custom.json); they are merged into the schedule."""
+        self.custom = Custom.load(Path(params["path"]))
+        self.events = self.custom.merge(self.base_events)
+        return {"events": len(self.events)}
+
+    def _custom_change(self, change) -> dict:
+        if self.custom is None:
+            raise RuntimeError("schedule.custom_open first")
+        change(self.custom)
+        self.custom.save()
+        self.events = self.custom.merge(self.base_events)
+        return {"events": len(self.events)}
+
+    def site_check(self, params: dict):
+        """Ask the knowledge base whether its schedule picture changed (network, about one second)."""
+        try:
+            status, value = "ok", site_fingerprint(http_fetch)
+        except Exception as error:  # network or site layout
+            status, value = "err", str(error)
+        known = known_fingerprint(self.schedule_data)
+        return {"status": status, "value": value,
+                "notice": schedule_check_notice(status, value, known, params.get("seen", ""), bool(params.get("manual")))}
+
+    # --- items, settings, map, telegram --------------------------------------------------
+    def item_spec(self, params: dict):
+        """The tooltip of an item with its «made from» block (recipes)."""
+        item_id = str(params["item_id"])
+        if item_id not in self.specs:
+            return None
+        spec = self.specs[item_id]
+        recipes = self.recipes.for_item(spec.get("name", ""), item_id) if self.recipes is not None else []
+        return with_recipe(spec, recipes)
+
+    def settings_save(self, params: dict) -> dict:
+        """Write config.json: the given values over the current file (unknown keys are ignored)."""
+        path = Path(params["path"])
+        cfg, _notice = read_config(path)
+        names = {f.name for f in dataclasses.fields(Config)}
+        for key, value in (params.get("values") or {}).items():
+            if key in names:
+                setattr(cfg, key, value)
+        save_config(path, cfg)
+        return {"ok": True}
+
+    def map_cluster(self, params: dict) -> list[dict]:
+        """Icons of a zone at a zoom: points of a type that share a cell of `radius` screen px become one icon."""
+        zone = self.zones[params["map_id"]]
+        scale, dx, dy = float(params.get("scale", 1)), float(params.get("dx", 0)), float(params.get("dy", 0))
+        types = set(params.get("types") or SHOWN_TYPES)
+        points = self._points().in_zone(zone.map_id, types, params.get("side", ""), params.get("layer"))
+        groups = cluster(points, lambda x, y: (x * scale + dx, y * scale + dy), float(params.get("radius", 28)))
+        return [{"x": x, "y": y, "type": members[0].type, "count": len(members), "points": members}
+                for x, y, members in groups]
+
+    def _tg_add(self, params: dict) -> dict:
+        for line in params.get("lines", []):
+            self.batcher.add(line, float(params.get("now", 0)))
+        return {"queued": self.batcher.queued}
+

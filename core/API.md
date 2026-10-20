@@ -53,6 +53,36 @@ Conventions:
 | `bestiary.search` | `text`, `category`, `race`, `rank`, `map_id`, `offset`, `limit`, `min_level`, `max_level`, `region`, `order`, `hide_low` | `{rows, total}` |
 | `bestiary.detail` | `npc_id` | the NPC card or `null` |
 | `update.check` | `body` (GitHub release JSON), `current` | `{tag, url, newer}` |
+| `chat.segments` | `text` (a cleaned message), `hits` | `[{text, kind, hit, item_id, grade, place}]`; `kind` is `text`, `item` or `place` |
+| `chat.status_chip` | `text` (status line) | `{short, kind}`; `kind` is `live`, `warn`, `error` or `idle` |
+| `chat.empty_feed` | `running`, `mode`, `keywords`, `watch_items` | `{title, hint}` of an empty «Поиск» feed |
+| `chat.search_hint` | `mode`, `keywords`, `watch_items` | what the search mode is missing, `""` when nothing |
+| `notify.post` | `source`, `kind`, `title`, `text`, `actions` `[[id, label]]`, `sound`, `repeat_after`, `now` | the notification `{id, …}` or `null` (source off) |
+| `notify.next` | `now` | notifications to show now (repeats and snoozes that came due included) |
+| `notify.acknowledge` | `id` | `{ok}`; stops its repeats |
+| `notify.snooze` | `id`, `seconds`, `now` | `{ok}` |
+| `notify.settings` | `off`, `mute` (sources), `dnd` | `{ok}` |
+| `notify.state` | — | `{queued, unread, dnd, sources}` |
+| `notice.release` | `found` `[tag, url]`, `can_install`, `current`, `seen` | `{source, kind, title, text, actions}` or `null` |
+| `notice.schedule_check` | `status` (`ok`/`err`), `value`, `known`, `seen`, `manual` | notice or `null` |
+| `notice.route` | `action`, `key`, `release_key`, `schedule_key` | what a button means: `open_site`, `install`, `open_release`, `release_seen`, `schedule_seen`, `accept_alerts`, `retry`, `open` |
+| `schedule.custom_open` | `path` (schedule_custom.json) | `{events}`; own events join the schedule |
+| `schedule.custom_add` | `event` | `{events}` (saved to the file) |
+| `schedule.custom_add_days` | `event`, `days` | `{events}` |
+| `schedule.custom_edit` | `old`, `new` | `{events}` |
+| `schedule.custom_remove` | `event` | `{events}` |
+| `schedule.to_text` | `events` | the editable text of events |
+| `schedule.parse_text` | `text` | `{events, errors}` |
+| `schedule.site_check` | `seen`, `manual` | `{status, value, notice}`; asks the knowledge base (network) |
+| `items.spec` | `item_id` | the tooltip `{name, grade, blocks}` with the «made from» block, or `null` |
+| `settings.read` | `path` (config.json) | `{config, notice}`; a broken file is set aside, defaults are written |
+| `settings.save` | `path`, `values` | `{ok}`; unknown keys are ignored |
+| `map.cluster` | `map_id`, `scale`, `dx`, `dy`, `radius`, `types`, `side`, `layer` | icons `[{x, y, type, count, points}]` on screen |
+| `bestiary.filters` | — | `{races, ranks, zones}` |
+| `bestiary.regions` | `map_id` | region names |
+| `bestiary.areas` | `npc_id` | spawn areas `[{map_id, polygon, …}]` |
+| `telegram.add` | `lines`, `now` | `{queued}` |
+| `telegram.poll` | `now` | `{messages, queued, dropped}`: Telegram messages to send now within the rate limit |
 
 ## What stays in the program, not in the core
 
