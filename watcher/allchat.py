@@ -1,6 +1,5 @@
 """«Весь чат» tab: plain live view of the whole chat log, starting N minutes back."""
 
-import re
 import tkinter as tk
 from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
@@ -10,6 +9,7 @@ from watcher import theme
 from watcher.paths import resource_root
 from watcher.emptystate import EmptyState
 from watcher.ui_icons import IconSet
+from core.chat.categories import category, is_notice  # noqa: F401  (chat categories live in core)
 from core.chat.parser import ChatLine, parse_any_line
 from core.chat.tailer import LogTailer
 from watcher.textview import ITEM_COLOR, BottomAnchor, CopyMenu, ItemLinker
@@ -20,43 +20,6 @@ MAX_ROWS = 2000
 # Shown categories and their colours. Channel-less player lines are told apart by the name colour
 # the game writes into [charname:Name;r g b] (Aion's default chat colours).
 CATEGORY_COLORS = theme.CHAT_COLORS
-_NAME_COLORS = {
-    "1.0000 1.0000 1.0000": "Общий",
-    "0.6275 1.0000 0.6275": "Личное",
-    "0.0196 0.7843 0.8431": "Группа",
-    "0.6118 0.9059 0.8627": "Легион",
-}
-_WHISPER_VERBS = {"шепчет", "шепчете"}
-_NOTICE = re.compile(
-    r"^(Получено|Получен[аы]?|Вы получили|Использовано|Невозможно|Нельзя|Недостаточно|Вы не можете|"
-    r"Цель находится|Кто-то уже|Не удалось|Задание|Вы вошли|Вы покинули)"
-    r"|получает: \[|присоединил|покинул[аи]? (группу|легион)|кинар",
-)
-
-
-def category(line: ChatLine) -> str | None:
-    """Which «Весь чат» category a player line belongs to; None = not shown."""
-    channel = line.channel or ""
-    if channel.startswith("3."):
-        return "Поиск группы"
-    if channel.startswith("1."):
-        return "Общий"
-    if channel:
-        return None  # trade and other numbered channels
-    if line.verb in _WHISPER_VERBS:
-        return "Личное"
-    return _NAME_COLORS.get(line.color or "")
-
-
-def is_notice(line: ChatLine) -> bool:
-    """System «information» and «errors/notifications» (loot, kinah, can't-do-that…), not combat."""
-    if line.is_player:
-        return False
-    if line.channel is not None:
-        return not line.channel.startswith("?")  # [Event], [Ежедневно] …; unreadable ones are skipped
-    return "??" not in line.text and bool(_NOTICE.search(line.text))
-
-
 class AllChatView(ttk.Frame):
     ITEM_COLOR = ITEM_COLOR
     def __init__(

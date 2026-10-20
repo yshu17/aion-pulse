@@ -14,7 +14,6 @@ import math
 import sqlite3
 import tkinter as tk
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
 from pathlib import Path
 from tkinter import font as tkfont
 from tkinter import ttk
@@ -31,6 +30,9 @@ from watcher.hint import Hint
 from watcher.mapcard import NEARBY_TYPES, PointCard
 from core.chat.matcher import normalize
 from core.map.poi import Poi, PoiStore, cluster
+from core.map.zones import (  # noqa: F401  (zones and the filter groups live in core; the names stay importable here)
+    CAPITALS, FILTER_GROUPS, LABEL_LEVELS, QUEST_TYPES, SHOWN_TYPES, SIDES, Place, Zone, load_label_layers,
+    load_labels, load_zones)
 
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px
@@ -41,23 +43,9 @@ ZOOM_FRAME_MS = 10
 RESIZE_SETTLE_MS = 120  # redraw this long after the last window size change
 # The fixed set of points on the map (no layer panel). Gathering and quest points are not shown; portals are the
 # whose NPCs the map shows where the two sides differ: fortress NPCs (the owner's stand) and quest givers
-SIDES = {"dark": "Асмодиане", "light": "Элийцы"}
 
 # Silentera Tunnel entrances only (tools/build_poi.py).
 # the «Метки» menu: group -> (title, point types). Every group can be switched off; there is no «all» entry
-FILTER_GROUPS = {
-    "buildings": ("Здания", ("fortress", "artifact", "portal", "raid_boss")),
-    "dungeons": ("Подземелья", ("dungeon",)),
-    "rifts": ("Пространственные разломы", ("direct_portal", "tunnel")),  # tunnel: the passes into the Silentera tunnel
-    "merchants": ("Торговцы", ("merchant", "coin_merchant", "vendor")),
-    "teleports": ("Телепорты", ("teleport",)),
-    "services": ("Склад, стигмы, почта", ("warehouse", "stigma", "postbox", "bindstone")),
-    "quests": ("Задания", ("quest_give", "quest_important", "quest_event")),
-}
-CAPITALS = {"110010000", "120010000"}  # Elysium, Pandaemonium
-SHOWN_TYPES = ("teleport", "bindstone", "warehouse", "merchant", "coin_merchant", "vendor", "stigma", "postbox",
-               "fortress", "artifact", "dungeon", "tunnel", "portal", "raid_boss", "direct_portal")
-QUEST_TYPES = ("quest_give", "quest_important", "quest_event")  # NPCs with quests (the «Задания» entry of the menu)
 BIG_TYPES = {"teleport", "bindstone"}  # drawn larger than the rest
 # landmarks drawn this many times the usual size: siege fortresses and the way into the Silentera tunnel
 # +85 %, dungeon entrances +50 %, artifacts +25 %
@@ -67,7 +55,6 @@ SPLIT_ROW = 4  # icons per row when a group is laid out side by side
 SEARCH_PLACEHOLDER = "Найти: NPC, район"
 LABELS_MIN_WIDTH = 1300  # px the zone must take on screen before area names are drawn
 LABELS_ZOOM_WIDTH = 4000  # px before the «zoom» names (camps, gates, small places) are drawn too
-LABEL_LEVELS = ("main", "zoom")
 PIN = theme.ACCENT
 PLACE_ICON = 34  # px of the blue X that marks a place from the chat, as on the game's map
 # a point found by the search or reached from «Рядом», and a place from the chat, blink this long so the eye
@@ -83,32 +70,6 @@ PULSE_DIM = 0.45
 PULSE_STILL = 1.2
 OTHER_PIN = theme.PLACE
 BG_RGB = tuple(int(theme.SURFACE[i : i + 2], 16) for i in (1, 3, 5))
-
-
-@dataclass(frozen=True)
-class Place:
-    map_id: str
-    x: float  # game coordinates
-    y: float
-    label: str
-    note: str = ""  # «12:03 Nick: message» for pins from the chat
-
-
-@dataclass(frozen=True)
-class Zone:
-    map_id: str
-    name: str
-    path: Path
-    size: int
-    kx: tuple[float, float]
-    ky: tuple[float, float]
-    labels: tuple[tuple[float, float, str, str], ...] = ()  # area names: (image x, image y, text, level)
-    layers: tuple[tuple[int, str, Path], ...] = ()  # Abyss layer id, display name and map image
-    label_layers: tuple[int | None, ...] = ()  # the Abyss layer of each label (same order), None: every layer
-    side: str = ""  # "dark" (Asmodian), "light" (Elyos), "" a zone both sides share (maps.json, from the client)
-
-    def to_image(self, x: float, y: float) -> tuple[float, float]:
-        return self.kx[0] * y + self.kx[1], self.ky[0] * x + self.ky[1]
 
 
 def pulse_icon(path: Path, size: int, brightness: float, master: tk.Misc):
@@ -142,71 +103,6 @@ def load_icon(path: Path, size: int, master: tk.Misc):
             return ImageTk.PhotoImage(image, master=master)
     except OSError:
         return None
-
-
-def load_zones(maps_dir: Path, names: dict[str, str]) -> dict[str, Zone]:
-    """data/maps/maps.json -> {map id: Zone}. Missing or broken data gives {}."""
-    try:
-        index = json.loads((Path(maps_dir) / "maps.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    labels = load_labels(Path(maps_dir) / "labels.tsv")
-    label_layers = load_label_layers(Path(maps_dir) / "labels.tsv")
-    zones = {}
-    for map_id, info in index.items():
-        path = Path(maps_dir) / info["file"]
-        if path.is_file():
-            kx, ky = tuple(info["x"]), tuple(info["y"])
-            zones[map_id] = Zone(
-                map_id, names.get(map_id, map_id), path, int(info["size"]), kx, ky,
-                tuple((kx[0] * gy + kx[1], ky[0] * gx + ky[1], text, level)
-                      for gx, gy, text, level in labels.get(map_id, [])),
-                tuple((int(layer["id"]), layer.get("name", f"Слой {layer['id']}"), Path(maps_dir) / layer["file"])
-                      for layer in info.get("layers", []) if (Path(maps_dir) / layer["file"]).is_file()),
-                tuple(label_layers.get(map_id, [])),
-                info.get("side", "") if info.get("side", "") in SIDES else "",
-            )
-    return zones
-
-
-def load_labels(path: Path) -> dict[str, list[tuple[float, float, str, str]]]:
-    """labels.tsv (tools/build_labels.py, the client's own area names) -> {map id: [(game x, game y, text,
-    level), ...]}; level «main» is drawn on the whole map, «zoom» closer in; «|» in a name is a line break."""
-    zones: dict[str, list] = {}
-    try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return {}
-    for line in lines:
-        parts = line.split("\t")
-        if line.startswith("#") or len(parts) not in (5, 6) or parts[1] not in LABEL_LEVELS:
-            continue
-        try:
-            zones.setdefault(parts[0], []).append((float(parts[2]), float(parts[3]), parts[4].replace("|", "\n"),
-                                                   parts[1]))
-        except ValueError:
-            continue
-    return zones
-
-
-def load_label_layers(path: Path) -> dict[str, list[int | None]]:
-    """The optional 6th column of labels.tsv (tools/assign_abyss_layers.py): the Abyss layer of each label, in the
-    same order as load_labels gives them; None where a label has no layer."""
-    zones: dict[str, list[int | None]] = {}
-    try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return {}
-    for line in lines:
-        parts = line.split("	")
-        if line.startswith("#") or len(parts) not in (5, 6) or parts[1] not in LABEL_LEVELS:
-            continue
-        try:
-            float(parts[2]), float(parts[3])
-        except ValueError:
-            continue
-        zones.setdefault(parts[0], []).append(int(parts[5]) if len(parts) == 6 and parts[5].isdigit() else None)
-    return zones
 
 
 class MapView(ttk.Frame):

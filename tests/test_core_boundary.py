@@ -13,12 +13,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE_GROUPS = {
-    "chat": ["tailer", "parser", "matcher", "series", "alerts"],
+    "chat": ["tailer", "parser", "matcher", "series", "alerts", "categories"],
     "notify": ["notify_center", "alert_bridge", "notify_settings"],
     "schedule": ["reminders", "schedule_view", "schedule_custom", "schedule_update"],
     "bestiary": ["bestiary_labels", "bestiary_classify", "bestiary_store", "search_worker"],
-    "map": ["poi"],
-    "items": ["specs", "recipes", "catalog"],
+    "map": ["poi", "zones"],
+    "items": ["specs", "recipes", "catalog", "browser"],
     "settings": ["config"],
     "update": ["updater", "selfupdate"],
     "telegram": ["tgbatch"],
