@@ -17,7 +17,6 @@ from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
 from watcher.snapshot import capture_widget
 from watcher.soon_tab import COMING_SOON, ComingSoonTab
 from watcher.win_sizing import primary_button_down
-from core.chat.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
 from core.items.catalog import WatchItem, is_listed, load_item_names, load_link_names, load_watch_items
@@ -28,7 +27,7 @@ from watcher.schedule_tab import (LEADS, ScheduleTab, bell_key, end_of, lead_lab
                                   to_local)
 from core.schedule.schedule_view import next_events
 from watcher.errlog import log_exception
-from core.chat.matcher import Matcher, highlight_segments
+from core.chat.matcher import highlight_segments
 from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
 from watcher.gamecheck import game_running
@@ -49,11 +48,9 @@ from watcher.version import APP_NAME, REPO, VERSION, build_label
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
 from core.map.poi import PoiStore
-from core.chat.parser import ChatMessage, display_text, parse_line, places_in
-from core.chat.series import SeriesTracker
+from core.chat.session import QUIET, LogFeed, WatchSession
 from core.items.recipes import load_recipes, with_recipe
 from core.items.specs import load_specs
-from core.chat.tailer import LogTailer
 from watcher.tooltip import SpecTooltip
 
 SIZING_POLL_MS = 40  # while the window edge is dragged, how often the mouse button is checked
@@ -127,25 +124,22 @@ class App:
         self.icons_dir = data_dir / "icons"
         self.specs = load_specs(data_dir / "item_specs.json.gz")
         self.recipes = load_recipes(data_dir / "recipes.json.gz")  # empty until the recipe data is added
-        self.matcher = Matcher(
-            self.cfg.keywords,
-            self.cfg.cooldown_sec,
-            watch_items=self._checked_items(),
-            mode=self.cfg.search_mode,
-        )
         self.notifier = Notifier(self.cfg.sound_path, volume=self.cfg.sound_volume)
         if self.cfg.react_sec not in REACT_CHOICES.values():
             self.cfg.react_sec = DEFAULT_REACT_SEC  # e.g. the removed «выкл» (0) from an older config
-        self.tracker = AlertTracker(self.cfg.react_sec)
-        self._toasted_alerts: set[int] = set()  # SN-4: alerts already shown in a toast
-        self.series = SeriesTracker()
+        # the watching itself (matching, alerts, repeat series, place pins) is the portable core.chat.session
+        self.session = WatchSession(
+            self.item_names, self.map_names, self.quest_names, keywords=self.cfg.keywords,
+            watch_items=self._checked_items(), mode=self.cfg.search_mode, cooldown_sec=self.cfg.cooldown_sec,
+            alert_mode=self.cfg.alert_mode, react_sec=self.cfg.react_sec,
+        )
+        self.matcher, self.tracker, self.series = self.session.matcher, self.session.tracker, self.session.series
         self.zones = load_zones(data_dir / "maps", self.map_names)
         self.places: deque[Place] = deque(maxlen=MAX_PLACES)  # place links seen in «Поиск группы»
-        self.tailer: LogTailer | None = None
+        self.log_feed: LogFeed | None = None
         self.running = False
         self._after_id: str | None = None
         self._rows = 0
-        self._scan_history = False
         self._last_game_check = 0.0
         self._tooltip_after: str | None = None
         self._build_ui()
@@ -657,11 +651,9 @@ class App:
 
     def _accept(self, alert_id: int) -> None:
         """Accept an alert and every other waiting alert of the same series (same player and match)."""
-        done = []
-        for accepted in (alert_id, *sorted(self.series.accept(alert_id))):
-            if self.tracker.accept(accepted):
-                self.feed.mark(accepted, "accepted")
-                done.append(accepted)
+        done = self.session.accept(alert_id)
+        for accepted in done:
+            self.feed.mark(accepted, "accepted")
         self.alert_bridge.alerts_done(done)
 
     def _on_toast_action(self, event: Notification, action: str) -> None:
@@ -693,9 +685,8 @@ class App:
             self._open_notification(event)
 
     def _on_popup_ack(self) -> None:
-        accepted = self.tracker.accept_all()
+        accepted = self.session.accept_all()
         for alert_id in accepted:
-            self.series.accept(alert_id)
             self.feed.mark(alert_id, "accepted")
         self.alert_bridge.alerts_done(accepted)
         self._after_alert_change()
@@ -715,7 +706,7 @@ class App:
         while hasattr(self, "_install_results") and not self._install_results.empty():
             self._on_install_result(*self._install_results.get_nowait())
         current = time.monotonic() if now is None else now
-        expired = self.tracker.expire(current)
+        expired = self.session.expire(current)
         for alert_id in expired:
             self.feed.mark(alert_id, "missed")
         self.alert_bridge.alerts_done(expired)
@@ -1062,21 +1053,20 @@ class App:
         if self._game_closed():
             return
         self.running = True
-        self.tailer = None
-        self._scan_history = self.cfg.history_min > 0
+        self.log_feed = None
         self.start_btn.configure(text="Stop", style="Danger.TButton")
-        if self._scan_history:
+        if self.cfg.history_min > 0:
             self.feed.show_empty("hourglass-medium", f"Читаю историю за {self.cfg.history_min} мин…", loading=True)
             self.root.update_idletasks()  # paint «reading» before the (blocking) read
         self._tick()
 
     def stop(self) -> None:
         self.running = False
-        self.series.reset()
+        self.session.stop()
         if self._after_id is not None:
             self.root.after_cancel(self._after_id)
             self._after_id = None
-        self.tailer = None
+        self.log_feed = None
         self.start_btn.configure(text="Start", style="Accent.TButton")
         self._set_status("Остановлен")
         self._feed_empty_state()
@@ -1105,19 +1095,11 @@ class App:
         if time.monotonic() - self._last_game_check >= GAME_CHECK_SEC and self._game_closed():
             return
         path = self.cfg.chat_log_path()
-        history: list[str] | None = None
         try:
-            if self.tailer is None:
-                tailer = LogTailer(str(path))
-                tailer.start_at_end()
-                self.tailer = tailer
-                if self._scan_history:
-                    since = datetime.now() - timedelta(minutes=self.cfg.history_min)
-                    history = tailer.read_backlog(since)
-                    self._scan_history = False
-            lines = self.tailer.read_new_lines()
+            if self.log_feed is None:
+                self.log_feed = LogFeed(str(path), self.cfg.history_min)
+            history, lines = self.log_feed.poll()
         except FileNotFoundError:
-            self.tailer = None
             self._set_status(f"Chat.log не найден: {path}")
             self._schedule(RETRY_MS)
             return
@@ -1142,14 +1124,10 @@ class App:
 
     def _show_history(self, lines: list[str]) -> None:
         """Matches from before Start: listed in the feed, but no sound, no alert, not counted."""
-        now = time.monotonic()
-        for line in lines:
-            msg = parse_line(line, self.item_names, maps=self.map_names, quests=self.quest_names)
-            if msg is not None:
-                self._remember_places(msg)
-                hits = self.matcher.check(msg, now)
-                if hits:
-                    self.feed.add(msg, hits)
+        batch = self.session.history(lines, time.monotonic())
+        self.places.extend(batch.places)
+        for entry in batch.entries:
+            self.feed.add(entry.msg, entry.hits)
         self.feed.add_note(f"— выше история за {self.cfg.history_min} мин, ниже новые сообщения —")
 
     def _show_settings(self, open_: bool) -> None:
@@ -1216,11 +1194,6 @@ class App:
         self.cfg.map_side = side
         save_config(self.config_path, self.cfg)
 
-    def _remember_places(self, msg: ChatMessage) -> None:
-        note = f"{msg.time[11:16]}  {msg.nick}: {display_text(msg.text)}"
-        for label, (map_id, x, y) in places_in(msg.text):
-            self.places.append(Place(map_id, x, y, label, note))
-
     def _open_place(self, map_id: str, x: float, y: float, label: str) -> None:
         """Click on a place link: the zone map centred on it, with the other places from the chat."""
         self._hide_tooltip()
@@ -1248,41 +1221,21 @@ class App:
 
     def _process(self, lines: list[str]) -> None:
         now = time.monotonic()
-        matched: list[tuple[ChatMessage, list[str]]] = []
-        for line in lines:
-            msg = parse_line(line, self.item_names, maps=self.map_names, quests=self.quest_names)
-            if msg is None:
-                continue
-            self._remember_places(msg)
-            hits = self.matcher.check(msg, now)
-            if hits:
-                matched.append((msg, hits))
-        if not matched:
-            return
         nag = self.cfg.alert_mode == "nag"
-        loud: list[tuple[ChatMessage, list[str]]] = []
-        for msg, hits in matched:
-            if not nag:
-                self.tracker.add(msg, hits, now, nag=False)
-                self.feed.add(msg, hits, animate_new=True)
-                loud.append((msg, hits))
-            elif self.series.is_silent(msg, hits, now):
-                # a repeat of a series the user already accepted: show it, no alarm
-                self.tracker.add(msg, hits, now, nag=False)
-                self.series.record(msg, hits, now)
-                self.feed.add(msg, hits, quiet=True, animate_new=True)
-            else:
-                alert_id = self.tracker.add(msg, hits, now, nag=True)
-                self.series.record(msg, hits, now, alert_id)
-                self.feed.add(msg, hits, alert_id, animate_new=True)
-                self.feed.set_countdown(self.tracker.remaining(now))
-                loud.append((msg, hits))
+        self.session.set_alert_mode(self.cfg.alert_mode)
+        batch = self.session.process(lines, now)
+        self.places.extend(batch.places)
+        if not batch.entries:
+            return
+        for entry in batch.entries:
+            self.feed.add(entry.msg, entry.hits, entry.alert_id, quiet=entry.kind == QUIET, animate_new=True)
+            if entry.alert_id is not None:
+                self.feed.set_countdown(self.session.remaining(now))
+        loud = batch.loud
         if loud:
             # SN-4: one toast per batch; standard mode beeps through the center (its per-source sound rule),
             # nag mode keeps the alarm's looping sound and the toast offers «Принять»
-            waiting = [alert_id for alert_id in self.tracker.pending_ids if alert_id not in self._toasted_alerts]
-            self._toasted_alerts.update(waiting)
-            self.alert_bridge.chat_match(waiting, [(msg.nick, msg.text, hits) for msg, hits in loud], nag=nag)
+            self.alert_bridge.chat_match(batch.announce, [(msg.nick, msg.text, hits) for msg, hits in loud], nag=nag)
         if loud and nag:
             self.alarm.trigger(loud, popup=self.cfg.nag_popup and OVERLAY_POPUP_ENABLED)
         self._update_counters()
