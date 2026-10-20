@@ -1364,6 +1364,9 @@ class App:
                                  parent=self.root)
             return
         current = self._current_exe()
+        if not can_install(current):  # never replace python.exe or the local build, whatever reached the queue
+            self.status_var.set("")
+            return
         try:
             install(current, Path(a))
         except OSError as exc:

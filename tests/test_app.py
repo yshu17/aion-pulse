@@ -1464,9 +1464,12 @@ def test_new_release_offers_install_only_with_the_stable_asset_and_asks_before_d
         asset = {"url": "https://github.com/x/y/Pulse.exe", "size": 3, "sha256": "a" * 64}
         app._on_release_result((("v9.9.9", "https://github.com/x/y/releases/tag/v9.9.9"), asset))
         assert app._release_note is not None and app._release_asset == asset  # the toast offers «Обновить сейчас»
-        asked, started = [], []
+        asked, started, errors, installed = [], [], [], []
         monkeypatch.setattr(module.messagebox, "askyesno", lambda *a, **k: asked.append(a) or False)
+        monkeypatch.setattr(module.messagebox, "showerror", lambda *a, **k: errors.append(a))  # no real dialogs
         monkeypatch.setattr(module, "download", lambda *a, **k: started.append(a))  # no network in tests
+        monkeypatch.setattr(module, "install", lambda *a, **k: installed.append(a))  # never touch real files
+        monkeypatch.setattr(app, "_current_exe", lambda: tmp_path / "Pulse.exe")
         app._ask_install()
         assert asked and started == [] and not app._install_busy  # the user said no: nothing downloads
         monkeypatch.setattr(module.messagebox, "askyesno", lambda *a, **k: True)
@@ -1474,6 +1477,10 @@ def test_new_release_offers_install_only_with_the_stable_asset_and_asks_before_d
         assert started and app._install_busy  # the user said yes: the download starts (stubbed here)
         app._install_busy = False
         app._on_install_result("error", "test", "")  # the failure path shows a message, nothing is replaced
+        assert errors and installed == []
+        app._on_install_result("ready", str(tmp_path / "Pulse.update"), "")  # source run: not frozen, no swap
+        assert installed == []
+        assert app._install_results.get(timeout=5)[0] == "ready"  # the stubbed download thread finished; drained
     finally:
         root.destroy()
 
