@@ -1,11 +1,12 @@
-"""ADR-001 step 1: the core modules stay free of Tk, of the screens and of Windows-only shell code.
+"""ADR-001: the core package stays free of Tk, of the program and of Windows-only shell code.
 
-Core = modules that the future launcher needs (see docs/ADR-001-core-package.md, section 11 for the groups). They may
-import the standard library and each other. Since step 2 no core module reads the bundled data by itself: names and
-paths come in as parameters (`parser` gets map and quest names from `catalog.load_link_names`).
+Core = `core/<group>/<module>.py`, the logic the future launcher needs (docs/ADR-001-core-package.md, section 11).
+It imports the standard library and other `core` modules only; names and paths come in as parameters. The old names
+`watcher.<module>` are aliases of the same module objects, so existing imports and monkeypatching keep working.
 """
 
 import ast
+import importlib
 import sys
 from pathlib import Path
 
@@ -19,9 +20,7 @@ CORE_GROUPS = {
     "items": ["specs", "recipes"],
     "telegram": ["tgbatch"],
 }
-CORE = [module for group in CORE_GROUPS.values() for module in group]
-ALLOWED_WATCHER = set(CORE)
-FORBIDDEN_TOP = {"tkinter", "PIL", "ctypes", "winsound", "winreg"}  # screens and Windows-only shell stay outside
+FORBIDDEN_TOP = {"tkinter", "PIL", "ctypes", "winsound", "winreg", "watcher"}
 
 
 def imported_modules(path: Path) -> list[str]:
@@ -34,17 +33,24 @@ def imported_modules(path: Path) -> list[str]:
     return names
 
 
-def test_core_modules_do_not_import_tk_or_windows_shell():
-    for module in CORE:
-        names = imported_modules(ROOT / "watcher" / f"{module}.py")
-        assert not [n for n in names if n.split(".")[0] in FORBIDDEN_TOP], module
+def core_files() -> list[Path]:
+    return sorted((ROOT / "core").rglob("*.py"))
 
 
-def test_core_modules_import_only_core_or_stdlib():
-    for module in CORE:
-        names = imported_modules(ROOT / "watcher" / f"{module}.py")
-        local = [n.split(".")[1] for n in names if n.startswith("watcher.") and len(n.split(".")) > 1]
-        extra = [name for name in local if name not in ALLOWED_WATCHER]
-        assert not extra, f"{module} imports screen or shell code: {extra}"
-        third = {n.split(".")[0] for n in names if not n.startswith("watcher")} - set(sys.stdlib_module_names)
-        assert not third, f"{module} needs packages outside the standard library: {third}"
+def test_every_core_module_is_in_its_group():
+    found = {(p.parent.name, p.stem) for p in core_files() if p.stem != "__init__"}
+    assert found == {(group, module) for group, modules in CORE_GROUPS.items() for module in modules}
+
+
+def test_core_imports_only_the_standard_library_and_core():
+    for path in core_files():
+        names = imported_modules(path)
+        assert not [n for n in names if n.split(".")[0] in FORBIDDEN_TOP], path
+        third = {n.split(".")[0] for n in names} - set(sys.stdlib_module_names) - {"core", "__future__"}
+        assert not third, f"{path} needs packages outside the standard library: {third}"
+
+
+def test_old_watcher_names_are_the_same_module_objects():
+    for group, modules in CORE_GROUPS.items():
+        for module in modules:
+            assert importlib.import_module(f"watcher.{module}") is importlib.import_module(f"core.{group}.{module}")
