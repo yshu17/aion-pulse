@@ -1,4 +1,4 @@
-from watcher.parser import ChatMessage, clean_text, parse_line
+from core.chat.parser import ChatMessage, clean_text, parse_line
 
 MAPS = {"220070000": "Келькмарос", "210050000": "Ингисон"}  # passed in: the core reads no data files
 QUESTS = {"2058": "Уничтожение повстанцев Ривара"}
@@ -93,7 +93,7 @@ def test_clean_text_with_names():
 
 
 # --- any channel (for «Весь чат») -------------------------------------------------
-from watcher.parser import parse_any_line  # noqa: E402
+from core.chat.parser import parse_any_line  # noqa: E402
 
 
 def test_any_line_player_in_channel():
@@ -155,14 +155,14 @@ def test_any_line_keeps_name_color_and_verb():
 
 
 def test_clean_text_place_quest_where_recipe_and_smileys():
-    from watcher.parser import clean_text
+    from core.chat.parser import clean_text
 
     names = {"155007142": "Рецепт: клик", "186000163": "Монета"}
     text = (
         "[cmd:x;y]??? Форт [pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Место;999 1 2 0 0] "
         "кв [quest:2058] лег [where:sweet bunny] [recipe:155007142;0] [item_ex:186000163;Tw] го? ??"
     )
-    from watcher.parser import display_text
+    from core.chat.parser import display_text
 
     assert display_text(clean_text(text, names, maps=MAPS, quests=QUESTS)) == (
         "Форт <Место · Келькмарос> <Место> кв <Задание: Уничтожение повстанцев Ривара> лег <sweet bunny> "
@@ -171,14 +171,14 @@ def test_clean_text_place_quest_where_recipe_and_smileys():
 
 
 def test_pos_link_at_line_start_is_not_a_channel():
-    from watcher.parser import parse_any_line
+    from core.chat.parser import parse_any_line
 
     line = parse_any_line("2026.10.09 14:52:29 : [pos:Место;220070000 1 2 0 0] тут", maps=MAPS)
     assert line.channel is None and line.text == "⟪Место · Келькмарос¦220070000 1 2⟫ тут"
 
 
 def test_message_cut_inside_a_link():
-    from watcher.parser import clean_text
+    from core.chat.parser import clean_text
 
     text = "[where:Вступай в легион][where:Окунись в PVE!!!] [where:Любой лвл!!!Г "
     assert clean_text(text) == "⟪Вступай в легион⟫⟪Окунись в PVE!!!⟫ ⟪Любой лвл!!!Г…⟫"
@@ -186,13 +186,13 @@ def test_message_cut_inside_a_link():
 
 
 def test_unknown_quest_keeps_number():
-    from watcher.parser import clean_text
+    from core.chat.parser import clean_text
 
     assert clean_text("кв [quest:99999999]") == "кв ⟪Задание 99999999⟫"
 
 
 def test_place_link_keeps_coordinates():
-    from watcher.parser import clean_text, split_place
+    from core.chat.parser import clean_text, split_place
 
     text = clean_text("[pos:Место;220070000 2010.1 1315.8 0.0 0] [pos:Босс;0 210050000 978.8 1265.0 0.0 0]", maps=MAPS)
     links = [part.split("⟫")[0] for part in text.split("⟪")[1:]]

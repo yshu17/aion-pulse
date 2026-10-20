@@ -48,7 +48,7 @@ def test_game_maps_follow_the_client_zonemap_framing():
 
 
 def test_points_follow_the_zone_transform(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store)
@@ -153,7 +153,7 @@ def test_browse_zone_from_picker_with_chat_pins(root):
 
 
 def test_fixed_point_set_without_gathering_or_quests(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
@@ -177,7 +177,7 @@ def test_fixed_point_set_without_gathering_or_quests(root):
 def test_point_card_and_nearby(root):
     from types import SimpleNamespace
 
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
@@ -212,7 +212,7 @@ def test_point_card_and_nearby(root):
 
 
 def test_map_search_points_and_areas(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
@@ -266,7 +266,7 @@ def test_last_two_zoom_levels_split_groups_into_icons_side_by_side(root):
     import math
 
     from watcher.mapview import MAX_ZOOM, ZOOM_STEP
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
@@ -310,7 +310,7 @@ def test_selected_point_pulses_slowly_without_a_ring(root):
     """User, 13.10: no ring; the selected icon pulses (soft grow / shrink, dimmer small phase) while it is selected;
     the chat's place still blinks, slower; with animations off the icon is just drawn larger."""
     from watcher import mapview as mv
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
@@ -351,7 +351,7 @@ def test_selected_point_pulses_slowly_without_a_ring(root):
 
 
 def test_side_switch_shows_that_sides_fortress_npcs_and_quest_givers(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     saved = []
@@ -383,7 +383,7 @@ def test_small_game_icons_are_scaled_up_to_the_wanted_size(root):
 
 
 def test_teleporters_and_kisks_from_the_game_files(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     view = MapView(root, zones(), poi=store, icons_dir=resource_root() / "data" / "maps" / "icons")
@@ -396,7 +396,7 @@ def test_teleporters_and_kisks_from_the_game_files(root):
 
 
 def test_quest_givers_toggle_and_card_lists_quests(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
 
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     saved = []
@@ -508,7 +508,7 @@ def test_zoom_jumps_when_motion_is_off(root):
 def test_npc_search_runs_in_the_background_and_builds_cards_in_batches(root, tmp_path, monkeypatch):
     """The map stays responsive: the search is answered by a thread, the result cards appear tick by tick."""
     import watcher.mapview as module
-    from watcher.search_worker import SearchWorker
+    from core.bestiary.search_worker import SearchWorker
 
     class FakeStore:
         def __init__(self, path): pass
@@ -573,7 +573,7 @@ def test_clear_all_removes_pins_areas_search_and_results(root):
 
 def test_every_npc_point_of_elysium_and_the_new_zones_is_on_its_map():
     """Elysium's points were partly off its picture (market, port); the new zones are framed around their NPCs."""
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
     found = zones()
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     for map_id in ("110010000", "110020000", "120020000", "110070000", "120080000"):
@@ -586,7 +586,7 @@ def test_every_npc_point_of_elysium_and_the_new_zones_is_on_its_map():
 
 
 def test_abyss_points_and_area_names_belong_to_one_layer():
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
     zone = zones()["400010000"]
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     assert all(p.layer in (1, 2, 3) for p in store.in_zone("400010000", set(store.types), "", None))
@@ -637,7 +637,7 @@ def test_marks_menu_switches_kinds_of_points_without_an_all_entry(root):
 
 
 def test_marks_filter_hides_the_chosen_kinds_and_is_restored_from_config(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     window = MapView(root, zones(), poi=store, hidden_groups=["merchants", "buildings", "dungeons"])
     assert not {"merchant", "coin_merchant", "vendor", "fortress", "dungeon"} & window.layers
@@ -659,7 +659,7 @@ def test_toolbar_is_at_the_left_and_the_theme_switch_is_gone(root):
 
 
 def test_dungeons_rifts_and_quests_are_menu_entries_and_the_check_box_is_gone(root):
-    from watcher.poi import PoiStore
+    from core.map.poi import PoiStore
     store = PoiStore.load(resource_root() / "data" / "maps" / "poi.json")
     assert store.types["direct_portal"]["name"] == "Пространственный разлом"
     window = MapView(root, zones(), poi=store, hidden_groups=["rifts"])
@@ -677,7 +677,7 @@ def test_dungeons_rifts_and_quests_are_menu_entries_and_the_check_box_is_gone(ro
 
 def test_icon_groups_do_not_change_while_the_map_is_dragged():
     """Dragging at one zoom must not merge, split or move icons: the cells are laid out from the map's origin."""
-    from watcher.poi import Poi, cluster
+    from core.map.poi import Poi, cluster
 
     points = [Poi("z", "merchant", 100 + 37 * i % 211, 200 + 53 * i % 197, 0, 0, f"p{i}") for i in range(60)]
     zoom, radius = 0.45, 36.0

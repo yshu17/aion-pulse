@@ -20,7 +20,7 @@ from watcher.catalog import CATEGORY_ORDER, WatchItem
 from watcher.catalog import resource_root
 from watcher.ui_icons import IconSet
 from watcher.hint import Hint
-from watcher.matcher import normalize
+from core.chat.matcher import normalize
 
 ROW_H = 62  # 56 px icon + gap
 GROUP_H = 42

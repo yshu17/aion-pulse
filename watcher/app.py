@@ -17,18 +17,18 @@ from watcher.bestiary_widgets import keep_pane_cursor, refresh_pointer_cursor
 from watcher.snapshot import capture_widget
 from watcher.soon_tab import COMING_SOON, ComingSoonTab
 from watcher.win_sizing import primary_button_down
-from watcher.alerts import AlertTracker
+from core.chat.alerts import AlertTracker
 from watcher.allchat import AllChatView
 from watcher.bestiary_view import BestiaryView
 from watcher.catalog import (WatchItem, is_listed, load_item_names, load_link_names, load_watch_items, local_bestiary_dir,
                              resource_root)
 from watcher.config import OVERLAY_POPUP_ENABLED, read_config, save_config
-from watcher.reminders import due_reminders, occurrences_between
+from core.schedule.reminders import due_reminders, occurrences_between
 from watcher.schedule_tab import (LEADS, ScheduleTab, bell_key, end_of, lead_label, load_events, msk_now, time_range,
                                   to_local)
-from watcher.schedule_view import next_events
+from core.schedule.schedule_view import next_events
 from watcher.errlog import log_exception
-from watcher.matcher import Matcher, highlight_segments
+from core.chat.matcher import Matcher, highlight_segments
 from watcher.alarm import NagAlarm
 from watcher.feed import MatchFeed
 from watcher.gamecheck import game_running
@@ -37,23 +37,23 @@ from watcher.ui_icons import IconSet
 from watcher.hint import Hint
 from watcher.window_icon import load_app_icon
 from watcher.notifier import Notifier, system_sounds
-from watcher.alert_bridge import AlertBridge
-from watcher.notify_center import Notification, NotificationAction, NotificationCenter
-from watcher.notify_settings import apply as apply_notify_settings
+from core.notify.alert_bridge import AlertBridge
+from core.notify.notify_center import Notification, NotificationAction, NotificationCenter
+from core.notify.notify_settings import apply as apply_notify_settings
 from watcher.notify_tab import NotifyPanel
-from watcher.schedule_custom import Custom
-from watcher.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
+from core.schedule.schedule_custom import Custom
+from core.schedule.schedule_update import ARTICLE, decide, http_fetch, known_fingerprint, site_fingerprint
 from watcher.selfupdate import can_install, download, install, pick_asset, remove_old
 from watcher.updater import API as RELEASE_API, latest_release, newer
 from watcher.version import APP_NAME, VERSION, build_label
 from watcher.toasts import ToastManager
 from watcher.mapview import MapView, Place, load_zones
-from watcher.poi import PoiStore
-from watcher.parser import ChatMessage, display_text, parse_line, places_in
-from watcher.series import SeriesTracker
-from watcher.recipes import load_recipes, with_recipe
-from watcher.specs import load_specs
-from watcher.tailer import LogTailer
+from core.map.poi import PoiStore
+from core.chat.parser import ChatMessage, display_text, parse_line, places_in
+from core.chat.series import SeriesTracker
+from core.items.recipes import load_recipes, with_recipe
+from core.items.specs import load_specs
+from core.chat.tailer import LogTailer
 from watcher.tooltip import SpecTooltip
 
 SIZING_POLL_MS = 40  # while the window edge is dragged, how often the mouse button is checked

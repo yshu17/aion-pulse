@@ -1,4 +1,4 @@
-from watcher.notify_center import NotificationAction, NotificationCenter
+from core.notify.notify_center import NotificationAction, NotificationCenter
 
 
 class FakeClock:

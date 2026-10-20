@@ -2,7 +2,7 @@
 
 import json
 
-from watcher.schedule_custom import Custom, check, event_key
+from core.schedule.schedule_custom import Custom, check, event_key
 
 BASE = [{"day": "mon", "start": "02:00", "end": "04:00", "name": "Дер", "kind": "Дер"},
         {"day": "wed", "start": "20:00", "end": "21:00", "name": "1x1", "kind": "Арены"}]

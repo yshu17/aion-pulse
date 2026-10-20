@@ -1,7 +1,7 @@
 import threading
 import time
 
-from watcher.search_worker import SearchWorker
+from core.bestiary.search_worker import SearchWorker
 
 
 class SlowStore:

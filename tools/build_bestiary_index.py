@@ -19,9 +19,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from watcher.bestiary_classify import MAIN_ONLY_ZONES, above_max_level, is_main_npc, plan
-from watcher.bestiary_store import DETAIL_DICT
-from watcher.bestiary_labels import faction_for, race_label
+from core.bestiary.bestiary_classify import MAIN_ONLY_ZONES, above_max_level, is_main_npc, plan
+from core.bestiary.bestiary_store import DETAIL_DICT
+from core.bestiary.bestiary_labels import faction_for, race_label
 from tools.build_bestiary_data import SITE_MAP_IDS
 
 

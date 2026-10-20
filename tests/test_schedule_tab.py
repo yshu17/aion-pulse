@@ -152,7 +152,7 @@ def test_kind_filter_hides_events_and_reports_the_choice():
 def test_own_events_can_be_added_edited_and_removed(tmp_path):
     """SN-7: «Добавить событие», a click on an event opens the form with «Удалить»; changes go to schedule_custom.json."""
     import tkinter as tk
-    from watcher.schedule_custom import Custom
+    from core.schedule.schedule_custom import Custom
     root = tk.Tk()
     root.withdraw()
     try:

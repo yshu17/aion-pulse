@@ -16,7 +16,7 @@ from watcher.bestiary_view import BestiaryView
 from watcher.catalog import local_bestiary_dir, resource_root
 from watcher.mapview import MapView, load_zones
 from watcher.catalog import load_link_names
-from watcher.poi import PoiStore
+from core.map.poi import PoiStore
 
 
 def main() -> None:

@@ -3,7 +3,7 @@ import tkinter as tk
 import pytest
 
 from watcher.feed import MatchFeed
-from watcher.parser import ChatMessage
+from core.chat.parser import ChatMessage
 
 
 @pytest.fixture

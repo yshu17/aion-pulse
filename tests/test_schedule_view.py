@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from watcher import schedule_view
+from core.schedule import schedule_view
 
 
 def event(day: str, start: str, end: str, name: str) -> dict:
@@ -90,14 +90,14 @@ def test_schedule_json_events_work_with_the_view():
 
 def test_kinds_keep_the_data_order_and_fall_back_to_the_name():
     """SN-7: the filter offers each kind once, in the order of the data; an event without «kind» is its own kind."""
-    from watcher.schedule_view import kind_of, kinds
+    from core.schedule.schedule_view import kind_of, kinds
     events = [{"name": "1x1", "kind": "Арены"}, {"name": "Дер"}, {"name": "2x2", "kind": "Арены"}]
     assert kind_of(events[1]) == "Дер"
     assert kinds(events) == ["Арены", "Дер"]
 
 
 def test_hidden_kinds_are_filtered_out():
-    from watcher.schedule_view import visible
+    from core.schedule.schedule_view import visible
     events = [{"name": "1x1", "kind": "Арены"}, {"name": "Дер"}]
     assert visible(events, {"Арены"}) == [{"name": "Дер"}]
     assert visible(events, set()) == events
@@ -113,7 +113,7 @@ def test_every_event_in_the_data_file_has_a_kind():
 
 def test_map_for_picks_the_zone_of_the_side():
     """SN-7 «На карте»: an event in two zones opens the zone of the player's side; one zone — that zone; none — None."""
-    from watcher.schedule_view import map_for
+    from core.schedule.schedule_view import map_for
     both = {"name": "Ингисон / Келькмарос", "maps": ["210050000", "220070000"]}
     assert map_for(both, "dark") == "220070000"  # Asmodians: Келькмарос
     assert map_for(both, "light") == "210050000"  # Elyos: Ингисон
@@ -123,7 +123,7 @@ def test_map_for_picks_the_zone_of_the_side():
 
 def test_day_blocks_put_overlaps_on_separate_lanes():
     """Day strip: minutes from midnight (24:00 = 1440) and a lane per overlap; the next free lane is reused."""
-    from watcher.schedule_view import day_blocks
+    from core.schedule.schedule_view import day_blocks
     events = [{"day": "wed", "start": "16:00", "end": "18:00", "name": "Дер"},
               {"day": "wed", "start": "17:00", "end": "18:00", "name": "2x2"},
               {"day": "wed", "start": "18:00", "end": "19:00", "name": "3x3"},
@@ -133,13 +133,13 @@ def test_day_blocks_put_overlaps_on_separate_lanes():
 
 
 def test_day_blocks_cut_an_event_past_midnight_at_the_day_end():
-    from watcher.schedule_view import day_blocks
+    from core.schedule.schedule_view import day_blocks
     assert day_blocks([{"day": "wed", "start": "23:00", "end": "01:00", "name": "Ночь"}])[0][1:] == (1380, 1440, 0)
 
 
 def test_group_of_maps_each_kind_to_its_section():
     """Sections of the schedule: PVP арена, Арена Хаоса и Доблести (the «Арены» kind), Осады, Дерадиконы."""
-    from watcher.schedule_view import group_of
+    from core.schedule.schedule_view import group_of
     assert group_of({"name": "1x1", "kind": "Арены"}) == "Арены Хаоса и Доблести"
     assert group_of({"name": "Дер"}) == "Дерадиконы"
     assert group_of({"name": "Осада Святости"}) == "Осады"
@@ -151,7 +151,7 @@ def test_group_of_maps_each_kind_to_its_section():
 def test_day_label_says_today_or_the_weekday_and_date():
     """Date next to the bell: «Сегодня» for today, else «ВТ 13.10» style."""
     from datetime import datetime
-    from watcher.schedule_view import day_label
+    from core.schedule.schedule_view import day_label
     now = datetime(2026, 10, 13, 20, 0)  # Tuesday
     assert day_label("tue", now, now) == "Сегодня"
     assert day_label("mon", now, now) == "ПН 12.10"
@@ -161,7 +161,7 @@ def test_day_label_says_today_or_the_weekday_and_date():
 def test_server_and_local_clocks_show_both_times():
     """Two clocks: the server (MSK) and this computer; the text is HH:MM:SS."""
     from datetime import datetime, timedelta, timezone
-    from watcher.schedule_view import clock_pair
+    from core.schedule.schedule_view import clock_pair
     utc_now = datetime(2026, 10, 13, 17, 5, 9, tzinfo=timezone.utc)
     server, local = clock_pair(utc_now, timezone(timedelta(hours=2)))
     assert server == "20:05:09" and local == "19:05:09"

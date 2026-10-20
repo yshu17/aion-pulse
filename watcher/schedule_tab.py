@@ -1,7 +1,7 @@
 """The «Расписание» tab (SN-7): what runs now and next, and the events of any weekday.
 
 Event times in data/schedule.json are server time (MSK, UTC+3, no daylight saving). The logic of «what is next»
-works in MSK (watcher/schedule_view.py); the tab shows every time in the computer's local time, as the data file asks.
+works in MSK (core/schedule/schedule_view.py); the tab shows every time in the computer's local time, as the data file asks.
 """
 
 from __future__ import annotations
@@ -17,9 +17,9 @@ from watcher import theme
 from watcher.catalog import resource_root
 from watcher.hint import Hint
 from watcher.ui_icons import IconSet
-from watcher.reminders import DAYS
-from watcher.schedule_custom import Custom, check
-from watcher.schedule_view import (GROUPS, clock_pair, day_label, events_for_day, group_hidden, group_of, groups,
+from core.schedule.reminders import DAYS
+from core.schedule.schedule_custom import Custom, check
+from core.schedule.schedule_view import (GROUPS, clock_pair, day_label, events_for_day, group_hidden, group_of, groups,
                                    kind_of, kinds, map_for, next_events)
 
 MSK = timezone(timedelta(hours=3))
@@ -561,7 +561,7 @@ class TextEditor(tk.Toplevel):
     server's grid is not touched: a line that matches a data event is kept as a removal + an own copy)."""
 
     def __init__(self, tab: ScheduleTab) -> None:
-        from watcher.schedule_custom import parse_text, to_text
+        from core.schedule.schedule_custom import parse_text, to_text
         super().__init__(tab, background=theme.SURFACE, padx=16, pady=12)
         self.tab = tab
         self.title("Расписание текстом")
@@ -592,13 +592,13 @@ class TextEditor(tk.Toplevel):
         ttk.Button(buttons, text="Сохранить", style="Accent.TButton", command=self.save).pack(side="left")
 
     def save(self) -> None:
-        from watcher.schedule_custom import parse_text
+        from core.schedule.schedule_custom import parse_text
         events, problems = parse_text(self.text.get("1.0", "end"))
         if problems:
             self.error.configure(text="; ".join(problems[:3]))
             return
         custom = self.tab.custom
-        from watcher.schedule_custom import event_key
+        from core.schedule.schedule_custom import event_key
         text_keys = {event_key(e) for e in events}
         base_keys = {event_key(e) for e in self.tab.base}
         # server events present in the text stay (no removal); those missing from it are removed; the rest are own

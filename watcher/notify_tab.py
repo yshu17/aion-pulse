@@ -1,5 +1,5 @@
 """SN-5: the notification settings — a compact block of the «Настройки» card (moved from its own tab on 13.10, user
-decision); a thin screen over watcher.notify_settings (the rules live there)."""
+decision); a thin screen over core.notify.notify_settings (the rules live there)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from collections.abc import Callable
 from tkinter import ttk
 
 from watcher import theme
-from watcher.notify_settings import CORNERS, DURATIONS, SOURCES, STACK
+from core.notify.notify_settings import CORNERS, DURATIONS, SOURCES, STACK
 
 SHORT = {"chat": "Чат", "status": "Игра не запущена", "schedule": "Расписание"}
 

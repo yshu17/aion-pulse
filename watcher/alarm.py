@@ -8,8 +8,8 @@ from collections.abc import Callable
 from tkinter import ttk
 
 from watcher import theme
-from watcher.matcher import highlight_segments
-from watcher.parser import ChatMessage, display_text
+from core.chat.matcher import highlight_segments
+from core.chat.parser import ChatMessage, display_text
 from watcher.window_icon import apply_app_icon
 
 BEEP_REPEAT_MS = 1500

@@ -13,9 +13,9 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
-from watcher.bestiary_store import BestiaryStore
-from watcher.search_worker import SearchWorker
-from watcher.bestiary_labels import plural, stat_text
+from core.bestiary.bestiary_store import BestiaryStore
+from core.bestiary.search_worker import SearchWorker
+from core.bestiary.bestiary_labels import plural, stat_text
 from watcher.bestiary_widgets import (
     ProfileHeader, ScrollArea, bind_wheel_tree, keep_pane_cursor, refresh_pointer_cursor, wrap_badges,
 )

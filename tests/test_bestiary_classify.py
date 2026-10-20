@@ -1,4 +1,4 @@
-from watcher.bestiary_classify import above_max_level, plan, stem_key, technical_name
+from core.bestiary.bestiary_classify import above_max_level, plan, stem_key, technical_name
 
 
 def _row(npc_id, name, points=0, level="55", category="monster", drops=0, profile=1, sig=None):
@@ -38,7 +38,7 @@ def test_new_stats_variant_takes_points_and_duplicates_are_service():
 
 
 def test_plural_forms():
-    from watcher.bestiary_labels import plural
+    from core.bestiary.bestiary_labels import plural
     assert [plural(n, "точка", "точки", "точек") for n in (1, 2, 5, 11, 21, 112)] == [
         "1 точка", "2 точки", "5 точек", "11 точек", "21 точка", "112 точек"]
 
@@ -51,7 +51,7 @@ def test_monsters_above_level_55_are_service_records():
 
 
 def test_main_npcs_are_merchants_and_functionaries():
-    from watcher.bestiary_classify import MAIN_ONLY_ZONES, is_main_npc
+    from core.bestiary.bestiary_classify import MAIN_ONLY_ZONES, is_main_npc
     assert is_main_npc("Торговец", "", False) and is_main_npc("Функционер", "", False)
     assert is_main_npc("", "merchant", False) and is_main_npc("Житель", "", True)  # goods make a merchant
     assert is_main_npc("НПС", "postbox", False) and is_main_npc("Житель", "stigma_master", False)  # the client knows better

@@ -3,7 +3,7 @@ import tkinter as tk
 import pytest
 
 from watcher.alarm import NagAlarm
-from watcher.parser import ChatMessage
+from core.chat.parser import ChatMessage
 
 
 class FakeNotifier:

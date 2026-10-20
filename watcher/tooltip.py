@@ -1,4 +1,4 @@
-"""Game-style item tooltip rendered from a spec (see watcher.specs)."""
+"""Game-style item tooltip rendered from a spec (see core.items.specs)."""
 
 import tkinter as tk
 

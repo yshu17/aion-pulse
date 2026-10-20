@@ -1,7 +1,7 @@
 import gzip
 import json
 
-from watcher.recipes import RecipeBook, load_recipes, recipe_block, with_recipe
+from core.items.recipes import RecipeBook, load_recipes, recipe_block, with_recipe
 
 
 def _write(path, recipes):

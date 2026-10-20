@@ -1,5 +1,5 @@
-from watcher.parser import ChatMessage
-from watcher.series import SeriesTracker
+from core.chat.parser import ChatMessage
+from core.chat.series import SeriesTracker
 
 
 def msg(nick="Seller", text="wts"):

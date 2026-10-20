@@ -5,8 +5,8 @@ import tkinter as tk
 from collections.abc import Callable, Mapping
 
 from watcher import theme
-from watcher.matcher import highlight_segments, normalize
-from watcher.parser import LINK_CLOSE, LINK_OPEN, split_place
+from core.chat.matcher import highlight_segments, normalize
+from core.chat.parser import LINK_CLOSE, LINK_OPEN, split_place
 
 ITEM_LINK = re.compile(r"\[([^\[\]]+)\]")
 # item link | place / quest / «where» link (see parser.clean_text)

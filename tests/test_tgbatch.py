@@ -1,4 +1,4 @@
-from watcher.tgbatch import ChatBatcher
+from core.telegram.tgbatch import ChatBatcher
 
 
 def feed(batcher, count, now, start=0):

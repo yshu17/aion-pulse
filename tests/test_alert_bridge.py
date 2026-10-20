@@ -1,7 +1,7 @@
 """SN-4: chat alerts and the «game is not running» status go through the notification center (no Tk here)."""
 
-from watcher.alert_bridge import AlertBridge
-from watcher.notify_center import NotificationCenter
+from core.notify.alert_bridge import AlertBridge
+from core.notify.notify_center import NotificationCenter
 
 
 def make():

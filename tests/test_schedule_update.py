@@ -1,6 +1,6 @@
 """SN-9: has the schedule on the knowledge base changed? Compare the grid picture's name and headers, no parsing of it."""
 
-from watcher.schedule_update import decide, fingerprint, image_url, site_fingerprint
+from core.schedule.schedule_update import decide, fingerprint, image_url, site_fingerprint
 
 PAGE = '<p><img src="https://news.aionempire.net/storage/app/media/schedule-20ru.jpg" alt=""></p>'
 KNOWN = {"image": "schedule-20ru.jpg", "image_etag": '"6a942095-f31b0"', "image_modified": "Sun, 30 Aug 2026 12:22:45 GMT"}

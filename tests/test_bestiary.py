@@ -4,7 +4,7 @@ import gzip
 import json
 
 from tools.build_bestiary_index import build
-from watcher.bestiary_store import BestiaryStore
+from core.bestiary.bestiary_store import BestiaryStore
 
 
 def test_bestiary_index_supports_links_filters_and_locations(tmp_path):
@@ -99,7 +99,7 @@ def test_profile_parser_reads_level_from_hp_bar():
 
 
 def test_factions_normalize_client_case_and_keep_species_separate():
-    from watcher.bestiary_labels import faction_for, race_label
+    from core.bestiary.bestiary_labels import faction_for, race_label
     assert faction_for("PC_Light") == "Элийцы"
     assert faction_for("pc_dark") == "Асмодиане"
     assert faction_for("Drakan") == "Балауры"
@@ -224,7 +224,7 @@ def _view_with_fake_store(tmp_path, delay):
     import tkinter as tk
     from types import SimpleNamespace
     import watcher.bestiary_view as module
-    from watcher.search_worker import SearchWorker
+    from core.bestiary.search_worker import SearchWorker
 
     class FakeStore:
         def __init__(self, path): pass

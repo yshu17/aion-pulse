@@ -3,7 +3,7 @@ import tkinter as tk
 
 import pytest
 
-from watcher.notify_center import NotificationAction, NotificationCenter
+from core.notify.notify_center import NotificationAction, NotificationCenter
 from watcher.toast_native import WorkArea
 from watcher.toasts import ToastManager
 

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from watcher.poi import Poi, PoiStore, cluster
+from core.map.poi import Poi, PoiStore, cluster
 
 Z = "220070000"
 

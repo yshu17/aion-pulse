@@ -1,12 +1,13 @@
 """ADR-001: the core package stays free of Tk, of the program and of Windows-only shell code.
 
 Core = `core/<group>/<module>.py`, the logic the future launcher needs (docs/ADR-001-core-package.md, section 11).
-It imports the standard library and other `core` modules only; names and paths come in as parameters. The old names
-`watcher.<module>` are aliases of the same module objects, so existing imports and monkeypatching keep working.
+It imports the standard library and other `core` modules only; names and paths come in as parameters. The program
+imports it as `core.<group>.<module>`; the old `watcher.<module>` names are gone, and `core/` works copied alone.
 """
 
 import ast
-import importlib
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -50,7 +51,16 @@ def test_core_imports_only_the_standard_library_and_core():
         assert not third, f"{path} needs packages outside the standard library: {third}"
 
 
-def test_old_watcher_names_are_the_same_module_objects():
-    for group, modules in CORE_GROUPS.items():
-        for module in modules:
-            assert importlib.import_module(f"watcher.{module}") is importlib.import_module(f"core.{group}.{module}")
+def test_the_program_keeps_no_copy_or_alias_of_a_core_module():
+    left = [m for modules in CORE_GROUPS.values() for m in modules if (ROOT / "watcher" / f"{m}.py").exists()]
+    assert not left
+
+
+def test_core_works_copied_alone(tmp_path):
+    """The launcher gets core/ only: every module imports in an isolated interpreter that sees just that copy."""
+    shutil.copytree(ROOT / "core", tmp_path / "core", ignore=shutil.ignore_patterns("__pycache__"))
+    modules = [f"core.{group}.{module}" for group, names in CORE_GROUPS.items() for module in names]
+    code = "import importlib, sys\nsys.path.insert(0, '.')\n"  # -I: no project folder, no user site-packages
+    code += "".join(f"importlib.import_module({name!r})\n" for name in modules)
+    result = subprocess.run([sys.executable, "-I", "-c", code], cwd=tmp_path, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

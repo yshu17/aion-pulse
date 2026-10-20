@@ -1,7 +1,7 @@
 import pytest
 
-from watcher.matcher import Matcher, highlight_segments, normalize
-from watcher.parser import ChatMessage
+from core.chat.matcher import Matcher, highlight_segments, normalize
+from core.chat.parser import ChatMessage
 
 
 def msg(text, nick="Nick"):

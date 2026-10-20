@@ -1,5 +1,5 @@
-from watcher.alerts import AlertTracker
-from watcher.parser import ChatMessage
+from core.chat.alerts import AlertTracker
+from core.chat.parser import ChatMessage
 
 
 def msg(nick="A", text="wts"):

@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from watcher.schedule_custom import Custom  # noqa: E402
+from core.schedule.schedule_custom import Custom  # noqa: E402
 
 DATA = ROOT / "data" / "schedule.json"
 CUSTOM = ROOT / "schedule_custom.json"

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from watcher.specs import load_specs, parse_spec
+from core.items.specs import load_specs, parse_spec
 
 FIXTURE = Path(__file__).parent / "fixtures" / "item_110600968.html"
 

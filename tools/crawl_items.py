@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from watcher.specs import parse_spec  # noqa: E402
+from core.items.specs import parse_spec  # noqa: E402
 
 SITE = "https://kb.aionempire.com"
 HEADERS = {"User-Agent": "Mozilla/5.0", "Cookie": "PLAY_LANG=ru"}

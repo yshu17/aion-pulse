@@ -21,16 +21,16 @@ from tkinter import ttk
 
 from watcher import theme
 from watcher.catalog import resource_root
-from watcher.bestiary_store import BestiaryStore
-from watcher.bestiary_labels import plural
+from core.bestiary.bestiary_store import BestiaryStore
+from core.bestiary.bestiary_labels import plural
 from watcher.bestiary_widgets import bind_wheel_tree
-from watcher.search_worker import SearchWorker
+from core.bestiary.search_worker import SearchWorker
 from watcher.spawn_overlay import enclosing_spawn_circle, paint_spawn_circle
 from watcher.ui_icons import IconSet
 from watcher.hint import Hint
 from watcher.mapcard import NEARBY_TYPES, PointCard
-from watcher.matcher import normalize
-from watcher.poi import Poi, PoiStore, cluster
+from core.chat.matcher import normalize
+from core.map.poi import Poi, PoiStore, cluster
 
 MIN_ZOOM_STEPS = 0  # zoom = fit * 1.25 ** steps
 MAX_ZOOM = 4.0  # screen px per map px

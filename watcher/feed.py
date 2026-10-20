@@ -13,7 +13,7 @@ from tkinter import ttk
 from watcher import theme
 from watcher.catalog import resource_root
 from watcher.emptystate import EmptyState
-from watcher.parser import ChatMessage
+from core.chat.parser import ChatMessage
 from watcher.textview import BottomAnchor, CopyMenu, ItemLinker
 from watcher.ui_icons import IconSet
 

@@ -12,7 +12,7 @@ from PIL import Image, ImageTk
 
 from watcher import theme
 from watcher.catalog import resource_root
-from watcher.notify_center import Notification, NotificationCenter
+from core.notify.notify_center import Notification, NotificationCenter
 from watcher.toast_native import WindowsDesktop, WorkArea
 
 KINDS = {"match": "chat", "warn": "warning", "game": "warning", "boss": "siege"}

@@ -7,7 +7,7 @@ from pathlib import Path
 from tkinter import ttk
 
 from watcher import theme
-from watcher.bestiary_labels import stat_text
+from core.bestiary.bestiary_labels import stat_text
 
 
 def keep_pane_cursor(split: tk.PanedWindow, *panes: tk.Misc) -> None:

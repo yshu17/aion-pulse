@@ -10,8 +10,8 @@ from watcher import theme
 from watcher.catalog import resource_root
 from watcher.emptystate import EmptyState
 from watcher.ui_icons import IconSet
-from watcher.parser import ChatLine, parse_any_line
-from watcher.tailer import LogTailer
+from core.chat.parser import ChatLine, parse_any_line
+from core.chat.tailer import LogTailer
 from watcher.textview import ITEM_COLOR, BottomAnchor, CopyMenu, ItemLinker
 
 POLL_MS = 500

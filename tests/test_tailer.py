@@ -1,6 +1,6 @@
 import pytest
 
-from watcher.tailer import LogTailer
+from core.chat.tailer import LogTailer
 
 
 def write(path, text, mode="ab"):
@@ -109,7 +109,7 @@ def test_read_backlog_skips_lines_without_time_and_empty_file(tmp_path):
 
 
 def test_over_long_line_is_dropped_and_reading_resumes_at_next_newline(tmp_path, monkeypatch):
-    import watcher.tailer as tailer_module
+    import core.chat.tailer as tailer_module
 
     monkeypatch.setattr(tailer_module, "MAX_LINE_BYTES", 100)
     path = tmp_path / "Chat.log"
@@ -127,7 +127,7 @@ def test_over_long_line_is_dropped_and_reading_resumes_at_next_newline(tmp_path,
 
 
 def test_short_lines_never_count_as_dropped(tmp_path, monkeypatch):
-    import watcher.tailer as tailer_module
+    import core.chat.tailer as tailer_module
 
     monkeypatch.setattr(tailer_module, "MAX_LINE_BYTES", 100)
     path = tmp_path / "Chat.log"

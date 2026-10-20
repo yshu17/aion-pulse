@@ -111,7 +111,7 @@ def test_missing_log_shows_status_and_deactivate_stops_polling(root, tmp_path):
 
 def test_category_of_player_lines():
     from watcher.allchat import category
-    from watcher.parser import parse_any_line
+    from core.chat.parser import parse_any_line
 
     def cat(rest):
         return category(parse_any_line(f"2026.10.08 12:00:00 : {rest}"))
@@ -129,7 +129,7 @@ def test_category_of_player_lines():
 
 def test_system_toggle_shows_only_info_and_errors():
     from watcher.allchat import is_notice
-    from watcher.parser import parse_any_line
+    from core.chat.parser import parse_any_line
 
     def notice(rest):
         return is_notice(parse_any_line(f"2026.10.08 12:00:00 : {rest}"))
