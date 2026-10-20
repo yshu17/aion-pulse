@@ -82,6 +82,8 @@ GAME_CHECK_SEC = 5  # while watching: how often to look for the game process
 REMIND_MS = 30_000  # SN-8: how often the schedule reminders are checked
 REMIND_REPEAT_S = 180  # SN-8: an unanswered reminder comes back after this, until the event ends
 MISSED_DAYS = 7  # SN-8: events missed while the program was closed are reported for at most a week back
+COVER_POLL_MS = 30  # «Настройки» open / close: how often to look whether the window under the picture is drawn
+COVER_MAX_S = 0.6  # the picture goes away after this at the latest
 CHIP_STYLES = {"live": "Live.Chip.TLabel", "warn": "Warn.Chip.TLabel", "error": "Error.Chip.TLabel",
                "idle": "Idle.Chip.TLabel"}
 
@@ -323,6 +325,8 @@ class App:
         # While the window is dragged its content is taken out of the layout (every page keeps its state); it comes
         # back once the size settles. Tk re-lays out every page on each size step: 150-300 ms per step, 2-3 fps.
         self._frozen_tabs: dict | None = None
+        self._cover: tk.Label | None = None  # one still picture of the window while «Настройки» opens or closes
+        self._cover_after: str | None = None
         self._thaw_after: str | None = None
         self._last_size: tuple[int, int] | None = None
         root.bind("<Configure>", self._on_root_resize, add="+")
@@ -588,6 +592,7 @@ class App:
         still picture of it: nothing is laid out or drawn while the edge moves."""
         if self._frozen_tabs is not None:
             return
+        self._uncover()  # a settings change in progress shows at once: the whole window is about to become one picture
         picture = capture_widget(self.root)
         self._frozen_tabs = [(widget, widget.pack_info()) for widget in self.root.pack_slaves()]
         for widget, _info in self._frozen_tabs:
@@ -603,6 +608,11 @@ class App:
 
     def settle_layout(self) -> None:
         """Bring the tab pages back at once (tests and anything that reads the layout right after a resize)."""
+        self._settle_resize()
+        if getattr(self, "_cover", None) is not None:
+            self._uncover()
+
+    def _settle_resize(self) -> None:
         if getattr(self, "_thaw_after", None) is not None:  # not set yet while the window is still being built
             self.root.after_cancel(self._thaw_after)
         self._thaw_tabs()
@@ -1107,7 +1117,7 @@ class App:
 
     def _show_settings(self, open_: bool) -> None:
         """The «Настройки» card under the control row; the button names the action and shows the state."""
-        self.settle_layout()  # the window content must be in place before the card is packed after the control row
+        self._settle_resize()  # the window content must be in place before the card is packed after the control row
         if open_:
             self.settings_card.pack(fill="x", padx=16, pady=(0, 6), after=self.control_bar)
         else:
@@ -1118,47 +1128,58 @@ class App:
         )
 
     def _toggle_settings(self) -> None:
-        self.settle_layout()
+        self._settle_resize()  # a click during an earlier open / close keeps its picture: the last state shows
         self.cfg.settings_open = not self.cfg.settings_open
         self._fold_settings(self.cfg.settings_open)
         save_config(self.config_path, self.cfg)
 
     def _fold_settings(self, open_: bool) -> None:
-        """Grow or shrink the «Настройки» card over theme.MOTION base (ease-out); a click in the middle reverses from
-        the current height; ends natural-height when open, unpacked when closed; instant with reduce_motion."""
-        from watcher.motion import animate
-        card = self.settings_card
-        running = getattr(self, "_fold", None)
-        if running is not None:
-            running.cancel()
-        shown = bool(card.winfo_manager())
-        current = card.winfo_height() if shown else 0
-        if open_ and not shown:
-            card.pack_propagate(False)
-            card.configure(height=1)
-            self._show_settings(True)
-        self.settings_btn.configure(image=self.ui_icons.get("caret-up" if open_ else "caret-down", "muted", 16))
-        card.update_idletasks()
-        card.pack_propagate(False)
-        target = card.winfo_reqheight() if open_ else 0
-        if open_:  # the natural height: measure with propagation for a moment
-            card.pack_propagate(True)
-            card.update_idletasks()
-            target = card.winfo_reqheight()
-            card.pack_propagate(False)
-            card.configure(height=max(1, current))
+        """Open or close the «Настройки» card the way the window edge is dragged: a still picture of the whole window
+        stays on top while the card is added or removed and the pages lay out underneath, once; then the picture goes
+        and the finished window shows in one step — no half-drawn frames, no pages jumping."""
+        self._cover_window()
+        self._show_settings(open_)
+        self._schedule_uncover(time.monotonic() + COVER_MAX_S)
 
-        def finish() -> None:
-            self._fold = None
-            if open_:
-                card.pack_propagate(True)
-            else:
-                self._show_settings(False)
-                card.pack_propagate(True)
+    def _cover_window(self) -> None:
+        """Lay one picture of the window over its content (kept if a cover is already there)."""
+        if self._cover is not None or self._frozen_tabs is not None:
+            return
+        picture = capture_widget(self.root)
+        if picture is None:  # no picture (not Windows, window hidden): the change simply shows at once
+            return
+        from PIL import ImageTk
+        cover = tk.Label(self.root, background=theme.BG, borderwidth=0, anchor="nw")
+        cover.photo = ImageTk.PhotoImage(picture, master=self.root)
+        cover.configure(image=cover.photo)
+        cover.place(x=0, y=0, relwidth=1, relheight=1)
+        cover.lift()
+        self._cover = cover
 
-        self._fold = animate(card, current, target, theme.MOTION["base"],
-                             lambda h: card.configure(height=max(1, int(h))),
-                             enabled=not self.cfg.reduce_motion, done=finish)
+    def _schedule_uncover(self, deadline: float) -> None:
+        if self._cover_after is not None:
+            self.root.after_cancel(self._cover_after)
+        self._cover_after = self.root.after(COVER_POLL_MS, lambda: self._uncover_when_drawn(deadline))
+
+    def _uncover_when_drawn(self, deadline: float) -> None:
+        """Take the picture away once the pages under it are laid out and the map has drawn (or after COVER_MAX_S)."""
+        self._cover_after = None
+        self.root.update_idletasks()
+        busy = getattr(self.map_view, "_render_after", None) is not None
+        if busy and time.monotonic() < deadline:
+            self._cover_after = self.root.after(COVER_POLL_MS, lambda: self._uncover_when_drawn(deadline))
+            return
+        self._uncover()
+
+    def _uncover(self) -> None:
+        if self._cover_after is not None:
+            self.root.after_cancel(self._cover_after)
+            self._cover_after = None
+        if self._cover is None:
+            return
+        self._cover.destroy()
+        self._cover = None
+        self.root.after_idle(lambda: refresh_pointer_cursor(self.root))
 
     def _on_map_filters(self, hidden: list[str]) -> None:
         self.cfg.map_hidden = [g for g in hidden if g != "quests"]

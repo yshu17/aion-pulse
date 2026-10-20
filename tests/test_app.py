@@ -1312,39 +1312,41 @@ def test_schedule_update_check_tells_and_remembers(tmp_path):
         app._on_close()
 
 
-def test_settings_card_folds_smoothly_and_ends_in_the_right_state(tmp_path):
-    """Motion: «Настройки» grows and shrinks over ~200 ms; it ends natural-height when open and unpacked when closed;
-    a click in the middle reverses from the current height; with reduce_motion it is instant."""
+def _wait_uncovered(root, app, limit=1.5):
     import time
 
+    deadline = time.monotonic() + limit
+    while app._cover is not None and time.monotonic() < deadline:
+        root.update()
+        time.sleep(0.01)
+
+
+def test_settings_open_and_close_behind_one_still_picture_like_a_window_resize(tmp_path):
+    """«Настройки» opens and closes the way the window edge is dragged: a still picture of the window covers it while
+    the card changes and the pages lay out underneath; then the finished window shows in one step."""
     root, app, _calls, _say = _nag_app(tmp_path)
     try:
         root.deiconify()
         root.geometry("1200x800")
-        app.cfg.reduce_motion = False
-        app.cfg.settings_open = True  # ui:3 starts folded; this test opens it first
-        app._show_settings(True)
         root.update()
-        full = app.settings_card.winfo_height()
-        app._toggle_settings()  # close
-        assert app.settings_card.winfo_manager() and app._fold is not None  # still shrinking
-        deadline = time.monotonic() + 0.5
-        while time.monotonic() < deadline:
-            root.update()
-            time.sleep(0.01)
-        assert not app.settings_card.winfo_manager()
         app._toggle_settings()  # open
-        heights = [int(str(app.settings_card.cget("height")))]  # the first frame: the card starts low
-        deadline = time.monotonic() + 0.5
-        while time.monotonic() < deadline:
-            root.update()
-            heights.append(app.settings_card.winfo_height())
-            time.sleep(0.01)
-        assert heights[0] < full and abs(heights[-1] - full) <= 2
-        app.cfg.reduce_motion = True
-        app._toggle_settings()
+        assert app.settings_card.winfo_manager() == "pack"  # the change is made at once, under the picture
+        assert app._cover is not None and app._cover.winfo_manager() == "place"  # the picture covers the window
+        _wait_uncovered(root, app)
         root.update()
-        assert not app.settings_card.winfo_manager()
+        assert app._cover is None
+        assert app.control_bar.winfo_y() < app.settings_card.winfo_y() < app.tabs.winfo_y()
+        app._toggle_settings()  # close, and open again before the picture is gone: one picture, last state wins
+        cover = app._cover
+        app._toggle_settings()
+        assert app._cover is cover and app.settings_card.winfo_manager() == "pack"
+        app._freeze_window()  # a window resize takes over: the settings picture goes first
+        assert app._cover is None
+        app._thaw_tabs()
+        app._toggle_settings()
+        app.settle_layout()  # tests and anything reading the layout get the final window at once
+        assert app._cover is None and not app.settings_card.winfo_manager()
+        assert not app.cfg.settings_open
     finally:
         app._on_close()
 
