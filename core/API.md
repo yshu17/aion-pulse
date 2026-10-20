@@ -2,6 +2,12 @@
 
 Version 2.0.0 (`core.__version__`). A major change means a method or its data changed incompatibly.
 
+Typed contract: [api.schema.json](api.schema.json) (JSON Schema of every method's params and result) and
+[api.d.ts](api.d.ts) (TypeScript types for the launcher), both generated from `core/schema.py` by
+`python tools/build_core_schema.py`. File formats of the data folder: [DATA.md](DATA.md).
+Standalone build: `build_core.bat` makes `build/core/pulse-core.exe` (about 10 MB, no Python needed) and checks it
+with `tools/check_core_exe.py`.
+
 ## How to call
 
 From Python: `CoreApi().call(method, params)` returns plain JSON data.

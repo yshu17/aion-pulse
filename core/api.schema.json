@@ -1,0 +1,2274 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Pulse core API 2.0.0",
+ "$defs": {
+  "ChatMessage": {
+   "type": "object",
+   "properties": {
+    "time": {
+     "type": "string"
+    },
+    "nick": {
+     "type": "string"
+    },
+    "text": {
+     "type": "string"
+    },
+    "raw": {
+     "type": "string"
+    },
+    "item_ids": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "time",
+    "nick",
+    "text",
+    "raw",
+    "item_ids"
+   ]
+  },
+  "ChatLine": {
+   "type": "object",
+   "properties": {
+    "time": {
+     "type": "string"
+    },
+    "channel": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "nick": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "text": {
+     "type": "string"
+    },
+    "raw": {
+     "type": "string"
+    },
+    "item_ids": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "color": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "verb": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "time",
+    "channel",
+    "nick",
+    "text",
+    "raw",
+    "item_ids",
+    "color",
+    "verb"
+   ]
+  },
+  "Entry": {
+   "type": "object",
+   "properties": {
+    "msg": {
+     "$ref": "#/$defs/ChatMessage"
+    },
+    "hits": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "kind": {
+     "type": "string"
+    },
+    "alert_id": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "msg",
+    "hits",
+    "kind",
+    "alert_id"
+   ]
+  },
+  "Batch": {
+   "type": "object",
+   "properties": {
+    "entries": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Entry"
+     }
+    },
+    "places": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Place"
+     }
+    },
+    "announce": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    }
+   },
+   "required": [
+    "entries",
+    "places",
+    "announce"
+   ]
+  },
+  "Place": {
+   "type": "object",
+   "properties": {
+    "map_id": {
+     "type": "string"
+    },
+    "x": {
+     "type": "number"
+    },
+    "y": {
+     "type": "number"
+    },
+    "label": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "map_id",
+    "x",
+    "y",
+    "label",
+    "note"
+   ]
+  },
+  "Segment": {
+   "type": "object",
+   "properties": {
+    "text": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "hit": {
+     "type": "boolean"
+    },
+    "item_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "grade": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "place": {
+     "anyOf": [
+      {
+       "type": "array",
+       "items": {}
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "text",
+    "kind",
+    "hit",
+    "item_id",
+    "grade",
+    "place"
+   ]
+  },
+  "Poi": {
+   "type": "object",
+   "properties": {
+    "zone": {
+     "type": "string"
+    },
+    "type": {
+     "type": "string"
+    },
+    "x": {
+     "type": "number"
+    },
+    "y": {
+     "type": "number"
+    },
+    "gx": {
+     "type": "number"
+    },
+    "gy": {
+     "type": "number"
+    },
+    "name": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    },
+    "side": {
+     "type": "string"
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "zone",
+    "type",
+    "x",
+    "y",
+    "gx",
+    "gy",
+    "name",
+    "note",
+    "side",
+    "layer"
+   ]
+  },
+  "Notice": {
+   "type": "object",
+   "properties": {
+    "source": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "title": {
+     "type": "string"
+    },
+    "text": {
+     "type": "string"
+    },
+    "actions": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    }
+   },
+   "required": [
+    "source",
+    "kind",
+    "title",
+    "text",
+    "actions"
+   ]
+  },
+  "Notification": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "integer"
+    },
+    "source": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "title": {
+     "type": "string"
+    },
+    "text": {
+     "type": "string"
+    },
+    "actions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/NotificationAction"
+     }
+    },
+    "created_at": {
+     "type": "string"
+    },
+    "repeat_after": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "repeat_key": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "sound": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "id",
+    "source",
+    "kind",
+    "title",
+    "text",
+    "actions",
+    "created_at",
+    "repeat_after",
+    "repeat_key",
+    "sound"
+   ]
+  },
+  "NotificationAction": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string"
+    },
+    "label": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "label"
+   ]
+  },
+  "Reminder": {
+   "type": "object",
+   "properties": {
+    "key": {
+     "type": "string"
+    },
+    "title": {
+     "type": "string"
+    },
+    "text": {
+     "type": "string"
+    },
+    "event": {
+     "type": "object"
+    },
+    "start": {
+     "type": "string"
+    },
+    "end": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "key",
+    "title",
+    "text",
+    "event",
+    "start",
+    "end"
+   ]
+  },
+  "Ok": {
+   "type": "object",
+   "properties": {
+    "ok": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "ok"
+   ]
+  },
+  "VersionInfo": {
+   "type": "object",
+   "properties": {
+    "version": {
+     "type": "string"
+    },
+    "methods": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "version",
+    "methods"
+   ]
+  },
+  "DataCounts": {
+   "type": "object",
+   "properties": {
+    "items": {
+     "type": "integer"
+    },
+    "watch_items": {
+     "type": "integer"
+    },
+    "zones": {
+     "type": "integer"
+    },
+    "points": {
+     "type": "integer"
+    },
+    "events": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "items",
+    "watch_items",
+    "zones",
+    "points",
+    "events"
+   ]
+  },
+  "Accepted": {
+   "type": "object",
+   "properties": {
+    "accepted": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    }
+   },
+   "required": [
+    "accepted"
+   ]
+  },
+  "Missed": {
+   "type": "object",
+   "properties": {
+    "missed": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    }
+   },
+   "required": [
+    "missed"
+   ]
+  },
+  "SessionState": {
+   "type": "object",
+   "properties": {
+    "found": {
+     "type": "integer"
+    },
+    "reacted": {
+     "type": "integer"
+    },
+    "missed": {
+     "type": "integer"
+    },
+    "pending": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    },
+    "remaining": {
+     "type": "object"
+    }
+   },
+   "required": [
+    "found",
+    "reacted",
+    "missed",
+    "pending",
+    "remaining"
+   ]
+  },
+  "PollResult": {
+   "type": "object",
+   "properties": {
+    "history": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Batch"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "batch": {
+     "$ref": "#/$defs/Batch"
+    }
+   },
+   "required": [
+    "history",
+    "batch"
+   ]
+  },
+  "ItemsList": {
+   "type": "object",
+   "properties": {
+    "sections": {
+     "type": "object"
+    },
+    "matches": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "types": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "grades": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "sections",
+    "matches",
+    "types",
+    "grades"
+   ]
+  },
+  "ZoneInfo": {
+   "type": "object",
+   "properties": {
+    "map_id": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "side": {
+     "type": "string"
+    },
+    "size": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "map_id",
+    "name",
+    "side",
+    "size"
+   ]
+  },
+  "Nearest": {
+   "type": "object",
+   "properties": {
+    "point": {
+     "$ref": "#/$defs/Poi"
+    },
+    "metres": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "point",
+    "metres"
+   ]
+  },
+  "ClusterIcon": {
+   "type": "object",
+   "properties": {
+    "x": {
+     "type": "number"
+    },
+    "y": {
+     "type": "number"
+    },
+    "type": {
+     "type": "string"
+    },
+    "count": {
+     "type": "integer"
+    },
+    "points": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Poi"
+     }
+    }
+   },
+   "required": [
+    "x",
+    "y",
+    "type",
+    "count",
+    "points"
+   ]
+  },
+  "ScheduleEvent": {
+   "type": "object",
+   "properties": {
+    "day": {
+     "type": "string"
+    },
+    "start": {
+     "type": "string"
+    },
+    "end": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "group": {
+     "type": "string"
+    },
+    "color": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "maps": {
+     "type": "object"
+    }
+   },
+   "required": [
+    "day",
+    "start",
+    "end",
+    "name"
+   ]
+  },
+  "Upcoming": {
+   "type": "object",
+   "properties": {
+    "event": {
+     "$ref": "#/$defs/ScheduleEvent"
+    },
+    "start": {
+     "type": "string"
+    },
+    "end": {
+     "type": "string"
+    },
+    "until": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "event",
+    "start",
+    "end",
+    "until"
+   ]
+  },
+  "MissedEvent": {
+   "type": "object",
+   "properties": {
+    "event": {
+     "$ref": "#/$defs/ScheduleEvent"
+    },
+    "start": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "event",
+    "start"
+   ]
+  },
+  "EventCount": {
+   "type": "object",
+   "properties": {
+    "events": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "events"
+   ]
+  },
+  "ParsedSchedule": {
+   "type": "object",
+   "properties": {
+    "events": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/ScheduleEvent"
+     }
+    },
+    "errors": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "events",
+    "errors"
+   ]
+  },
+  "SiteCheck": {
+   "type": "object",
+   "properties": {
+    "status": {
+     "type": "string"
+    },
+    "value": {
+     "type": "string"
+    },
+    "notice": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Notice"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "status",
+    "value",
+    "notice"
+   ]
+  },
+  "BestiaryInfo": {
+   "type": "object",
+   "properties": {
+    "version": {
+     "type": "integer"
+    },
+    "coverage": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    }
+   },
+   "required": [
+    "version",
+    "coverage"
+   ]
+  },
+  "BestiaryPage": {
+   "type": "object",
+   "properties": {
+    "rows": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    },
+    "total": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "rows",
+    "total"
+   ]
+  },
+  "BestiaryFilters": {
+   "type": "object",
+   "properties": {
+    "races": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "ranks": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "zones": {
+     "type": "array",
+     "items": {}
+    }
+   },
+   "required": [
+    "races",
+    "ranks",
+    "zones"
+   ]
+  },
+  "Release": {
+   "type": "object",
+   "properties": {
+    "tag": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "url": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "newer": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "tag",
+    "url",
+    "newer"
+   ]
+  },
+  "Chip": {
+   "type": "object",
+   "properties": {
+    "short": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "short",
+    "kind"
+   ]
+  },
+  "EmptyFeed": {
+   "type": "object",
+   "properties": {
+    "title": {
+     "type": "string"
+    },
+    "hint": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "title",
+    "hint"
+   ]
+  },
+  "Acknowledged": {
+   "type": "object",
+   "properties": {
+    "ok": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "ok"
+   ]
+  },
+  "NotifyState": {
+   "type": "object",
+   "properties": {
+    "queued": {
+     "type": "integer"
+    },
+    "unread": {
+     "type": "integer"
+    },
+    "dnd": {
+     "type": "boolean"
+    },
+    "sources": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "queued",
+    "unread",
+    "dnd",
+    "sources"
+   ]
+  },
+  "Settings": {
+   "type": "object",
+   "properties": {
+    "config": {
+     "type": "object"
+    },
+    "notice": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "config",
+    "notice"
+   ]
+  },
+  "Queued": {
+   "type": "object",
+   "properties": {
+    "queued": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "queued"
+   ]
+  },
+  "TelegramPoll": {
+   "type": "object",
+   "properties": {
+    "messages": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "queued": {
+     "type": "integer"
+    },
+    "dropped": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "messages",
+    "queued",
+    "dropped"
+   ]
+  }
+ },
+ "methods": {
+  "bestiary.areas": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "npc_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "npc_id"
+    ]
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "type": "object"
+    }
+   }
+  },
+  "bestiary.detail": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "npc_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "npc_id"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "type": "object"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "bestiary.filters": {
+   "params": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/BestiaryFilters"
+   }
+  },
+  "bestiary.open": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/BestiaryInfo"
+   }
+  },
+  "bestiary.regions": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "map_id": {
+      "type": "string"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  },
+  "bestiary.search": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "category": {
+      "type": "string"
+     },
+     "race": {
+      "type": "string"
+     },
+     "rank": {
+      "type": "string"
+     },
+     "map_id": {
+      "type": "string"
+     },
+     "offset": {
+      "type": "integer"
+     },
+     "limit": {
+      "type": "integer"
+     },
+     "min_level": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "max_level": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "region": {
+      "type": "string"
+     },
+     "order": {
+      "type": "string"
+     },
+     "hide_low": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/BestiaryPage"
+   }
+  },
+  "chat.empty_feed": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "running": {
+      "type": "boolean"
+     },
+     "mode": {
+      "type": "string"
+     },
+     "keywords": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "watch_items": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/EmptyFeed"
+   }
+  },
+  "chat.parse": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "line": {
+      "type": "string"
+     },
+     "any": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "line"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/ChatMessage"
+     },
+     {
+      "$ref": "#/$defs/ChatLine"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "chat.search_hint": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "mode": {
+      "type": "string"
+     },
+     "keywords": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "watch_items": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "string"
+   }
+  },
+  "chat.segments": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "hits": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/Segment"
+    }
+   }
+  },
+  "chat.status_chip": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Chip"
+   }
+  },
+  "core.version": {
+   "params": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/VersionInfo"
+   }
+  },
+  "data.open": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "data_dir": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "data_dir"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/DataCounts"
+   }
+  },
+  "items.list": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "query": {
+      "type": "string"
+     },
+     "filter": {
+      "type": "object"
+     },
+     "checked": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/ItemsList"
+   }
+  },
+  "items.spec": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "item_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "item_id"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "type": "object"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "map.cluster": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "map_id": {
+      "type": "string"
+     },
+     "scale": {
+      "type": "number"
+     },
+     "dx": {
+      "type": "number"
+     },
+     "dy": {
+      "type": "number"
+     },
+     "radius": {
+      "type": "number"
+     },
+     "types": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "side": {
+      "type": "string"
+     },
+     "layer": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "map_id"
+    ]
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/ClusterIcon"
+    }
+   }
+  },
+  "map.nearest": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "map_id": {
+      "type": "string"
+     },
+     "x": {
+      "type": "number"
+     },
+     "y": {
+      "type": "number"
+     },
+     "type": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "map_id",
+     "x",
+     "y",
+     "type"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/Nearest"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "map.search": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "map_id": {
+      "type": "string"
+     },
+     "query": {
+      "type": "string"
+     },
+     "types": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "side": {
+      "type": "string"
+     },
+     "layer": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "map_id"
+    ]
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/Poi"
+    }
+   }
+  },
+  "map.zones": {
+   "params": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/ZoneInfo"
+    }
+   }
+  },
+  "notice.release": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "found": {
+      "anyOf": [
+       {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "can_install": {
+      "type": "boolean"
+     },
+     "current": {
+      "type": "string"
+     },
+     "seen": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "found",
+     "current"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/Notice"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "notice.route": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "action": {
+      "type": "string"
+     },
+     "key": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "release_key": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "schedule_key": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "action"
+    ]
+   },
+   "result": {
+    "type": "string"
+   }
+  },
+  "notice.schedule_check": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "status": {
+      "type": "string"
+     },
+     "value": {
+      "type": "string"
+     },
+     "known": {
+      "type": "string"
+     },
+     "seen": {
+      "type": "string"
+     },
+     "manual": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "status",
+     "value"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/Notice"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "notify.acknowledge": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Acknowledged"
+   }
+  },
+  "notify.next": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/Notification"
+    }
+   }
+  },
+  "notify.post": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "source": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "actions": {
+      "type": "array",
+      "items": {}
+     },
+     "sound": {
+      "type": "boolean"
+     },
+     "repeat_after": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "source",
+     "kind",
+     "title"
+    ]
+   },
+   "result": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/Notification"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  },
+  "notify.settings": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "off": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "mute": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "dnd": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/Ok"
+   }
+  },
+  "notify.snooze": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "integer"
+     },
+     "seconds": {
+      "type": "number"
+     },
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "seconds"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Acknowledged"
+   }
+  },
+  "notify.state": {
+   "params": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/NotifyState"
+   }
+  },
+  "schedule.custom_add": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "event": {
+      "$ref": "#/$defs/ScheduleEvent"
+     }
+    },
+    "required": [
+     "event"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/EventCount"
+   }
+  },
+  "schedule.custom_add_days": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "event": {
+      "$ref": "#/$defs/ScheduleEvent"
+     },
+     "days": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": [
+     "event",
+     "days"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/EventCount"
+   }
+  },
+  "schedule.custom_edit": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "old": {
+      "$ref": "#/$defs/ScheduleEvent"
+     },
+     "new": {
+      "$ref": "#/$defs/ScheduleEvent"
+     }
+    },
+    "required": [
+     "old",
+     "new"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/EventCount"
+   }
+  },
+  "schedule.custom_open": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/EventCount"
+   }
+  },
+  "schedule.custom_remove": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "event": {
+      "$ref": "#/$defs/ScheduleEvent"
+     }
+    },
+    "required": [
+     "event"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/EventCount"
+   }
+  },
+  "schedule.day": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "day": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "day"
+    ]
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/ScheduleEvent"
+    }
+   }
+  },
+  "schedule.missed": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "belled": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/ScheduleEvent"
+      }
+     },
+     "last": {
+      "type": "string"
+     },
+     "now": {
+      "type": "string"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/MissedEvent"
+    }
+   }
+  },
+  "schedule.next": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "now": {
+      "type": "string"
+     },
+     "limit": {
+      "type": "integer"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/Upcoming"
+    }
+   }
+  },
+  "schedule.parse_text": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/ParsedSchedule"
+   }
+  },
+  "schedule.reminders": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "belled": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/ScheduleEvent"
+      }
+     },
+     "lead_min": {
+      "type": "integer"
+     },
+     "now": {
+      "type": "string"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "array",
+    "items": {
+     "$ref": "#/$defs/Reminder"
+    }
+   }
+  },
+  "schedule.site_check": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "seen": {
+      "type": "string"
+     },
+     "manual": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/SiteCheck"
+   }
+  },
+  "schedule.to_text": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "events": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/ScheduleEvent"
+      }
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "type": "string"
+   }
+  },
+  "session.accept": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "alert_id": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "alert_id"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Accepted"
+   }
+  },
+  "session.accept_all": {
+   "params": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/Accepted"
+   }
+  },
+  "session.configure": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "keywords": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "watch_items": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "mode": {
+      "type": "string"
+     },
+     "alert_mode": {
+      "type": "string"
+     },
+     "cooldown_sec": {
+      "type": "number"
+     },
+     "react_sec": {
+      "type": "number"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/Ok"
+   }
+  },
+  "session.expire": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "now"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Missed"
+   }
+  },
+  "session.history": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "lines": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "lines",
+     "now"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Batch"
+   }
+  },
+  "session.open_log": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "history_min": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "path"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Ok"
+   }
+  },
+  "session.poll": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "now"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/PollResult"
+   }
+  },
+  "session.process": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "lines": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "lines",
+     "now"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Batch"
+   }
+  },
+  "session.state": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/SessionState"
+   }
+  },
+  "session.stop": {
+   "params": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/Ok"
+   }
+  },
+  "settings.read": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Settings"
+   }
+  },
+  "settings.save": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "values": {
+      "type": "object"
+     }
+    },
+    "required": [
+     "path",
+     "values"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Ok"
+   }
+  },
+  "telegram.add": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "lines": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "lines"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Queued"
+   }
+  },
+  "telegram.poll": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "now": {
+      "type": "number"
+     }
+    },
+    "required": []
+   },
+   "result": {
+    "$ref": "#/$defs/TelegramPoll"
+   }
+  },
+  "update.check": {
+   "params": {
+    "type": "object",
+    "properties": {
+     "body": {
+      "type": "string"
+     },
+     "current": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "body"
+    ]
+   },
+   "result": {
+    "$ref": "#/$defs/Release"
+   }
+  }
+ }
+}
