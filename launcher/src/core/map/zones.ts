@@ -5,6 +5,10 @@
  * A Zone converts game coordinates to picture pixels with `toImage(zone, x, y)`.
  */
 
+import { pyFloat } from "../py";
+
+export { pyFloat };
+
 export const SIDES: Record<string, string> = { dark: "Асмодиане", light: "Элийцы" };
 export const LABEL_LEVELS = ["main", "zoom"];
 
@@ -48,15 +52,6 @@ export interface Zone {
 
 export function toImage(zone: Zone, x: number, y: number): [number, number] {
   return [zone.kx[0] * y + zone.kx[1], zone.ky[0] * x + zone.ky[1]];
-}
-
-/** Python's float(): a number with optional sign, point and exponent, or inf / nan; anything else is not a number. */
-export function pyFloat(text: string): number | null {
-  const t = text.trim();
-  if (/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(t)) return Number(t);
-  if (/^[+-]?(inf|infinity)$/i.test(t)) return t.startsWith("-") ? -Infinity : Infinity;
-  if (/^[+-]?nan$/i.test(t)) return NaN;
-  return null;
 }
 
 function rows(text: string | null): string[][] {

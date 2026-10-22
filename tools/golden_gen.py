@@ -18,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tools"))
 GOLDEN = ROOT / "tests" / "golden"
 
 
@@ -173,6 +174,12 @@ def write_all() -> list[Path]:
                         ("recipes", recipe_cases), ("specs", spec_cases)):
         path = GOLDEN / f"{name}.json"
         path.write_text(json.dumps({"case": build()}, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        written.append(path)
+    import golden_chat
+
+    for name, case in golden_chat.all_cases().items():
+        path = GOLDEN / f"{name}.json"
+        path.write_text(json.dumps({"case": case}, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         written.append(path)
     return written
 

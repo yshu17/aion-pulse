@@ -26,3 +26,10 @@ def test_items_golden_matches_core():
     for name, build in (("browser", golden_gen.browser_cases), ("recipes", golden_gen.recipe_cases),
                         ("specs", golden_gen.spec_cases)):
         assert json.loads(json.dumps(build(), ensure_ascii=False)) == _stored(name), name
+
+
+def test_chat_golden_matches_core():
+    import golden_chat
+
+    for name, case in golden_chat.all_cases().items():
+        assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name
