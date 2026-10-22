@@ -181,10 +181,11 @@ def write_all() -> list[Path]:
     import golden_notify
     import golden_schedule
     import golden_telegram
+    import golden_update
 
     for name, case in {**golden_chat.all_cases(), **golden_notify.all_cases(), **golden_schedule.all_cases(),
                        **golden_map.all_cases(), **golden_bestiary.all_cases(),
-                       **golden_telegram.all_cases()}.items():
+                       **golden_telegram.all_cases(), **golden_update.all_cases()}.items():
         path = GOLDEN / f"{name}.json"
         path.write_text(json.dumps({"case": case}, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         written.append(path)

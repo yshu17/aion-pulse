@@ -62,3 +62,10 @@ def test_telegram_golden_matches_core():
 
     for name, case in golden_telegram.all_cases().items():
         assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name
+
+
+def test_update_golden_matches_core():
+    import golden_update
+
+    for name, case in golden_update.all_cases().items():
+        assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name

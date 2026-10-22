@@ -1,0 +1,625 @@
+{
+ "case": {
+  "consts": [
+   "Pulse.exe",
+   [
+    "github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com"
+   ],
+   ".old"
+  ],
+  "download": [
+   [
+    {
+     "sha256": "",
+     "size": 179205,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "no SHA256 in the release notes"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "",
+     "size": 179205,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    null,
+    {
+     "error": "no SHA256 in the release notes"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "http://github.com/x/Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "http://github.com/x/Pulse.exe"
+    },
+    null,
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "https://evil.example/Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "https://evil.example/Pulse.exe"
+    },
+    null,
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "https://github.com.evil.example/Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "https://github.com.evil.example/Pulse.exe"
+    },
+    null,
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "https://evil@github.com/Pulse.exe"
+    },
+    "179205",
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse4.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "https://evil@github.com/Pulse.exe"
+    },
+    null,
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse4.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "HTTPS://GitHub.com:443/Pulse.exe"
+    },
+    "179205",
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse5.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "HTTPS://GitHub.com:443/Pulse.exe"
+    },
+    null,
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse5.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "https://objects.githubusercontent.com/a/b"
+    },
+    "179205",
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse6.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "https://objects.githubusercontent.com/a/b"
+    },
+    null,
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse6.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179206,
+     "url": "https://release-assets.githubusercontent.com/a"
+    },
+    "179205",
+    {
+     "error": "download is incomplete"
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179206,
+     "url": "https://release-assets.githubusercontent.com/a"
+    },
+    null,
+    {
+     "error": "download is incomplete"
+    },
+    [
+     [
+      65536,
+      179206
+     ],
+     [
+      131072,
+      179206
+     ],
+     [
+      179205,
+      179206
+     ]
+    ],
+    []
+   ],
+   [
+    {
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+     "size": 179205,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "SHA-256 does not match the release notes"
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    []
+   ],
+   [
+    {
+     "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+     "size": 179205,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    null,
+    {
+     "error": "SHA-256 does not match the release notes"
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 0,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    "179205",
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse9.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 0,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    null,
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      0
+     ],
+     [
+      131072,
+      0
+     ],
+     [
+      179205,
+      0
+     ]
+    ],
+    [
+     "Pulse9.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    "179205",
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse10.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 179205,
+     "url": "https://github.com/yshu17/aion-pulse/releases/download/v1/Pulse.exe"
+    },
+    null,
+    {
+     "ok": true
+    },
+    [
+     [
+      65536,
+      179205
+     ],
+     [
+      131072,
+      179205
+     ],
+     [
+      179205,
+      179205
+     ]
+    ],
+    [
+     "Pulse10.exe"
+    ]
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "ftp://github.com/Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "ftp://github.com/Pulse.exe"
+    },
+    null,
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "https:///Pulse.exe"
+    },
+    "179205",
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ],
+   [
+    {
+     "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+     "size": 1,
+     "url": "https:///Pulse.exe"
+    },
+    null,
+    {
+     "error": "update from an untrusted address"
+    },
+    [],
+    []
+   ]
+  ],
+  "payload": {
+   "sha256": "d68d415811f3f43cda83f8607bd16a0e4ec2f0b459b51244a6b547efd44f5b3c",
+   "size": 179205
+  },
+  "pick": [
+   [
+    "{\"assets\": [{\"name\": \"Pulse.exe\", \"browser_download_url\": \"https://github.com/x\", \"size\": 10}], \"body\": \"Что нового\\nSHA256: ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB\\n\"}",
+    {
+     "sha256": "abababababababababababababababababababababababababababababababab",
+     "size": 10,
+     "url": "https://github.com/x"
+    }
+   ],
+   [
+    "{\"assets\": [{\"name\": \"Pulse.exe\", \"browser_download_url\": \"https://github.com/x\", \"size\": \"12\"}], \"body\": \"sha256 = cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"}",
+    {
+     "sha256": "",
+     "size": 12,
+     "url": "https://github.com/x"
+    }
+   ],
+   [
+    "{\"assets\": [{\"name\": \"Pulse.exe\", \"browser_download_url\": \"https://github.com/x\"}], \"body\": \"SHA256=ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\"}",
+    {
+     "sha256": "",
+     "size": 0,
+     "url": "https://github.com/x"
+    }
+   ],
+   [
+    "{\"assets\": [{\"name\": \"Pulse.exe\", \"browser_download_url\": \"https://github.com/x\", \"size\": null}], \"body\": \"SHA256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeef\"}",
+    {
+     "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "size": 0,
+     "url": "https://github.com/x"
+    }
+   ],
+   [
+    "{\"assets\": [{\"name\": \"pulse.exe\", \"browser_download_url\": \"https://github.com/x\"}], \"body\": \"\"}",
+    null
+   ],
+   [
+    "{\"assets\": [{\"name\": \"Pulse.exe\", \"browser_download_url\": \"\"}, {\"name\": \"Pulse.exe\", \"browser_download_url\": \"u2\", \"size\": 3}], \"body\": null}",
+    {
+     "sha256": "",
+     "size": 3,
+     "url": "u2"
+    }
+   ],
+   [
+    "{\"assets\": null}",
+    null
+   ],
+   [
+    "{}",
+    null
+   ],
+   [
+    "{\"assets\": [{\"name\": \"Other.zip\", \"browser_download_url\": \"z\"}]}",
+    null
+   ],
+   [
+    "{\"assets\": [{\"name\": \"Pulse.exe\", \"browser_download_url\": \"u\"}], \"body\": \"SHA256 : 1111111111111111111111111111111111111111111111111111111111111111\\nSHA256: 2222222222222222222222222222222222222222222222222222222222222222\"}",
+    {
+     "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+     "size": 0,
+     "url": "u"
+    }
+   ]
+  ]
+ }
+}
