@@ -1,0 +1,757 @@
+{
+ "case": {
+  "above": [
+   [
+    56,
+    "monster",
+    true
+   ],
+   [
+    56,
+    "npc",
+    false
+   ],
+   [
+    55,
+    "monster",
+    false
+   ],
+   [
+    55,
+    "npc",
+    false
+   ],
+   [
+    "60",
+    "monster",
+    true
+   ],
+   [
+    "60",
+    "npc",
+    false
+   ],
+   [
+    " 70 ",
+    "monster",
+    true
+   ],
+   [
+    " 70 ",
+    "npc",
+    false
+   ],
+   [
+    "x",
+    "monster",
+    false
+   ],
+   [
+    "x",
+    "npc",
+    false
+   ],
+   [
+    null,
+    "monster",
+    false
+   ],
+   [
+    null,
+    "npc",
+    false
+   ],
+   [
+    0,
+    "monster",
+    false
+   ],
+   [
+    0,
+    "npc",
+    false
+   ],
+   [
+    "",
+    "monster",
+    false
+   ],
+   [
+    "",
+    "npc",
+    false
+   ],
+   [
+    "56a",
+    "monster",
+    false
+   ],
+   [
+    "56a",
+    "npc",
+    false
+   ],
+   [
+    100,
+    "monster",
+    true
+   ],
+   [
+    100,
+    "npc",
+    false
+   ]
+  ],
+  "main": [
+   [
+    "Торговец",
+    "",
+    false,
+    true
+   ],
+   [
+    " функционер ",
+    "",
+    false,
+    true
+   ],
+   [
+    "NPC",
+    "Teleport",
+    false,
+    true
+   ],
+   [
+    "NPC",
+    "",
+    true,
+    true
+   ],
+   [
+    "",
+    "",
+    false,
+    false
+   ],
+   [
+    "Монстр",
+    "guard",
+    false,
+    false
+   ],
+   [
+    "",
+    " STIGMA_MASTER",
+    false,
+    true
+   ]
+  ],
+  "plans": [
+   [
+    [
+     {
+      "category": "monster",
+      "drops": 1,
+      "id": "1",
+      "level": 45,
+      "name": "Волк",
+      "points": 3,
+      "profile": 1,
+      "sig": [
+       1,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "2",
+      "level": 45,
+      "name": "волк",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 1,
+      "id": "3",
+      "level": 45,
+      "name": "Волк",
+      "points": 3,
+      "profile": 0,
+      "sig": [
+       1,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "npc",
+      "drops": 0,
+      "id": "4",
+      "level": 50,
+      "name": "Новые характеристики Хранителя Валона",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       5,
+       0
+      ]
+     },
+     {
+      "category": "npc",
+      "drops": 0,
+      "id": "5",
+      "level": 50,
+      "name": "Хранитель Валон",
+      "points": 7,
+      "profile": 1,
+      "sig": [
+       9,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "6",
+      "level": 1,
+      "name": "Test_x",
+      "points": 2,
+      "profile": 0,
+      "sig": [
+       2,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 2,
+      "id": "7",
+      "level": 45,
+      "name": "Волк",
+      "points": 5,
+      "profile": 1,
+      "sig": [
+       4,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 4,
+      "id": "8",
+      "level": "45",
+      "name": "Волк",
+      "points": 3,
+      "profile": 1,
+      "sig": [
+       1,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "npc",
+      "drops": 0,
+      "id": "9",
+      "level": 1,
+      "name": "Новые характеристики Ничто",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "10",
+      "level": null,
+      "name": "Аист",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "11",
+      "level": null,
+      "name": "Аист",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       0,
+       0
+      ]
+     }
+    ],
+    {
+     "2": "7",
+     "4": "5"
+    },
+    [
+     "1",
+     "11",
+     "2",
+     "3",
+     "6"
+    ]
+   ],
+   [
+    [
+     {
+      "category": "monster",
+      "drops": 1,
+      "id": "1",
+      "level": 45,
+      "name": "Волк",
+      "points": 3,
+      "profile": 1,
+      "sig": [
+       1,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "2",
+      "level": 45,
+      "name": "волк",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 1,
+      "id": "3",
+      "level": 45,
+      "name": "Волк",
+      "points": 3,
+      "profile": 0,
+      "sig": [
+       1,
+       0,
+       0
+      ]
+     }
+    ],
+    {
+     "2": "3"
+    },
+    [
+     "2",
+     "3"
+    ]
+   ],
+   [
+    [
+     {
+      "category": "npc",
+      "drops": 0,
+      "id": "4",
+      "level": 50,
+      "name": "Новые характеристики Хранителя Валона",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       5,
+       0
+      ]
+     },
+     {
+      "category": "npc",
+      "drops": 0,
+      "id": "5",
+      "level": 50,
+      "name": "Хранитель Валон",
+      "points": 7,
+      "profile": 1,
+      "sig": [
+       9,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "6",
+      "level": 1,
+      "name": "Test_x",
+      "points": 2,
+      "profile": 0,
+      "sig": [
+       2,
+       0,
+       0
+      ]
+     }
+    ],
+    {
+     "4": "5"
+    },
+    [
+     "6"
+    ]
+   ],
+   [
+    [
+     {
+      "category": "monster",
+      "drops": 0,
+      "id": "2",
+      "level": 45,
+      "name": "волк",
+      "points": 0,
+      "profile": 0,
+      "sig": [
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "category": "monster",
+      "drops": 1,
+      "id": "1",
+      "level": 45,
+      "name": "Волк",
+      "points": 3,
+      "profile": 1,
+      "sig": [
+       1,
+       0,
+       0
+      ]
+     }
+    ],
+    {
+     "2": "1"
+    },
+    [
+     "2"
+    ]
+   ],
+   [
+    [],
+    {},
+    []
+   ]
+  ],
+  "stems": [
+   [
+    "Волк",
+    [
+     "волк"
+    ]
+   ],
+   [
+    "",
+    []
+   ],
+   [
+    "  ",
+    []
+   ],
+   [
+    "123",
+    [
+     "123"
+    ]
+   ],
+   [
+    "Test_mob",
+    [
+     "mob",
+     "test"
+    ]
+   ],
+   [
+    "BAb1_x_lv50",
+    [
+     "bab1",
+     "lv50",
+     "x"
+    ]
+   ],
+   [
+    "Wolf",
+    [
+     "wolf"
+    ]
+   ],
+   [
+    "Страж123",
+    [
+     "страж123"
+    ]
+   ],
+   [
+    "NPC123",
+    [
+     "npc123"
+    ]
+   ],
+   [
+    "Прозрачный NPC open IDStation",
+    [
+     "idstation",
+     "npc",
+     "open",
+     "прозрачны"
+    ]
+   ],
+   [
+    "LF3 элементаль",
+    [
+     "lf3",
+     "элементал"
+    ]
+   ],
+   [
+    "GM Еvent",
+    [
+     "gm",
+     "еvent"
+    ]
+   ],
+   [
+    "Барoшунг",
+    [
+     "барoшунг"
+    ]
+   ],
+   [
+    "Легион II",
+    [
+     "ii",
+     "легион"
+    ]
+   ],
+   [
+    "Страж IV ворот",
+    [
+     "iv",
+     "ворот",
+     "страж"
+    ]
+   ],
+   [
+    "Голем XIV",
+    [
+     "xiv",
+     "голем"
+    ]
+   ],
+   [
+    "Мастер-ключник",
+    [
+     "ключник",
+     "мастер"
+    ]
+   ],
+   [
+    "test",
+    [
+     "test"
+    ]
+   ],
+   [
+    "Тестер",
+    [
+     "тестер"
+    ]
+   ],
+   [
+    "«Молот» (босс)",
+    [
+     "босс",
+     "молот"
+    ]
+   ],
+   [
+    "Ab элементаль",
+    [
+     "ab",
+     "элементал"
+    ]
+   ],
+   [
+    "Страж 123",
+    [
+     "123",
+     "страж"
+    ]
+   ],
+   [
+    "a",
+    [
+     "a"
+    ]
+   ],
+   [
+    "Ёж-12",
+    [
+     "12",
+     "ёж"
+    ]
+   ],
+   [
+    "хранителя Валона",
+    [
+     "валон",
+     "хранител"
+    ]
+   ],
+   [
+    "Хранитель Валон",
+    [
+     "валон",
+     "хранител"
+    ]
+   ],
+   [
+    "Новые Ёжики-123 abc",
+    [
+     "123",
+     "abc",
+     "новы",
+     "ёжик"
+    ]
+   ],
+   [
+    "Оса Ели дуб",
+    [
+     "дуб",
+     "ели",
+     "оса"
+    ]
+   ]
+  ],
+  "technical": [
+   [
+    "Волк",
+    false
+   ],
+   [
+    "",
+    true
+   ],
+   [
+    "  ",
+    true
+   ],
+   [
+    "123",
+    true
+   ],
+   [
+    "Test_mob",
+    true
+   ],
+   [
+    "BAb1_x_lv50",
+    true
+   ],
+   [
+    "Wolf",
+    true
+   ],
+   [
+    "Страж123",
+    true
+   ],
+   [
+    "NPC123",
+    true
+   ],
+   [
+    "Прозрачный NPC open IDStation",
+    true
+   ],
+   [
+    "LF3 элементаль",
+    true
+   ],
+   [
+    "GM Еvent",
+    true
+   ],
+   [
+    "Барoшунг",
+    false
+   ],
+   [
+    "Легион II",
+    false
+   ],
+   [
+    "Страж IV ворот",
+    false
+   ],
+   [
+    "Голем XIV",
+    false
+   ],
+   [
+    "Мастер-ключник",
+    false
+   ],
+   [
+    "test",
+    true
+   ],
+   [
+    "Тестер",
+    false
+   ],
+   [
+    "«Молот» (босс)",
+    false
+   ],
+   [
+    "Ab элементаль",
+    true
+   ],
+   [
+    "Страж 123",
+    false
+   ],
+   [
+    "a",
+    true
+   ],
+   [
+    "Ёж-12",
+    false
+   ]
+  ]
+ }
+}

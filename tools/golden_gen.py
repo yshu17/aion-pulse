@@ -175,16 +175,22 @@ def write_all() -> list[Path]:
         path = GOLDEN / f"{name}.json"
         path.write_text(json.dumps({"case": build()}, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         written.append(path)
+    import golden_bestiary
     import golden_chat
     import golden_map
     import golden_notify
     import golden_schedule
 
     for name, case in {**golden_chat.all_cases(), **golden_notify.all_cases(), **golden_schedule.all_cases(),
-                       **golden_map.all_cases()}.items():
+                       **golden_map.all_cases(), **golden_bestiary.all_cases()}.items():
         path = GOLDEN / f"{name}.json"
         path.write_text(json.dumps({"case": case}, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         written.append(path)
+    golden_bestiary.build_fixture(golden_bestiary.FIXTURE)  # the database the TypeScript store tests read
+    written.append(golden_bestiary.FIXTURE)
+    real = golden_bestiary.write_real()  # local only: the real NPC database is not in the repository
+    if real:
+        written.append(real)
     return written
 
 
