@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Feed } from "./Feed";
 import { ItemsPanel } from "./ItemsPanel";
+import { Toasts } from "./Toasts";
 import { useWatch } from "./useWatch";
 
 const TABS = ["Поиск", "Весь чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
@@ -50,12 +51,14 @@ export default function App() {
 
       {tab === "Поиск" ? (
         <main className="search">
-          <section className="card feed-card"><Feed entries={watch.entries} /></section>
+          <section className="card feed-card"><Feed entries={watch.entries} alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} /></section>
           <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
         </main>
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
+      <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
+        onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />
     </div>
   );
 }

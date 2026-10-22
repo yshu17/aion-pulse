@@ -84,3 +84,28 @@ time { color: var(--muted); font: 12px var(--mono); }
 .check input:checked + .box { background: var(--accent); border-color: var(--accent); }
 .check input:checked + .box::after { content: "✓"; color: var(--accent-text); font-size: 14px; font-weight: 700; }
 .check input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.msg.accepted { background: #173a24; border-left-color: var(--success); }
+.msg.missed { background: #3d1a1d; border-left-color: var(--danger); }
+.badge { font-size: 12px; font-weight: 600; }
+.badge.ok { color: var(--success); } .badge.bad { color: var(--danger); }
+.left { font: 13px var(--mono); color: #ffd166; }
+.left.urgent { color: #ffd0d1; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+.btn.mini { padding: 3px 10px; font-size: 12px; background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btn.mini:hover { background: var(--accent-hover); }
+.btn.primary { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btn.primary:hover { background: var(--accent-hover); }
+
+.toasts { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10; }
+.toast { width: 340px; display: flex; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border-control);
+  border-left: 3px solid var(--accent); border-radius: 0 12px 12px 0; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: arrive .25s ease-out; }
+.toast.warning { border-left-color: var(--warning); }
+.toast-body { flex: 1; min-width: 0; }
+.toast-title { display: flex; align-items: flex-start; gap: 8px; }
+.toast-title b { flex: 1; font-weight: 600; }
+.toast-text { margin: 3px 0 9px; overflow-wrap: anywhere; font-size: 13px; }
+.toast-actions { display: flex; gap: 8px; }
+.toast .btn { padding: 6px 12px; }
+.x { background: none; border: 0; color: var(--muted); font-size: 18px; line-height: 1; padding: 0 2px; }
+.x:hover { color: var(--text); }
