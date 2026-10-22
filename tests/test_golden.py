@@ -55,3 +55,10 @@ def test_bestiary_golden_matches_core():
 
     for name, case in golden_bestiary.all_cases().items():
         assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name
+
+
+def test_telegram_golden_matches_core():
+    import golden_telegram
+
+    for name, case in golden_telegram.all_cases().items():
+        assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name
