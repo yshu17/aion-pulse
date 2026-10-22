@@ -14,6 +14,7 @@ export default defineConfig(() => ({
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
+    fs: { allow: [".."] }, // data/ (names, items, icons) sits next to the launcher
     port: 1420,
     strictPort: true,
     host: host || false,
