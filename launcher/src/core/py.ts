@@ -96,3 +96,74 @@ export function pyFixed(x: number, digits: number): string {
   if (digits > 0) text = text.slice(0, -digits) + "." + text.slice(-digits);
   return (negative && q !== 0n ? "-" : "") + text;
 }
+
+/** Python 3.12+ sum() of floats: Neumaier compensated summation, so the last bit matches CPython. */
+export function pySum(values: Iterable<number>): number {
+  let total = 0;
+  let compensation = 0;
+  for (const x of values) {
+    const t = total + x;
+    if (Math.abs(total) >= Math.abs(x)) compensation += total - t + x;
+    else compensation += x - t + total;
+    total = t;
+  }
+  return compensation && Number.isFinite(compensation) ? total + compensation : total;
+}
+
+/** Exact product as hi + lo (Dekker's split; what CPython gets from fma). */
+function twoProduct(a: number, b: number): [number, number] {
+  const split = (v: number): [number, number] => {
+    const c = 134217729 * v; // 2^27 + 1
+    const hi = c - (c - v);
+    return [hi, v - hi];
+  };
+  const p = a * b;
+  const [ah, al] = split(a);
+  const [bh, bl] = split(b);
+  return [p, ah * bh - p + ah * bl + al * bh + al * bl];
+}
+
+/** frexp(x)[1] for a positive normal x: the exponent e with x = m * 2^e, 0.5 <= m < 1. */
+function frexpExponent(x: number): number {
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, x);
+  return ((view.getUint16(0) >> 4) & 0x7ff) - 1022;
+}
+
+/**
+ * Python math.hypot(*coordinates): CPython's vector_norm — exact scaling, error-free squares and sums, one correction
+ * step — so the last bit matches (Math.hypot can differ by one ulp).
+ */
+export function pyHypot(...coordinates: number[]): number {
+  const vec = coordinates.map(Math.abs);
+  let max = 0;
+  let foundNan = false;
+  for (const x of vec) {
+    if (Number.isNaN(x)) foundNan = true;
+    else if (x > max) max = x;
+  }
+  if (max === Infinity) return Infinity;
+  if (foundNan) return NaN;
+  if (max === 0 || vec.length <= 1) return max;
+  if (max < 2 ** -1022) return Math.hypot(...vec); // subnormal inputs: CPython rescales first; not met in the game
+  const scale = 2 ** -frexpExponent(max);
+  let csum = 1.0;
+  let frac1 = 0.0;
+  let frac2 = 0.0;
+  const add = (hiSquare: number, loSquare: number) => {
+    const sum = csum + hiSquare; // dl_fast_sum(csum, hi)
+    const lo = hiSquare - (sum - csum);
+    csum = sum;
+    frac1 += loSquare;
+    frac2 += lo;
+  };
+  for (const v of vec) {
+    const x = v * scale;
+    add(...twoProduct(x, x));
+  }
+  let h = Math.sqrt(csum - 1.0 + (frac1 + frac2));
+  add(...twoProduct(-h, h));
+  const x = csum - 1.0 + (frac1 + frac2);
+  h += x / (2.0 * h); // differential correction
+  return h / scale;
+}

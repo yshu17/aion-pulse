@@ -41,3 +41,10 @@ def test_schedule_golden_matches_core():
 
     for name, case in golden_schedule.all_cases().items():
         assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name
+
+
+def test_map_golden_matches_core():
+    import golden_map
+
+    for name, case in golden_map.all_cases().items():
+        assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name

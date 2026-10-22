@@ -5,7 +5,7 @@
  * A Zone converts game coordinates to picture pixels with `toImage(zone, x, y)`.
  */
 
-import { pyFloat } from "../py";
+import { pyFloat, pyHypot } from "../py";
 
 export { pyFloat };
 
@@ -117,4 +117,23 @@ export function parseZones(mapsJson: string | null, labelsText: string | null, n
     };
   }
   return zones;
+}
+
+/** Merge all selected groups in one zone into a circle [x, y, radius] covering their points; null without points. */
+export function enclosingSpawnCircle(polygons: Iterable<Iterable<[unknown, unknown]>>): [number, number, number] | null {
+  const float = (v: unknown): number => {
+    if (typeof v === "number") return v;
+    const parsed = typeof v === "string" ? pyFloat(v) : null;
+    if (parsed === null) throw new TypeError(`float(${JSON.stringify(v)})`);
+    return parsed;
+  };
+  const points: [number, number][] = [];
+  for (const polygon of polygons) for (const [x, y] of polygon) points.push([float(x), float(y)]);
+  if (!points.length) return null;
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const radius = Math.max(24.0, Math.max(...points.map(([x, y]) => pyHypot(x - cx, y - cy))) + 12);
+  return [cx, cy, radius];
 }
