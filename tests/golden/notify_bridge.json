@@ -1,0 +1,211 @@
+{
+ "case": {
+  "ops": [
+   [
+    "chat_match",
+    [
+     1,
+     2
+    ],
+    [
+     [
+      "Nag",
+      "wts 1/12",
+      [
+       "wts"
+      ]
+     ],
+     [
+      "B",
+      "ищу",
+      [
+       "ищу группу",
+       "wts"
+      ]
+     ]
+    ],
+    true,
+    {
+     "actions": [
+      [
+       "accept",
+       "Принять"
+      ]
+     ],
+     "id": 1,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 1,
+     "sound": false,
+     "source": "chat",
+     "text": "Nag: wts 1/12 (и ещё 1)",
+     "title": "Найдено в чате: wts, ищу группу"
+    }
+   ],
+   [
+    "chat_match",
+    [],
+    [
+     [
+      "C",
+      "wts лук",
+      [
+       "wts"
+      ]
+     ]
+    ],
+    false,
+    {
+     "actions": [],
+     "id": 2,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 2,
+     "sound": true,
+     "source": "chat",
+     "text": "C: wts лук",
+     "title": "Найдено в чате: wts"
+    }
+   ],
+   [
+    "chat_match",
+    [
+     5
+    ],
+    [],
+    true,
+    null
+   ],
+   [
+    "alerts_done",
+    [
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    "active",
+    [
+     true,
+     true
+    ]
+   ],
+   [
+    "after_done_2",
+    [
+     false,
+     true
+    ]
+   ],
+   [
+    "chat_match",
+    [
+     7,
+     8
+    ],
+    [
+     [
+      "D",
+      "x",
+      [
+       "wts"
+      ]
+     ]
+    ],
+    true,
+    {
+     "actions": [
+      [
+       "accept",
+       "Принять"
+      ]
+     ],
+     "id": 3,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 3,
+     "sound": false,
+     "source": "chat",
+     "text": "D: x",
+     "title": "Найдено в чате: wts"
+    }
+   ],
+   [
+    "toast_accepted",
+    3,
+    [
+     7,
+     8
+    ]
+   ],
+   [
+    "toast_accepted_again",
+    3,
+    []
+   ],
+   [
+    "toast_accepted_none",
+    []
+   ],
+   [
+    "game_running",
+    false,
+    {
+     "actions": [
+      [
+       "retry",
+       "Проверить снова"
+      ]
+     ],
+     "id": 4,
+     "kind": "warning",
+     "repeat_after": null,
+     "repeat_key": 4,
+     "sound": true,
+     "source": "status",
+     "text": "После запуска Aion нажми «Проверить снова».",
+     "title": "Игра не запущена"
+    }
+   ],
+   [
+    "game_running",
+    false,
+    null
+   ],
+   [
+    "game_running",
+    true,
+    null,
+    false
+   ],
+   [
+    "game_running",
+    true,
+    null
+   ],
+   [
+    "game_running",
+    false,
+    {
+     "actions": [
+      [
+       "retry",
+       "Проверить снова"
+      ]
+     ],
+     "id": 5,
+     "kind": "warning",
+     "repeat_after": null,
+     "repeat_key": 5,
+     "sound": true,
+     "source": "status",
+     "text": "После запуска Aion нажми «Проверить снова».",
+     "title": "Игра не запущена"
+    }
+   ]
+  ]
+ }
+}

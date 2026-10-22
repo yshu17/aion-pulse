@@ -1,0 +1,134 @@
+{
+ "case": {
+  "cases": [
+   [
+    {
+     "notify_corner": "bottom",
+     "notify_dnd": false,
+     "notify_duration": 8,
+     "notify_mute": [],
+     "notify_off": [],
+     "notify_stack": 3
+    },
+    {
+     "chat": [
+      true,
+      true
+     ],
+     "schedule": [
+      true,
+      true
+     ],
+     "status": [
+      true,
+      true
+     ]
+    },
+    false,
+    [
+     "bottom",
+     8,
+     3
+    ]
+   ],
+   [
+    {
+     "notify_corner": "top",
+     "notify_dnd": true,
+     "notify_duration": 15,
+     "notify_mute": [
+      "schedule",
+      "nope"
+     ],
+     "notify_off": [
+      "chat"
+     ],
+     "notify_stack": 1
+    },
+    {
+     "chat": [
+      false,
+      true
+     ],
+     "schedule": [
+      true,
+      false
+     ],
+     "status": [
+      true,
+      true
+     ]
+    },
+    true,
+    [
+     "top",
+     15,
+     1
+    ]
+   ],
+   [
+    {
+     "notify_corner": "left",
+     "notify_dnd": false,
+     "notify_duration": 7,
+     "notify_mute": [],
+     "notify_off": [],
+     "notify_stack": 9
+    },
+    {
+     "chat": [
+      true,
+      true
+     ],
+     "schedule": [
+      true,
+      true
+     ],
+     "status": [
+      true,
+      true
+     ]
+    },
+    false,
+    [
+     "bottom",
+     8,
+     3
+    ]
+   ]
+  ],
+  "corners": {
+   "bottom": "Справа снизу",
+   "top": "Справа сверху"
+  },
+  "defaults": [
+   "bottom",
+   8,
+   3
+  ],
+  "durations": [
+   5,
+   8,
+   15
+  ],
+  "sources": [
+   [
+    "chat",
+    "Совпадения в чате"
+   ],
+   [
+    "status",
+    "Игра не запущена"
+   ],
+   [
+    "schedule",
+    "Напоминания расписания"
+   ]
+  ],
+  "stack": [
+   1,
+   2,
+   3
+  ]
+ }
+}

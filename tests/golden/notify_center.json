@@ -1,0 +1,732 @@
+{
+ "case": {
+  "max_history": 6,
+  "max_queue": 3,
+  "ops": [
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Найдено",
+    "A: wts",
+    [
+     [
+      "accept",
+      "Принять"
+     ]
+    ],
+    true,
+    null,
+    {
+     "actions": [
+      [
+       "accept",
+       "Принять"
+      ]
+     ],
+     "id": 1,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 1,
+     "sound": true,
+     "source": "chat",
+     "text": "A: wts",
+     "title": "Найдено"
+    }
+   ],
+   [
+    "notify",
+    "schedule",
+    "event",
+    "Через 5 мин",
+    "20:00",
+    [],
+    true,
+    180,
+    {
+     "actions": [],
+     "id": 2,
+     "kind": "event",
+     "repeat_after": 180,
+     "repeat_key": 2,
+     "sound": true,
+     "source": "schedule",
+     "text": "20:00",
+     "title": "Через 5 мин"
+    }
+   ],
+   [
+    "state",
+    {
+     "history": [
+      1,
+      2
+     ],
+     "queued": 2,
+     "rules": {
+      "chat": [
+       true,
+       true
+      ],
+      "schedule": [
+       true,
+       true
+      ]
+     },
+     "unread": 2
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [
+      [
+       "accept",
+       "Принять"
+      ]
+     ],
+     "id": 1,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 1,
+     "sound": true,
+     "source": "chat",
+     "text": "A: wts",
+     "title": "Найдено"
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 2,
+     "kind": "event",
+     "repeat_after": 180,
+     "repeat_key": 2,
+     "sound": true,
+     "source": "schedule",
+     "text": "20:00",
+     "title": "Через 5 мин"
+    }
+   ],
+   [
+    "pop",
+    null
+   ],
+   [
+    "source",
+    "chat",
+    false,
+    null,
+    null
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Скрыто",
+    "",
+    [],
+    true,
+    null,
+    null
+   ],
+   [
+    "source",
+    "chat",
+    true,
+    false,
+    null
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Без звука",
+    "",
+    [],
+    true,
+    null,
+    {
+     "actions": [],
+     "id": 3,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 3,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Без звука"
+    }
+   ],
+   [
+    "notify",
+    "status",
+    "warning",
+    "Игра",
+    "",
+    [],
+    false,
+    null,
+    {
+     "actions": [],
+     "id": 4,
+     "kind": "warning",
+     "repeat_after": null,
+     "repeat_key": 4,
+     "sound": false,
+     "source": "status",
+     "text": "",
+     "title": "Игра"
+    }
+   ],
+   [
+    "clock",
+    100.0,
+    null
+   ],
+   [
+    "tick",
+    0
+   ],
+   [
+    "clock",
+    180.0,
+    null
+   ],
+   [
+    "tick",
+    1
+   ],
+   [
+    "state",
+    {
+     "history": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "queued": 3,
+     "rules": {
+      "chat": [
+       true,
+       false
+      ],
+      "schedule": [
+       true,
+       true
+      ],
+      "status": [
+       true,
+       true
+      ]
+     },
+     "unread": 5
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 3,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 3,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Без звука"
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 4,
+     "kind": "warning",
+     "repeat_after": null,
+     "repeat_key": 4,
+     "sound": false,
+     "source": "status",
+     "text": "",
+     "title": "Игра"
+    }
+   ],
+   [
+    "snooze",
+    2,
+    30.0,
+    true
+   ],
+   [
+    "clock",
+    200.0,
+    null
+   ],
+   [
+    "tick",
+    0
+   ],
+   [
+    "clock",
+    210.0,
+    null
+   ],
+   [
+    "tick",
+    1
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 6,
+     "kind": "event",
+     "repeat_after": 180,
+     "repeat_key": 2,
+     "sound": true,
+     "source": "schedule",
+     "text": "20:00",
+     "title": "Через 5 мин"
+    }
+   ],
+   [
+    "ack",
+    2,
+    true
+   ],
+   [
+    "clock",
+    400.0,
+    null
+   ],
+   [
+    "tick",
+    0
+   ],
+   [
+    "ack",
+    999,
+    false
+   ],
+   [
+    "dnd",
+    true,
+    null
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Тихо",
+    "",
+    [],
+    true,
+    null,
+    {
+     "actions": [],
+     "id": 7,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 7,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Тихо"
+    }
+   ],
+   [
+    "pop",
+    null
+   ],
+   [
+    "state",
+    {
+     "history": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "queued": 0,
+     "rules": {
+      "chat": [
+       true,
+       false
+      ],
+      "schedule": [
+       true,
+       true
+      ],
+      "status": [
+       true,
+       true
+      ]
+     },
+     "unread": 3
+    }
+   ],
+   [
+    "dnd",
+    false,
+    null
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Один",
+    "",
+    [],
+    true,
+    null,
+    {
+     "actions": [],
+     "id": 8,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 8,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Один"
+    }
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Два",
+    "",
+    [],
+    true,
+    null,
+    {
+     "actions": [],
+     "id": 9,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 9,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Два"
+    }
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Три",
+    "",
+    [],
+    true,
+    null,
+    {
+     "actions": [],
+     "id": 10,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 10,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Три"
+    }
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "Четыре",
+    "",
+    [],
+    true,
+    null,
+    {
+     "actions": [],
+     "id": 11,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 11,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Четыре"
+    }
+   ],
+   [
+    "state",
+    {
+     "history": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+     ],
+     "queued": 3,
+     "rules": {
+      "chat": [
+       true,
+       false
+      ],
+      "schedule": [
+       true,
+       true
+      ],
+      "status": [
+       true,
+       true
+      ]
+     },
+     "unread": 5
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 9,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 9,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Два"
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 10,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 10,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Три"
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 11,
+     "kind": "chat",
+     "repeat_after": null,
+     "repeat_key": 11,
+     "sound": true,
+     "source": "chat",
+     "text": "",
+     "title": "Четыре"
+    }
+   ],
+   [
+    "pop",
+    null
+   ],
+   [
+    "notify",
+    "",
+    "chat",
+    "x",
+    "",
+    [],
+    true,
+    null,
+    {
+     "error": "source, kind and title are required"
+    }
+   ],
+   [
+    "notify",
+    "chat",
+    "chat",
+    "x",
+    "",
+    [],
+    true,
+    -1,
+    {
+     "error": "repeat_after must be positive"
+    }
+   ],
+   [
+    "snooze",
+    13,
+    0,
+    {
+     "error": "snooze duration must be positive"
+    }
+   ],
+   [
+    "snooze",
+    13,
+    5,
+    false
+   ],
+   [
+    "clock",
+    405.0,
+    null
+   ],
+   [
+    "tick",
+    0
+   ],
+   [
+    "pop",
+    null
+   ],
+   [
+    "notify",
+    "schedule",
+    "event",
+    "Повтор",
+    "",
+    [],
+    true,
+    50,
+    {
+     "actions": [],
+     "id": 12,
+     "kind": "event",
+     "repeat_after": 50,
+     "repeat_key": 12,
+     "sound": true,
+     "source": "schedule",
+     "text": "",
+     "title": "Повтор"
+    }
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 12,
+     "kind": "event",
+     "repeat_after": 50,
+     "repeat_key": 12,
+     "sound": true,
+     "source": "schedule",
+     "text": "",
+     "title": "Повтор"
+    }
+   ],
+   [
+    "clock",
+    455.0,
+    null
+   ],
+   [
+    "tick",
+    1
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 13,
+     "kind": "event",
+     "repeat_after": 50,
+     "repeat_key": 12,
+     "sound": true,
+     "source": "schedule",
+     "text": "",
+     "title": "Повтор"
+    }
+   ],
+   [
+    "clock",
+    505.0,
+    null
+   ],
+   [
+    "tick",
+    1
+   ],
+   [
+    "pop",
+    {
+     "actions": [],
+     "id": 14,
+     "kind": "event",
+     "repeat_after": 50,
+     "repeat_key": 12,
+     "sound": true,
+     "source": "schedule",
+     "text": "",
+     "title": "Повтор"
+    }
+   ],
+   [
+    "clock",
+    530.0,
+    null
+   ],
+   [
+    "tick",
+    0
+   ],
+   [
+    "state",
+    {
+     "history": [
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+     ],
+     "queued": 0,
+     "rules": {
+      "chat": [
+       true,
+       false
+      ],
+      "schedule": [
+       true,
+       true
+      ],
+      "status": [
+       true,
+       true
+      ]
+     },
+     "unread": 6
+    }
+   ],
+   [
+    "counts",
+    {
+     "all": 14,
+     "chat": 7,
+     "none": 0,
+     "schedule": 6
+    }
+   ],
+   [
+    "sounds",
+    [
+     1,
+     2,
+     5,
+     6,
+     12,
+     13,
+     14
+    ]
+   ]
+  ]
+ }
+}

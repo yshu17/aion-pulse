@@ -30,6 +30,7 @@ def test_items_golden_matches_core():
 
 def test_chat_golden_matches_core():
     import golden_chat
+    import golden_notify
 
-    for name, case in golden_chat.all_cases().items():
+    for name, case in {**golden_chat.all_cases(), **golden_notify.all_cases()}.items():
         assert json.loads(json.dumps(case, ensure_ascii=False)) == _stored(name), name
