@@ -6,6 +6,7 @@ import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icon
 import { ItemsPanel } from "./ItemsPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { enterOverlay, leaveOverlay, onAction, sendState } from "./overlayWindow";
+import { ScheduleTab } from "./schedule/ScheduleTab";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
 import { useWatch } from "./useWatch";
@@ -151,6 +152,8 @@ function Screen({ boot }: { boot: Boot }) {
           <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
           </div>
         </main>
+      ) : tab === "Расписание" ? (
+        <ScheduleTab boot={boot} />
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}

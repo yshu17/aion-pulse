@@ -5,6 +5,7 @@ import { Overlay } from "./ui/Overlay";
 import { isOverlay } from "./ui/overlayWindow";
 import "./ui/theme.css";
 import "./ui/app.css";
+import "./ui/schedule/schedule.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

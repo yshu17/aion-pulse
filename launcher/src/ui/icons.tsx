@@ -23,3 +23,13 @@ export const IconChevron = ({ open }: { open: boolean }) => (
 export const IconSettings = () => (
   <Svg><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></Svg>
 );
+
+export const IconBell = ({ on }: { on: boolean }) => (
+  <Svg size={13}><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z" fill={on ? "currentColor" : "none"} /><path d="M10 21h4" /></Svg>
+);
+export const IconPencil = () => <Svg size={14}><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z" /><path d="M14 6l3 3" /></Svg>;
+export const IconCopy = () => <Svg size={14}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></Svg>;
+export const IconEyeOff = () => <Svg size={14}><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" /><path d="M4 4l16 16" /></Svg>;
+export const IconPlus = () => <Svg size={14}><path d="M12 5v14M5 12h14" /></Svg>;
+export const IconLeft = () => <Svg size={16}><path d="M15 6l-6 6 6 6" /></Svg>;
+export const IconRight = () => <Svg size={16}><path d="M9 6l6 6-6 6" /></Svg>;
