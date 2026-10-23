@@ -2,6 +2,8 @@
 // page, tests) there are no files: `platform` is null and the screens run on demo data.
 import { invoke } from "@tauri-apps/api/core";
 
+import type { Drop } from "../core/gameData/gameData";
+
 export interface Platform {
   configPath(): Promise<string>;
   /** Is the game process running? null when the process list cannot be read. */
@@ -19,6 +21,8 @@ export interface Platform {
   httpFetch(url: string, method: "GET" | "HEAD"): Promise<[string, Record<string, string>]>;
   /** An address in the default browser. */
   openUrl(url: string): Promise<void>;
+  /** Drops from data/game/drops.sqlite: of an NPC (`by` «npc») or of an item (`by` «item»). */
+  gameDrops(by: "npc" | "item", id: string): Promise<Drop[]>;
 }
 
 /** Rust errors are texts; «ENOENT: …» becomes an error with that code, as the log reader of the core expects. */
@@ -46,6 +50,7 @@ const tauri: Platform = {
   fileSize: (path) => call("file_size", { path }),
   readRange: async (path, position, length) => new Uint8Array(await call<ArrayBuffer>("read_range", { path, position, length })),
   httpFetch: (url, method) => call("http_fetch", { url, method }),
+  gameDrops: (by, id) => call("game_drops", { by, id: Number(id) }),
   openUrl: async (url) => { const { openUrl } = await import("@tauri-apps/plugin-opener"); await openUrl(url); },
 };
 

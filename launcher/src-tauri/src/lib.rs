@@ -208,6 +208,56 @@ async fn http_fetch(url: String, method: String) -> Result<(String, std::collect
     .map_err(|e| e.to_string())?
 }
 
+/// The drops of data/game (1.4 million rows, too many for a JSON file): `drops.sqlite`, built by tools/build_game_data.py.
+const DROPS_FILE: &str = "drops.sqlite";
+const DROPS_LIMIT: i64 = 10_000; // a popular item can drop from thousands of NPCs: a screen never needs more
+
+/// Where drops.sqlite is: `PULSE_GAME_DATA` (a folder, for tests), else `data/game/` next to the program or in a folder
+/// above it (the repository: Pulse+Local sits in `local/`, the dev build in `launcher/src-tauri/target/…`).
+fn drops_path() -> Option<PathBuf> {
+    if let Ok(dir) = std::env::var("PULSE_GAME_DATA") {
+        return Some(PathBuf::from(dir).join(DROPS_FILE));
+    }
+    let exe = std::env::current_exe().ok()?;
+    exe.ancestors().skip(1).map(|dir| dir.join("data").join("game").join(DROPS_FILE)).find(|path| path.is_file())
+}
+
+#[derive(serde::Serialize, Debug, PartialEq)]
+struct Drop {
+    npc_id: i64,
+    item_id: i64,
+    chance_min: Option<f64>,
+    chance_max: Option<f64>,
+    count_min: Option<i64>,
+    count_max: Option<i64>,
+}
+
+/// Drops of an NPC (`by` = "npc") or the NPCs dropping an item (`by` = "item"), read-only.
+fn query_drops(path: &Path, by: &str, id: i64) -> Result<Vec<Drop>, String> {
+    let (column, order) = match by {
+        "npc" => ("npc_id", "item_id"),
+        "item" => ("item_id", "npc_id"),
+        _ => return Err(format!("unknown drops query: {by}")),
+    };
+    let db = rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX)
+        .map_err(|e| e.to_string())?;
+    let sql = format!("SELECT npc_id, item_id, chance_min, chance_max, count_min, count_max FROM drops WHERE {column} = ?1 ORDER BY {order} LIMIT ?2");
+    let mut statement = db.prepare(&sql).map_err(|e| e.to_string())?;
+    let rows = statement
+        .query_map(rusqlite::params![id, DROPS_LIMIT], |row| {
+            Ok(Drop { npc_id: row.get(0)?, item_id: row.get(1)?, chance_min: row.get(2)?, chance_max: row.get(3)?, count_min: row.get(4)?, count_max: row.get(5)? })
+        })
+        .map_err(|e| e.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
+/// The drops for the game data reader; an error text that starts with `ENOENT` when drops.sqlite is not there.
+#[tauri::command]
+async fn game_drops(by: String, id: i64) -> Result<Vec<Drop>, String> {
+    let path = drops_path().filter(|path| path.is_file()).ok_or_else(|| format!("ENOENT: {DROPS_FILE}"))?;
+    tauri::async_runtime::spawn_blocking(move || query_drops(&path, &by, id)).await.map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -232,14 +282,14 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch, game_drops])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside};
+    use super::{allowed_url, has_game, inside, query_drops, Drop};
     use std::path::Path;
 
     #[test]
@@ -272,5 +322,28 @@ mod tests {
         assert!(!allowed_url("https://evil.net/?aionempire.com"));
         assert!(allowed_url("https://news.aionempire.net/storage/app/media/schedule-20ru.jpg"));
         assert!(!allowed_url("https://aionempire.net.evil.net/"));
+    }
+
+    #[test]
+    fn reads_drops_by_npc_and_by_item() {
+        let dir = std::env::temp_dir().join(format!("pulse-drops-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("drops.sqlite");
+        let _ = std::fs::remove_file(&path);
+        let db = rusqlite::Connection::open(&path).unwrap();
+        db.execute_batch(
+            "CREATE TABLE drops(npc_id INTEGER, item_id INTEGER, chance_min REAL, chance_max REAL, count_min INTEGER, count_max INTEGER,
+               PRIMARY KEY(npc_id, item_id)) WITHOUT ROWID;
+             INSERT INTO drops VALUES (210065, 100000002, NULL, NULL, NULL, NULL), (210065, 100000001, 0.5, 0.7, 1, 2), (203060, 100000001, NULL, NULL, NULL, NULL);",
+        )
+        .unwrap();
+        drop(db);
+        let of_npc = query_drops(&path, "npc", 210065).unwrap();
+        assert_eq!(of_npc.iter().map(|d| d.item_id).collect::<Vec<_>>(), vec![100000001, 100000002]);
+        assert_eq!(of_npc[0], Drop { npc_id: 210065, item_id: 100000001, chance_min: Some(0.5), chance_max: Some(0.7), count_min: Some(1), count_max: Some(2) });
+        assert_eq!(query_drops(&path, "item", 100000001).unwrap().iter().map(|d| d.npc_id).collect::<Vec<_>>(), vec![203060, 210065]);
+        assert!(query_drops(&path, "npc", 1).unwrap().is_empty());
+        assert!(query_drops(&path, "zone", 1).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
