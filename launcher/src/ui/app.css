@@ -117,21 +117,42 @@ time { color: var(--muted); font: 12px var(--mono); }
 .banner.warn { color: var(--warning); background: #2f2614; }
 
 html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background: transparent; height: auto; overflow: hidden; }
-.overlay { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding: 1px; }
+.overlay { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding: 1px 1px 14px; } /* room for the shadows */
 .strip { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 14px; background: var(--surface); border: 1px solid var(--border-control);
   border-radius: 999px; font-size: 13px; width: 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); }
 .strip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .btn.mini-plain { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
 .overlay .toast { width: 100%; }
 .overlay .strip, .ov-schedule { cursor: grab; user-select: none; }
-.ov-schedule { width: 100%; display: flex; flex-direction: column; gap: 6px; padding: 9px 12px; background: var(--surface);
-  border: 1px solid var(--border-control); border-radius: 14px; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); font-size: 13px; }
-.ov-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ov-row .lbl { width: 52px; flex: none; color: var(--muted); font-size: 12px; }
-.ov-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.ov-row .when { flex: none; font-variant-numeric: tabular-nums; }
-.ov-row .left { color: var(--accent); font-weight: 600; margin-left: 4px; }
-.ov-dot { width: 10px; height: 10px; border-radius: 3px; border: 1px solid; flex: none; }
+/* the chosen transparency; the overlay is opaque while the mouse is over it, so it stays readable to click */
+.overlay > * { opacity: var(--ov-opacity, .9); transition: opacity .15s; }
+.overlay:hover > * { opacity: 1; }
+.btn.mini-plain.icon { padding: 4px 7px; } .btn.mini-plain.icon.on { background: var(--surface-3); color: var(--accent); }
+.ov-tune { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border-control); border-radius: 14px; font-size: 13px; }
+.ov-opacity { display: flex; align-items: center; gap: 10px; }
+.ov-opacity input { flex: 1; accent-color: var(--accent); }
+.ov-opacity b { width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.ov-check { display: flex; align-items: flex-start; gap: 8px; color: #c6c9d0; line-height: 1.35; }
+.ov-check input { accent-color: var(--accent); margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .overlay > * { transition: none; } }
+/* the schedule over the game: one card, a row per event; the running one shows how much of it has passed */
+.ov-schedule { width: 100%; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border-control);
+  border-radius: 14px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
+.ov-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 9px 14px 10px 12px; min-width: 0; }
+.ov-row + .ov-row { border-top: 1px solid var(--border); }
+.ov-row.idle { padding: 10px 14px; font-size: 13px; }
+.ov-mark { width: 4px; align-self: stretch; border-radius: 2px; border: 0; flex: none; }
+.ov-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ov-main .name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-main .sub { font-size: 12px; color: #a3a8b3; line-height: 1.3; }
+.ov-left { flex: none; font-size: 12px; color: #a3a8b3; white-space: nowrap; }
+.ov-left b { font-size: 15px; font-weight: 700; color: var(--text); margin-left: 2px; }
+.ov-row.next .ov-left b { color: var(--accent); }
+.ov-row.next .ov-main .name { color: #d5d8de; }
+.ov-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .06); }
+.ov-bar i { display: block; height: 100%; transform-origin: left; border: 0; transition: transform .6s ease-out; }
+@media (prefers-reduced-motion: reduce) { .ov-bar i { transition: none; } }
 .btn:disabled { opacity: .45; cursor: default; }
 
 /* one chat feed: «Совпадения | Весь чат» */

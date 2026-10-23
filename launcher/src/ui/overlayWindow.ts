@@ -2,7 +2,7 @@
 // state and the notifications. The main window keeps watching Chat.log and sends the overlay what to show; the
 // overlay sends back what the user pressed.
 import { emitTo, listen, UnlistenFn } from "@tauri-apps/api/event";
-import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
+import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { currentMonitor, getCurrentWindow, Window } from "@tauri-apps/api/window";
 
 import { platform } from "./platform";
@@ -29,6 +29,7 @@ export interface OverlayEvent {
   from: string;
   to: string;
   left: string;
+  progress: number | null; // how much of a running event has passed, 0…1; null for the next one
 }
 
 export interface OverlayState {
@@ -80,7 +81,10 @@ export const onAction = (handler: (action: OverlayAction) => void): Promise<Unli
 
 /** The overlay window as tall as its content, so the empty part never covers the game. */
 export function fitHeight(height: number): void {
-  getCurrentWindow().setSize(new LogicalSize(WIDTH, Math.max(48, Math.ceil(height)))).catch(() => {});
+  // `height` is in CSS pixels: with a page zoom (devicePixelRatio is not the monitor scale) they differ from the window's
+  const win = getCurrentWindow();
+  win.scaleFactor().then((scale) => win.setSize(new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(height * window.devicePixelRatio)))))
+    .catch(() => {});
 }
 
 function savedPlace(): { x: number; y: number } | null {
@@ -103,4 +107,32 @@ export function keepPlace(): Promise<UnlistenFn> {
   return getCurrentWindow().onMoved(({ payload }) => {
     try { localStorage.setItem(PLACE, JSON.stringify({ x: payload.x, y: payload.y })); } catch { /* not kept: the corner next time */ }
   });
+}
+
+/** How the overlay looks and behaves, kept in this computer's browser storage (both windows share it). */
+export interface OverlayLook {
+  opacity: number; // 0.3…1, the whole overlay; it is opaque while the mouse is over it
+  keepGameFocus: boolean; // a click on the overlay leaves the keyboard with the game
+}
+
+const LOOK = "pulse-overlay-look";
+const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true };
+
+export function loadLook(): OverlayLook {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LOOK) ?? "{}");
+    const opacity = typeof raw.opacity === "number" ? Math.min(1, Math.max(0.3, raw.opacity)) : DEFAULT_LOOK.opacity;
+    return { opacity, keepGameFocus: typeof raw.keepGameFocus === "boolean" ? raw.keepGameFocus : DEFAULT_LOOK.keepGameFocus };
+  } catch {
+    return DEFAULT_LOOK;
+  }
+}
+
+export function saveLook(look: OverlayLook): void {
+  try { localStorage.setItem(LOOK, JSON.stringify(look)); } catch { /* the default next time */ }
+}
+
+/** A window that cannot take focus: clicks on it leave the keyboard with the game. */
+export function setKeepGameFocus(keep: boolean): void {
+  getCurrentWindow().setFocusable(!keep).catch(() => {});
 }

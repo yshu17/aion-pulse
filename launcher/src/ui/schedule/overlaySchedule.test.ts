@@ -12,13 +12,14 @@ describe("overlay schedule", () => {
 
   it("shows what runs now, ending soonest first, and what starts next", () => {
     const s = overlaySchedule(events, at("2026-10-23T11:22:00")); // a Friday
-    expect(s.current.map((e) => [e.name, e.to, e.left])).toEqual([["Дерадикон", "12:00", "ещё 38 мин"], ["Инга", "13:00", "ещё 1 ч 38 мин"]]);
-    expect([s.next?.name, s.next?.from, s.next?.left]).toEqual(["Аренка", "14:00", "через 2 ч 38 мин"]);
+    expect(s.current.map((e) => [e.name, e.to, e.left])).toEqual([["Дерадикон", "12:00", "38 мин"], ["Инга", "13:00", "1 ч 38 мин"]]);
+    expect([s.next?.name, s.next?.from, s.next?.left]).toEqual(["Аренка", "14:00", "2 ч 38 мин"]);
   });
 
   it("keeps an overnight event running after midnight", () => {
     const s = overlaySchedule(events, at("2026-10-23T01:00:00"));
-    expect(s.current.map((e) => e.name)).toEqual(["Ночь"]);
+    expect(s.current.map((e) => [e.name, e.progress])).toEqual([["Ночь", 0.75]]);
+    expect(s.next?.progress).toBeNull();
     expect(s.next?.name).toBe("Дерадикон");
   });
 });
