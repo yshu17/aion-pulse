@@ -4,6 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 export interface Platform {
   configPath(): Promise<string>;
+  /** Is the game process running? null when the process list cannot be read. */
+  gameRunning(): Promise<boolean | null>;
   /** config.json files near the launcher where an old Pulse may keep its settings, nearest first. */
   pulseConfigCandidates(): Promise<string[]>;
   /** The text of a file, or null when it does not exist. */
@@ -33,6 +35,7 @@ async function call<T>(command: string, args: Record<string, unknown> = {}): Pro
 
 const tauri: Platform = {
   configPath: () => call("config_path"),
+  gameRunning: () => call("game_running"),
   pulseConfigCandidates: () => call("pulse_config_candidates"),
   readText: (path) => call("read_text", { path }),
   writeText: (path, text) => call("write_text", { path, text }),

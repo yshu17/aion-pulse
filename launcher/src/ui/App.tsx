@@ -23,6 +23,7 @@ function Screen({ boot }: { boot: Boot }) {
   const watch = useWatch(boot);
   const problem = watch.source.kind === "missing" || watch.source.kind === "error";
   const [overlay, setOverlay] = useState(false);
+  const gameOff = watch.game === false;
   // the toasts repeat the cards of the feed: while this window is in use they would only cover the item list
   const [focused, setFocused] = useState(() => document.hasFocus());
   useEffect(() => {
@@ -38,7 +39,7 @@ function Screen({ boot }: { boot: Boot }) {
     sendState({
       watching: watch.watching, problem: problem ? watch.source.text : "", counters: watch.counters,
       toasts: watch.toasts.map((t) => ({ id: t.note.id, title: t.note.title, text: t.note.text, icon: t.icon,
-        accept: t.note.actions.some((a) => a.id === "accept") })),
+        accept: t.note.actions.some((a) => a.id === "accept"), retry: t.note.actions.some((a) => a.id === "retry") })),
     });
   }, [overlay, watch.watching, watch.counters, watch.toasts, watch.source, problem]);
 
@@ -52,6 +53,7 @@ function Screen({ boot }: { boot: Boot }) {
       const toast = watch.toastById(action.id);
       if (!toast) return;
       if (action.kind === "accept") watch.acceptToast(toast);
+      else if (action.kind === "retry") watch.retryToast(toast);
       else if (action.kind === "snooze") watch.snoozeToast(toast);
       else watch.dismissToast(toast);
     });
@@ -92,9 +94,10 @@ function Screen({ boot }: { boot: Boot }) {
               {watch.watching
                 ? <button className="go stop" onClick={() => watch.setWatching(false)}><IconStop />Стоп</button>
                 : <button className="go start" onClick={() => watch.setWatching(true)}><IconPlay />Старт</button>}
-              <div className={`live${problem ? " warn" : !watch.watching ? " off" : ""}`} title={watch.source.text}>
-                <b><span className="dot" />{!watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : "Слежу"}</b>
-                <span>{watch.source.kind === "demo" ? "демо-чат" : problem ? "проверь папку игры в настройках" : "Chat.log"}</span>
+              <div className={`live${problem || gameOff ? " warn" : !watch.watching ? " off" : ""}`} title={watch.source.text}>
+                <b><span className="dot" />{gameOff ? "Игра не запущена" : !watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : "Слежу"}</b>
+                <span>{watch.source.kind === "demo" ? "демо-чат" : gameOff ? "запусти Aion и нажми «Старт»" : problem
+                  ? "проверь папку игры в настройках" : watch.game ? "Chat.log · игра запущена" : "Chat.log"}</span>
               </div>
               <span className="sep" />
               <div className="count"><b>{found}</b><span>найдено</span></div>
@@ -136,6 +139,11 @@ function Screen({ boot }: { boot: Boot }) {
           </div>
           <div className="search">
           <section className="card feed-card">
+            {gameOff && (
+              <div className="banner warn row">
+                <span>Игра не запущена: слежение остановлено. Запусти Aion и нажми «Старт» или проверь снова.</span>
+                <button className="btn" onClick={() => watch.checkGame().then((r) => { if (r !== false) watch.setWatching(true); })}>Проверить снова</button>
+              </div>)}
             {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
             <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
               alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
@@ -147,7 +155,7 @@ function Screen({ boot }: { boot: Boot }) {
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
       {settings && <SettingsPanel boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}
-      {!overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
+      {!overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
     </div>
   );

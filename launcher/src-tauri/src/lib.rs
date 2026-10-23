@@ -37,6 +37,68 @@ fn config_path(app: AppHandle) -> Result<String, String> {
     Ok(config_dir(&app)?.join("config.json").to_string_lossy().into_owned())
 }
 
+/// The client process of the game: bin32 and bin64 clients have the same name.
+const GAME_PROCESSES: [&str; 1] = ["aion.bin"];
+
+fn has_game(names: &[String]) -> bool {
+    names.iter().any(|name| GAME_PROCESSES.contains(&name.to_lowercase().as_str()))
+}
+
+/// Names of the running processes, from the ToolHelp snapshot (no console window, no rights on the processes); None
+/// when the list cannot be read.
+#[cfg(windows)]
+fn process_names() -> Option<Vec<String>> {
+    #[repr(C)]
+    struct ProcessEntry {
+        size: u32,
+        usage: u32,
+        process_id: u32,
+        default_heap_id: usize,
+        module_id: u32,
+        threads: u32,
+        parent_process_id: u32,
+        priority: i32,
+        flags: u32,
+        exe_file: [u16; 260],
+    }
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn CreateToolhelp32Snapshot(flags: u32, process_id: u32) -> isize;
+        fn Process32FirstW(snapshot: isize, entry: *mut ProcessEntry) -> i32;
+        fn Process32NextW(snapshot: isize, entry: *mut ProcessEntry) -> i32;
+        fn CloseHandle(handle: isize) -> i32;
+    }
+    const SNAPSHOT_PROCESSES: u32 = 0x2;
+    unsafe {
+        let snapshot = CreateToolhelp32Snapshot(SNAPSHOT_PROCESSES, 0);
+        if snapshot == 0 || snapshot == -1 {
+            return None;
+        }
+        let mut entry: ProcessEntry = std::mem::zeroed();
+        entry.size = std::mem::size_of::<ProcessEntry>() as u32;
+        let mut names = Vec::new();
+        let mut ok = Process32FirstW(snapshot, &mut entry);
+        while ok != 0 {
+            let len = entry.exe_file.iter().position(|&c| c == 0).unwrap_or(entry.exe_file.len());
+            names.push(String::from_utf16_lossy(&entry.exe_file[..len]));
+            ok = Process32NextW(snapshot, &mut entry);
+        }
+        CloseHandle(snapshot);
+        Some(names)
+    }
+}
+
+#[cfg(not(windows))]
+fn process_names() -> Option<Vec<String>> {
+    None
+}
+
+/// Is the game running? None when the process list is unavailable (the caller then must not stop anything).
+#[tauri::command]
+fn game_running() -> Option<bool> {
+    process_names().map(|names| has_game(&names))
+}
+
 /// Where an old Pulse may keep its settings: config.json in the launcher's folder and in up to five folders above
 /// it (Pulse.exe keeps config.json next to itself; a development build of the launcher sits deep inside the
 /// project). Only files that exist, nearest first; the caller checks that they are Pulse settings.
@@ -105,15 +167,24 @@ fn write_text(app: AppHandle, path: String, text: String) -> Result<(), String> 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![config_path, pulse_config_candidates, read_text, file_size, read_range, write_text])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::inside;
+    use super::{has_game, inside};
     use std::path::Path;
+
+    #[test]
+    fn finds_the_game_process_whatever_the_case() {
+        let list = |names: &[&str]| names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+        assert!(has_game(&list(&["explorer.exe", "Aion.bin"])));
+        assert!(has_game(&list(&["AION.BIN"])));
+        assert!(!has_game(&list(&["explorer.exe", "aion.bin.exe", "aion.exe"])));
+        assert!(!has_game(&[]));
+    }
 
     #[test]
     fn writes_only_files_directly_in_the_config_folder() {

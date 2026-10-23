@@ -18,6 +18,7 @@ export interface OverlayToast {
   text: string;
   icon: string | null;
   accept: boolean;
+  retry: boolean; // «Проверить снова» (the game is not running)
 }
 
 export interface OverlayState {
@@ -27,7 +28,7 @@ export interface OverlayState {
   toasts: OverlayToast[];
 }
 
-export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "dismiss"; id: number };
+export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "dismiss" | "retry"; id: number };
 
 /** True inside the overlay window (the same page, opened in the window labelled «overlay»). */
 export const isOverlay = platform !== null && getCurrentWindow().label === OVERLAY;

@@ -145,6 +145,8 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
 
           <section className="sec last">
             <h3>Игра</h3>
+            <Toggle on={cfg.game_check} label="Проверять, запущена ли игра" hint="нет процесса Aion — слежение останавливается и приходит уведомление"
+              onChange={(on) => save({ game_check: on })} />
             <div className="lbl"><label htmlFor="game">Папка игры</label></div>
             <input id="game" className="field" value={cfg.game_dir} onChange={(e) => save({ game_dir: e.target.value })} />
             <div className="lbl"><label htmlFor="log">Chat.log (если лежит не в папке игры)</label></div>

@@ -6,6 +6,7 @@ import { AlertBridge } from "../core/notify/bridge";
 import { Notification, NotificationCenter } from "../core/notify/center";
 import { demoLine, itemById, itemNames, mapNames, questNames, watchItems } from "./data";
 import { FeedRow, makeRows } from "./chatRows";
+import { Game, GAME_CHECK_SEC, gameStep } from "./gameWatch";
 import { AsyncLogFeed } from "./logFeed";
 import { makeSound } from "./sound";
 import type { Boot } from "./useBoot";
@@ -33,6 +34,8 @@ export interface Watch {
   nag: boolean; // matches wait for «Принять» (alert_mode «nag»)
   watching: boolean;
   setWatching(on: boolean): void;
+  game: Game; // is the game process running (null: unknown, or the check is off)
+  checkGame(): Promise<Game>;
   system: boolean; // «Система»: system notices in «Весь чат»
   setSystem(on: boolean): void;
   since: string; // when the counters were last reset (ISO), "" when never
@@ -41,6 +44,8 @@ export interface Watch {
   accept(alertId: number): void;
   acceptToast(toast: Toast): void;
   snoozeToast(toast: Toast): void;
+  /** «Проверить снова» of the «Игра не запущена» toast: look again, start watching if the game is there. */
+  retryToast(toast: Toast): void;
   dismissToast(toast: Toast): void;
   /** The toast on screen with this notification id (the overlay names toasts by id). */
   toastById(id: number): Toast | undefined;
@@ -89,7 +94,11 @@ export function useWatch(boot: Boot): Watch {
   const [remaining, setRemaining] = useState<Record<number, number>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [source, setSourceValue] = useState<Source>(demo ? { kind: "demo", text: "Демо: строки чата придумываются" } : { kind: "log", text: boot.chatLog });
-  const [watching, setWatching] = useState(true);
+  const [watching, setWatchingNow] = useState(true);
+  const [game, setGame] = useState<Game>(null);
+  const warned = useRef(false); // «Игра не запущена» is said once, until the game is back
+  const watchingRef = useRef(true);
+  const setWatching = useCallback((on: boolean) => { watchingRef.current = on; setWatchingNow(on); }, []);
   const [checked, setCheckedIds] = useState<Set<string>>(() => new Set(cfg.watch_items.filter((id) => itemById[id])));
   const [tally, setTally] = useState<Tally>({ found: 0, reacted: 0, missed: 0, since: "" }); // earlier sessions
   const tallyLoaded = useRef(false);
@@ -215,6 +224,27 @@ export function useWatch(boot: Boot): Watch {
     return () => { alive = false; clearInterval(timer); session.stop(); };
   }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.chat_minutes, cfg.poll_interval_ms, session, take, setSource, addRows]);
 
+  /** One look at the game process; acts on the answer as Pulse does (stop and warn once, clear when it is back). */
+  const checkGame = useCallback(async (): Promise<Game> => {
+    const files = boot.platform;
+    if (files === null || !cfg.game_check) { setGame(null); return null; }
+    let running: Game = null;
+    try { running = await files.gameRunning(); } catch { running = null; }
+    setGame(running);
+    const step = gameStep(running, cfg.game_check, watchingRef.current, warned.current);
+    if (step.stop) setWatching(false);
+    if (step.warn) { warned.current = true; bridge.gameRunning(false); if (!quiet) play(); }
+    if (step.clear) { warned.current = false; bridge.gameRunning(true); }
+    return running;
+  }, [boot.platform, cfg.game_check, bridge, play, quiet, setWatching]);
+
+  useEffect(() => { // while the program runs: is the game still there?
+    if (boot.platform === null) return;
+    checkGame();
+    const timer = setInterval(checkGame, GAME_CHECK_SEC * 1000);
+    return () => clearInterval(timer);
+  }, [boot.platform, checkGame]);
+
   useEffect(() => { // every second: countdowns, missed alerts, repeats, the toast stack
     const timer = setInterval(() => {
       const t = now();
@@ -235,7 +265,11 @@ export function useWatch(boot: Boot): Watch {
 
   return {
     rows, counters: total, since: tally.since, state, system,
-    setSystem: (on) => { setSystemValue(on); boot.save({ chat_system: on }); }, remaining, toasts, source, nag, watching, setWatching, checked,
+    setSystem: (on) => { setSystemValue(on); boot.save({ chat_system: on }); }, remaining, toasts, source, nag, watching, game, checkGame, checked,
+    setWatching: (on) => {
+      if (!on) { setWatching(false); return; }
+      checkGame().then((running) => { if (running !== false) { warned.current = false; bridge.gameRunning(true); setWatching(true); } });
+    },
     setChecked: (ids) => {
       setCheckedIds(ids);
       watchNames(ids);
@@ -246,6 +280,14 @@ export function useWatch(boot: Boot): Watch {
       finish(bridge.toastAccepted(toast.note).flatMap((id) => session.accept(id)), "accepted");
       center.acknowledge(toast.note.id);
       showToasts(openToasts.current.filter((x) => x !== toast));
+    },
+    retryToast: (toast) => {
+      checkGame().then((running) => {
+        if (running === false) return;
+        center.acknowledge(toast.note.id);
+        showToasts(openToasts.current.filter((x) => x !== toast));
+        setWatching(true);
+      });
     },
     snoozeToast: (toast) => { center.snooze(toast.note.id, SNOOZE_SEC); showToasts(openToasts.current.filter((x) => x !== toast)); },
     dismissToast: (toast) => showToasts(openToasts.current.filter((x) => x !== toast)),

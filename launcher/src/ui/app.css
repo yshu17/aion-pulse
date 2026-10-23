@@ -268,3 +268,6 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
   .top .tab { padding: 9px 10px 11px; }
   .top .brand { margin-right: 10px; }
 }
+
+.banner.row { display: flex; align-items: center; gap: 12px; } .banner.row span { flex: 1; } .banner.row .btn { padding: 6px 12px; flex: none; }
+.live b span.dot { color: inherit; }
