@@ -59,12 +59,16 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
     files.fileSize(boot.chatLog).then(() => setLogState("found"), () => setLogState("missing"));
   }, [boot.platform, boot.chatLog]);
 
+  // The parent re-renders every second (alert countdowns) and passes a new onClose each time: the panel must take
+  // the focus once, when it opens, never again — or it pulls the focus out of the field being typed in.
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     panel.current?.focus();
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") close.current(); };
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
-  }, [onClose]);
+  }, []);
 
   return (
     <>
