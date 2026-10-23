@@ -134,7 +134,7 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
                   }}>
                   <span className="acts">
                     <button className="a" aria-label={`Изменить «${p.event.name}»`} title="Изменить" onClick={(e) => { e.stopPropagation(); onEdit(p.event); }}><IconPencil /></button>
-                    {isOwn && <button className="a x" aria-label={`Удалить «${p.event.name}»`} title="Удалить" onClick={(e) => { e.stopPropagation(); onDelete(p.event); }}><IconClose /></button>}
+                    <button className="a x" aria-label={`Удалить «${p.event.name}»`} title="Удалить" onClick={(e) => { e.stopPropagation(); onDelete(p.event); }}><IconClose /></button>
                     <button className={`a bell${bell ? " on" : ""}`} aria-pressed={bell} aria-label={bell ? `Не напоминать о «${p.event.name}»` : `Напоминать о «${p.event.name}»`}
                       title={bell ? "Напоминание включено" : "Напомнить"} onClick={(e) => { e.stopPropagation(); schedule.toggleBell(p.event); }}><IconBell on={bell} /></button>
                   </span>

@@ -51,6 +51,7 @@ export interface SiteCheck {
 export interface Undo {
   label: string;
   snapshot: string;
+  until: number; // Date.now() when «Отменить удаление» goes away
 }
 
 const data = JSON.parse(scheduleText) as { events: ScheduleEvent[]; resets: Reset[] };
@@ -59,6 +60,7 @@ const COLOR_OF: Record<Chip, string> = { "Дерадиконы": TONE_NAME.blue,
 const KNOWN = knownFingerprint(data as unknown as Record<string, unknown>);
 const LEADS_FILE = "schedule_leads.json"; // next to config.json: {"<bell key>": minutes} for events with their own lead
 const REMIND_EVERY_MS = 20_000;
+export const UNDO_MS = 30_000; // how long a deleted event can be brought back
 
 const DEMO_OWN: ScheduleEvent[] = [
   { day: "thu", start: "18:00", end: "19:30", name: "Сбор легиона", group: "Своё", color: TONE_NAME.purple },
@@ -187,8 +189,8 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
 
   const remember = (label: string, before: string) => {
     clearTimeout(undoTimer.current);
-    setUndo({ label, snapshot: before });
-    undoTimer.current = setTimeout(() => setUndo(null), 6000);
+    setUndo({ label, snapshot: before, until: Date.now() + UNDO_MS });
+    undoTimer.current = setTimeout(() => setUndo(null), UNDO_MS);
   };
   const snapshot = () => JSON.stringify(custom.current.data);
 
@@ -214,7 +216,10 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     now, events, visible, counts, bells, version, undo, hiddenGroups, leadOf, defaultLead: cfg.remind_min,
     hiddenCount: custom.current.data.removed.length,
     resets: data.resets,
-    isOwn: (e: ScheduleEvent) => e.kind === OWN_KIND,
+    /** Made by the user from scratch (a server event the user edited keeps its own look and group). */
+    isOwn: (e: ScheduleEvent) => e.kind === OWN_KIND && chipOf(e) === "Своё",
+    /** A server event the user changed: an own copy in its place. */
+    isEdited: (e: ScheduleEvent) => e.kind === OWN_KIND && chipOf(e) !== "Своё",
     seriesDays: (e: ScheduleEvent) => seriesOf(e).map((x) => x.day),
     draftOf: (e: ScheduleEvent): Draft => ({
       name: e.name, start: e.start, end: e.end, chip: chipOf(e), bell: bells.has(bellKey(e)), lead: leadOf(e),
@@ -250,7 +255,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
       const before = snapshot();
       custom.current.remove(e);
       changed();
-      remember(`${e.kind === OWN_KIND ? "Удалено" : "Скрыто"} «${e.name}»`, before);
+      remember(`Удалено «${e.name}»`, before);
     },
     removeSeries: (e: ScheduleEvent) => {
       const before = snapshot();

@@ -7,6 +7,7 @@ import { ItemsPanel } from "./ItemsPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { enterOverlay, leaveOverlay, onAction, sendState } from "./overlayWindow";
 import { ScheduleTab } from "./schedule/ScheduleTab";
+import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
@@ -43,8 +44,9 @@ function Screen({ boot }: { boot: Boot }) {
       watching: watch.watching, problem: problem ? watch.source.text : "", counters: watch.counters,
       toasts: watch.toasts.map((t) => ({ id: t.note.id, title: t.note.title, text: t.note.text, icon: t.icon,
         accept: t.note.actions.some((a) => a.id === "accept"), retry: t.note.actions.some((a) => a.id === "retry") })),
+      schedule: overlaySchedule(schedule.visible, schedule.now),
     });
-  }, [overlay, watch.watching, watch.counters, watch.toasts, watch.source, problem]);
+  }, [overlay, watch.watching, watch.counters, watch.toasts, watch.source, problem, schedule.visible, schedule.now]);
 
   const live = useRef(watch); // the overlay's buttons act on the current state without re-subscribing every render
   live.current = watch;

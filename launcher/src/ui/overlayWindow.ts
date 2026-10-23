@@ -11,6 +11,7 @@ export const OVERLAY = "overlay";
 const MAIN = "main";
 const WIDTH = 380;
 const MARGIN = 16;
+const PLACE = "pulse-overlay-place"; // where the user dragged the overlay to, in physical pixels (both windows share it)
 
 export interface OverlayToast {
   id: number;
@@ -21,11 +22,21 @@ export interface OverlayToast {
   retry: boolean; // «Проверить снова» (the game is not running)
 }
 
+/** One schedule event on the overlay: times are MSK «HH:MM», `left` is «ещё 38 мин» / «через 2 ч». */
+export interface OverlayEvent {
+  name: string;
+  tone: string;
+  from: string;
+  to: string;
+  left: string;
+}
+
 export interface OverlayState {
   watching: boolean;
   problem: string; // empty when Chat.log is read
   counters: [number, number, number];
   toasts: OverlayToast[];
+  schedule: { current: OverlayEvent[]; next: OverlayEvent | null };
 }
 
 export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "dismiss" | "retry"; id: number };
@@ -38,7 +49,9 @@ export async function enterOverlay(): Promise<void> {
   const overlay = await Window.getByLabel(OVERLAY);
   if (overlay === null) return;
   const monitor = await currentMonitor();
-  if (monitor) {
+  const place = savedPlace();
+  if (place) await overlay.setPosition(new PhysicalPosition(place.x, place.y));
+  else if (monitor) {
     const x = monitor.position.x + monitor.size.width - Math.round((WIDTH + MARGIN) * monitor.scaleFactor);
     const y = monitor.position.y + Math.round(MARGIN * monitor.scaleFactor);
     await overlay.setPosition(new PhysicalPosition(x, y));
@@ -68,4 +81,26 @@ export const onAction = (handler: (action: OverlayAction) => void): Promise<Unli
 /** The overlay window as tall as its content, so the empty part never covers the game. */
 export function fitHeight(height: number): void {
   getCurrentWindow().setSize(new LogicalSize(WIDTH, Math.max(48, Math.ceil(height)))).catch(() => {});
+}
+
+function savedPlace(): { x: number; y: number } | null {
+  try {
+    const place = JSON.parse(localStorage.getItem(PLACE) ?? "null");
+    return Number.isInteger(place?.x) && Number.isInteger(place?.y) ? place : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Move the overlay with the mouse (from any place but a button); the new place is kept for the next time. */
+export function dragOverlay(event: React.MouseEvent): void {
+  if (event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
+  getCurrentWindow().startDragging().catch(() => {});
+}
+
+/** Remember every place the overlay is moved to. */
+export function keepPlace(): Promise<UnlistenFn> {
+  return getCurrentWindow().onMoved(({ payload }) => {
+    try { localStorage.setItem(PLACE, JSON.stringify({ x: payload.x, y: payload.y })); } catch { /* not kept: the corner next time */ }
+  });
 }

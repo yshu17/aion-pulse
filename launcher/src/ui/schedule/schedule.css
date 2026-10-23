@@ -109,7 +109,7 @@
 
 /* the form: floating next to the dragged card, or a sheet from the bottom */
 .sch-form { position: fixed; z-index: 40; background: var(--surface); border: 1px solid var(--border-control); box-shadow: 0 18px 44px rgba(0, 0, 0, .6); padding: 16px 18px; display: flex; flex-direction: column; gap: 11px; }
-.sch-form.float { width: 456px; border-radius: 14px; animation: arrive .15s ease-out; }
+.sch-form.float { width: 480px; border-radius: 14px; animation: arrive .15s ease-out; }
 .sch-form.sheet { left: 0; right: 0; bottom: 0; border-radius: 18px 18px 0 0; max-height: 92vh; overflow-y: auto; border-width: 1px 0 0; animation: rise .2s ease-out; }
 @keyframes rise { from { transform: translateY(24px); opacity: 0; } }
 .sch-scrim { position: fixed; inset: 0; z-index: 39; background: rgba(8, 9, 12, .5); }
@@ -124,7 +124,7 @@
 .sch-form .days { display: flex; gap: 5px; } .sch-form .days button { width: 40px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); }
 .sch-form .days button:hover { border-color: var(--border-control); }
 .sch-form .days button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
-.sch-form .opts { display: flex; gap: 5px; flex-wrap: wrap; }
+.sch-form .opts { display: flex; gap: 6px; flex-wrap: wrap; align-content: flex-start; }
 .sch-form .o { border: 1px solid var(--border); border-radius: 9px; padding: 5px 8px; font-size: 13px; background: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
 .sch-form .o:hover { border-color: var(--border-control); } .sch-form .o.on { border-color: var(--accent); background: rgba(255, 140, 26, .1); font-weight: 600; }
 .sch-form .o i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
@@ -150,3 +150,5 @@
 .sch-site { display: inline-flex; align-items: center; gap: 8px; } .sch-site.same { color: #8fdca9; } .sch-site.changed { color: #ffc27a; } .sch-site.error { color: #ffb0b3; }
 .sch-check { white-space: nowrap; flex: none; }
 @media (max-width: 1180px) { .sch-check span { display: none; } }
+.sch-form .f > label.bell-row { display: flex; font-weight: 400; font-size: 14px; margin: 0; }
+.sch-form .bell-row .box { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--border-control); border-radius: 5px; display: flex; align-items: center; justify-content: center; }

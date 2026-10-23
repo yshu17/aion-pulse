@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DAY, DAYS, dayStart, ScheduleEvent, weekday, weekStart } from "../../core/schedule/reminders";
 import { bellKey } from "../../core/schedule/timing";
-import { IconBell, IconCheck, IconCopy, IconEyeOff, IconLeft, IconPencil, IconPlus, IconReset, IconRight, IconClose } from "../icons";
+import { IconBell, IconCheck, IconCopy, IconLeft, IconPencil, IconPlus, IconReset, IconRight, IconClose } from "../icons";
 import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
@@ -15,7 +15,7 @@ const MONTHS = ["января", "февраля", "марта", "апреля", 
 const SWATCH: Record<string, string> = { blue: "#6f9bff", green: "#5fd38d", teal: "#4fd1cf", amber: "#f5b544", purple: "#b58cff" };
 const NARROW = 1000;
 const CHIPS_FIT = 1440; // below it the filter chips fold into one «Фильтры» button
-const FORM_WIDTH = 456;
+const FORM_WIDTH = 480;
 
 interface FormState {
   mode: "create" | "edit";
@@ -204,7 +204,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
             {schedule.site.state === "changed" && <button className="link accent" onClick={schedule.openArticle}>Открыть статью</button>}
           </span>
         )}
-        {hidden > 0 && <button className="link" onClick={schedule.restoreHidden}>Скрыто событий: {hidden}. Вернуть</button>}
+        {hidden > 0 && <button className="link" onClick={schedule.restoreHidden}>Удалено событий сервера: {hidden}. Вернуть все</button>}
         <span className="own-legend"><i />своё событие</span>
       </div>
 
@@ -225,7 +225,8 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
       {schedule.undo && (
         <div className="sch-undo" role="status">
           <span>{schedule.undo.label}</span>
-          <button className="link accent" onClick={schedule.undoLast}>Вернуть</button>
+          <button className="btn primary" onClick={schedule.undoLast}>Отменить удаление</button>
+          <UndoLeft until={schedule.undo.until} />
         </div>
       )}
     </main>
@@ -243,7 +244,7 @@ function ContextMenu({ menu, schedule, onEdit, onCopy, onClose }: {
   const left = Math.min(menu.x, window.innerWidth - 290);
   const top = Math.min(menu.y, window.innerHeight - (own ? 230 : 160));
   const act = (fn: () => void) => () => { onClose(); fn(); };
-  const series = own && schedule.seriesDays(event).length > 1;
+  const series = schedule.seriesDays(event).length > 1;
   return (
     <div className="sch-menu" ref={list} role="menu" style={{ left, top }}
       onKeyDown={(e) => {
@@ -256,14 +257,18 @@ function ContextMenu({ menu, schedule, onEdit, onCopy, onClose }: {
       <button role="menuitem" onClick={act(() => onCopy(event))}><IconCopy />{own ? "Дублировать на другие дни" : "Копировать как своё"}</button>
       <button role="menuitem" onClick={act(() => schedule.toggleBell(event))}><IconBell on={bell} />{bell ? "Не напоминать" : "Напоминать"}<span className="k">{bell ? "вкл" : ""}</span></button>
       <hr />
-      {own ? (
-        <>
-          <button role="menuitem" className="red" onClick={act(() => schedule.removeOne(event))}><IconClose />Удалить только этот день</button>
-          {series && <button role="menuitem" className="red" onClick={act(() => schedule.removeSeries(event))}><IconClose />Удалить все повторы<span className="k">Del</span></button>}
-        </>
-      ) : (
-        <button role="menuitem" className="red" onClick={act(() => schedule.removeOne(event))}><IconEyeOff />Скрыть это событие<span className="k">Del</span></button>
-      )}
+      <button role="menuitem" className="red" onClick={act(() => schedule.removeOne(event))}><IconClose />{series ? "Удалить только этот день" : "Удалить"}<span className="k">Del</span></button>
+      {series && <button role="menuitem" className="red" onClick={act(() => schedule.removeSeries(event))}><IconClose />Удалить все повторы</button>}
     </div>
   );
+}
+
+/** Seconds left to bring a deleted event back. */
+function UndoLeft({ until }: { until: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return <span className="muted">{Math.max(0, Math.ceil((until - now) / 1000))} с</span>;
 }

@@ -26,6 +26,7 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
   const { now } = schedule;
   const slot = slotOf(event)!;
   const own = schedule.isOwn(event);
+  const edited = schedule.isEdited(event);
   const panel = useRef<HTMLElement>(null);
   useEffect(() => { panel.current?.focus(); }, [event]);
 
@@ -43,12 +44,12 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
   const date = first ? new Date(first.start) : null;
   const tone = toneOf(event);
   const bell = schedule.bells.has(bellKey(event));
-  const days = own ? schedule.seriesDays(event) : [event.day];
+  const days = schedule.seriesDays(event);
 
   return (
     <aside className="sch-drawer" ref={panel} tabIndex={-1} aria-label={`Событие «${event.name}»`}
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
-      <div className="hd"><span className="muted">{own ? "Своё событие" : "Событие"}</span><span className="spacer" />
+      <div className="hd"><span className="muted">{own ? "Своё событие" : edited ? "Событие, изменено тобой" : "Событие"}</span><span className="spacer" />
         <button className="sch-x" aria-label="Закрыть карточку" onClick={onClose}><IconClose /></button></div>
       <h2><span className="dot" style={{ background: SWATCH[tone] }} />{event.name}</h2>
       <div className="muted sub">
@@ -81,14 +82,8 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
       <span className="spacer" />
       <div className="actions">
         <button className="btn primary" onClick={() => onEdit(event)}><IconPencil />Изменить</button>
-        {own ? (
-          <>
-            <button className="btn" onClick={() => onDelete(event)}>Удалить только этот день</button>
-            {days.length > 1 && <button className="btn danger-text" onClick={() => onDeleteSeries(event)}>Удалить все повторы</button>}
-          </>
-        ) : (
-          <button className="btn" onClick={() => onDelete(event)}>Скрыть это событие</button>
-        )}
+        <button className="btn" onClick={() => onDelete(event)}>{days.length > 1 ? "Удалить только этот день" : "Удалить"}</button>
+        {days.length > 1 && <button className="btn danger-text" onClick={() => onDeleteSeries(event)}>Удалить все повторы</button>}
       </div>
     </aside>
   );
