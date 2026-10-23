@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
 import { IconClose, IconExpand, IconSettings } from "./icons";
-import { fitHeight, keepPlace, loadLook, onState, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus, startDrag } from "./overlayWindow";
+import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
+import { monitorBox, onPlace, onState, onWindowMoved, OverlayLook, OverlayState, Point, loadLook, placeWindow, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition } from "./overlayWindow";
 
+const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
+const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
 /** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
@@ -17,21 +20,71 @@ export function Overlay() {
   const setLook = (next: OverlayLook) => { setLookValue(next); saveLook(next); };
   useEffect(() => { setKeepGameFocus(look.keepGameFocus); }, [look.keepGameFocus]);
   const root = useRef<HTMLDivElement>(null);
+  const pill = useRef<HTMLDivElement>(null);
+  const [side, setSide] = useState<Side>("down"); // notifications and the menu open below the strip, or above it near the screen bottom
+  const sideRef = useRef<Side>("down");
+  const anchor = useRef<Point | null>(null); // the strip's top-left corner on the screen: it stays put whatever opens around it
+  const placedAt = useRef(0);
+  const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  /** Where the strip is inside the window now (CSS pixels): below the notifications when they open upwards. */
+  const inside = () => {
+    const r = pill.current?.getBoundingClientRect();
+    return { left: r?.left ?? 1, top: r?.top ?? 1 };
+  };
+
+  /** Put the window where the anchor says, as tall as the content: the strip does not move when notifications come. */
+  const place = () => {
+    const el = root.current, at = anchor.current;
+    if (!el || !at) return;
+    const origin = windowOrigin(at, inside(), window.devicePixelRatio);
+    placedAt.current = performance.now();
+    placeWindow(origin.x, origin.y, el.getBoundingClientRect().height + 2).catch(() => {});
+  };
+
+  /** Choose the side from the strip's place on its monitor: near the bottom of the screen the notifications open upwards. */
+  const chooseAndPlace = async () => {
+    const at = anchor.current, el = pill.current;
+    if (!at || !el) return;
+    const monitor = await monitorBox();
+    if (monitor) {
+      const next = chooseSide(at.y, el.getBoundingClientRect().height * window.devicePixelRatio, monitor.top, monitor.height, sideRef.current);
+      if (next !== sideRef.current) { sideRef.current = next; setSide(next); return; } // the layout effect below places it
+    }
+    place();
+  };
 
   useEffect(() => {
     document.documentElement.classList.add("overlay-mode");
     const off = onState(setState);
-    const moved = keepPlace();
-    return () => { off.then((unlisten) => unlisten()); moved.then((unlisten) => unlisten()); };
-  }, []);
+    const placed = onPlace((point) => { anchor.current = point; chooseAndPlace(); }); // «В накладку»: where to open
+    const moved = onWindowMoved((x, y) => { // the user dragged the window: the strip's new place is kept
+      if (performance.now() - placedAt.current < OWN_MOVE_MS) return;
+      anchor.current = anchorOf({ x, y }, inside(), window.devicePixelRatio);
+      saveAnchor(anchor.current);
+      clearTimeout(settle.current);
+      settle.current = setTimeout(chooseAndPlace, SETTLE_MS); // the side is chosen when the drag has stopped
+    });
+    windowPosition().then((pos) => { // the first place: where the window is now
+      if (anchor.current) return;
+      anchor.current = anchorOf(pos, inside(), window.devicePixelRatio);
+      chooseAndPlace();
+    }).catch(() => {});
+    return () => {
+      off.then((unlisten) => unlisten()); placed.then((unlisten) => unlisten()); moved.then((unlisten) => unlisten());
+      clearTimeout(settle.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- the handlers read refs
+
+  useLayoutEffect(() => { place(); }, [side]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const el = root.current;
     if (!el) return;
-    const observer = new ResizeObserver(() => fitHeight(el.getBoundingClientRect().height + 2));
+    const observer = new ResizeObserver(() => place());
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { // the menu closes on a press outside it or on Esc
     if (!menu) return;
@@ -57,8 +110,8 @@ export function Overlay() {
   const isRunning = running.length > 0;
   const slides = several ? running : isRunning ? [running[0]] : next ? [next] : []; // running events take turns, else the next one
   return (
-    <div className="overlay" ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
-      <div className="ov-line" tabIndex={0} role="group" aria-label="Накладка Pulse+" 
+    <div className={`overlay ${side}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
+      <div className="ov-line" ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+" 
         title={state?.problem || (several ? "Щелчок: следующее событие. Потяни: передвинуть. Правый клик: меню" : "Потяни, чтобы передвинуть. Правый клик: меню")}
         onPointerDown={(e) => { dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
         onPointerMove={(e) => {

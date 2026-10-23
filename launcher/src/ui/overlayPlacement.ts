@@ -1,0 +1,36 @@
+// Where the notifications of the overlay open: below the one-line strip, or above it when the strip is near the
+// bottom of the screen. Pure arithmetic in physical pixels, so it can be tested without a window.
+
+export type Side = "up" | "down";
+
+/** Which part of the monitor height counts as «near an edge». */
+export const EDGE = 0.25;
+
+/**
+ * The side the notifications open to for a strip at `pillTop` (screen pixels, `pillHeight` tall) on a monitor
+ * that starts at `monitorTop` and is `monitorHeight` tall.
+ *  - less than 25 % of the screen height under the strip: upwards;
+ *  - less than 25 % above it: downwards;
+ *  - in the middle band: as before (`current`), so the layout does not flip while the strip is moved around.
+ */
+export function chooseSide(pillTop: number, pillHeight: number, monitorTop: number, monitorHeight: number, current: Side): Side {
+  const below = monitorTop + monitorHeight - (pillTop + pillHeight);
+  const above = pillTop - monitorTop;
+  if (below < monitorHeight * EDGE) return "up";
+  if (above < monitorHeight * EDGE) return "down";
+  return current;
+}
+
+/**
+ * The window position that keeps the strip where the user put it. `anchor` is the strip's top-left corner on the
+ * screen; `inside` is where the strip's corner is within the window (CSS pixels), which depends on the side: with
+ * notifications above it the strip is lower in the window.
+ */
+export function windowOrigin(anchor: { x: number; y: number }, inside: { left: number; top: number }, dpr: number): { x: number; y: number } {
+  return { x: Math.round(anchor.x - inside.left * dpr), y: Math.round(anchor.y - inside.top * dpr) };
+}
+
+/** The strip's top-left corner on the screen, from the window position and where the strip is in the window. */
+export function anchorOf(window: { x: number; y: number }, inside: { left: number; top: number }, dpr: number): { x: number; y: number } {
+  return { x: Math.round(window.x + inside.left * dpr), y: Math.round(window.y + inside.top * dpr) };
+}

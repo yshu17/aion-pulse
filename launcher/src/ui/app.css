@@ -118,6 +118,7 @@ time { color: var(--muted); font: 12px var(--mono); }
 
 html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background: transparent; height: auto; overflow: hidden; }
 .overlay { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding: 1px 1px 14px; } /* room for the shadows */
+.overlay.up { flex-direction: column-reverse; padding: 14px 1px 1px; } /* near the screen bottom: the menu and notifications open above the strip */
 .btn.mini-plain { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
 .overlay .toast { width: 100%; }
 /* the overlay is one line: status dot, the event now or next, the time left; the rest is in the right-click menu */

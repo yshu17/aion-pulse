@@ -11,7 +11,7 @@ export const OVERLAY = "overlay";
 const MAIN = "main";
 const WIDTH = 380;
 const MARGIN = 16;
-const PLACE = "pulse-overlay-place"; // where the user dragged the overlay to, in physical pixels (both windows share it)
+const PLACE = "pulse-overlay-place"; // where the user put the strip: its top-left corner on the screen, physical pixels (both windows share it)
 
 export interface OverlayToast {
   id: number;
@@ -45,17 +45,23 @@ export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "
 /** True inside the overlay window (the same page, opened in the window labelled «overlay»). */
 export const isOverlay = platform !== null && getCurrentWindow().label === OVERLAY;
 
-/** Hide the main window and show the overlay in the top-right corner of the monitor the main window is on. */
+/** Hide the main window and show the overlay where the user left it, or in the top-right corner of this monitor. */
 export async function enterOverlay(): Promise<void> {
   const overlay = await Window.getByLabel(OVERLAY);
   if (overlay === null) return;
-  const monitor = await currentMonitor();
-  const place = savedPlace();
-  if (place) await overlay.setPosition(new PhysicalPosition(place.x, place.y));
-  else if (monitor) {
-    const x = monitor.position.x + monitor.size.width - Math.round((WIDTH + MARGIN) * monitor.scaleFactor);
-    const y = monitor.position.y + Math.round(MARGIN * monitor.scaleFactor);
-    await overlay.setPosition(new PhysicalPosition(x, y));
+  let anchor = savedPlace();
+  if (!anchor) {
+    const monitor = await currentMonitor();
+    if (monitor) {
+      anchor = {
+        x: monitor.position.x + monitor.size.width - Math.round((WIDTH + MARGIN) * monitor.scaleFactor),
+        y: monitor.position.y + Math.round(MARGIN * monitor.scaleFactor),
+      };
+    }
+  }
+  if (anchor) {
+    await overlay.setPosition(new PhysicalPosition(anchor.x, anchor.y));
+    await emitTo(OVERLAY, "pulse-place", anchor); // the overlay page puts its window exactly, for the side it opens notifications to
   }
   await overlay.show();
   await getCurrentWindow().hide();
@@ -79,12 +85,31 @@ export const sendAction = (action: OverlayAction) => emitTo(MAIN, "overlay-actio
 export const onAction = (handler: (action: OverlayAction) => void): Promise<UnlistenFn> =>
   listen<OverlayAction>("overlay-action", (event) => handler(event.payload));
 
-/** The overlay window as tall as its content, so the empty part never covers the game. */
-export function fitHeight(height: number): void {
-  // `height` is in CSS pixels: with a page zoom (devicePixelRatio is not the monitor scale) they differ from the window's
+export type Point = { x: number; y: number };
+export const onPlace = (handler: (anchor: Point) => void): Promise<UnlistenFn> =>
+  listen<Point>("pulse-place", (event) => handler(event.payload));
+
+/**
+ * Put the overlay window at (x, y) as tall as its content (`heightCss`, CSS pixels), so the empty part never covers the
+ * game. With a page zoom (devicePixelRatio is not the monitor scale) CSS and window pixels differ.
+ */
+export async function placeWindow(x: number, y: number, heightCss: number): Promise<void> {
   const win = getCurrentWindow();
-  win.scaleFactor().then((scale) => win.setSize(new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(height * window.devicePixelRatio)))))
-    .catch(() => {});
+  const scale = await win.scaleFactor();
+  const size = new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(heightCss * window.devicePixelRatio)));
+  await Promise.all([win.setPosition(new PhysicalPosition(x, y)), win.setSize(size)]);
+}
+
+/** Where the overlay window is, on the screen (physical pixels). */
+export async function windowPosition(): Promise<Point> {
+  const position = await getCurrentWindow().outerPosition();
+  return { x: position.x, y: position.y };
+}
+
+/** The monitor the overlay is on: its top and height, physical pixels. */
+export async function monitorBox(): Promise<{ top: number; height: number } | null> {
+  const monitor = await currentMonitor();
+  return monitor ? { top: monitor.position.y, height: monitor.size.height } : null;
 }
 
 function savedPlace(): { x: number; y: number } | null {
@@ -96,16 +121,19 @@ function savedPlace(): { x: number; y: number } | null {
   }
 }
 
-/** Start moving the overlay with the mouse; the new place is kept for the next time (see keepPlace). */
+/** Start moving the overlay with the mouse; the new place is kept for the next time (see saveAnchor). */
 export function startDrag(): void {
   getCurrentWindow().startDragging().catch(() => {});
 }
 
-/** Remember every place the overlay is moved to. */
-export function keepPlace(): Promise<UnlistenFn> {
-  return getCurrentWindow().onMoved(({ payload }) => {
-    try { localStorage.setItem(PLACE, JSON.stringify({ x: payload.x, y: payload.y })); } catch { /* not kept: the corner next time */ }
-  });
+/** The window was moved (by the user or by placeWindow): its new position, physical pixels. */
+export function onWindowMoved(handler: (x: number, y: number) => void): Promise<UnlistenFn> {
+  return getCurrentWindow().onMoved(({ payload }) => handler(payload.x, payload.y));
+}
+
+/** Remember where the strip is, for the next time. */
+export function saveAnchor(anchor: Point): void {
+  try { localStorage.setItem(PLACE, JSON.stringify(anchor)); } catch { /* not kept: the corner next time */ }
 }
 
 /** How the overlay looks and behaves, kept in this computer's browser storage (both windows share it). */
