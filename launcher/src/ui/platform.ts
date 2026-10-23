@@ -15,6 +15,10 @@ export interface Platform {
   /** A missing file rejects with an error whose `code` is "ENOENT". */
   fileSize(path: string): Promise<number>;
   readRange(path: string, position: number, length: number): Promise<Uint8Array>;
+  /** GET or HEAD of an address on the server's sites (aionempire.com / .net) (the Rust side refuses others): [text, headers]. */
+  httpFetch(url: string, method: "GET" | "HEAD"): Promise<[string, Record<string, string>]>;
+  /** An address in the default browser. */
+  openUrl(url: string): Promise<void>;
 }
 
 /** Rust errors are texts; «ENOENT: …» becomes an error with that code, as the log reader of the core expects. */
@@ -41,6 +45,8 @@ const tauri: Platform = {
   writeText: (path, text) => call("write_text", { path, text }),
   fileSize: (path) => call("file_size", { path }),
   readRange: async (path, position, length) => new Uint8Array(await call<ArrayBuffer>("read_range", { path, position, length })),
+  httpFetch: (url, method) => call("http_fetch", { url, method }),
+  openUrl: async (url) => { const { openUrl } = await import("@tauri-apps/plugin-opener"); await openUrl(url); },
 };
 
 export const platform: Platform | null = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window ? tauri : null;

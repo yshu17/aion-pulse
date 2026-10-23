@@ -52,6 +52,8 @@ export interface Watch {
   reset(): void;
   /** The alert sound, to try it in the settings. */
   playSound(): void;
+  /** A schedule reminder: a toast with the alert sound, unless the schedule source is off or muted. */
+  notify(title: string, text: string): void;
 }
 
 interface Tally { found: number; reacted: number; missed: number; since: string }
@@ -294,5 +296,10 @@ export function useWatch(boot: Boot): Watch {
     toastById: (id) => openToasts.current.find((toast) => toast.note.id === id),
     reset: () => { session.resetCounters(); setTally({ found: 0, reacted: 0, missed: 0, since: new Date().toISOString() }); sync(); },
     playSound: () => play(),
+    notify: (title, text) => {
+      if (cfg.notify_off.includes("schedule")) return;
+      center.notify("schedule", "reminder", title, text);
+      if (!cfg.notify_dnd && !cfg.notify_mute.includes("schedule")) play();
+    },
   };
 }

@@ -163,18 +163,63 @@ fn write_text(app: AppHandle, path: String, text: String) -> Result<(), String> 
     fs::rename(&temporary, &target).map_err(|e| io_error(&path, e))
 }
 
+/// The server's sites: the knowledge base (aionempire.com) and its pictures (aionempire.net).
+const ALLOWED_HOSTS: [&str; 2] = ["aionempire.com", "aionempire.net"];
+
+/// Only the server's sites are asked (the schedule check), over HTTPS.
+fn allowed_url(url: &str) -> bool {
+    let Some(rest) = url.strip_prefix("https://") else { return false };
+    let host = rest.split(['/', '?', '#', ':']).next().unwrap_or("").to_ascii_lowercase();
+    ALLOWED_HOSTS.iter().any(|allowed| host == *allowed || host.ends_with(&format!(".{allowed}")))
+}
+
+/// GET (the page text, at most 2 MB) or HEAD of a knowledge-base address, with the response headers.
+/// ETag and Last-Modified keep their usual spelling, as the core reads them.
+#[tauri::command]
+async fn http_fetch(url: String, method: String) -> Result<(String, std::collections::HashMap<String, String>), String> {
+    if !allowed_url(&url) {
+        return Err(format!("EACCES: only the server sites can be asked: {url}"));
+    }
+    if method != "GET" && method != "HEAD" {
+        return Err(format!("unsupported method {method}"));
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let agent = ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(10)).build();
+        let response = agent.request(&method, &url).set("User-Agent", "Pulse").set("Accept-Language", "ru")
+            .call().map_err(|e| e.to_string())?;
+        let mut headers = std::collections::HashMap::new();
+        for name in response.headers_names() {
+            let key = match name.to_ascii_lowercase().as_str() {
+                "etag" => "ETag".to_string(),
+                "last-modified" => "Last-Modified".to_string(),
+                _ => name.clone(),
+            };
+            if let Some(value) = response.header(&name) {
+                headers.insert(key, value.to_string());
+            }
+        }
+        let mut body = String::new();
+        if method == "GET" {
+            response.into_reader().take(2_000_000).read_to_string(&mut body).map_err(|e| e.to_string())?;
+        }
+        Ok((body, headers))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{has_game, inside};
+    use super::{allowed_url, has_game, inside};
     use std::path::Path;
 
     #[test]
@@ -196,5 +241,16 @@ mod tests {
         assert!(!inside(dir, &dir.join("sub").join("config.json")));
         assert!(!inside(dir, Path::new(r"C:\aMain\Games\AION Imperia\Aion Empire\test.txt")));
         assert!(!inside(dir, dir));
+    }
+
+    #[test]
+    fn asks_only_the_knowledge_base() {
+        assert!(allowed_url("https://kb.aionempire.com/article/rasapisanie"));
+        assert!(allowed_url("https://aionempire.com/x.jpg"));
+        assert!(!allowed_url("http://kb.aionempire.com/"));
+        assert!(!allowed_url("https://aionempire.com.evil.net/"));
+        assert!(!allowed_url("https://evil.net/?aionempire.com"));
+        assert!(allowed_url("https://news.aionempire.net/storage/app/media/schedule-20ru.jpg"));
+        assert!(!allowed_url("https://aionempire.net.evil.net/"));
     }
 }

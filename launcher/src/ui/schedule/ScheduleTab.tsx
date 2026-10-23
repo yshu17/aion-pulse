@@ -2,16 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DAY, DAYS, dayStart, ScheduleEvent, weekday, weekStart } from "../../core/schedule/reminders";
 import { bellKey } from "../../core/schedule/timing";
-import { IconBell, IconCheck, IconCopy, IconEyeOff, IconLeft, IconPencil, IconPlus, IconRight, IconClose } from "../icons";
-import type { Boot } from "../useBoot";
+import { IconBell, IconCheck, IconCopy, IconEyeOff, IconLeft, IconPencil, IconPlus, IconReset, IconRight, IconClose } from "../icons";
 import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
 import { Ribbon } from "./Ribbon";
-import { CHIP_TONE, CHIPS, Draft, useSchedule } from "./useSchedule";
+import { CHIP_TONE, CHIPS, Draft, Schedule } from "./useSchedule";
 
-type View = "day" | "3days" | "week";
+type View = "3days" | "week";
 const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 const SWATCH: Record<string, string> = { blue: "#6f9bff", green: "#5fd38d", teal: "#4fd1cf", amber: "#f5b544", purple: "#b58cff" };
 const NARROW = 1000;
@@ -52,8 +51,7 @@ const rangeText = (from: number, to: number) => {
     : `${a.getUTCDate()} ${MONTHS[a.getUTCMonth()]} – ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`;
 };
 
-export function ScheduleTab({ boot }: { boot: Boot }) {
-  const schedule = useSchedule(boot);
+export function ScheduleTab({ schedule }: { schedule: Schedule }) {
   const narrow = useNarrow();
   const chipsFold = useNarrow(CHIPS_FIT);
   const [view, setView] = useState<View>(() => (window.innerWidth < NARROW ? "3days" : "week"));
@@ -67,9 +65,8 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
   const root = useRef<HTMLDivElement>(null);
 
   const today = dayStart(schedule.now);
-  const step = view === "week" ? 7 : view === "3days" ? 3 : 1;
-  const first = view === "week" ? weekStart(schedule.now) + offset * 7 * DAY : today + offset * step * DAY;
-  const count = view === "week" ? 7 : view === "3days" ? 3 : 1;
+  const first = view === "week" ? weekStart(schedule.now) + offset * 7 * DAY : today + offset * 3 * DAY;
+  const count = view === "week" ? 7 : 3;
   const days = Array.from({ length: count }, (_, i) => {
     const date = first + i * DAY;
     return { key: DAYS[weekday(date)], date };
@@ -82,7 +79,7 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
     setMenu(null);
     setSelected(null);
     const sheet = narrow;
-    requestAnimationFrame(() => {
+    setTimeout(() => { // after the ghost card is on screen
       const el = near ? document.querySelector<HTMLElement>("[data-ghost]") : null;
       let placement: FormState["placement"] = { kind: "float", left: Math.max(12, window.innerWidth - FORM_WIDTH - 24), top: 150 };
       if (el) {
@@ -91,7 +88,7 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
         placement = { kind: "float", left, top: Math.max(70, Math.min(r.top - 150, window.innerHeight - 560)) };
       }
       setForm({ mode: "create", title, draft, placement: sheet ? { kind: "sheet" } : placement });
-    });
+    }, 0);
   };
 
   const openEdit = (event: ScheduleEvent) => {
@@ -103,13 +100,13 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
 
   const newByButton = () => {
     const minute = Math.min(22 * 60, (Math.floor((schedule.now - today) / 3_600_000) + 1) * 60);
-    openCreate({ name: "", start: hm(minute), end: minute + 60 >= 1440 ? "24:00" : hm(minute + 60), days: [DAYS[weekday(schedule.now)]], chip: "Своё", bell: true }, null);
+    openCreate({ name: "", start: hm(minute), end: minute + 60 >= 1440 ? "24:00" : hm(minute + 60), days: [DAYS[weekday(schedule.now)]], chip: "Своё", bell: true, lead: schedule.defaultLead }, null);
   };
 
   const onGhost = (g: Ghost | null, done: boolean) => {
     setGhost(g);
     if (done && g) {
-      openCreate({ name: "", start: hm(g.s), end: g.e >= 1440 ? "24:00" : hm(g.e), days: [g.day], chip: "Своё", bell: true }, g);
+      openCreate({ name: "", start: hm(g.s), end: g.e >= 1440 ? "24:00" : hm(g.e), days: [g.day], chip: "Своё", bell: true, lead: schedule.defaultLead }, g);
     }
   };
 
@@ -161,7 +158,7 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
         <h2 className="range">{rangeText(days[0].date, days[days.length - 1].date)}</h2>
         <button className="btn" onClick={() => setOffset(0)}>Сегодня</button>
         <div className="segmented" role="radiogroup" aria-label="Сколько дней показывать">
-          {([["day", "День"], ["3days", "3 дня"], ["week", "Неделя"]] as [View, string][]).map(([v, label]) => (
+          {([["3days", "3 дня"], ["week", "Неделя"]] as [View, string][]).map(([v, label]) => (
             <button key={v} role="radio" aria-checked={view === v} className={view === v ? "on" : ""} onClick={() => changeView(v)}>{label}</button>
           ))}
         </div>
@@ -186,6 +183,10 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
           )}
         </div>
         <span className="spacer" />
+        <button className="btn sch-check" onClick={schedule.checkSite} disabled={schedule.site?.state === "busy"}
+          title="Сравнить с картинкой расписания в базе знаний" aria-label="Проверить обновление расписания на сайте">
+          <IconReset /><span>{schedule.site?.state === "busy" ? "Проверяю…" : "Проверить обновление"}</span>
+        </button>
         <button className="btn primary" onClick={newByButton}><IconPlus />Своё событие</button>
       </div>
 
@@ -198,6 +199,11 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
       <div className="sch-legend">
         <span className="hintbar">Потяни по пустому месту сетки: появится новое событие. Клик по событию — подробности.</span>
         <span className="spacer" />
+        {schedule.site && schedule.site.state !== "busy" && (
+          <span className={`sch-site ${schedule.site.state}`} role="status">{schedule.site.text}
+            {schedule.site.state === "changed" && <button className="link accent" onClick={schedule.openArticle}>Открыть статью</button>}
+          </span>
+        )}
         {hidden > 0 && <button className="link" onClick={schedule.restoreHidden}>Скрыто событий: {hidden}. Вернуть</button>}
         <span className="own-legend"><i />своё событие</span>
       </div>
@@ -227,7 +233,7 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
 }
 
 function ContextMenu({ menu, schedule, onEdit, onCopy, onClose }: {
-  menu: MenuState; schedule: ReturnType<typeof useSchedule>; onEdit(e: ScheduleEvent): void; onCopy(e: ScheduleEvent): void; onClose(): void;
+  menu: MenuState; schedule: Schedule; onEdit(e: ScheduleEvent): void; onCopy(e: ScheduleEvent): void; onClose(): void;
 }) {
   const { event } = menu;
   const own = schedule.isOwn(event);
@@ -246,7 +252,7 @@ function ContextMenu({ menu, schedule, onEdit, onCopy, onClose }: {
         if (e.key === "ArrowDown") { e.preventDefault(); items[(at + 1) % items.length]?.focus(); }
         if (e.key === "ArrowUp") { e.preventDefault(); items[(at - 1 + items.length) % items.length]?.focus(); }
       }}>
-      {own && <button role="menuitem" onClick={act(() => onEdit(event))}><IconPencil />Изменить<span className="k">Enter</span></button>}
+      <button role="menuitem" onClick={act(() => onEdit(event))}><IconPencil />Изменить</button>
       <button role="menuitem" onClick={act(() => onCopy(event))}><IconCopy />{own ? "Дублировать на другие дни" : "Копировать как своё"}</button>
       <button role="menuitem" onClick={act(() => schedule.toggleBell(event))}><IconBell on={bell} />{bell ? "Не напоминать" : "Напоминать"}<span className="k">{bell ? "вкл" : ""}</span></button>
       <hr />

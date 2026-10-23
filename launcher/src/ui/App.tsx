@@ -7,6 +7,7 @@ import { ItemsPanel } from "./ItemsPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { enterOverlay, leaveOverlay, onAction, sendState } from "./overlayWindow";
 import { ScheduleTab } from "./schedule/ScheduleTab";
+import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
 import { useWatch } from "./useWatch";
@@ -22,6 +23,7 @@ export default function App() {
 
 function Screen({ boot }: { boot: Boot }) {
   const watch = useWatch(boot);
+  const schedule = useSchedule(boot, watch.notify); // reminders come on every tab
   const problem = watch.source.kind === "missing" || watch.source.kind === "error";
   const [overlay, setOverlay] = useState(false);
   const gameOff = watch.game === false;
@@ -153,7 +155,7 @@ function Screen({ boot }: { boot: Boot }) {
           </div>
         </main>
       ) : tab === "Расписание" ? (
-        <ScheduleTab boot={boot} />
+        <ScheduleTab schedule={schedule} />
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}

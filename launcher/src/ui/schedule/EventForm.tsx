@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { DAY_NAMES, localZone, MSK_OFFSET } from "../../core/schedule/timing";
+import { DAY_NAMES, LEADS, localZone, MSK_OFFSET } from "../../core/schedule/timing";
 import { DAYS } from "../../core/schedule/reminders";
 import { IconClose } from "../icons";
 import { hm, toMinutes } from "./layout";
@@ -108,10 +108,13 @@ export function EventForm({ title, draft, placement, onChange, onSave, onCancel 
           </div>
         </div>
 
-        <label className="bell-row">
-          <input type="checkbox" checked={draft.bell} onChange={(e) => set({ bell: e.target.checked })} />
-          <span className="box" /><span>Напоминать о событии</span>
-        </label>
+        <div className="f">
+          <label className="bell-row">
+            <input type="checkbox" checked={draft.bell} onChange={(e) => set({ bell: e.target.checked })} />
+            <span className="box" /><span>Напоминать о событии</span>
+          </label>
+          {draft.bell && <LeadPicker value={draft.lead} onChange={(lead) => set({ lead })} />}
+        </div>
 
         <div className="hint">Видно только тебе: расписание сервера не меняется.</div>
         <div className="actions">
@@ -122,5 +125,21 @@ export function EventForm({ title, draft, placement, onChange, onSave, onCancel 
         </div>
       </div>
     </>
+  );
+}
+
+/** «За сколько напомнить»: the reminder comes this many minutes before the start, and one more when it starts. */
+export function LeadPicker({ value, onChange }: { value: number; onChange(minutes: number): void }) {
+  const options = LEADS.some(([, m]) => m === value) ? LEADS : [...LEADS, [`${value} мин`, value] as [string, number]].sort((a, b) => a[1] - b[1]);
+  return (
+    <div className="lead">
+      <span className="hint" id="lead-label">Напомнить за</span>
+      <div className="segmented small" role="radiogroup" aria-labelledby="lead-label">
+        {options.map(([label, minutes]) => (
+          <button key={minutes} type="button" role="radio" aria-checked={value === minutes} className={value === minutes ? "on" : ""}
+            onClick={() => onChange(minutes)}>{label}</button>
+        ))}
+      </div>
+    </div>
   );
 }

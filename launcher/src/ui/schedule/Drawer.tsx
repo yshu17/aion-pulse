@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { DAY, ScheduleEvent, startsAt, weekStart } from "../../core/schedule/reminders";
 import { bellKey, DAY_NAMES, endOf } from "../../core/schedule/timing";
 import { IconClose, IconPencil } from "../icons";
+import { LeadPicker } from "./EventForm";
 import { zoneShift } from "./Grid";
 import { countdown, hm, slotOf, toneOf } from "./layout";
 import { chipOf, Schedule } from "./useSchedule";
@@ -66,7 +67,7 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
         <button className={`sch-switch${bell ? " on" : ""}`} role="switch" aria-checked={bell} onClick={() => schedule.toggleBell(event)}>
           <i /> {bell ? "Напомню заранее и когда начнётся" : "Не напоминаю"}
         </button>
-        <div className="hint">За сколько минут — в настройках, «Когда нашлось».</div>
+        {bell && <LeadPicker value={schedule.leadOf(event)} onChange={(minutes) => schedule.setLead(event, minutes)} />}
       </div>
 
       <div>
@@ -79,9 +80,9 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
 
       <span className="spacer" />
       <div className="actions">
+        <button className="btn primary" onClick={() => onEdit(event)}><IconPencil />Изменить</button>
         {own ? (
           <>
-            <button className="btn primary" onClick={() => onEdit(event)}><IconPencil />Изменить</button>
             <button className="btn" onClick={() => onDelete(event)}>Удалить только этот день</button>
             {days.length > 1 && <button className="btn danger-text" onClick={() => onDeleteSeries(event)}>Удалить все повторы</button>}
           </>

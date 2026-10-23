@@ -20,13 +20,14 @@
 
 /* the 24 h ribbon */
 .sch-ribbon { display: flex; margin-bottom: 10px; overflow: hidden; flex: none; }
-.sch-ribbon .rl { width: 196px; flex: none; padding: 12px 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; gap: 3px; }
-.sch-ribbon .big { font-size: 30px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
+.sch-ribbon .rl { width: 236px; flex: none; padding: 10px 14px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.sch-ribbon .rl .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sch-ribbon .big { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
 .sch-ribbon .big small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 5px; }
-.sch-ribbon .next { margin-top: 6px; font-size: 12px; color: var(--muted); } .sch-ribbon .next b { color: var(--text); font-weight: 600; }
+.sch-ribbon .next { margin-top: 3px; font-size: 12px; color: var(--muted); } .sch-ribbon .next b { color: var(--text); font-weight: 600; }
 .sch-ribbon .cd { color: var(--accent); font-weight: 700; }
-.sch-ribbon .segmented { margin-top: 8px; align-self: flex-start; }
-.sch-ribbon .rt { position: relative; flex: 1; min-width: 0; margin: 0 14px; min-height: 100px; }
+.sch-ribbon .segmented { flex: none; }
+.sch-ribbon .rt { position: relative; flex: 1; min-width: 0; margin: 0 14px; }
 .sch-ribbon .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, .05); }
 .sch-ribbon .tick span { position: absolute; top: 4px; left: 5px; font-size: 11px; color: var(--muted); }
 .sch-ribbon .ev { position: absolute; height: 25px; border-radius: 7px; border: 1px solid; padding: 0 8px; overflow: hidden; white-space: nowrap; font: 600 12px/23px var(--font); text-align: left; display: flex; align-items: center; gap: 4px; }
@@ -143,5 +144,9 @@
 .sch-undo { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 46; display: flex; align-items: center; gap: 16px; background: var(--surface-3); border: 1px solid var(--border-control); border-radius: 12px; padding: 10px 16px; box-shadow: 0 10px 26px rgba(0, 0, 0, .55); }
 
 @media (max-width: 1180px) { .sch-bar .btn.primary { padding: 8px 12px; } .sch-chips { margin-left: 0; } }
-@media (max-width: 1000px) { .sch-ribbon .rl { width: 150px; padding: 8px 12px; } .sch-ribbon .big { font-size: 24px; } .sch-ribbon .run { display: none; } }
+@media (max-width: 1000px) { .sch-ribbon .rl { width: 200px; padding: 8px 12px; } .sch-ribbon .big { font-size: 22px; } }
 @media (prefers-reduced-motion: reduce) { .sch-drawer, .sch-form, .sch-switch i, .sch-switch i::after { animation: none; transition: none; } }
+.sch-form .lead, .sch-drawer .lead { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.sch-site { display: inline-flex; align-items: center; gap: 8px; } .sch-site.same { color: #8fdca9; } .sch-site.changed { color: #ffc27a; } .sch-site.error { color: #ffb0b3; }
+.sch-check { white-space: nowrap; flex: none; }
+@media (max-width: 1180px) { .sch-check span { display: none; } }

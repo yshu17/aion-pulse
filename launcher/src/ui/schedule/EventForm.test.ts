@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { problems } from "./EventForm";
 import type { Draft } from "./useSchedule";
 
-const draft = (patch: Partial<Draft>): Draft => ({ name: "Рейд", start: "18:00", end: "19:30", days: ["thu"], chip: "Своё", bell: true, ...patch });
+const draft = (patch: Partial<Draft>): Draft => ({ name: "Рейд", start: "18:00", end: "19:30", days: ["thu"], chip: "Своё", bell: true, lead: 5, ...patch });
 
 describe("event form checks", () => {
   it("accepts a normal event and one that ends at midnight", () => {
