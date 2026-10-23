@@ -15,6 +15,7 @@ type View = "day" | "3days" | "week";
 const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 const SWATCH: Record<string, string> = { blue: "#6f9bff", green: "#5fd38d", teal: "#4fd1cf", amber: "#f5b544", purple: "#b58cff" };
 const NARROW = 1000;
+const CHIPS_FIT = 1440; // below it the filter chips fold into one «Фильтры» button
 const FORM_WIDTH = 456;
 
 interface FormState {
@@ -31,13 +32,14 @@ interface MenuState {
   y: number;
 }
 
-function useNarrow(): boolean {
-  const [narrow, setNarrow] = useState(() => window.innerWidth < NARROW);
+/** True while the window is narrower than `width`. */
+function useNarrow(width = NARROW): boolean {
+  const [narrow, setNarrow] = useState(() => window.innerWidth < width);
   useEffect(() => {
-    const on = () => setNarrow(window.innerWidth < NARROW);
+    const on = () => setNarrow(window.innerWidth < width);
     window.addEventListener("resize", on);
     return () => window.removeEventListener("resize", on);
-  }, []);
+  }, [width]);
   return narrow;
 }
 
@@ -53,6 +55,7 @@ const rangeText = (from: number, to: number) => {
 export function ScheduleTab({ boot }: { boot: Boot }) {
   const schedule = useSchedule(boot);
   const narrow = useNarrow();
+  const chipsFold = useNarrow(CHIPS_FIT);
   const [view, setView] = useState<View>(() => (window.innerWidth < NARROW ? "3days" : "week"));
   const [offset, setOffset] = useState(0);
   const [zone, setZone] = useState<"msk" | "local">("msk");
@@ -162,13 +165,13 @@ export function ScheduleTab({ boot }: { boot: Boot }) {
             <button key={v} role="radio" aria-checked={view === v} className={view === v ? "on" : ""} onClick={() => changeView(v)}>{label}</button>
           ))}
         </div>
-        <div className={`sch-chips${narrow ? " drop" : ""}${chipsOpen ? " open" : ""}`} role="group" aria-label="Что показывать">
-          {narrow && (
+        <div className={`sch-chips${chipsFold ? " drop" : ""}${chipsOpen ? " open" : ""}`} role="group" aria-label="Что показывать">
+          {chipsFold && (
             <button className="sch-chip" aria-expanded={chipsOpen} onClick={() => setChipsOpen(!chipsOpen)}>
               <b>Фильтры</b><em>{CHIPS.length - schedule.hiddenGroups.size} из {CHIPS.length}</em>
             </button>
           )}
-          {(!narrow || chipsOpen) && (
+          {(!chipsFold || chipsOpen) && (
             <div className="list">
               {CHIPS.map((chip) => {
                 const on = !schedule.hiddenGroups.has(chip);
