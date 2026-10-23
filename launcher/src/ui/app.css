@@ -255,3 +255,16 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
 .row-field { display: flex; gap: 8px; } .row-field .field { flex: 1; }
 .panel .field { width: 100%; }
 .slider { display: flex; align-items: center; gap: 12px; } .slider input { flex: 1; accent-color: var(--accent); }
+
+/* narrow window: the buttons of the head never shrink or leave the window; the tabs take what is left */
+.window { min-width: 0; }
+.top > .btn, .top > .brand { flex: none; }
+.top .tabs { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.top .tabs::-webkit-scrollbar { display: none; }
+.top .tab { white-space: nowrap; flex: none; }
+@media (max-width: 1180px) {
+  .top .btn .label { display: none; }
+  .top > .btn { padding: 8px 11px; }
+  .top .tab { padding: 9px 10px 11px; }
+  .top .brand { margin-right: 10px; }
+}

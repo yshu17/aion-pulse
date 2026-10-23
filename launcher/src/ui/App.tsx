@@ -80,8 +80,9 @@ function Screen({ boot }: { boot: Boot }) {
         <span className="spacer" />
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
-          onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay />В накладку</button>
-        <button className={`btn${settings ? " active" : ""}`} aria-expanded={settings} onClick={() => setSettings(true)}><IconSettings />Настройки</button>
+          aria-label="В накладку" onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay /><span className="label">В накладку</span></button>
+        <button className={`btn${settings ? " active" : ""}`} aria-label="Настройки" title="Настройки" aria-expanded={settings}
+          onClick={() => setSettings(true)}><IconSettings /><span className="label">Настройки</span></button>
       </header>
 
       {tab === "Чат" ? (
