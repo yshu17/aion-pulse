@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { IconClose, IconExpand, IconSettings } from "./icons";
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
-import { monitorBox, onPlace, onState, onWindowMoved, OverlayLook, OverlayState, Point, loadLook, placeWindow, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition } from "./overlayWindow";
+import { loadLook, onPlace, onState, onWindowMoved, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
 
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
@@ -39,16 +39,18 @@ export function Overlay() {
     if (!el || !at) return;
     const origin = windowOrigin(at, inside(), window.devicePixelRatio);
     placedAt.current = performance.now();
-    placeWindow(origin.x, origin.y, el.getBoundingClientRect().height + 2).catch(() => {});
+    placeWindow(origin.x, origin.y, el.getBoundingClientRect().height + 2)
+      .then((placed) => { anchor.current = anchorOf(placed, inside(), window.devicePixelRatio); }) // the strip may have been pushed off the taskbar
+      .catch(() => {});
   };
 
   /** Choose the side from the strip's place on its monitor: near the bottom of the screen the notifications open upwards. */
   const chooseAndPlace = async () => {
     const at = anchor.current, el = pill.current;
     if (!at || !el) return;
-    const monitor = await monitorBox();
-    if (monitor) {
-      const next = chooseSide(at.y, el.getBoundingClientRect().height * window.devicePixelRatio, monitor.top, monitor.height, sideRef.current);
+    const area = await workArea();
+    if (area) {
+      const next = chooseSide(at.y, el.getBoundingClientRect().height * window.devicePixelRatio, area.y, area.height, sideRef.current);
       if (next !== sideRef.current) { sideRef.current = next; setSide(next); return; } // the layout effect below places it
     }
     place();

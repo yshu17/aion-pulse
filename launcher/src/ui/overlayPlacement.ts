@@ -22,6 +22,16 @@ export function chooseSide(pillTop: number, pillHeight: number, monitorTop: numb
 }
 
 /**
+ * The window origin moved, if needed, so the whole window (`size`, physical pixels) lies inside `area`: the taskbar and
+ * docked panels are not part of the work area, so the overlay is never placed under them.
+ */
+export function keepInside(origin: { x: number; y: number }, size: { width: number; height: number }, area: { x: number; y: number; width: number; height: number }): { x: number; y: number } {
+  const maxX = Math.max(area.x, area.x + area.width - size.width);
+  const maxY = Math.max(area.y, area.y + area.height - size.height);
+  return { x: Math.min(Math.max(origin.x, area.x), maxX), y: Math.min(Math.max(origin.y, area.y), maxY) };
+}
+
+/**
  * The window position that keeps the strip where the user put it. `anchor` is the strip's top-left corner on the
  * screen; `inside` is where the strip's corner is within the window (CSS pixels), which depends on the side: with
  * notifications above it the strip is lower in the window.

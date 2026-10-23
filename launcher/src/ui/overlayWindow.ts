@@ -5,6 +5,7 @@ import { emitTo, listen, UnlistenFn } from "@tauri-apps/api/event";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { currentMonitor, getCurrentWindow, Window } from "@tauri-apps/api/window";
 
+import { keepInside } from "./overlayPlacement";
 import { platform } from "./platform";
 
 export const OVERLAY = "overlay";
@@ -51,11 +52,12 @@ export async function enterOverlay(): Promise<void> {
   if (overlay === null) return;
   let anchor = savedPlace();
   if (!anchor) {
-    const monitor = await currentMonitor();
-    if (monitor) {
+    const area = await workArea(); // the corner of the work area: above the taskbar, not under it
+    if (area) {
+      const scale = await getCurrentWindow().scaleFactor();
       anchor = {
-        x: monitor.position.x + monitor.size.width - Math.round((WIDTH + MARGIN) * monitor.scaleFactor),
-        y: monitor.position.y + Math.round(MARGIN * monitor.scaleFactor),
+        x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale),
+        y: area.y + Math.round(MARGIN * scale),
       };
     }
   }
@@ -90,14 +92,26 @@ export const onPlace = (handler: (anchor: Point) => void): Promise<UnlistenFn> =
   listen<Point>("pulse-place", (event) => handler(event.payload));
 
 /**
- * Put the overlay window at (x, y) as tall as its content (`heightCss`, CSS pixels), so the empty part never covers the
+ * Put the overlay window at (x, y), kept inside the work area (never under the taskbar), as tall as its content (`heightCss`, CSS pixels), so the empty part never covers the
  * game. With a page zoom (devicePixelRatio is not the monitor scale) CSS and window pixels differ.
  */
-export async function placeWindow(x: number, y: number, heightCss: number): Promise<void> {
+export async function placeWindow(x: number, y: number, heightCss: number): Promise<Point> {
   const win = getCurrentWindow();
   const scale = await win.scaleFactor();
   const size = new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(heightCss * window.devicePixelRatio)));
-  await Promise.all([win.setPosition(new PhysicalPosition(x, y)), win.setSize(size)]);
+  const area = await workArea();
+  const origin = area ? keepInside({ x, y }, { width: size.width, height: size.height }, area) : { x, y };
+  await Promise.all([win.setPosition(new PhysicalPosition(origin.x, origin.y)), win.setSize(size)]);
+  return origin; // not under the taskbar: the caller keeps the strip where the window really is
+}
+
+/** The work area of the monitor the overlay is on (physical pixels): the screen without the taskbar and docked panels. */
+export interface Area { x: number; y: number; width: number; height: number }
+export async function workArea(): Promise<Area | null> {
+  const monitor = await currentMonitor();
+  if (!monitor) return null;
+  const { position, size } = monitor.workArea;
+  return { x: position.x, y: position.y, width: size.width, height: size.height };
 }
 
 /** Where the overlay window is, on the screen (physical pixels). */
@@ -107,10 +121,7 @@ export async function windowPosition(): Promise<Point> {
 }
 
 /** The monitor the overlay is on: its top and height, physical pixels. */
-export async function monitorBox(): Promise<{ top: number; height: number } | null> {
-  const monitor = await currentMonitor();
-  return monitor ? { top: monitor.position.y, height: monitor.size.height } : null;
-}
+
 
 function savedPlace(): { x: number; y: number } | null {
   try {
