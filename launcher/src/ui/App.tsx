@@ -1,3 +1,4 @@
+import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 
 import type { FeedMode } from "./chatRows";
@@ -47,6 +48,12 @@ function Screen({ boot }: { boot: Boot }) {
       schedule: overlaySchedule(schedule.visible, schedule.now),
     });
   }, [overlay, watch.watching, watch.counters, watch.toasts, watch.source, problem, schedule.visible, schedule.now]);
+
+  useEffect(() => { // the program started again: the running one comes back from the overlay (Rust shows this window)
+    if (!boot.platform) return;
+    const off = listen("pulse-show-main", () => setOverlay(false));
+    return () => { off.then((unlisten) => unlisten()); };
+  }, [boot.platform]);
 
   const live = useRef(watch); // the overlay's buttons act on the current state without re-subscribing every render
   live.current = watch;

@@ -12,7 +12,7 @@ use std::io::{ErrorKind, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use tauri::ipc::Response;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 const MAX_READ: u64 = 64 * 1024 * 1024; // one request never asks for more than 64 MiB
 
@@ -211,7 +211,27 @@ async fn http_fetch(url: String, method: String) -> Result<(String, std::collect
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // one program at a time: starting it again brings the running one back from the overlay
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(overlay) = app.get_webview_window("overlay") {
+                let _ = overlay.hide();
+            }
+            if let Some(main) = app.get_webview_window("main") {
+                let _ = main.emit("pulse-show-main", ());
+                let _ = main.show();
+                let _ = main.unminimize();
+                let _ = main.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
+        // closing the main window ends the program: the hidden overlay must not keep it running
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { .. } = event {
+                    window.app_handle().exit(0);
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
