@@ -124,3 +124,31 @@ html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background:
 .btn.mini-plain { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
 .overlay .toast { width: 100%; }
 .btn:disabled { opacity: .45; cursor: default; }
+
+/* one chat feed: «Совпадения | Весь чат» */
+.feed-bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.segmented { display: inline-flex; padding: 3px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.segmented button { background: none; border: 0; border-radius: 7px; padding: 6px 14px; color: var(--muted); font-size: 13px; transition: background .15s, color .15s; }
+.segmented button:hover { color: var(--text); }
+.segmented button.on { background: var(--surface-3); color: var(--text); font-weight: 600; }
+.btn { display: inline-flex; align-items: center; gap: 7px; }
+.btn.held { color: var(--warning); }
+.ico { flex: none; display: block; }
+.feed-wrap { position: relative; flex: 1; min-height: 0; display: flex; }
+.line { flex: none; display: flex; gap: 10px; padding: 2px 12px 2px 15px; line-height: 1.5; }
+.line time { padding-top: 1px; }
+.line .line-text { overflow-wrap: anywhere; min-width: 0; }
+.line .nick { font-weight: 600; }
+.line.sys .line-text { color: var(--muted); }
+.line.old { opacity: .6; }
+.feed.all .msg { margin: 4px 0; }
+.chan { font-size: 13px; }
+.pill-new { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent); color: var(--accent-text); border: 0; border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+.pill-new:hover { background: var(--accent-hover); }
+.chev { display: inline-flex; color: var(--muted); transition: transform .15s; }
+.chev.open { transform: rotate(90deg); }
+.x { display: inline-flex; }
+.msg { animation: none; }
+.msg.loud:not(.old) { animation: arrive .25s ease-out; }

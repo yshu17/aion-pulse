@@ -1,4 +1,5 @@
 import { Icon } from "./Icon";
+import { IconClose } from "./icons";
 import type { Toast } from "./useWatch";
 
 interface Props {
@@ -19,7 +20,7 @@ export function Toasts({ toasts, onAccept, onSnooze, onDismiss }: Props) {
           {toast.icon && <Icon name={toast.icon} size={40} />}
           <div className="toast-body">
             <div className="toast-title"><b>{toast.note.title}</b>
-              <button className="x" aria-label="Закрыть" onClick={() => onDismiss(toast)}>×</button></div>
+              <button className="x" aria-label="Закрыть" onClick={() => onDismiss(toast)}><IconClose /></button></div>
             <div className="muted toast-text">{toast.note.text}</div>
             <div className="toast-actions">
               {toast.note.actions.some((a) => a.id === "accept") && (

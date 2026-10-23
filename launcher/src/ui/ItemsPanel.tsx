@@ -4,6 +4,7 @@ import { GRADE_LABELS, ItemBrowser } from "../core/items/browser";
 import type { WatchItem } from "../core/items/catalog";
 import { watchItems } from "./data";
 import { Icon } from "./Icon";
+import { IconChevron } from "./icons";
 
 const SHOWN_PER_GROUP = 80;
 
@@ -46,7 +47,7 @@ export function ItemsPanel({ checked, onChange }: { checked: Set<string>; onChan
           <div key={category} className="group">
             <div className="group-head" onClick={() => { browser.toggleCollapsed(category); redraw(); }} role="button" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { browser.toggleCollapsed(category); redraw(); } }}>
-              <span className={`caret${open(category) ? " open" : ""}`}>›</span>
+              <IconChevron open={open(category)} />
               <b>{category}</b>
               <span className="muted">· {list.length} · отмечено {list.filter((i) => browser.checked.has(i.id)).length}</span>
               <span className="spacer" />

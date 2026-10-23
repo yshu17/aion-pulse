@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
+import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
+import { IconCheck, IconOverlay, IconPause, IconPlay, IconSettings } from "./icons";
 import { ItemsPanel } from "./ItemsPanel";
 import { enterOverlay, leaveOverlay, onAction, sendState } from "./overlayWindow";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
 import { useWatch } from "./useWatch";
 
-const TABS = ["Поиск", "Весь чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
+const TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
 const MODES: [string, string][] = [["or", "Слово ИЛИ предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово И предмет"]];
 
 export default function App() {
@@ -45,7 +47,11 @@ function Screen({ boot }: { boot: Boot }) {
     });
     return () => { off.then((unlisten) => unlisten()); };
   }, [boot.platform]);
-  const [tab, setTab] = useState("Поиск");
+  const [tab, setTab] = useState("Чат");
+  const [feedMode, setFeedMode] = useState<FeedMode>("matches");
+  const [pausedAt, setPausedAt] = useState<number | null>(null);
+  const lastKey = watch.rows.length ? watch.rows[watch.rows.length - 1].key : 0;
+  const held = pausedAt === null ? 0 : watch.rows.filter((r) => r.key > pausedAt && (r.entry || r.category || (watch.system && r.notice))).length;
   const [found, reacted, missed] = watch.counters;
 
   return (
@@ -65,7 +71,8 @@ function Screen({ boot }: { boot: Boot }) {
           ? <button className="btn stop" onClick={() => watch.setWatching(false)}>Stop</button>
           : <button className="btn start" onClick={() => watch.setWatching(true)}>Start</button>}
         <span className={`btn status${watch.watching && !problem ? " on" : ""}${problem ? " warn" : ""}`} title={watch.source.text}>
-          {!watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : watch.source.kind === "demo" ? "✓ Слежу · демо" : "✓ Слежу"}
+          {watch.watching && !problem && <IconCheck />}
+          {!watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : watch.source.kind === "demo" ? "Слежу · демо" : "Слежу"}
         </span>
         <label className="keywords">
           <span className="muted">Ключевые слова</span>
@@ -77,8 +84,8 @@ function Screen({ boot }: { boot: Boot }) {
         </select>
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
-          onClick={() => { setOverlay(true); enterOverlay(); }}>⧉ В накладку</button>
-        <button className="btn">Настройки</button>
+          onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay />В накладку</button>
+        <button className="btn"><IconSettings />Настройки</button>
       </div>
 
       <nav className="tabs" role="tablist">
@@ -88,11 +95,32 @@ function Screen({ boot }: { boot: Boot }) {
         ))}
       </nav>
 
-      {tab === "Поиск" ? (
+      {tab === "Чат" ? (
         <main className="search">
           <section className="card feed-card">
+            <div className="feed-bar">
+              <div className="segmented" role="radiogroup" aria-label="Что показывать">
+                {([["matches", "Совпадения"], ["all", "Весь чат"]] as [FeedMode, string][]).map(([value, label]) => (
+                  <button key={value} role="radio" aria-checked={feedMode === value} className={feedMode === value ? "on" : ""}
+                    onClick={() => setFeedMode(value)}>{label}</button>
+                ))}
+              </div>
+              <span className="spacer" />
+              {feedMode === "all" && (
+                <label className="check">
+                  <input type="checkbox" checked={watch.system} onChange={(e) => watch.setSystem(e.target.checked)} />
+                  <span className="box" /><span>Система</span>
+                </label>
+              )}
+              <button className={`btn${pausedAt !== null ? " held" : ""}`} aria-pressed={pausedAt !== null}
+                onClick={() => setPausedAt(pausedAt === null ? lastKey : null)}>
+                {pausedAt === null ? <><IconPause />Пауза</> : <><IconPlay />Продолжить{held ? ` · ${held}` : ""}</>}
+              </button>
+            </div>
             {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
-            <Feed entries={watch.entries} alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} /></section>
+            <Feed rows={watch.rows} mode={feedMode} system={watch.system} pausedAt={pausedAt}
+              alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
+          </section>
           <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
         </main>
       ) : (

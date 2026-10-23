@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Entry, LOUD, WatchSession } from "../core/chat/session";
+import { LOUD, WatchSession } from "../core/chat/session";
 import { naiveMs } from "../core/chat/tailer";
 import { AlertBridge } from "../core/notify/bridge";
 import { Notification, NotificationCenter } from "../core/notify/center";
 import { demoLine, itemById, itemNames, mapNames, questNames, watchItems } from "./data";
+import { FeedRow, makeRows } from "./chatRows";
 import { AsyncLogFeed } from "./logFeed";
 import { makeSound } from "./sound";
 import type { Boot } from "./useBoot";
@@ -23,7 +24,7 @@ export interface Source {
 }
 
 export interface Watch {
-  entries: Entry[];
+  rows: FeedRow[]; // the chat, oldest first; matches carry their entry
   counters: [number, number, number]; // found, reacted, missed
   state: Record<number, AlertState>; // finished alerts by id
   remaining: Record<number, number>; // seconds left of the waiting alerts
@@ -32,6 +33,8 @@ export interface Watch {
   nag: boolean; // matches wait for «Принять» (alert_mode «nag»)
   watching: boolean;
   setWatching(on: boolean): void;
+  system: boolean; // «Система»: system notices in «Весь чат»
+  setSystem(on: boolean): void;
   keywords: string;
   setKeywords(text: string): void;
   mode: string;
@@ -57,6 +60,7 @@ const SNOOZE_SEC = 300;
 const MAX_TOASTS = 3;
 const TOAST_SHOWN_SEC = 14;
 const DEMO_STEP_MS = 3500;
+const MAX_ROWS = 800; // the chat feed keeps the newest rows
 const DEMO_CHECKED = ["110600968", "114600926", "113600931"];
 const splitWords = (text: string) => text.split(",").map((part) => part.trim()).filter(Boolean);
 
@@ -77,7 +81,9 @@ export function useWatch(boot: Boot): Watch {
   const play = useMemo(() => makeSound(boot.platform, cfg), [boot.platform, cfg.sound_path, cfg.sound_volume]); // eslint-disable-line react-hooks/exhaustive-deps
   const quiet = cfg.notify_dnd || cfg.notify_off.includes("chat") || cfg.notify_mute.includes("chat");
 
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [rows, setRows] = useState<FeedRow[]>([]);
+  const [system, setSystemValue] = useState(cfg.chat_system);
+  const rowKey = useRef(0);
   const [counters, setCounters] = useState<[number, number, number]>([0, 0, 0]);
   const [state, setState] = useState<Record<number, AlertState>>({});
   const [remaining, setRemaining] = useState<Record<number, number>>({});
@@ -110,10 +116,16 @@ export function useWatch(boot: Boot): Watch {
     session.setWatchItems(names);
   }, [session]);
 
+  /** Lines in the feed with their matches; `history` lines are only shown, never announced. */
+  const addRows = useCallback((lines: string[], entries: Parameters<typeof makeRows>[1], historic = false) => {
+    const fresh = makeRows(lines, entries, () => ++rowKey.current, itemNames, mapNames, questNames, historic);
+    if (fresh.length) setRows((list) => [...list, ...fresh].slice(-MAX_ROWS));
+  }, []);
+
   /** New lines through the session: the feed, the counters and one notification per batch of matches. */
   const take = useCallback((lines: string[]) => {
     const batch = session.process(lines, now());
-    if (batch.entries.length) setEntries((list) => [...list, ...batch.entries].slice(-300));
+    addRows(lines, batch.entries);
     const loud = batch.entries.filter((e) => e.kind === LOUD);
     if (loud.length) {
       const note = bridge.chatMatch(loud.map((e) => e.alert_id!), loud.map((e) => [e.msg.nick, e.msg.text.replace(/[⟪⟫]/g, ""), e.hits]), nag);
@@ -122,7 +134,7 @@ export function useWatch(boot: Boot): Watch {
       if (!quiet) play();
     }
     sync();
-  }, [session, bridge, nag, sync, play, quiet]);
+  }, [session, bridge, nag, sync, play, quiet, addRows]);
 
   useEffect(() => { watchNames(checked); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -132,20 +144,20 @@ export function useWatch(boot: Boot): Watch {
       const lines: string[] = [];
       const base = new Date(Date.now() - 16 * 150_000);
       for (let i = 0; i < 16; i++, step.current++) lines.push(demoLine(step.current, new Date(base.getTime() + i * 150_000)));
-      setEntries(session.history(lines, now()).entries);
+      addRows(lines, session.history(lines, now()).entries, true);
       sync();
     }
     if (!watching) return;
     const timer = setInterval(() => take([demoLine(step.current++, new Date())]), DEMO_STEP_MS);
     return () => clearInterval(timer);
-  }, [demo, watching, session, take, sync]);
+  }, [demo, watching, session, take, sync, addRows]);
 
   useEffect(() => { // the program: Chat.log, read every poll_interval_ms while watching
     const files = boot.platform;
     if (files === null || !watching) return;
     const path = boot.chatLog;
     const feed = new AsyncLogFeed({ size: () => files.fileSize(path), read: (p, n) => files.readRange(path, p, n) },
-      cfg.history_min, wallClock);
+      Math.max(cfg.history_min, cfg.chat_minutes), wallClock); // one feed: the longer of the two histories
     let busy = false;
     let alive = true;
     const poll = async () => {
@@ -154,7 +166,7 @@ export function useWatch(boot: Boot): Watch {
       try {
         const [history, lines] = await feed.poll();
         if (!alive) return;
-        if (history !== null) setEntries((list) => [...list, ...session.history(history, now()).entries].slice(-300));
+        if (history !== null) addRows(history, session.history(history, now()).entries, true);
         if (lines.length) take(lines);
         setSource({ kind: "log", text: path });
       } catch (error) {
@@ -169,7 +181,7 @@ export function useWatch(boot: Boot): Watch {
     poll();
     const timer = setInterval(poll, Math.max(200, cfg.poll_interval_ms));
     return () => { alive = false; clearInterval(timer); session.stop(); };
-  }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.poll_interval_ms, session, take, setSource]);
+  }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.chat_minutes, cfg.poll_interval_ms, session, take, setSource, addRows]);
 
   useEffect(() => { // every second: countdowns, missed alerts, repeats, the toast stack
     const timer = setInterval(() => {
@@ -190,7 +202,8 @@ export function useWatch(boot: Boot): Watch {
   }, [session, center, finish, showToasts]);
 
   return {
-    entries, counters, state, remaining, toasts, source, nag, watching, setWatching, keywords, mode, checked,
+    rows, counters, state, system,
+    setSystem: (on) => { setSystemValue(on); if (!demo) boot.save({ chat_system: on }); }, remaining, toasts, source, nag, watching, setWatching, keywords, mode, checked,
     setKeywords: (text) => {
       setKeywordsText(text);
       session.setKeywords(splitWords(text));

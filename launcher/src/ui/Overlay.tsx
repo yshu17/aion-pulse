@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
+import { IconClose, IconExpand } from "./icons";
 import { fitHeight, onState, OverlayState, sendAction } from "./overlayWindow";
 
 /** The page of the overlay window: a status strip and the notifications, over the game. */
@@ -31,14 +32,14 @@ export function Overlay() {
         <span>{!state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу"}</span>
         <span className="muted">{found} · {reacted} · {missed}</span>
         <span className="spacer" />
-        <button className="btn mini-plain" onClick={() => sendAction({ kind: "expand" })}>⤢ Развернуть</button>
+        <button className="btn mini-plain" onClick={() => sendAction({ kind: "expand" })}><IconExpand />Развернуть</button>
       </div>
       {state?.toasts.map((toast) => (
         <div key={toast.id} className="toast">
           {toast.icon && <Icon name={toast.icon} size={40} />}
           <div className="toast-body">
             <div className="toast-title"><b>{toast.title}</b>
-              <button className="x" aria-label="Закрыть" onClick={() => sendAction({ kind: "dismiss", id: toast.id })}>×</button></div>
+              <button className="x" aria-label="Закрыть" onClick={() => sendAction({ kind: "dismiss", id: toast.id })}><IconClose /></button></div>
             <div className="muted toast-text">{toast.text}</div>
             <div className="toast-actions">
               {toast.accept && <button className="btn primary" onClick={() => sendAction({ kind: "accept", id: toast.id })}>Принять</button>}
