@@ -158,3 +158,17 @@ html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background:
 .search-field .x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
 .found-count { font-size: 12px; margin-top: -4px; }
 .more { font-size: 12px; padding: 2px 6px 6px; }
+
+/* history: dimmer colours instead of transparency, so every text keeps 4.5:1 on the card (ui-visual-validator) */
+.msg.old, .line.old { opacity: 1; }
+.old .msg-text, .old .line-text { color: #b8b5b0; }
+.old .nick { color: #8fb0dc; }
+.old time { color: var(--muted); }
+.old .hit { background: transparent; color: #d98a3c; padding: 0; }
+
+/* narrow window (960 px): group heads stay on one line, the keywords label gives way to the field */
+.group-head { min-width: 0; }
+.group-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.group-head .count { white-space: nowrap; flex: none; }
+.group-head .check { flex: none; }
+@media (max-width: 1100px) { .keywords > .muted { display: none; } .mode { width: 170px; } }

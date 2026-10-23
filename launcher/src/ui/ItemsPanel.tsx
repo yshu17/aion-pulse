@@ -66,8 +66,8 @@ export function ItemsPanel({ checked, onChange }: { checked: Set<string>; onChan
               aria-expanded={open(category)}
               onKeyDown={(e) => { if (!searching && (e.key === "Enter" || e.key === " ")) { browser.toggleCollapsed(category); redraw(); } }}>
               <IconChevron open={open(category)} />
-              <b>{category}</b>
-              <span className="muted">· {list.length} · отмечено {list.filter((i) => browser.checked.has(i.id)).length}</span>
+              <b className="group-name">{category}</b>
+              <span className="muted count" title="отмечено из всего">{list.filter((i) => browser.checked.has(i.id)).length} из {list.length}</span>
               <span className="spacer" />
               <label className="check" onClick={(e) => e.stopPropagation()}>
                 <input type="checkbox" checked={allChecked(category, list)} onChange={() => checkAll(category, list)} />

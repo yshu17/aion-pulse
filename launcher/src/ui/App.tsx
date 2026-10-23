@@ -22,6 +22,15 @@ function Screen({ boot }: { boot: Boot }) {
   const watch = useWatch(boot);
   const problem = watch.source.kind === "missing" || watch.source.kind === "error";
   const [overlay, setOverlay] = useState(false);
+  // the toasts repeat the cards of the feed: while this window is in use they would only cover the item list
+  const [focused, setFocused] = useState(() => document.hasFocus());
+  useEffect(() => {
+    const on = () => setFocused(true);
+    const off = () => setFocused(false);
+    window.addEventListener("focus", on);
+    window.addEventListener("blur", off);
+    return () => { window.removeEventListener("focus", on); window.removeEventListener("blur", off); };
+  }, []);
 
   useEffect(() => { // the overlay shows what this window would show
     if (!overlay) return;
@@ -126,7 +135,7 @@ function Screen({ boot }: { boot: Boot }) {
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
-      {!overlay && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
+      {!overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
     </div>
   );
