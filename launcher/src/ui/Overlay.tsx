@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
-import { IconClose, IconExpand } from "./icons";
+import { IconClose, IconExpand, IconSettings } from "./icons";
 import { dragOverlay, fitHeight, keepPlace, loadLook, onState, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus } from "./overlayWindow";
 
 /** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
@@ -47,26 +47,28 @@ export function Overlay() {
       <div className="ov-line" tabIndex={0} role="group" aria-label="Накладка Pulse+" onMouseDown={dragOverlay}
         title={state?.problem || "Потяни, чтобы передвинуть. Правый клик: меню"}
         onContextMenu={(e) => { e.preventDefault(); setMenu(!menu); }}
-        onKeyDown={(e) => { if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
+        onKeyDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
         <span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />
         {note && <span className="muted">{note}</span>}
         {shown ? (
           <>
             <span className={`ov-sw t-${shown.tone}`} aria-hidden />
             <b className="name">{shown.name}</b>
-            <span className="muted num">{isRunning ? `до ${shown.to}` : shown.from}</span>
+            {isRunning ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {shown.from}</span>}
             {isRunning && running.length > 1 && <span className="muted">+{running.length - 1}</span>}
+            <span className="spacer" />
+            <span className="ov-left num"><span className="muted">{isRunning ? "ещё" : "через"}</span> <b>{shown.left}</b></span>
             {isRunning && shown.progress !== null && (
               <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(shown.progress * 100)}>
                 <i className={`t-${shown.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, shown.progress))})` }} />
               </span>
             )}
-            <span className="spacer" />
-            <b className="ov-left num">{shown.left}</b>
           </>
         ) : (
           <><span className="spacer" /><span className="muted">событий нет</span></>
         )}
+        <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность, фокус, развернуть"
+          onClick={() => setMenu(!menu)}><IconSettings /></button>
       </div>
       {menu && (
         <div className="ov-menu" role="menu">
