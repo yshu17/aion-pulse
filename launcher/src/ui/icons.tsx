@@ -11,6 +11,8 @@ function Svg({ children, size = 16 }: { children: ReactNode; size?: number }) {
 export const IconCheck = () => <Svg><path d="M5 12.5l4.5 4.5L19 7.5" /></Svg>;
 export const IconOverlay = () => <Svg><rect x="3" y="4" width="18" height="14" rx="2" /><rect x="12" y="11" width="7" height="5" rx="1" /></Svg>;
 export const IconExpand = () => <Svg size={14}><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></Svg>;
+export const IconStop = () => <Svg size={14}><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" /></Svg>;
+export const IconReset = () => <Svg size={14}><path d="M4 4v6h6" /><path d="M20 12a8 8 0 1 0-2.3 5.7" /></Svg>;
 export const IconPause = () => <Svg><path d="M9 5v14M15 5v14" /></Svg>;
 export const IconPlay = () => <Svg><path d="M7 5l12 7-12 7z" /></Svg>;
 export const IconDown = () => <Svg size={14}><path d="M12 5v14M6 13l6 6 6-6" /></Svg>;

@@ -35,10 +35,7 @@ export interface Watch {
   setWatching(on: boolean): void;
   system: boolean; // «Система»: system notices in «Весь чат»
   setSystem(on: boolean): void;
-  keywords: string;
-  setKeywords(text: string): void;
-  mode: string;
-  setMode(mode: string): void;
+  since: string; // when the counters were last reset (ISO), "" when never
   checked: Set<string>;
   setChecked(ids: Set<string>): void;
   accept(alertId: number): void;
@@ -48,7 +45,12 @@ export interface Watch {
   /** The toast on screen with this notification id (the overlay names toasts by id). */
   toastById(id: number): Toast | undefined;
   reset(): void;
+  /** The alert sound, to try it in the settings. */
+  playSound(): void;
 }
+
+interface Tally { found: number; reacted: number; missed: number; since: string }
+const COUNTERS_FILE = "counters.json"; // next to config.json: the counters live until «Сбросить»
 
 const now = () => performance.now() / 1000;
 /** The naive local wall clock in ms, the clock of Chat.log lines. */
@@ -61,17 +63,15 @@ const MAX_TOASTS = 3;
 const TOAST_SHOWN_SEC = 14;
 const DEMO_STEP_MS = 3500;
 const MAX_ROWS = 800; // the chat feed keeps the newest rows
-const DEMO_CHECKED = ["110600968", "114600926", "113600931"];
-const splitWords = (text: string) => text.split(",").map((part) => part.trim()).filter(Boolean);
 
 /** The watching session of the screen: the real core (session, alerts, notifications) on Chat.log or demo lines. */
 export function useWatch(boot: Boot): Watch {
   const demo = boot.platform === null;
   const cfg = boot.config;
-  const nag = demo || cfg.alert_mode === "nag";
+  const nag = cfg.alert_mode === "nag";
   const core = useMemo(() => {
     const session = new WatchSession(itemNames, mapNames, questNames, {
-      keywords: demo ? ["wts", "продам", "ищу группу"] : cfg.keywords, mode: cfg.search_mode,
+      keywords: cfg.keywords, mode: cfg.search_mode,
       alertMode: nag ? "nag" : "standard", reactSec: cfg.react_sec, cooldownSec: cfg.cooldown_sec,
     });
     const center = new NotificationCenter({ clock: now });
@@ -90,9 +90,9 @@ export function useWatch(boot: Boot): Watch {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [source, setSourceValue] = useState<Source>(demo ? { kind: "demo", text: "Демо: строки чата придумываются" } : { kind: "log", text: boot.chatLog });
   const [watching, setWatching] = useState(true);
-  const [keywords, setKeywordsText] = useState(() => (demo ? "wts, продам, ищу группу" : cfg.keywords.join(", ")));
-  const [mode, setModeValue] = useState(cfg.search_mode);
-  const [checked, setCheckedIds] = useState<Set<string>>(() => new Set((demo ? DEMO_CHECKED : cfg.watch_items).filter((id) => itemById[id])));
+  const [checked, setCheckedIds] = useState<Set<string>>(() => new Set(cfg.watch_items.filter((id) => itemById[id])));
+  const [tally, setTally] = useState<Tally>({ found: 0, reacted: 0, missed: 0, since: "" }); // earlier sessions
+  const tallyLoaded = useRef(false);
   const step = useRef(0);
   const openToasts = useRef<Toast[]>([]); // the toast stack, kept outside React state: popping the queue is not repeatable
   const shownAt = useRef(new Map<number, number>()); // notification id -> when its toast appeared
@@ -102,6 +102,38 @@ export function useWatch(boot: Boot): Watch {
     setSourceValue((old) => (old.kind === next.kind && old.text === next.text ? old : next)), []);
   const showToasts = useCallback((list: Toast[]) => { openToasts.current = list; setToasts(list); }, []);
   const sync = useCallback(() => setCounters(session.counters), [session]);
+
+  // settings changed in the panel reach the running session at once
+  useEffect(() => { session.setKeywords(cfg.keywords); }, [session, cfg.keywords]);
+  useEffect(() => { session.setMode(cfg.search_mode); }, [session, cfg.search_mode]);
+  useEffect(() => { session.setAlertMode(cfg.alert_mode); }, [session, cfg.alert_mode]);
+  useEffect(() => { session.tracker.react_sec = cfg.react_sec; }, [session, cfg.react_sec]);
+  useEffect(() => { session.matcher.cooldown_sec = cfg.cooldown_sec; }, [session, cfg.cooldown_sec]);
+
+  // the counters of earlier sessions, kept in counters.json until «Сбросить»
+  useEffect(() => {
+    const files = boot.platform;
+    const path = boot.ownFile(COUNTERS_FILE);
+    if (files === null || !path) { tallyLoaded.current = true; return; }
+    files.readText(path).then((text) => {
+      try {
+        const data = text ? JSON.parse(text) : {};
+        const n = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 ? (v as number) : 0);
+        setTally({ found: n(data.found), reacted: n(data.reacted), missed: n(data.missed), since: typeof data.since === "string" ? data.since : "" });
+      } catch { /* a broken file starts from zero */ }
+      tallyLoaded.current = true;
+    });
+  }, [boot.platform, boot.ownFile]);
+  const total: [number, number, number] = [tally.found + counters[0], tally.reacted + counters[1], tally.missed + counters[2]];
+  useEffect(() => { // written a moment after a change
+    const files = boot.platform;
+    const path = boot.ownFile(COUNTERS_FILE);
+    if (files === null || !path || !tallyLoaded.current) return;
+    const timer = setTimeout(() => {
+      files.writeText(path, JSON.stringify({ found: total[0], reacted: total[1], missed: total[2], since: tally.since }, null, 2)).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [total[0], total[1], total[2], tally.since]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finish = useCallback((ids: number[], how: AlertState) => {
     if (!ids.length) return;
@@ -202,22 +234,12 @@ export function useWatch(boot: Boot): Watch {
   }, [session, center, finish, showToasts]);
 
   return {
-    rows, counters, state, system,
-    setSystem: (on) => { setSystemValue(on); if (!demo) boot.save({ chat_system: on }); }, remaining, toasts, source, nag, watching, setWatching, keywords, mode, checked,
-    setKeywords: (text) => {
-      setKeywordsText(text);
-      session.setKeywords(splitWords(text));
-      if (!demo) boot.save({ keywords: splitWords(text) });
-    },
-    setMode: (value) => {
-      setModeValue(value);
-      session.setMode(value);
-      if (!demo) boot.save({ search_mode: value });
-    },
+    rows, counters: total, since: tally.since, state, system,
+    setSystem: (on) => { setSystemValue(on); boot.save({ chat_system: on }); }, remaining, toasts, source, nag, watching, setWatching, checked,
     setChecked: (ids) => {
       setCheckedIds(ids);
       watchNames(ids);
-      if (!demo) boot.save({ watch_items: watchItems.filter((item) => ids.has(item.id)).map((item) => item.id) });
+      boot.save({ watch_items: watchItems.filter((item) => ids.has(item.id)).map((item) => item.id) });
     },
     accept: (alertId) => finish(session.accept(alertId), "accepted"),
     acceptToast: (toast) => {
@@ -228,6 +250,7 @@ export function useWatch(boot: Boot): Watch {
     snoozeToast: (toast) => { center.snooze(toast.note.id, SNOOZE_SEC); showToasts(openToasts.current.filter((x) => x !== toast)); },
     dismissToast: (toast) => showToasts(openToasts.current.filter((x) => x !== toast)),
     toastById: (id) => openToasts.current.find((toast) => toast.note.id === id),
-    reset: () => { session.resetCounters(); sync(); },
+    reset: () => { session.resetCounters(); setTally({ found: 0, reacted: 0, missed: 0, since: new Date().toISOString() }); sync(); },
+    playSound: () => play(),
   };
 }

@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from "react";
 
 import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
-import { IconCheck, IconOverlay, IconPause, IconPlay, IconSettings } from "./icons";
+import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
 import { ItemsPanel } from "./ItemsPanel";
+import { SettingsPanel } from "./SettingsPanel";
 import { enterOverlay, leaveOverlay, onAction, sendState } from "./overlayWindow";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
 import { useWatch } from "./useWatch";
 
 const TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
-const MODES: [string, string][] = [["or", "Слово ИЛИ предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово И предмет"]];
+const MODES: [string, string][] = [["or", "Слово или предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово и предмет"]];
 
 export default function App() {
   const boot = useBoot();
@@ -58,61 +59,59 @@ function Screen({ boot }: { boot: Boot }) {
   }, [boot.platform]);
   const [tab, setTab] = useState("Чат");
   const [feedMode, setFeedMode] = useState<FeedMode>("matches");
-  const [pausedAt, setPausedAt] = useState<number | null>(null);
-  const lastKey = watch.rows.length ? watch.rows[watch.rows.length - 1].key : 0;
-  const held = pausedAt === null ? 0 : watch.rows.filter((r) => r.key > pausedAt && (r.entry || r.category || (watch.system && r.notice))).length;
+  const [settings, setSettings] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [found, reacted, missed] = watch.counters;
+  const cfg = boot.config;
+  const modeText = MODES.find(([value]) => value === cfg.search_mode)?.[1] ?? "слово или предмет";
+  const since = watch.since ? new Date(watch.since) : null;
+  const sinceText = since ? `с ${since.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}, ${since.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "за всё время";
 
   return (
     <div className="window">
       <header className="top">
-        <h1>Pulse</h1>
-        <span className="muted">Поиск группы</span>
+        <span className="brand">Pulse<i>+</i></span>
+        <nav className="tabs" role="tablist">
+          {TABS.map((name) => (
+            <button key={name} role="tab" aria-selected={tab === name} className={`tab${tab === name ? " on" : ""}`}
+              onClick={() => setTab(name)}>{name}</button>
+          ))}
+        </nav>
         <span className="spacer" />
-        <span className="stat"><i style={{ background: "var(--text)" }} /><b>{found}</b> найдено</span>
-        <span className="stat"><i style={{ background: "var(--success)" }} /><b>{reacted}</b> отреагировал</span>
-        <span className="stat"><i style={{ background: "var(--danger)" }} /><b>{missed}</b> пропущено</span>
-        <button className="link" onClick={watch.reset}>Сбросить</button>
-      </header>
-
-      <div className="bar">
-        {watch.watching
-          ? <button className="btn stop" onClick={() => watch.setWatching(false)}>Stop</button>
-          : <button className="btn start" onClick={() => watch.setWatching(true)}>Start</button>}
-        <span className={`btn status${watch.watching && !problem ? " on" : ""}${problem ? " warn" : ""}`} title={watch.source.text}>
-          {watch.watching && !problem && <IconCheck />}
-          {!watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : watch.source.kind === "demo" ? "Слежу · демо" : "Слежу"}
-        </span>
-        <label className="keywords">
-          <span className="muted">Ключевые слова</span>
-          <input className="field" value={watch.keywords} onChange={(e) => watch.setKeywords(e.target.value)}
-            aria-label="Ключевые слова" />
-        </label>
-        <select className="field mode" value={watch.mode} onChange={(e) => watch.setMode(e.target.value)} aria-label="Режим поиска">
-          {MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
           onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay />В накладку</button>
-        <button className="btn"><IconSettings />Настройки</button>
-      </div>
-
-      <nav className="tabs" role="tablist">
-        {TABS.map((name) => (
-          <button key={name} role="tab" aria-selected={tab === name} className={`tab${tab === name ? " on" : ""}`}
-            onClick={() => setTab(name)}>{name}</button>
-        ))}
-      </nav>
+        <button className={`btn${settings ? " active" : ""}`} aria-expanded={settings} onClick={() => setSettings(true)}><IconSettings />Настройки</button>
+      </header>
 
       {tab === "Чат" ? (
-        <main className="search">
-          <section className="card feed-card">
-            <div className="feed-bar">
-              <div className="segmented" role="radiogroup" aria-label="Что показывать">
-                {([["matches", "Совпадения"], ["all", "Весь чат"]] as [FeedMode, string][]).map(([value, label]) => (
-                  <button key={value} role="radio" aria-checked={feedMode === value} className={feedMode === value ? "on" : ""}
-                    onClick={() => setFeedMode(value)}>{label}</button>
-                ))}
+        <main className="chat">
+          <div className="chat-head">
+            <div className="head">
+              {watch.watching
+                ? <button className="go stop" onClick={() => watch.setWatching(false)}><IconStop />Стоп</button>
+                : <button className="go start" onClick={() => watch.setWatching(true)}><IconPlay />Старт</button>}
+              <div className={`live${problem ? " warn" : !watch.watching ? " off" : ""}`} title={watch.source.text}>
+                <b><span className="dot" />{!watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : "Слежу"}</b>
+                <span>{watch.source.kind === "demo" ? "демо-чат" : problem ? "проверь папку игры в настройках" : "Chat.log"}</span>
+              </div>
+              <span className="sep" />
+              <div className="count"><b>{found}</b><span>найдено</span></div>
+              <div className="count ok"><b>{reacted}</b><span>принято</span></div>
+              <div className="count no"><b>{missed}</b><span>пропущено</span></div>
+              <div className="reset-box">
+                <button className="link" aria-expanded={confirmReset} onClick={() => setConfirmReset(true)}><IconReset />Сбросить</button>
+                <span className="since">{sinceText}</span>
+                {confirmReset && (
+                  <div className="confirm" role="alertdialog" aria-label="Сбросить счётчики?">
+                    <b>Сбросить счётчики?</b>
+                    <div className="muted">{found} найдено, {reacted} принято, {missed} пропущено обнулятся. Отменить нельзя.</div>
+                    <div className="r">
+                      <button className="btn danger" onClick={() => { watch.reset(); setConfirmReset(false); }}>Сбросить</button>
+                      <button className="btn" autoFocus onClick={() => setConfirmReset(false)}>Оставить</button>
+                    </div>
+                  </div>
+                )}
               </div>
               <span className="spacer" />
               {feedMode === "all" && (
@@ -121,20 +120,32 @@ function Screen({ boot }: { boot: Boot }) {
                   <span className="box" /><span>Система</span>
                 </label>
               )}
-              <button className={`btn${pausedAt !== null ? " held" : ""}`} aria-pressed={pausedAt !== null}
-                onClick={() => setPausedAt(pausedAt === null ? lastKey : null)}>
-                {pausedAt === null ? <><IconPause />Пауза</> : <><IconPlay />Продолжить{held ? ` · ${held}` : ""}</>}
-              </button>
+              <div className="segmented" role="radiogroup" aria-label="Что показывать">
+                {([["matches", "Совпадения"], ["all", "Весь чат"]] as [FeedMode, string][]).map(([value, label]) => (
+                  <button key={value} role="radio" aria-checked={feedMode === value} className={feedMode === value ? "on" : ""}
+                    onClick={() => setFeedMode(value)}>{label}</button>
+                ))}
+              </div>
             </div>
+            <div className="what">
+              Ищу:{cfg.keywords.length ? cfg.keywords.map((k) => <span key={k} className="kw">{k}</span>) : <span className="muted">слов нет</span>}
+              <span>·</span><span className="mode-text">{modeText.toLowerCase()}</span>
+              <button className="link accent" onClick={() => setSettings(true)}>изменить</button>
+            </div>
+          </div>
+          <div className="search">
+          <section className="card feed-card">
             {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
-            <Feed rows={watch.rows} mode={feedMode} system={watch.system} pausedAt={pausedAt}
+            <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
               alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
           </section>
           <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
+          </div>
         </main>
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
+      {settings && <SettingsPanel boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}
       {!overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
     </div>

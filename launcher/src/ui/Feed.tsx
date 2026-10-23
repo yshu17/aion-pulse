@@ -11,6 +11,7 @@ import type { AlertState } from "./useWatch";
 const clock = (sec: number) => `${Math.floor(Math.max(sec, 0) / 60)}:${String(Math.floor(Math.max(sec, 0) % 60)).padStart(2, "0")}`;
 
 interface Alerts {
+  reactSec: number;
   state: Record<number, AlertState>;
   remaining: Record<number, number>;
   onAccept(alertId: number): void;
@@ -49,6 +50,9 @@ function Match({ row, alerts, channel }: { row: FeedRow; alerts: Alerts; channel
         </div>
         <div className="msg-text"><Text text={entry.msg.text} hits={entry.hits} /></div>
       </div>
+      {id !== null && !done && left !== undefined && alerts.reactSec > 0 && (
+        <span className="drain" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(1, left / alerts.reactSec)) * 100}%` }} /></span>
+      )}
     </li>
   );
 }
@@ -73,16 +77,17 @@ interface Props {
   rows: FeedRow[];
   mode: FeedMode;
   system: boolean;
-  pausedAt: number | null; // while «Пауза» is on: the last row key that is shown
-  alerts: Alerts;
+  reactSec: number;
+  alerts: Omit<Alerts, "reactSec">;
 }
 
 /** The chat as in the game: the newest line at the bottom, the list pressed to the bottom edge, older lines above. */
-export function Feed({ rows, mode, system, pausedAt, alerts }: Props) {
+export function Feed({ rows, mode, system, reactSec, alerts: given }: Props) {
+  const alerts: Alerts = { ...given, reactSec };
   const list = useRef<HTMLUListElement>(null);
   const stick = useRef(true);
   const [seen, setSeen] = useState(0); // the last row key the user has seen at the bottom
-  const visible = rows.filter((row) => shown(row, mode, system) && (pausedAt === null || row.key <= pausedAt));
+  const visible = rows.filter((row) => shown(row, mode, system));
   const last = visible.length ? visible[visible.length - 1].key : 0;
   const unseen = stick.current ? 0 : visible.filter((row) => row.key > seen).length;
   const firstNew = visible.findIndex((row) => !row.historic);

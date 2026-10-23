@@ -14,13 +14,15 @@ export interface Boot {
   chatLog: string;
   /** Merge fields into the settings and write config.json shortly after (changes in a row are written once). */
   save(patch: Partial<Config>): void;
+  /** A file next to config.json (the launcher's own folder), or "" in a plain browser. */
+  ownFile(name: string): string;
 }
 
 const SAVE_DELAY_MS = 400;
 
 /** Loads config.json once; keeps it in memory and writes it back when a setting changes. */
 export function useBoot(): Boot {
-  const [config, setConfig] = useState<Config>(() => readConfig(null).config);
+  const [config, setConfig] = useState<Config>(() => (platform === null ? demoConfig() : readConfig(null).config));
   const [notice, setNotice] = useState("");
   const [ready, setReady] = useState(platform === null);
   const path = useRef("");
@@ -69,5 +71,12 @@ export function useBoot(): Boot {
     }, SAVE_DELAY_MS);
   }, []);
 
-  return { ready, platform, config, notice, chatLog: chatLogPath(config), save };
+  const ownFile = useCallback((name: string) => (path.current ? path.current.replace(/config\.json$/, name) : ""), []);
+  return { ready, platform, config, notice, chatLog: chatLogPath(config), save, ownFile };
+}
+
+/** The plain browser shows a demo: some keywords and three Rudra items, matches wait for «Принять». */
+function demoConfig(): Config {
+  return { ...readConfig(null).config, keywords: ["wts", "продам", "ищу группу"], alert_mode: "nag",
+    watch_items: ["110600968", "114600926", "113600931"] };
 }
