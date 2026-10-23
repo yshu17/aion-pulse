@@ -4,11 +4,16 @@ import { Icon } from "./Icon";
 import { IconClose, IconExpand, IconSettings } from "./icons";
 import { dragOverlay, fitHeight, keepPlace, loadLook, onState, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus } from "./overlayWindow";
 
+const TURN_MS = 4500; // how long each of several overlapping events stays on the line
+
 /** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
 export function Overlay() {
   const [state, setState] = useState<OverlayState | null>(null);
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
   const [menu, setMenu] = useState(false);
+  const [turn, setTurn] = useState(0); // which of several running events the line shows now
+  const [fade, setFade] = useState(false);
+  const [paused, setPaused] = useState(false);
   const setLook = (next: OverlayLook) => { setLookValue(next); saveLook(next); };
   useEffect(() => { setKeepGameFocus(look.keepGameFocus); }, [look.keepGameFocus]);
   const root = useRef<HTMLDivElement>(null);
@@ -37,36 +42,51 @@ export function Overlay() {
     return () => { window.removeEventListener("pointerdown", off); window.removeEventListener("keydown", esc); };
   }, [menu]);
 
+  const running = state?.schedule.current ?? [];
+  const several = running.length > 1;
+  useEffect(() => { // events that overlap take turns on the line: the text fades out, changes and fades in
+    if (!several || paused) return;
+    let swap: ReturnType<typeof setTimeout> | undefined;
+    const timer = setInterval(() => {
+      setFade(true);
+      swap = setTimeout(() => { setTurn((t) => t + 1); setFade(false); }, 260);
+    }, TURN_MS);
+    return () => { clearInterval(timer); clearTimeout(swap); setFade(false); };
+  }, [several, paused]);
+
   const live = state?.watching && !state.problem;
   const note = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "";
-  const running = state?.schedule.current ?? [];
-  const shown = running[0] ?? state?.schedule.next ?? null; // the event that ends first, else the next one
+  const at = several ? turn % running.length : 0;
+  const shown = running[at] ?? state?.schedule.next ?? null; // running events take turns, else the next one
   const isRunning = running.length > 0;
   return (
     <div className="overlay" ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
       <div className="ov-line" tabIndex={0} role="group" aria-label="Накладка Pulse+" onMouseDown={dragOverlay}
         title={state?.problem || "Потяни, чтобы передвинуть. Правый клик: меню"}
+        onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         onContextMenu={(e) => { e.preventDefault(); setMenu(!menu); }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
         <span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />
         {note && <span className="muted">{note}</span>}
-        {shown ? (
-          <>
-            <span className={`ov-sw t-${shown.tone}`} aria-hidden />
-            <b className="name">{shown.name}</b>
-            {isRunning ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {shown.from}</span>}
-            {isRunning && running.length > 1 && <span className="muted">+{running.length - 1}</span>}
-            <span className="spacer" />
-            <span className="ov-left num"><span className="muted">{isRunning ? "ещё" : "через"}</span> <b>{shown.left}</b></span>
-            {isRunning && shown.progress !== null && (
-              <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(shown.progress * 100)}>
-                <i className={`t-${shown.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, shown.progress))})` }} />
-              </span>
-            )}
-          </>
-        ) : (
-          <><span className="spacer" /><span className="muted">событий нет</span></>
-        )}
+        <div className={`ov-body${fade ? " fade" : ""}`} aria-live="polite">
+          {shown ? (
+            <>
+              <span className={`ov-sw t-${shown.tone}`} aria-hidden />
+              <b className="name">{shown.name}</b>
+              {isRunning ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {shown.from}</span>}
+              {several && <span className="muted num" title="Идёт несколько событий, они меняются по очереди">{at + 1}/{running.length}</span>}
+              <span className="spacer" />
+              <span className="ov-left num"><span className="muted">{isRunning ? "ещё" : "через"}</span> <b>{shown.left}</b></span>
+              {isRunning && shown.progress !== null && (
+                <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(shown.progress * 100)}>
+                  <i className={`t-${shown.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, shown.progress))})` }} />
+                </span>
+              )}
+            </>
+          ) : (
+            <><span className="spacer" /><span className="muted">событий нет</span></>
+          )}
+        </div>
         <button className="ov-gear" aria-label="Развернуть Pulse+" title="Развернуть Pulse+" onClick={() => sendAction({ kind: "expand" })}><IconExpand /></button>
         <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность и фокус"
           onClick={() => setMenu(!menu)}><IconSettings /></button>

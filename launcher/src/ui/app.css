@@ -129,6 +129,9 @@ html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background:
 .ov-line .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; min-width: 0; }
 .ov-line .muted { color: #a3a8b3; white-space: nowrap; }
 .ov-line .num { font-variant-numeric: tabular-nums; }
+.ov-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; transition: opacity .26s ease, transform .26s ease; }
+.ov-body.fade { opacity: 0; transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) { .ov-body { transition: none; } }
 .ov-sw { width: 3px; height: 14px; border-radius: 2px; border: 0; flex: none; }
 .ov-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255, 255, 255, .08); } /* how much of the running event has passed */
 .ov-prog i { position: absolute; inset: 0; border: 0; transform-origin: left; transition: transform .6s ease-out; }
