@@ -1,0 +1,76 @@
+{
+ "schema": 1,
+ "built": null,
+ "client_build": null,
+ "sections": {
+  "items": {
+   "records": 62490,
+   "missing_inputs": []
+  },
+  "recipes": {
+   "records": 7671,
+   "missing_inputs": []
+  },
+  "npcs": {
+   "records": 30397,
+   "missing_inputs": []
+  },
+  "maps": {
+   "records": 20,
+   "missing_inputs": []
+  },
+  "labels": {
+   "records": 620,
+   "missing_inputs": []
+  },
+  "npc_points": {
+   "records": 43621,
+   "missing_inputs": []
+  },
+  "vendors": {
+   "records": 41516,
+   "missing_inputs": []
+  },
+  "quests": {
+   "records": 4643,
+   "missing_inputs": []
+  },
+  "skills": {
+   "records": 7560,
+   "missing_inputs": []
+  },
+  "stigmas": {
+   "records": 617,
+   "missing_inputs": []
+  },
+  "classes": {
+   "records": 24,
+   "missing_inputs": []
+  }
+ },
+ "drops": {
+  "records": 1441972,
+  "duplicates": 0,
+  "missing_inputs": []
+ },
+ "items_without_name": 73,
+ "items_with_legacy_name": 0,
+ "broken_links": {
+  "quests.giver -> npcs": {
+   "count": 39,
+   "samples": [
+    "799979",
+    "799980",
+    "799986",
+    "799988",
+    "800240",
+    "800241",
+    "279170",
+    "279171",
+    "279177",
+    "279178"
+   ]
+  }
+ },
+ "ok": false
+}

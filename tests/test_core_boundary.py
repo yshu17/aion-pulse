@@ -22,6 +22,7 @@ CORE_GROUPS = {
     "settings": ["config"],
     "update": ["updater", "selfupdate"],
     "telegram": ["tgbatch"],
+    "game_data": ["tables", "layout", "sections", "build", "store"],
 }
 FORBIDDEN_TOP = {"tkinter", "PIL", "ctypes", "winsound", "winreg", "watcher"}
 

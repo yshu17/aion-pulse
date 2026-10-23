@@ -20,6 +20,27 @@ A missing or broken file gives empty data, never a crash. Text files are UTF-8.
 | `maps/client/*.jpg` | zone pictures, 3072 px | the window only |
 | `icons/`, `ui/` | item icons and window graphics | the window only |
 
+## Game data (`data/game/`, built by `tools/build_game_data.py`)
+
+A folder of sections; a screen loads only the sections it shows. IDs are client IDs as strings, links between sections are IDs
+only, an unknown value is `null`, a missing record means «not checked». Every section file is `{"schema": 1, "section": name, ...}`;
+`.json.gz` files are gzip without a time stamp, so the same tables give the same bytes. Read by `core.game_data.store.GameData`.
+
+| File | Content |
+|---|---|
+| `manifest.json` | `{schema, built, client_build, sections: {name: {file, records, sha256}}}` |
+| `report.json` | counts, missing input tables, links to IDs that do not exist (a count and the first ten) |
+| `items.json.gz` | `records`: `id, name, type, weapon, armor, level, price, icon, category, grade, source [, name_source]` (`name_source: "legacy"` = the name is from the older `item_names.tsv`) |
+| `recipes.json.gz` | `records`: `id, name, product, count, profession, level, race, ingredients [[item, count]], combo [item] or null, source` |
+| `npcs.json.gz` | `records`: `id, name, function, ui, tribe, race, source` |
+| `maps.json`, `labels.json.gz` | maps (`id, name, file, size, side`); area labels as `columns` + `rows` |
+| `npc_points.json.gz` | `columns [map, npc, x, y, z, zone]`, `rows`: where an NPC stands (game coordinates) |
+| `vendors.json.gz` | `columns [npc, item, price, currency, limit, kind]`, `rows`; price and currency are `null` (the client has none) |
+| `quests.json.gz` | `records`: `id, name, min_level, max_level, race, category, repeatable, giver, ender, rewards [{type, group, item, amount}]`; `ender` is unknown for all |
+| `skills.json.gz` | `skills` (`id, name, classes, level, kind, mp, cooldown_ms, cast_ms, range, requires`) and `learns` (`id, skill, class, race, level, stigma`) |
+| `stigmas.json`, `classes.json` | stigma rules (slot unlock levels unknown); class × race with `base_stats` / `per_level` = `null` until the client table is found |
+| `drops.sqlite` | `drops(npc_id, item_id, chance_min, chance_max, count_min, count_max)` key `(npc_id, item_id)` plus an index by item; chances and counts are `NULL`; not in git (47 MB), `PRAGMA user_version` 1 |
+
 ## Next to the program (user files)
 
 | File | Format | Read by |

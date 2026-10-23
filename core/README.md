@@ -24,6 +24,7 @@ Rules (checked by `tests/test_core_boundary.py`):
 | `settings` | config | the settings model, validation, reading / writing config.json (path is a parameter) |
 | `update` | updater, selfupdate | GitHub release check, verified download (SHA-256) and file swap |
 | `telegram` | tgbatch | chat lines packed into Telegram messages within the rate limit |
+| `game_data` | tables, layout, sections, build, store | the game data: one build from the client exports into `data/game/` (a file per section + SQLite drops), one reader; `tools/build_game_data.py` runs it |
 | — | api, `__main__`, schema, text | one JSON entry point for other programs ([API.md](API.md)), its typed contract ([api.schema.json](api.schema.json), [api.d.ts](api.d.ts)), shared text helpers |
 
 Each module's docstring lists its public functions and data formats.

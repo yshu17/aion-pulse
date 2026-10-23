@@ -53,3 +53,5 @@ tests/test_ui_snapshots.py
 # stable build output and the personal to-do list
 /Pulse.exe
 TODO_NEXT.md
+# the drops of data/game: 47 MB, rebuilt by tools/build_game_data.py
+data/game/drops.sqlite
