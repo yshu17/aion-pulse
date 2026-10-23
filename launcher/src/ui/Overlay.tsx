@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
 import { IconClose, IconExpand, IconSettings } from "./icons";
-import { dragOverlay, fitHeight, keepPlace, loadLook, onState, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus } from "./overlayWindow";
+import { fitHeight, keepPlace, loadLook, onState, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus, startDrag } from "./overlayWindow";
 
-const TURN_MS = 4500; // how long each of several overlapping events stays on the line
+const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
 /** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
 export function Overlay() {
@@ -12,8 +12,8 @@ export function Overlay() {
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
   const [menu, setMenu] = useState(false);
   const [turn, setTurn] = useState(0); // which of several running events the line shows now
-  const [fade, setFade] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const press = useRef<{ x: number; y: number } | null>(null); // where the button went down, until it becomes a drag
+  const dragged = useRef(false);
   const setLook = (next: OverlayLook) => { setLookValue(next); saveLook(next); };
   useEffect(() => { setKeepGameFocus(look.keepGameFocus); }, [look.keepGameFocus]);
   const root = useRef<HTMLDivElement>(null);
@@ -44,47 +44,50 @@ export function Overlay() {
 
   const running = state?.schedule.current ?? [];
   const several = running.length > 1;
-  useEffect(() => { // events that overlap take turns on the line: the text fades out, changes and fades in
-    if (!several || paused) return;
-    let swap: ReturnType<typeof setTimeout> | undefined;
-    const timer = setInterval(() => {
-      setFade(true);
-      swap = setTimeout(() => { setTurn((t) => t + 1); setFade(false); }, 260);
-    }, TURN_MS);
-    return () => { clearInterval(timer); clearTimeout(swap); setFade(false); };
-  }, [several, paused]);
+  useEffect(() => { // events that overlap take turns on the line; a click on it (turn changes) starts the wait again
+    if (!several) return;
+    const timer = setTimeout(() => setTurn((t) => t + 1), look.turnSec * 1000);
+    return () => clearTimeout(timer);
+  }, [several, turn, look.turnSec]);
 
   const live = state?.watching && !state.problem;
   const note = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "";
-  const at = several ? turn % running.length : 0;
-  const shown = running[at] ?? state?.schedule.next ?? null; // running events take turns, else the next one
+  const current = several ? turn % running.length : 0; // the slide that is shown
+  const next = state?.schedule.next ?? null;
   const isRunning = running.length > 0;
+  const slides = several ? running : isRunning ? [running[0]] : next ? [next] : []; // running events take turns, else the next one
   return (
     <div className="overlay" ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
-      <div className="ov-line" tabIndex={0} role="group" aria-label="Накладка Pulse+" onMouseDown={dragOverlay}
-        title={state?.problem || "Потяни, чтобы передвинуть. Правый клик: меню"}
-        onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      <div className="ov-line" tabIndex={0} role="group" aria-label="Накладка Pulse+" 
+        title={state?.problem || (several ? "Щелчок: следующее событие. Потяни: передвинуть. Правый клик: меню" : "Потяни, чтобы передвинуть. Правый клик: меню")}
+        onPointerDown={(e) => { dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
+        onPointerMove={(e) => {
+          const from = press.current;
+          if (!from || !(e.buttons & 1) || Math.hypot(e.clientX - from.x, e.clientY - from.y) < DRAG_PX) return;
+          press.current = null; dragged.current = true; startDrag();
+        }}
+        onPointerUp={() => { press.current = null; }} onPointerLeave={() => { press.current = null; }}
         onContextMenu={(e) => { e.preventDefault(); setMenu(!menu); }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
         <span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />
         {note && <span className="muted">{note}</span>}
-        <div className={`ov-body${fade ? " fade" : ""}`} aria-live="polite">
-          {shown ? (
-            <>
-              <span className={`ov-sw t-${shown.tone}`} aria-hidden />
-              <b className="name">{shown.name}</b>
-              {isRunning ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {shown.from}</span>}
-              {several && <span className="muted num" title="Идёт несколько событий, они меняются по очереди">{at + 1}/{running.length}</span>}
+        <div className={`ov-body${several ? " turns" : ""}`} aria-live="polite" onClick={() => { if (several && !dragged.current) setTurn((t) => t + 1); }}>
+          {slides.length > 0 ? slides.map((e, i) => (
+            <div key={e.name + e.from} className={`ov-slide${i === current ? " on" : ""}`} aria-hidden={i !== current}>
+              <span className={`ov-sw t-${e.tone}`} aria-hidden />
+              <b className="name">{e.name}</b>
+              {isRunning ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {e.from}</span>}
+              {several && <span className="muted num" title="Идёт несколько событий: они меняются по очереди и по щелчку">{i + 1}/{running.length}</span>}
               <span className="spacer" />
-              <span className="ov-left num"><span className="muted">{isRunning ? "ещё" : "через"}</span> <b>{shown.left}</b></span>
-              {isRunning && shown.progress !== null && (
-                <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(shown.progress * 100)}>
-                  <i className={`t-${shown.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, shown.progress))})` }} />
+              <span className="ov-left num"><span className="muted">{isRunning ? "ещё" : "через"}</span> <b>{e.left}</b></span>
+              {isRunning && e.progress !== null && (
+                <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(e.progress * 100)}>
+                  <i className={`t-${e.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, e.progress))})` }} />
                 </span>
               )}
-            </>
-          ) : (
-            <><span className="spacer" /><span className="muted">событий нет</span></>
+            </div>
+          )) : (
+            <div className="ov-slide on"><span className="spacer" /><span className="muted">событий нет</span></div>
           )}
         </div>
         <button className="ov-gear" aria-label="Развернуть Pulse+" title="Развернуть Pulse+" onClick={() => sendAction({ kind: "expand" })}><IconExpand /></button>
@@ -98,6 +101,12 @@ export function Overlay() {
             <input type="range" min={30} max={100} step={5} value={Math.round(look.opacity * 100)} aria-valuetext={`${Math.round(look.opacity * 100)} %`}
               onChange={(e) => setLook({ ...look, opacity: Number(e.target.value) / 100 })} />
             <b>{Math.round(look.opacity * 100)} %</b>
+          </label>
+          <label className="ov-opacity" title="Если идёт несколько событий, строка по очереди показывает каждое. Щелчок по строке меняет событие сразу.">
+            <span>Смена событий</span>
+            <input type="range" min={2} max={20} step={1} value={look.turnSec} aria-valuetext={`каждые ${look.turnSec} с`}
+              onChange={(e) => setLook({ ...look, turnSec: Number(e.target.value) })} />
+            <b>{look.turnSec} с</b>
           </label>
           <label className="ov-check">
             <input type="checkbox" checked={look.keepGameFocus} onChange={(e) => setLook({ ...look, keepGameFocus: e.target.checked })} />

@@ -96,9 +96,8 @@ function savedPlace(): { x: number; y: number } | null {
   }
 }
 
-/** Move the overlay with the mouse (from any place but a button); the new place is kept for the next time. */
-export function dragOverlay(event: React.MouseEvent): void {
-  if (event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
+/** Start moving the overlay with the mouse; the new place is kept for the next time (see keepPlace). */
+export function startDrag(): void {
   getCurrentWindow().startDragging().catch(() => {});
 }
 
@@ -113,16 +112,18 @@ export function keepPlace(): Promise<UnlistenFn> {
 export interface OverlayLook {
   opacity: number; // 0.3…1, the whole overlay; it is opaque while the mouse is over it
   keepGameFocus: boolean; // a click on the overlay leaves the keyboard with the game
+  turnSec: number; // how long each of several running events stays on the line before the next one comes (2…20)
 }
 
 const LOOK = "pulse-overlay-look";
-const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true };
+const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true, turnSec: 5 };
 
 export function loadLook(): OverlayLook {
   try {
     const raw = JSON.parse(localStorage.getItem(LOOK) ?? "{}");
     const opacity = typeof raw.opacity === "number" ? Math.min(1, Math.max(0.3, raw.opacity)) : DEFAULT_LOOK.opacity;
-    return { opacity, keepGameFocus: typeof raw.keepGameFocus === "boolean" ? raw.keepGameFocus : DEFAULT_LOOK.keepGameFocus };
+    const turnSec = Number.isFinite(raw.turnSec) ? Math.min(20, Math.max(2, Math.round(raw.turnSec))) : DEFAULT_LOOK.turnSec;
+    return { opacity, keepGameFocus: typeof raw.keepGameFocus === "boolean" ? raw.keepGameFocus : DEFAULT_LOOK.keepGameFocus, turnSec };
   } catch {
     return DEFAULT_LOOK;
   }
