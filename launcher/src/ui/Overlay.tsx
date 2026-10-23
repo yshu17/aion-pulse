@@ -67,12 +67,12 @@ export function Overlay() {
         ) : (
           <><span className="spacer" /><span className="muted">событий нет</span></>
         )}
-        <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность, фокус, развернуть"
+        <button className="ov-gear" aria-label="Развернуть Pulse+" title="Развернуть Pulse+" onClick={() => sendAction({ kind: "expand" })}><IconExpand /></button>
+        <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность и фокус"
           onClick={() => setMenu(!menu)}><IconSettings /></button>
       </div>
       {menu && (
         <div className="ov-menu" role="menu">
-          <button role="menuitem" className="ov-item" onClick={() => sendAction({ kind: "expand" })}><IconExpand />Развернуть Pulse+</button>
           <label className="ov-opacity">
             <span>Прозрачность</span>
             <input type="range" min={30} max={100} step={5} value={Math.round(look.opacity * 100)} aria-valuetext={`${Math.round(look.opacity * 100)} %`}
