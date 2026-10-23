@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Feed } from "./Feed";
 import { ItemsPanel } from "./ItemsPanel";
+import { enterOverlay, leaveOverlay, onAction, sendState } from "./overlayWindow";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
 import { useWatch } from "./useWatch";
@@ -18,6 +19,32 @@ export default function App() {
 function Screen({ boot }: { boot: Boot }) {
   const watch = useWatch(boot);
   const problem = watch.source.kind === "missing" || watch.source.kind === "error";
+  const [overlay, setOverlay] = useState(false);
+
+  useEffect(() => { // the overlay shows what this window would show
+    if (!overlay) return;
+    sendState({
+      watching: watch.watching, problem: problem ? watch.source.text : "", counters: watch.counters,
+      toasts: watch.toasts.map((t) => ({ id: t.note.id, title: t.note.title, text: t.note.text, icon: t.icon,
+        accept: t.note.actions.some((a) => a.id === "accept") })),
+    });
+  }, [overlay, watch.watching, watch.counters, watch.toasts, watch.source, problem]);
+
+  const live = useRef(watch); // the overlay's buttons act on the current state without re-subscribing every render
+  live.current = watch;
+  useEffect(() => {
+    if (!boot.platform) return;
+    const off = onAction((action) => {
+      const watch = live.current;
+      if (action.kind === "expand") { setOverlay(false); leaveOverlay(); return; }
+      const toast = watch.toastById(action.id);
+      if (!toast) return;
+      if (action.kind === "accept") watch.acceptToast(toast);
+      else if (action.kind === "snooze") watch.snoozeToast(toast);
+      else watch.dismissToast(toast);
+    });
+    return () => { off.then((unlisten) => unlisten()); };
+  }, [boot.platform]);
   const [tab, setTab] = useState("Поиск");
   const [found, reacted, missed] = watch.counters;
 
@@ -48,7 +75,9 @@ function Screen({ boot }: { boot: Boot }) {
         <select className="field mode" value={watch.mode} onChange={(e) => watch.setMode(e.target.value)} aria-label="Режим поиска">
           {MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
-        <button className="btn" title="Свернуть в полосу поверх игры (позже)">В накладку</button>
+        <button className="btn" disabled={!boot.platform}
+          title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
+          onClick={() => { setOverlay(true); enterOverlay(); }}>⧉ В накладку</button>
         <button className="btn">Настройки</button>
       </div>
 
@@ -69,8 +98,8 @@ function Screen({ boot }: { boot: Boot }) {
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
-      <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
-        onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />
+      {!overlay && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast}
+        onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
     </div>
   );
 }

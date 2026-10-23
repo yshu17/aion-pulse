@@ -1,11 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./ui/App";
+import { Overlay } from "./ui/Overlay";
+import { isOverlay } from "./ui/overlayWindow";
 import "./ui/theme.css";
 import "./ui/app.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {isOverlay ? <Overlay /> : <App />}
   </React.StrictMode>,
 );

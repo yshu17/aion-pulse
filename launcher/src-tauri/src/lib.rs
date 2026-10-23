@@ -37,6 +37,21 @@ fn config_path(app: AppHandle) -> Result<String, String> {
     Ok(config_dir(&app)?.join("config.json").to_string_lossy().into_owned())
 }
 
+/// Where an old Pulse may keep its settings: config.json in the launcher's folder and in up to five folders above
+/// it (Pulse.exe keeps config.json next to itself; a development build of the launcher sits deep inside the
+/// project). Only files that exist, nearest first; the caller checks that they are Pulse settings.
+#[tauri::command]
+fn pulse_config_candidates() -> Vec<String> {
+    let Ok(exe) = std::env::current_exe() else { return Vec::new() };
+    exe.ancestors()
+        .skip(1)
+        .take(6)
+        .map(|dir| dir.join("config.json"))
+        .filter(|path| path.is_file())
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect()
+}
+
 /// The whole text of a file (UTF-8, a BOM dropped), or None when there is no such file.
 #[tauri::command]
 fn read_text(path: String) -> Result<Option<String>, String> {
@@ -90,7 +105,7 @@ fn write_text(app: AppHandle, path: String, text: String) -> Result<(), String> 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![config_path, read_text, file_size, read_range, write_text])
+        .invoke_handler(tauri::generate_handler![config_path, pulse_config_candidates, read_text, file_size, read_range, write_text])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

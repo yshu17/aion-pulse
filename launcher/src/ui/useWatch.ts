@@ -6,6 +6,7 @@ import { AlertBridge } from "../core/notify/bridge";
 import { Notification, NotificationCenter } from "../core/notify/center";
 import { demoLine, itemById, itemNames, mapNames, questNames, watchItems } from "./data";
 import { AsyncLogFeed } from "./logFeed";
+import { makeSound } from "./sound";
 import type { Boot } from "./useBoot";
 
 export type AlertState = "accepted" | "missed";
@@ -41,6 +42,8 @@ export interface Watch {
   acceptToast(toast: Toast): void;
   snoozeToast(toast: Toast): void;
   dismissToast(toast: Toast): void;
+  /** The toast on screen with this notification id (the overlay names toasts by id). */
+  toastById(id: number): Toast | undefined;
   reset(): void;
 }
 
@@ -71,13 +74,15 @@ export function useWatch(boot: Boot): Watch {
     return { session, center, bridge: new AlertBridge(center) };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one session per window, settings flow in below
   const { session, center, bridge } = core;
+  const play = useMemo(() => makeSound(boot.platform, cfg), [boot.platform, cfg.sound_path, cfg.sound_volume]); // eslint-disable-line react-hooks/exhaustive-deps
+  const quiet = cfg.notify_dnd || cfg.notify_off.includes("chat") || cfg.notify_mute.includes("chat");
 
   const [entries, setEntries] = useState<Entry[]>([]);
   const [counters, setCounters] = useState<[number, number, number]>([0, 0, 0]);
   const [state, setState] = useState<Record<number, AlertState>>({});
   const [remaining, setRemaining] = useState<Record<number, number>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [source, setSource] = useState<Source>(demo ? { kind: "demo", text: "Демо: строки чата придумываются" } : { kind: "log", text: boot.chatLog });
+  const [source, setSourceValue] = useState<Source>(demo ? { kind: "demo", text: "Демо: строки чата придумываются" } : { kind: "log", text: boot.chatLog });
   const [watching, setWatching] = useState(true);
   const [keywords, setKeywordsText] = useState(() => (demo ? "wts, продам, ищу группу" : cfg.keywords.join(", ")));
   const [mode, setModeValue] = useState(cfg.search_mode);
@@ -87,6 +92,8 @@ export function useWatch(boot: Boot): Watch {
   const shownAt = useRef(new Map<number, number>()); // notification id -> when its toast appeared
   const icons = useRef(new Map<number, string | null>()); // notification id -> item picture
 
+  const setSource = useCallback((next: Source) => // a new value only when it changes: polls come every 0.5 s
+    setSourceValue((old) => (old.kind === next.kind && old.text === next.text ? old : next)), []);
   const showToasts = useCallback((list: Toast[]) => { openToasts.current = list; setToasts(list); }, []);
   const sync = useCallback(() => setCounters(session.counters), [session]);
 
@@ -112,9 +119,10 @@ export function useWatch(boot: Boot): Watch {
       const note = bridge.chatMatch(loud.map((e) => e.alert_id!), loud.map((e) => [e.msg.nick, e.msg.text.replace(/[⟪⟫]/g, ""), e.hits]), nag);
       const item = loud.flatMap((e) => e.msg.item_ids.map((id) => itemById[id])).find(Boolean);
       if (note) icons.current.set(note.id, item?.icon ?? null);
+      if (!quiet) play();
     }
     sync();
-  }, [session, bridge, nag, sync]);
+  }, [session, bridge, nag, sync, play, quiet]);
 
   useEffect(() => { watchNames(checked); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -161,7 +169,7 @@ export function useWatch(boot: Boot): Watch {
     poll();
     const timer = setInterval(poll, Math.max(200, cfg.poll_interval_ms));
     return () => { alive = false; clearInterval(timer); session.stop(); };
-  }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.poll_interval_ms, session, take]);
+  }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.poll_interval_ms, session, take, setSource]);
 
   useEffect(() => { // every second: countdowns, missed alerts, repeats, the toast stack
     const timer = setInterval(() => {
@@ -206,6 +214,7 @@ export function useWatch(boot: Boot): Watch {
     },
     snoozeToast: (toast) => { center.snooze(toast.note.id, SNOOZE_SEC); showToasts(openToasts.current.filter((x) => x !== toast)); },
     dismissToast: (toast) => showToasts(openToasts.current.filter((x) => x !== toast)),
+    toastById: (id) => openToasts.current.find((toast) => toast.note.id === id),
     reset: () => { session.resetCounters(); sync(); },
   };
 }

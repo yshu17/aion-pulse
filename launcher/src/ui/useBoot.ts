@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Config, chatLogPath, readConfig, serializeConfig } from "../core/settings/config";
+import { pulseSettings } from "./migrate";
 import { platform, Platform } from "./platform";
 
 export interface Boot {
@@ -30,7 +31,21 @@ export function useBoot(): Boot {
     if (platform === null) return;
     (async () => {
       path.current = await platform.configPath();
-      const result = readConfig(await platform.readText(path.current), "config.json.broken");
+      const own = await platform.readText(path.current);
+      if (own === null) { // the first start: the settings of an old Pulse, when there is one
+        const files = platform;
+        const candidates = await files.pulseConfigCandidates();
+        const migration = pulseSettings(await Promise.all(candidates.map(async (c) => [c, await files.readText(c)] as [string, string | null])));
+        if (migration) {
+          await platform.writeText(path.current, serializeConfig(migration.config));
+          latest.current = migration.config;
+          setConfig(migration.config);
+          setNotice(migration.notice);
+          setReady(true);
+          return;
+        }
+      }
+      const result = readConfig(own, "config.json.broken");
       if (result.action === "backup_and_write") {
         const broken = await platform.readText(path.current);
         if (broken !== null) await platform.writeText(path.current.replace(/config\.json$/, "config.json.broken"), broken);

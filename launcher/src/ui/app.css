@@ -115,3 +115,12 @@ time { color: var(--muted); font: 12px var(--mono); }
 .feed-card { flex-direction: column; }
 .banner { margin: 12px 12px 0; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
 .banner.warn { color: var(--warning); background: #2f2614; }
+
+html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background: transparent; height: auto; overflow: hidden; }
+.overlay { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding: 1px; }
+.strip { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 14px; background: var(--surface); border: 1px solid var(--border-control);
+  border-radius: 999px; font-size: 13px; width: 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); }
+.strip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.btn.mini-plain { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
+.overlay .toast { width: 100%; }
+.btn:disabled { opacity: .45; cursor: default; }
