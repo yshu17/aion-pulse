@@ -109,3 +109,9 @@ time { color: var(--muted); font: 12px var(--mono); }
 .toast .btn { padding: 6px 12px; }
 .x { background: none; border: 0; color: var(--muted); font-size: 18px; line-height: 1; padding: 0 2px; }
 .x:hover { color: var(--text); }
+
+.loading { align-items: center; justify-content: center; }
+.btn.status.warn { color: var(--warning); }
+.feed-card { flex-direction: column; }
+.banner { margin: 12px 12px 0; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
+.banner.warn { color: var(--warning); background: #2f2614; }

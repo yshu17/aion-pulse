@@ -3,13 +3,21 @@ import { useState } from "react";
 import { Feed } from "./Feed";
 import { ItemsPanel } from "./ItemsPanel";
 import { Toasts } from "./Toasts";
+import { Boot, useBoot } from "./useBoot";
 import { useWatch } from "./useWatch";
 
 const TABS = ["Поиск", "Весь чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
 const MODES: [string, string][] = [["or", "Слово ИЛИ предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово И предмет"]];
 
 export default function App() {
-  const watch = useWatch();
+  const boot = useBoot();
+  if (!boot.ready) return <div className="window loading"><span className="muted">Загружаю настройки…</span></div>;
+  return <Screen boot={boot} />;
+}
+
+function Screen({ boot }: { boot: Boot }) {
+  const watch = useWatch(boot);
+  const problem = watch.source.kind === "missing" || watch.source.kind === "error";
   const [tab, setTab] = useState("Поиск");
   const [found, reacted, missed] = watch.counters;
 
@@ -29,7 +37,9 @@ export default function App() {
         {watch.watching
           ? <button className="btn stop" onClick={() => watch.setWatching(false)}>Stop</button>
           : <button className="btn start" onClick={() => watch.setWatching(true)}>Start</button>}
-        <span className={`btn status${watch.watching ? " on" : ""}`}>{watch.watching ? "✓ Слежу" : "Не слежу"}</span>
+        <span className={`btn status${watch.watching && !problem ? " on" : ""}${problem ? " warn" : ""}`} title={watch.source.text}>
+          {!watch.watching ? "Не слежу" : problem ? "Нет Chat.log" : watch.source.kind === "demo" ? "✓ Слежу · демо" : "✓ Слежу"}
+        </span>
         <label className="keywords">
           <span className="muted">Ключевые слова</span>
           <input className="field" value={watch.keywords} onChange={(e) => watch.setKeywords(e.target.value)}
@@ -51,7 +61,9 @@ export default function App() {
 
       {tab === "Поиск" ? (
         <main className="search">
-          <section className="card feed-card"><Feed entries={watch.entries} alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} /></section>
+          <section className="card feed-card">
+            {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
+            <Feed entries={watch.entries} alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} /></section>
           <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
         </main>
       ) : (
