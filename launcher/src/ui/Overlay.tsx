@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
-import { IconClose, IconExpand, IconSettings } from "./icons";
-import { dragOverlay, fitHeight, keepPlace, loadLook, onState, OverlayEvent, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus } from "./overlayWindow";
+import { IconClose, IconExpand } from "./icons";
+import { dragOverlay, fitHeight, keepPlace, loadLook, onState, OverlayLook, OverlayState, saveLook, sendAction, setKeepGameFocus } from "./overlayWindow";
 
-/** The page of the overlay window: a status strip and the notifications, over the game. */
+/** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
 export function Overlay() {
   const [state, setState] = useState<OverlayState | null>(null);
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
-  const [tuning, setTuning] = useState(false);
+  const [menu, setMenu] = useState(false);
   const setLook = (next: OverlayLook) => { setLookValue(next); saveLook(next); };
   useEffect(() => { setKeepGameFocus(look.keepGameFocus); }, [look.keepGameFocus]);
   const root = useRef<HTMLDivElement>(null);
@@ -28,21 +28,49 @@ export function Overlay() {
     return () => observer.disconnect();
   }, []);
 
-  const [found, reacted, missed] = state?.counters ?? [0, 0, 0];
+  useEffect(() => { // the menu closes on a press outside it or on Esc
+    if (!menu) return;
+    const off = (e: Event) => { if (!(e.target as HTMLElement).closest?.(".ov-menu, .ov-line")) setMenu(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
+    window.addEventListener("pointerdown", off);
+    window.addEventListener("keydown", esc);
+    return () => { window.removeEventListener("pointerdown", off); window.removeEventListener("keydown", esc); };
+  }, [menu]);
+
   const live = state?.watching && !state.problem;
+  const note = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "";
+  const running = state?.schedule.current ?? [];
+  const shown = running[0] ?? state?.schedule.next ?? null; // the event that ends first, else the next one
+  const isRunning = running.length > 0;
   return (
     <div className="overlay" ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
-      <div className="strip" title={state?.problem || "Потяни, чтобы передвинуть"} onMouseDown={dragOverlay}>
+      <div className="ov-line" tabIndex={0} role="group" aria-label="Накладка Pulse+" onMouseDown={dragOverlay}
+        title={state?.problem || "Потяни, чтобы передвинуть. Правый клик: меню"}
+        onContextMenu={(e) => { e.preventDefault(); setMenu(!menu); }}
+        onKeyDown={(e) => { if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
         <span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />
-        <span>{!state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу"}</span>
-        <span className="muted">{found} · {reacted} · {missed}</span>
-        <span className="spacer" />
-        <button className={`btn mini-plain icon${tuning ? " on" : ""}`} aria-label="Вид накладки" aria-expanded={tuning} title="Прозрачность и фокус"
-          onClick={() => setTuning(!tuning)}><IconSettings /></button>
-        <button className="btn mini-plain" onClick={() => sendAction({ kind: "expand" })}><IconExpand />Развернуть</button>
+        {note && <span className="muted">{note}</span>}
+        {shown ? (
+          <>
+            <span className={`ov-sw t-${shown.tone}`} aria-hidden />
+            <b className="name">{shown.name}</b>
+            <span className="muted num">{isRunning ? `до ${shown.to}` : shown.from}</span>
+            {isRunning && running.length > 1 && <span className="muted">+{running.length - 1}</span>}
+            {isRunning && shown.progress !== null && (
+              <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(shown.progress * 100)}>
+                <i className={`t-${shown.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, shown.progress))})` }} />
+              </span>
+            )}
+            <span className="spacer" />
+            <b className="ov-left num">{shown.left}</b>
+          </>
+        ) : (
+          <><span className="spacer" /><span className="muted">событий нет</span></>
+        )}
       </div>
-      {tuning && (
-        <div className="ov-tune">
+      {menu && (
+        <div className="ov-menu" role="menu">
+          <button role="menuitem" className="ov-item" onClick={() => sendAction({ kind: "expand" })}><IconExpand />Развернуть Pulse+</button>
           <label className="ov-opacity">
             <span>Прозрачность</span>
             <input type="range" min={30} max={100} step={5} value={Math.round(look.opacity * 100)} aria-valuetext={`${Math.round(look.opacity * 100)} %`}
@@ -53,14 +81,6 @@ export function Overlay() {
             <input type="checkbox" checked={look.keepGameFocus} onChange={(e) => setLook({ ...look, keepGameFocus: e.target.checked })} />
             <span>Не забирать фокус у игры: после клика можно сразу писать в игре</span>
           </label>
-        </div>
-      )}
-      {state && (state.schedule.current.length > 0 || state.schedule.next) && (
-        <div className="ov-schedule" onMouseDown={dragOverlay} title="Потяни, чтобы передвинуть" aria-label="Расписание">
-          {state.schedule.current.length > 0
-            ? state.schedule.current.map((e) => <Row key={e.name + e.from} event={e} running />)
-            : <div className="ov-row idle"><span className="muted">Сейчас событий нет</span></div>}
-          {state.schedule.next && <Row event={state.schedule.next} running={false} />}
         </div>
       )}
       {state?.toasts.map((toast) => (
@@ -78,25 +98,6 @@ export function Overlay() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function Row({ event, running }: { event: OverlayEvent; running: boolean }) {
-  return (
-    <div className={`ov-row ${running ? "now" : "next"}`}>
-      <span className={`ov-mark t-${event.tone}`} aria-hidden />
-      <div className="ov-main">
-        <b className="name">{event.name}</b>
-        <span className="sub">{running ? `идёт до ${event.to}` : `дальше, в ${event.from}`}</span>
-      </div>
-      <span className="ov-left">{running ? <>ещё <b>{event.left}</b></> : <>через <b>{event.left}</b></>}</span>
-      {running && event.progress !== null && (
-        <span className="ov-bar" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100}
-          aria-valuenow={Math.round(event.progress * 100)}>
-          <i className={`t-${event.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, event.progress))})` }} />
-        </span>
-      )}
     </div>
   );
 }

@@ -118,41 +118,34 @@ time { color: var(--muted); font: 12px var(--mono); }
 
 html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background: transparent; height: auto; overflow: hidden; }
 .overlay { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding: 1px 1px 14px; } /* room for the shadows */
-.strip { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 14px; background: var(--surface); border: 1px solid var(--border-control);
-  border-radius: 999px; font-size: 13px; width: 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); }
-.strip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .btn.mini-plain { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
 .overlay .toast { width: 100%; }
-.overlay .strip, .ov-schedule { cursor: grab; user-select: none; }
+/* the overlay is one line: status dot, the event now or next, the time left; the rest is in the right-click menu */
+.ov-line { width: 100%; height: 34px; display: flex; align-items: center; gap: 9px; padding: 0 14px 0 13px; background: var(--surface);
+  border: 1px solid var(--border-control); border-radius: 999px; font-size: 13px; box-shadow: 0 4px 12px rgba(0, 0, 0, .4);
+  cursor: grab; user-select: none; outline: none; }
+.ov-line:focus-visible { border-color: var(--accent); }
+.ov-line .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.ov-line .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; min-width: 0; }
+.ov-line .muted { color: #a3a8b3; white-space: nowrap; }
+.ov-line .num { font-variant-numeric: tabular-nums; }
+.ov-sw { width: 3px; height: 14px; border-radius: 2px; border: 0; flex: none; }
+.ov-prog { position: relative; flex: none; width: 46px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.ov-prog i { position: absolute; inset: 0; border: 0; transform-origin: left; transition: transform .6s ease-out; }
+.ov-left { flex: none; color: var(--accent); font-weight: 700; white-space: nowrap; }
+.ov-menu { width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--border-control); border-radius: 14px; font-size: 13px; box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+.ov-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 9px; border: 0; border-radius: 8px; background: var(--surface-2); text-align: left; }
+.ov-item:hover { background: var(--surface-3); }
 /* the chosen transparency; the overlay is opaque while the mouse is over it, so it stays readable to click */
 .overlay > * { opacity: var(--ov-opacity, .9); transition: opacity .15s; }
 .overlay:hover > * { opacity: 1; }
-.btn.mini-plain.icon { padding: 4px 7px; } .btn.mini-plain.icon.on { background: var(--surface-3); color: var(--accent); }
-.ov-tune { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; background: var(--surface);
-  border: 1px solid var(--border-control); border-radius: 14px; font-size: 13px; }
 .ov-opacity { display: flex; align-items: center; gap: 10px; }
 .ov-opacity input { flex: 1; accent-color: var(--accent); }
 .ov-opacity b { width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
 .ov-check { display: flex; align-items: flex-start; gap: 8px; color: #c6c9d0; line-height: 1.35; }
 .ov-check input { accent-color: var(--accent); margin-top: 2px; }
-@media (prefers-reduced-motion: reduce) { .overlay > * { transition: none; } }
-/* the schedule over the game: one card, a row per event; the running one shows how much of it has passed */
-.ov-schedule { width: 100%; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border-control);
-  border-radius: 14px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
-.ov-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 9px 14px 10px 12px; min-width: 0; }
-.ov-row + .ov-row { border-top: 1px solid var(--border); }
-.ov-row.idle { padding: 10px 14px; font-size: 13px; }
-.ov-mark { width: 4px; align-self: stretch; border-radius: 2px; border: 0; flex: none; }
-.ov-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.ov-main .name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ov-main .sub { font-size: 12px; color: #a3a8b3; line-height: 1.3; }
-.ov-left { flex: none; font-size: 12px; color: #a3a8b3; white-space: nowrap; }
-.ov-left b { font-size: 15px; font-weight: 700; color: var(--text); margin-left: 2px; }
-.ov-row.next .ov-left b { color: var(--accent); }
-.ov-row.next .ov-main .name { color: #d5d8de; }
-.ov-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .06); }
-.ov-bar i { display: block; height: 100%; transform-origin: left; border: 0; transition: transform .6s ease-out; }
-@media (prefers-reduced-motion: reduce) { .ov-bar i { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .overlay > *, .ov-prog i { transition: none; } }
 .btn:disabled { opacity: .45; cursor: default; }
 
 /* one chat feed: «Совпадения | Весь чат» */
@@ -301,3 +294,8 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
 
 .banner.row { display: flex; align-items: center; gap: 12px; } .banner.row span { flex: 1; } .banner.row .btn { padding: 6px 12px; flex: none; }
 .live b span.dot { color: inherit; }
+/* bright marks of the event tones (the t-* classes of the schedule are dark card fills) */
+.ov-sw.t-blue, .ov-prog i.t-blue { background: #6f9bff; } .ov-sw.t-green, .ov-prog i.t-green { background: #5fd38d; }
+.ov-sw.t-teal, .ov-prog i.t-teal { background: #4fd1cf; } .ov-sw.t-amber, .ov-prog i.t-amber { background: #f5b544; }
+.ov-sw.t-orange, .ov-prog i.t-orange { background: #ff8c1a; } .ov-sw.t-purple, .ov-prog i.t-purple { background: #b58cff; }
+.ov-sw.t-gray, .ov-prog i.t-gray { background: #8c919c; }
