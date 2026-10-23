@@ -21,6 +21,8 @@ export function Overlay() {
   useEffect(() => { setKeepGameFocus(look.keepGameFocus); }, [look.keepGameFocus]);
   const root = useRef<HTMLDivElement>(null);
   const pill = useRef<HTMLDivElement>(null);
+  const gameRunning = useRef(false); // read by place(): the strip is free to move while the game runs
+  gameRunning.current = state?.game === true;
   const [side, setSide] = useState<Side>("down"); // notifications and the menu open below the strip, or above it near the screen bottom
   const sideRef = useRef<Side>("down");
   const anchor = useRef<Point | null>(null); // the strip's top-left corner on the screen: it stays put whatever opens around it
@@ -39,7 +41,8 @@ export function Overlay() {
     if (!el || !at) return;
     const origin = windowOrigin(at, inside(), window.devicePixelRatio);
     placedAt.current = performance.now();
-    placeWindow(origin.x, origin.y, el.getBoundingClientRect().height + 2)
+    // with the game running the strip can go anywhere; without it the work area keeps it above the taskbar
+    placeWindow(origin.x, origin.y, el.getBoundingClientRect().height + 2, !gameRunning.current)
       .then((placed) => { anchor.current = anchorOf(placed, inside(), window.devicePixelRatio); }) // the strip may have been pushed off the taskbar
       .catch(() => {});
   };
@@ -162,6 +165,10 @@ export function Overlay() {
             <input type="range" min={2} max={20} step={1} value={look.turnSec} aria-valuetext={`каждые ${look.turnSec} с`}
               onChange={(e) => setLook({ ...look, turnSec: Number(e.target.value) })} />
             <b>{look.turnSec} с</b>
+          </label>
+          <label className="ov-check">
+            <input type="checkbox" checked={look.returnWhenGameClosed} onChange={(e) => setLook({ ...look, returnWhenGameClosed: e.target.checked })} />
+            <span>Вернуться в окно, когда игра закрыта</span>
           </label>
           <label className="ov-check">
             <input type="checkbox" checked={look.keepGameFocus} onChange={(e) => setLook({ ...look, keepGameFocus: e.target.checked })} />

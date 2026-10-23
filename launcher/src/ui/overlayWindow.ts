@@ -39,6 +39,7 @@ export interface OverlayState {
   counters: [number, number, number];
   toasts: OverlayToast[];
   schedule: { current: OverlayEvent[]; next: OverlayEvent | null };
+  game: boolean | null; // is the game process running; null when the check is off or not done yet
 }
 
 export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "dismiss" | "retry"; id: number };
@@ -95,12 +96,12 @@ export const onPlace = (handler: (anchor: Point) => void): Promise<UnlistenFn> =
  * Put the overlay window at (x, y), kept inside the work area (never under the taskbar), as tall as its content (`heightCss`, CSS pixels), so the empty part never covers the
  * game. With a page zoom (devicePixelRatio is not the monitor scale) CSS and window pixels differ.
  */
-export async function placeWindow(x: number, y: number, heightCss: number): Promise<Point> {
+export async function placeWindow(x: number, y: number, heightCss: number, keepInWorkArea = true): Promise<Point> {
   const win = getCurrentWindow();
   const scale = await win.scaleFactor();
   const size = new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(heightCss * window.devicePixelRatio)));
   const area = await workArea();
-  const origin = area ? keepInside({ x, y }, { width: size.width, height: size.height }, area) : { x, y };
+  const origin = area && keepInWorkArea ? keepInside({ x, y }, { width: size.width, height: size.height }, area) : { x, y };
   await Promise.all([win.setPosition(new PhysicalPosition(origin.x, origin.y)), win.setSize(size)]);
   return origin; // not under the taskbar: the caller keeps the strip where the window really is
 }
@@ -152,17 +153,23 @@ export interface OverlayLook {
   opacity: number; // 0.3…1, the whole overlay; it is opaque while the mouse is over it
   keepGameFocus: boolean; // a click on the overlay leaves the keyboard with the game
   turnSec: number; // how long each of several running events stays on the line before the next one comes (2…20)
+  returnWhenGameClosed: boolean; // the game is gone for a while: the overlay goes back to the main window
 }
 
 const LOOK = "pulse-overlay-look";
-const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true, turnSec: 5 };
+const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true, turnSec: 5, returnWhenGameClosed: true };
 
 export function loadLook(): OverlayLook {
   try {
     const raw = JSON.parse(localStorage.getItem(LOOK) ?? "{}");
     const opacity = typeof raw.opacity === "number" ? Math.min(1, Math.max(0.3, raw.opacity)) : DEFAULT_LOOK.opacity;
     const turnSec = Number.isFinite(raw.turnSec) ? Math.min(20, Math.max(2, Math.round(raw.turnSec))) : DEFAULT_LOOK.turnSec;
-    return { opacity, keepGameFocus: typeof raw.keepGameFocus === "boolean" ? raw.keepGameFocus : DEFAULT_LOOK.keepGameFocus, turnSec };
+    return {
+      opacity,
+      keepGameFocus: typeof raw.keepGameFocus === "boolean" ? raw.keepGameFocus : DEFAULT_LOOK.keepGameFocus,
+      turnSec,
+      returnWhenGameClosed: typeof raw.returnWhenGameClosed === "boolean" ? raw.returnWhenGameClosed : DEFAULT_LOOK.returnWhenGameClosed,
+    };
   } catch {
     return DEFAULT_LOOK;
   }
