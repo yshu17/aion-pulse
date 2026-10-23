@@ -152,3 +152,9 @@ html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background:
 .x { display: inline-flex; }
 .msg { animation: none; }
 .msg.loud:not(.old) { animation: arrive .25s ease-out; }
+
+.search-field { position: relative; display: flex; }
+.search-field .field { flex: 1; padding-right: 34px; }
+.search-field .x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.found-count { font-size: 12px; margin-top: -4px; }
+.more { font-size: 12px; padding: 2px 6px 6px; }
