@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { IconClose, IconExpand, IconSettings } from "./icons";
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
-import { loadLook, onPlace, onState, onWindowMoved, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
+import { loadLook, onPlace, onState, onWindowMoved, OverlayEvent, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
 
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
@@ -101,7 +101,13 @@ export function Overlay() {
   }, [menu]);
 
   const running = state?.schedule.current ?? [];
-  const several = running.length > 1;
+  const next = state?.schedule.next ?? null;
+  // what the line cycles through: the events running now, then what starts next (when something runs)
+  const slides: { event: OverlayEvent; running: boolean }[] = [
+    ...running.map((event) => ({ event, running: true })),
+    ...(next ? [{ event: next, running: false }] : []),
+  ];
+  const several = slides.length > 1;
   useEffect(() => { // events that overlap take turns on the line; a click on it (turn changes) starts the wait again
     if (!several) return;
     const timer = setTimeout(() => setTurn((t) => t + 1), look.turnSec * 1000);
@@ -110,10 +116,7 @@ export function Overlay() {
 
   const live = state?.watching && !state.problem;
   const note = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "";
-  const current = several ? turn % running.length : 0; // the slide that is shown
-  const next = state?.schedule.next ?? null;
-  const isRunning = running.length > 0;
-  const slides = several ? running : isRunning ? [running[0]] : next ? [next] : []; // running events take turns, else the next one
+  const current = several ? turn % slides.length : 0; // the slide that is shown
   return (
     <div className={`overlay ${side}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
       <div className="ov-line" ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+" 
@@ -130,15 +133,15 @@ export function Overlay() {
         <span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />
         {note && <span className="muted">{note}</span>}
         <div className={`ov-body${several ? " turns" : ""}`} aria-live="polite" onClick={() => { if (several && !dragged.current) setTurn((t) => t + 1); }}>
-          {slides.length > 0 ? slides.map((e, i) => (
-            <div key={e.name + e.from} className={`ov-slide${i === current ? " on" : ""}`} aria-hidden={i !== current}>
+          {slides.length > 0 ? slides.map(({ event: e, running: now }, i) => (
+            <div key={(now ? "now " : "next ") + e.name + e.from} className={`ov-slide${i === current ? " on" : ""}`} aria-hidden={i !== current}>
               <span className={`ov-sw t-${e.tone}`} aria-hidden />
               <b className="name">{e.name}</b>
-              {isRunning ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {e.from}</span>}
-              {several && <span className="muted num" title="Идёт несколько событий: они меняются по очереди и по щелчку">{i + 1}/{running.length}</span>}
+              {now ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {e.from}</span>}
+              {several && <span className="muted num" title="Идёт несколько событий и показано, что дальше: строка меняет их по очереди и по щелчку">{i + 1}/{slides.length}</span>}
               <span className="spacer" />
-              <span className="ov-left num"><span className="muted">{isRunning ? "ещё" : "через"}</span> <b>{e.left}</b></span>
-              {isRunning && e.progress !== null && (
+              <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
+              {now && e.progress !== null && (
                 <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(e.progress * 100)}>
                   <i className={`t-${e.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, e.progress))})` }} />
                 </span>
