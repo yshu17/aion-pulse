@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { anchorOf, chooseSide, keepInside, windowOrigin } from "./overlayPlacement";
+import { anchorOf, chooseSide, keepInside, onScreen, windowOrigin } from "./overlayPlacement";
 
 const H = 1080; // a 1080 p monitor starting at y = 0; a quarter is 270 px
 const PILL = 36;
@@ -53,5 +53,23 @@ describe("overlay inside the work area", () => {
   it("keeps a window that was dragged past an edge inside, and a window taller than the area at the top", () => {
     expect(keepInside({ x: 2000, y: -50 }, size, area)).toEqual({ x: 1540, y: 0 });
     expect(keepInside({ x: 0, y: 0 }, { width: 380, height: 1200 }, area)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe("a saved place that may be on no screen", () => {
+  const strip = { width: 380, height: 36 };
+  const one = [{ x: 0, y: 0, width: 1920, height: 1080 }];
+  const two = [...one, { x: 1920, y: 0, width: 1920, height: 1080 }];
+
+  it("is on a screen when the strip's centre is inside a monitor", () => {
+    expect(onScreen({ x: 1500, y: 20 }, strip, one)).toBe(true);
+    expect(onScreen({ x: 1700, y: 1060 }, strip, one)).toBe(true); // the right and bottom parts hang over the edge: the centre is inside, still seen
+    expect(onScreen({ x: 2000, y: 100 }, strip, two)).toBe(true); // on the second monitor
+  });
+
+  it("is on no screen after a monitor was unplugged or the resolution dropped", () => {
+    expect(onScreen({ x: 2000, y: 100 }, strip, one)).toBe(false); // the second monitor is gone
+    expect(onScreen({ x: 1500, y: 1200 }, strip, one)).toBe(false); // below the screen
+    expect(onScreen({ x: -600, y: 100 }, strip, one)).toBe(false); // left of the screen
   });
 });

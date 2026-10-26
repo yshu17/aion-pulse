@@ -6,7 +6,7 @@ import { Feed } from "./Feed";
 import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
 import { ItemsPanel } from "./ItemsPanel";
 import { SettingsPanel } from "./SettingsPanel";
-import { enterOverlay, leaveOverlay, loadLook, onAction, sendState } from "./overlayWindow";
+import { enterOverlay, hidePopup, leaveOverlay, loadLook, onAction, sendState, showPopup } from "./overlayWindow";
 import { ScheduleTab } from "./schedule/ScheduleTab";
 import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
@@ -41,16 +41,32 @@ function Screen({ boot }: { boot: Boot }) {
     return () => { window.removeEventListener("focus", on); window.removeEventListener("blur", off); };
   }, []);
 
+  // notifications over the game: with the program window open (it may be under the game) they come in the overlay window
+  const popupWanted = !overlay && boot.platform !== null && watch.toasts.length > 0;
+  const popupShown = useRef(false);
+  useEffect(() => {
+    if (popupWanted) {
+      popupShown.current = true;
+      const timer = setTimeout(showPopup, 250); // after leaveOverlay has hidden the overlay, if that is what just happened
+      return () => clearTimeout(timer);
+    }
+    if (popupShown.current) {
+      popupShown.current = false;
+      if (!overlay) hidePopup();
+    }
+  }, [popupWanted, overlay]);
+
   useEffect(() => { // the overlay shows what this window would show
-    if (!overlay) return;
+    if (!overlay && !popupWanted) return;
     sendState({
       watching: watch.watching, problem: problem ? watch.source.text : "", counters: watch.counters,
       toasts: watch.toasts.map((t) => ({ id: t.note.id, title: t.note.title, text: t.note.text, icon: t.icon,
         accept: t.note.actions.some((a) => a.id === "accept"), retry: t.note.actions.some((a) => a.id === "retry") })),
       schedule: overlaySchedule(schedule.visible, schedule.now),
       game: watch.game,
+      popup: !overlay,
     });
-  }, [overlay, watch.watching, watch.counters, watch.toasts, watch.source, problem, schedule.visible, schedule.now, watch.game]);
+  }, [overlay, popupWanted, watch.watching, watch.counters, watch.toasts, watch.source, problem, schedule.visible, schedule.now, watch.game]);
 
   useEffect(() => { // the game is closed for a while: the overlay is no more use, the main window comes back
     if (!overlay || watch.game !== false || !loadLook().returnWhenGameClosed) return;
@@ -178,7 +194,7 @@ function Screen({ boot }: { boot: Boot }) {
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
       {settings && <SettingsPanel boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}
-      {!overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
+      {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
     </div>
   );

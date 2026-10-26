@@ -5,7 +5,7 @@ import { naiveMs } from "../core/chat/tailer";
 import { AlertBridge } from "../core/notify/bridge";
 import { Notification, NotificationCenter } from "../core/notify/center";
 import { demoLine, itemById, itemNames, mapNames, questNames, watchItems } from "./data";
-import { FeedRow, makeRows } from "./chatRows";
+import { FeedRow, historyMinutes, makeRows, pruneRows } from "./chatRows";
 import { Game, GAME_CHECK_SEC, gameStep } from "./gameWatch";
 import { AsyncLogFeed } from "./logFeed";
 import { makeSound } from "./sound";
@@ -66,6 +66,7 @@ const wallClock = () => {
   return naiveMs(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
 };
 const SNOOZE_SEC = 300;
+const PRUNE_EVERY_MS = 20_000; // how often old messages are taken out of the feed
 const MAX_TOASTS = 3;
 const TOAST_SHOWN_SEC = 14;
 const DEMO_STEP_MS = 3500;
@@ -89,10 +90,16 @@ export function useWatch(boot: Boot): Watch {
   const quiet = cfg.notify_dnd || cfg.notify_off.includes("chat") || cfg.notify_mute.includes("chat");
 
   const [rows, setRows] = useState<FeedRow[]>([]);
+  const alertState = useRef<Record<number, AlertState>>({}); // read by the feed pruning: a waiting match stays
+  const keepMin = useRef(cfg.chat_keep_min);
+  keepMin.current = cfg.chat_keep_min;
+  const prune = useCallback((list: FeedRow[]) =>
+    pruneRows(list, wallClock(), keepMin.current, (row) => row.entry?.alert_id != null && alertState.current[row.entry.alert_id] === undefined), []);
   const [system, setSystemValue] = useState(cfg.chat_system);
   const rowKey = useRef(0);
   const [counters, setCounters] = useState<[number, number, number]>([0, 0, 0]);
   const [state, setState] = useState<Record<number, AlertState>>({});
+  alertState.current = state;
   const [remaining, setRemaining] = useState<Record<number, number>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [source, setSourceValue] = useState<Source>(demo ? { kind: "demo", text: "Демо: строки чата придумываются" } : { kind: "log", text: boot.chatLog });
@@ -162,8 +169,14 @@ export function useWatch(boot: Boot): Watch {
   /** Lines in the feed with their matches; `history` lines are only shown, never announced. */
   const addRows = useCallback((lines: string[], entries: Parameters<typeof makeRows>[1], historic = false) => {
     const fresh = makeRows(lines, entries, () => ++rowKey.current, itemNames, mapNames, questNames, historic);
-    if (fresh.length) setRows((list) => [...list, ...fresh].slice(-MAX_ROWS));
-  }, []);
+    if (fresh.length) setRows((list) => prune([...list, ...fresh].slice(-MAX_ROWS)));
+  }, [prune]);
+
+  // a message leaves the feed `chat_keep_min` minutes after it was written (a match that waits for «Принять» stays)
+  useEffect(() => {
+    const timer = setInterval(() => setRows((list) => prune(list)), PRUNE_EVERY_MS);
+    return () => clearInterval(timer);
+  }, [prune, cfg.chat_keep_min]);
 
   /** New lines through the session: the feed, the counters and one notification per batch of matches. */
   const take = useCallback((lines: string[]) => {
@@ -200,7 +213,7 @@ export function useWatch(boot: Boot): Watch {
     if (files === null || !watching) return;
     const path = boot.chatLog;
     const feed = new AsyncLogFeed({ size: () => files.fileSize(path), read: (p, n) => files.readRange(path, p, n) },
-      Math.max(cfg.history_min, cfg.chat_minutes), wallClock); // one feed: the longer of the two histories
+      historyMinutes(cfg.history_min, cfg.chat_minutes, cfg.chat_keep_min), wallClock); // one feed: the longer of the two histories, no older than the feed keeps
     let busy = false;
     let alive = true;
     const poll = async () => {
@@ -224,7 +237,7 @@ export function useWatch(boot: Boot): Watch {
     poll();
     const timer = setInterval(poll, Math.max(200, cfg.poll_interval_ms));
     return () => { alive = false; clearInterval(timer); session.stop(); };
-  }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.chat_minutes, cfg.poll_interval_ms, session, take, setSource, addRows]);
+  }, [boot.platform, boot.chatLog, watching, cfg.history_min, cfg.chat_minutes, cfg.chat_keep_min, cfg.poll_interval_ms, session, take, setSource, addRows]);
 
   /** One look at the game process; acts on the answer as Pulse does (stop and warn once, clear when it is back). */
   const checkGame = useCallback(async (): Promise<Game> => {

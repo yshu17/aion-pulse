@@ -3,6 +3,7 @@
   "broken_file": {
    "config": {
     "alert_mode": "standard",
+    "chat_keep_min": 10,
     "chat_log": "",
     "chat_minutes": 15,
     "chat_system": false,
@@ -51,6 +52,7 @@
   },
   "defaults": {
    "alert_mode": "standard",
+   "chat_keep_min": 10,
    "chat_log": "",
    "chat_minutes": 15,
    "chat_system": false,
@@ -98,6 +100,7 @@
   "mixed_types": {
    "config": {
     "alert_mode": "nag",
+    "chat_keep_min": 10,
     "chat_log": "",
     "chat_minutes": 15,
     "chat_system": false,

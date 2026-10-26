@@ -37,6 +37,7 @@ class Config:
     nag_popup: bool = False  # nag mode: also show the always-on-top popup
     show_counters: bool = True  # unused: counters are always shown (kept so old configs load)
     chat_minutes: int = 15  # unused: «Весь чат» uses history_min (kept so old configs load)
+    chat_keep_min: int = 10  # Pulse+: a chat message leaves the feed this many minutes after it was written; 0 = it stays
     chat_system: bool = False  # «Весь чат» tab: include system messages
     filter_grades: list[str] = field(default_factory=list)  # item list: shown grades, [] = all
     filter_level_min: int = 0  # item list: lowest level shown, 0 = any

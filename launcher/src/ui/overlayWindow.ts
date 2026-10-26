@@ -3,15 +3,16 @@
 // overlay sends back what the user pressed.
 import { emitTo, listen, UnlistenFn } from "@tauri-apps/api/event";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
-import { currentMonitor, getCurrentWindow, Window } from "@tauri-apps/api/window";
+import { availableMonitors, currentMonitor, getCurrentWindow, Window } from "@tauri-apps/api/window";
 
-import { keepInside } from "./overlayPlacement";
+import { keepInside, onScreen } from "./overlayPlacement";
 import { platform } from "./platform";
 
 export const OVERLAY = "overlay";
 const MAIN = "main";
 const WIDTH = 380;
 const MARGIN = 16;
+const STRIP_H = 36; // CSS pixels: the height of the strip, for the «is it on a screen» check
 const PLACE = "pulse-overlay-place"; // where the user put the strip: its top-left corner on the screen, physical pixels (both windows share it)
 
 export interface OverlayToast {
@@ -40,6 +41,7 @@ export interface OverlayState {
   toasts: OverlayToast[];
   schedule: { current: OverlayEvent[]; next: OverlayEvent | null };
   game: boolean | null; // is the game process running; null when the check is off or not done yet
+  popup: boolean; // the program window is open and only the notifications are shown here (no strip, no menu)
 }
 
 export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "dismiss" | "retry"; id: number };
@@ -47,27 +49,47 @@ export type OverlayAction = { kind: "expand" } | { kind: "accept" | "snooze" | "
 /** True inside the overlay window (the same page, opened in the window labelled «overlay»). */
 export const isOverlay = platform !== null && getCurrentWindow().label === OVERLAY;
 
-/** Hide the main window and show the overlay where the user left it, or in the top-right corner of this monitor. */
-export async function enterOverlay(): Promise<void> {
-  const overlay = await Window.getByLabel(OVERLAY);
-  if (overlay === null) return;
-  let anchor = savedPlace();
-  if (!anchor) {
-    const area = await workArea(); // the corner of the work area: above the taskbar, not under it
-    if (area) {
-      const scale = await getCurrentWindow().scaleFactor();
-      anchor = {
-        x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale),
-        y: area.y + Math.round(MARGIN * scale),
-      };
-    }
+/**
+ * Where the overlay opens: where the user left it, if that place is on a screen now (a place saved with another monitor
+ * layout may be on none: the strip would not be seen), else the top-right corner of the work area of this monitor.
+ */
+async function overlayAnchor(): Promise<Point | null> {
+  const win = getCurrentWindow();
+  const scale = await win.scaleFactor();
+  const saved = savedPlace();
+  if (saved) {
+    const monitors = (await availableMonitors()).map((m) => ({ x: m.position.x, y: m.position.y, width: m.size.width, height: m.size.height }));
+    if (onScreen(saved, { width: WIDTH * scale, height: STRIP_H * scale }, monitors)) return saved;
   }
+  const area = await workArea(); // the corner of the work area: above the taskbar, not under it
+  if (!area) return null;
+  return { x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale), y: area.y + Math.round(MARGIN * scale) };
+}
+
+async function showOverlayWindow(): Promise<Window | null> {
+  const overlay = await Window.getByLabel(OVERLAY);
+  if (overlay === null) return null;
+  const anchor = await overlayAnchor();
   if (anchor) {
     await overlay.setPosition(new PhysicalPosition(anchor.x, anchor.y));
     await emitTo(OVERLAY, "pulse-place", anchor); // the overlay page puts its window exactly, for the side it opens notifications to
   }
   await overlay.show();
-  await getCurrentWindow().hide();
+  return overlay;
+}
+
+/** Hide the main window and show the overlay where the user left it, or in the top-right corner of this monitor. */
+export async function enterOverlay(): Promise<void> {
+  if (await showOverlayWindow()) await getCurrentWindow().hide();
+}
+
+/** The program window stays; the overlay shows only the notifications, over the game (the window may be under it). */
+export async function showPopup(): Promise<void> {
+  await showOverlayWindow();
+}
+
+export async function hidePopup(): Promise<void> {
+  await (await Window.getByLabel(OVERLAY))?.hide();
 }
 
 /** Back to the main window. */

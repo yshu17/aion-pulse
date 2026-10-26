@@ -141,6 +141,8 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
             <h3>Чат</h3>
             <Seconds value={cfg.chat_minutes} label="История при запуске" hint="сколько минут чата показать сразу" min={0} max={180}
               unit="мин" onChange={(v) => save({ chat_minutes: v })} />
+            <Seconds value={cfg.chat_keep_min} label="Хранить сообщения" hint="через сколько минут старые сообщения исчезают из ленты (0 — не убирать)" min={0} max={180}
+              unit="мин" onChange={(v) => save({ chat_keep_min: v })} />
           </section>
 
           <section className="sec last">

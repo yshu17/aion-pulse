@@ -3,6 +3,7 @@
 import { category, isNotice } from "../core/chat/categories";
 import { ChatLine, parseAnyLine } from "../core/chat/parser";
 import type { Entry } from "../core/chat/session";
+import { naiveMs } from "../core/chat/tailer";
 
 export type FeedMode = "matches" | "all";
 
@@ -38,6 +39,34 @@ export function makeRows(lines: string[], entries: Entry[], nextKey: () => numbe
     rows.push({ key: nextKey(), line, category: player ? category(line) : null, notice: !player && isNotice(line), entry, historic });
   }
   return rows;
+}
+
+const LOG_TIME = /^(\d{4})\.(\d\d)\.(\d\d) (\d\d):(\d\d):(\d\d)/;
+
+/** When a row was written, on the scale of `naiveMs` (the wall clock of this computer as a number); null without a time. */
+export function rowMs(row: FeedRow): number | null {
+  const m = LOG_TIME.exec(row.line.time);
+  return m ? naiveMs(Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6])) : null;
+}
+
+/**
+ * The rows that are not older than `keepMin` minutes at `nowMs`; 0 keeps everything. A match that still waits for
+ * «Принять» (`waiting`) stays however old it is. Gives back the same array when nothing goes, so React does not redraw.
+ */
+export function pruneRows(rows: FeedRow[], nowMs: number, keepMin: number, waiting: (row: FeedRow) => boolean): FeedRow[] {
+  if (keepMin <= 0) return rows;
+  const limit = nowMs - keepMin * 60_000;
+  const kept = rows.filter((row) => {
+    const at = rowMs(row);
+    return at === null || at >= limit || waiting(row);
+  });
+  return kept.length === rows.length ? rows : kept;
+}
+
+/** How many minutes of Chat.log the feed reads at the start: the longer history setting, no older than the feed keeps. */
+export function historyMinutes(historyMin: number, chatMinutes: number, keepMin: number): number {
+  const wanted = Math.max(historyMin, chatMinutes);
+  return keepMin > 0 ? Math.min(wanted, keepMin) : wanted;
 }
 
 /** What the feed shows: matches only, or the whole chat (system notices when asked). */

@@ -22,6 +22,17 @@ export function chooseSide(pillTop: number, pillHeight: number, monitorTop: numb
 }
 
 /**
+ * Is the strip (its top-left corner `anchor`, `size` in physical pixels) on some screen? A place saved with another
+ * monitor layout (a monitor unplugged, the resolution changed) can lie outside every screen: the strip is then not
+ * visible at all. The strip counts as visible when its centre is inside a monitor.
+ */
+export function onScreen(anchor: { x: number; y: number }, size: { width: number; height: number }, monitors: { x: number; y: number; width: number; height: number }[]): boolean {
+  const cx = anchor.x + size.width / 2;
+  const cy = anchor.y + size.height / 2;
+  return monitors.some((m) => cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height);
+}
+
+/**
  * The window origin moved, if needed, so the whole window (`size`, physical pixels) lies inside `area`: the taskbar and
  * docked panels are not part of the work area, so the overlay is never placed under them.
  */

@@ -1,3 +1,4 @@
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
@@ -5,6 +6,8 @@ import { IconClose, IconExpand, IconSettings } from "./icons";
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
 import { loadLook, onPlace, onState, onWindowMoved, OverlayEvent, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
 
+const STRIP_CSS = 36; // the height of the strip when it is not drawn (a popup of notifications)
+const RAISE_MS = 3000; // how often the window is put above other always-on-top windows (a game can take the top place)
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
@@ -32,7 +35,10 @@ export function Overlay() {
   /** Where the strip is inside the window now (CSS pixels): below the notifications when they open upwards. */
   const inside = () => {
     const r = pill.current?.getBoundingClientRect();
-    return { left: r?.left ?? 1, top: r?.top ?? 1 };
+    if (r) return { left: r.left, top: r.top };
+    // a popup of notifications has no strip: its corner is the top of the window, or the bottom when they open upwards
+    const height = root.current?.getBoundingClientRect().height ?? 0;
+    return { left: 1, top: sideRef.current === "up" ? Math.max(1, height - 1) : 1 };
   };
 
   /** Put the window where the anchor says, as tall as the content: the strip does not move when notifications come. */
@@ -49,11 +55,12 @@ export function Overlay() {
 
   /** Choose the side from the strip's place on its monitor: near the bottom of the screen the notifications open upwards. */
   const chooseAndPlace = async () => {
-    const at = anchor.current, el = pill.current;
-    if (!at || !el) return;
+    const at = anchor.current;
+    if (!at) return;
     const area = await workArea();
     if (area) {
-      const next = chooseSide(at.y, el.getBoundingClientRect().height * window.devicePixelRatio, area.y, area.height, sideRef.current);
+      const stripHeight = (pill.current?.getBoundingClientRect().height ?? STRIP_CSS) * window.devicePixelRatio;
+      const next = chooseSide(at.y, stripHeight, area.y, area.height, sideRef.current);
       if (next !== sideRef.current) { sideRef.current = next; setSide(next); return; } // the layout effect below places it
     }
     place();
@@ -91,6 +98,14 @@ export function Overlay() {
     return () => observer.disconnect();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => { // a game can take the top place among always-on-top windows: put the overlay above it again
+    const timer = setInterval(() => {
+      const win = getCurrentWindow();
+      win.isVisible().then((visible) => { if (visible) win.setAlwaysOnTop(true).catch(() => {}); }).catch(() => {});
+    }, RAISE_MS);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => { // the menu closes on a press outside it or on Esc
     if (!menu) return;
     const off = (e: Event) => { if (!(e.target as HTMLElement).closest?.(".ov-menu, .ov-line")) setMenu(false); };
@@ -114,11 +129,14 @@ export function Overlay() {
     return () => clearTimeout(timer);
   }, [several, turn, look.turnSec]);
 
+  const popup = state?.popup === true; // only the notifications: the program window is open
   const live = state?.watching && !state.problem;
   const note = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "";
   const current = several ? turn % slides.length : 0; // the slide that is shown
   return (
     <div className={`overlay ${side}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
+      {!popup && (
+      <>
       <div className="ov-line" ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+" 
         title={state?.problem || (several ? "Щелчок: следующее событие. Потяни: передвинуть. Правый клик: меню" : "Потяни, чтобы передвинуть. Правый клик: меню")}
         onPointerDown={(e) => { dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
@@ -178,6 +196,8 @@ export function Overlay() {
             <span>Не забирать фокус у игры: после клика можно сразу писать в игре</span>
           </label>
         </div>
+      )}
+      </>
       )}
       {state?.toasts.map((toast) => (
         <div key={toast.id} className="toast">

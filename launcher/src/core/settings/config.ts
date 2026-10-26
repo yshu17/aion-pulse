@@ -32,6 +32,7 @@ export const DEFAULTS = {
   nag_popup: false,
   show_counters: true,
   chat_minutes: 15,
+  chat_keep_min: 10,
   chat_system: false,
   filter_grades: [] as string[],
   filter_level_min: 0,
