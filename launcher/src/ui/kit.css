@@ -1,0 +1,25 @@
+/* The kit: one look for every floating layer (menu, form, panel) and one size for controls. Tokens: theme.css. */
+
+/* floating layers */
+.sch-form, .sch-linkmenu, .sch-menu, .sch-undo, .sch-chips.drop .list {
+  background: var(--pop-bg); border: 1px solid var(--pop-border); box-shadow: var(--pop-shadow); border-radius: var(--r-pop);
+}
+.sch-linkmenu, .sch-form { padding: var(--pad-pop); gap: var(--gap); }
+.sch-menu, .sch-chips.drop .list { padding: var(--gap-sm); border-radius: var(--r-pop); }
+.sch-menu button:hover, .sch-menu button:focus-visible, .sch-chip:hover { background: var(--pop-hover); }
+
+/* controls: buttons and fields are one height; small ones (options, days, chips) another */
+.sch-bar .btn, .sch-form .btn, .sch-linkmenu .btn, .sch-undo .btn, .sch-drawer .btn,
+.sch .inp, .sch-form .inp, .sch-linkmenu .inp {
+  height: var(--ctl-h); padding: 0 14px; border-radius: var(--r-ctl); font-size: 13px;
+}
+.sch .inp, .sch-form .inp, .sch-linkmenu .inp { background: var(--bg); border: 1px solid var(--border-control); padding: 0 11px; }
+.sch .inp:focus, .sch-form .inp:focus, .sch-linkmenu .inp:focus { border-color: var(--accent); box-shadow: var(--focus-ring); outline: none; }
+.sch .inp.bad { border-color: var(--danger); }
+.sch .inp.t { width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
+.sch .btn.sq, .sch-nav, .sch-x { width: var(--ctl-h); height: var(--ctl-h); padding: 0; justify-content: center; border-radius: var(--r-ctl); }
+.sch-form .days button, .sch-form .o, .sch-chip, .sch-resetmenu li .what .inp { height: var(--ctl-h-sm); border-radius: var(--r-ctl); }
+.sch-form .days button { width: 40px; }
+.sch-form .o, .sch-chip { padding-top: 0; padding-bottom: 0; }
+.sch-linkbtn { padding: 0 12px; }
+.sch-linkbtn.icon-only { width: var(--ctl-h); padding: 0; }

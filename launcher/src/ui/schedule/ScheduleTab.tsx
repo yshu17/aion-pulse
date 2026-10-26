@@ -9,6 +9,7 @@ import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
 import { ResetsMenu } from "./ResetsMenu";
 import { SourceMenu } from "./SourceMenu";
+import { announce, useYields } from "./popover";
 import { Ribbon } from "./Ribbon";
 import { CHIP_TONE, CHIPS, Draft, Schedule } from "./useSchedule";
 
@@ -76,11 +77,14 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
   const changeView = (next: View) => { setView(next); setOffset(0); };
 
   const closeForm = useCallback(() => { setForm(null); setGhost(null); }, []);
+  const closeAll = useCallback(() => { setForm(null); setGhost(null); setMenu(null); setChipsOpen(false); }, []);
+  useYields("grid", closeAll); // the link and resets menus close the form, the right-click menu and the filters
 
   const openCreate = (draft: Draft, near: Ghost | null, title = "Новое событие") => {
     setMenu(null);
     setSelected(null);
     const sheet = narrow;
+    announce("grid");
     setTimeout(() => { // after the ghost card is on screen
       const el = near ? document.querySelector<HTMLElement>("[data-ghost]") : null;
       let placement: FormState["placement"] = { kind: "float", left: Math.max(12, window.innerWidth - FORM_WIDTH - 24), top: 150 };
@@ -94,6 +98,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
   };
 
   const openEdit = (event: ScheduleEvent) => {
+    announce("grid");
     setMenu(null);
     setSelected(null);
     setGhost(null);
@@ -166,7 +171,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
         </div>
         <div className={`sch-chips${chipsFold ? " drop" : ""}${chipsOpen ? " open" : ""}`} role="group" aria-label="Что показывать">
           {chipsFold && (
-            <button className="sch-chip" aria-expanded={chipsOpen} onClick={() => setChipsOpen(!chipsOpen)}>
+            <button className="sch-chip" aria-expanded={chipsOpen} onClick={() => { announce("grid"); setChipsOpen(!chipsOpen); }}>
               <b>Фильтры</b><em>{CHIPS.length - schedule.hiddenGroups.size} из {CHIPS.length}</em>
             </button>
           )}
@@ -194,7 +199,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
 
       <Grid days={days} schedule={schedule} zone={zone} selected={selected} ghost={ghost} onGhost={onGhost}
         onSelect={(e) => { setForm(null); setGhost(null); setSelected(e); }} onEdit={openEdit}
-        onDelete={schedule.removeOne} onMenu={(event, x, y) => setMenu({ event, x, y })} />
+        onDelete={schedule.removeOne} onMenu={(event, x, y) => { announce("grid"); setMenu({ event, x, y }); }} />
 
       <div className="sch-legend">
         <span className="hintbar">Потяни по пустому месту сетки: появится новое событие. Клик по событию — подробности.</span>

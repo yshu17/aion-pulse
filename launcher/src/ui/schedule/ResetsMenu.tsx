@@ -5,6 +5,7 @@ import { DAY_NAMES } from "../../core/schedule/timing";
 import { DAYS } from "../../core/schedule/reminders";
 import scheduleText from "../../../../data/schedule.json?raw";
 import { IconBell, IconClose, IconPlus, IconReset } from "../icons";
+import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
 const WEEKLY = "weekly";
@@ -24,6 +25,7 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
   const root = useRef<HTMLDivElement>(null);
   const all = resets.length > 0 && resets.every((r) => resetBells.has(r.id));
   const some = resetBells.size > 0 && !all;
+  useYields("resets", () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +45,7 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
   return (
     <div className="sch-links" ref={root}>
       <button className={`btn sch-linkbtn${open ? " on" : ""}${some ? " alert" : ""}`} aria-haspopup="dialog" aria-expanded={open}
-        title="Откаты: время и напоминания" aria-label="Откаты: время, напоминания, свои откаты" onClick={() => setOpen(!open)}>
+        title="Откаты: время и напоминания" aria-label="Откаты: время, напоминания, свои откаты" onClick={() => { if (!open) announce("resets"); setOpen(!open); }}>
         <IconBell on={all} />Откаты
       </button>
       {open && (
@@ -96,9 +98,9 @@ function ResetRow({ reset, schedule }: { reset: Reset; schedule: Schedule }) {
         ) : <span className="muted">каждый день</span>}
       </div>
       <input className="inp t" type="time" aria-label={`Время: ${reset.name}`} value={reset.time} onChange={(e) => { if (e.target.value) set(e.target.value); }} />
-      {reset.edited && <button className="btn icon" title="Вернуть время сервера" aria-label="Вернуть время сервера" onClick={() => set(serverTime(reset), serverDay(reset))}><IconReset /></button>}
-      {reset.own && <button className="btn icon" title="Удалить откат" aria-label={`Удалить откат ${reset.name}`} onClick={() => schedule.removeReset(reset)}><IconClose /></button>}
-      <button className={`btn icon bell${bell ? " on" : ""}`} aria-pressed={bell} title={bell ? "Не напоминать" : "Напоминать"} aria-label={`${bell ? "Не напоминать" : "Напоминать"}: ${reset.name}`}
+      {reset.edited && <button className="btn sq" title="Вернуть время сервера" aria-label="Вернуть время сервера" onClick={() => set(serverTime(reset), serverDay(reset))}><IconReset /></button>}
+      {reset.own && <button className="btn sq" title="Удалить откат" aria-label={`Удалить откат ${reset.name}`} onClick={() => schedule.removeReset(reset)}><IconClose /></button>}
+      <button className={`btn sq bell${bell ? " on" : ""}`} aria-pressed={bell} title={bell ? "Не напоминать" : "Напоминать"} aria-label={`${bell ? "Не напоминать" : "Напоминать"}: ${reset.name}`}
         onClick={() => schedule.toggleResetBell(reset)}><IconBell on={bell} /></button>
       {error && <div className="err" role="alert">{error}</div>}
     </li>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { IconExternal, IconLink, IconReset } from "../icons";
+import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
 const BAD_ADDRESS = "Адрес должен начинаться с https:// и вести на сайт.";
@@ -18,6 +19,7 @@ export function SourceMenu({ schedule }: { schedule: Schedule }) {
   const root = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const busy = site?.state === "busy";
+  useYields("source", () => setOpen(false));
 
   useEffect(() => { setDraft(source.url); setError(""); }, [source.url]); // the saved link was read from the file or changed
 
@@ -39,7 +41,7 @@ export function SourceMenu({ schedule }: { schedule: Schedule }) {
     <div className="sch-links" ref={root}>
       <button className={`btn sch-linkbtn${open ? " on" : ""}${site?.state === "changed" ? " alert" : ""}`} aria-haspopup="dialog" aria-expanded={open}
         aria-label={site?.state === "changed" ? "Расписание на сайте обновилось: ссылка и проверка" : "Расписание на сайте: ссылка и проверка обновления"}
-        title="Ссылка на расписание и проверка обновления" onClick={() => setOpen(!open)}><IconLink /></button>
+        title="Ссылка на расписание и проверка обновления" onClick={() => { if (!open) announce("source"); setOpen(!open); }}><IconLink /></button>
       {open && (
         <div className="sch-linkmenu" role="dialog" aria-label="Расписание на сайте">
           <h3>Расписание на сайте</h3>
@@ -49,7 +51,7 @@ export function SourceMenu({ schedule }: { schedule: Schedule }) {
               aria-invalid={error !== ""} aria-describedby={error ? "sch-source-error" : undefined}
               onChange={(e) => { setDraft(e.target.value); setError(""); }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); run(schedule.saveSource); } }} />
-            <button className="btn" onClick={go} title="Открыть ссылку в браузере"><IconExternal />Перейти</button>
+            <button className="btn sq" onClick={go} title="Перейти по ссылке" aria-label="Перейти по ссылке"><IconExternal /></button>
           </div>
           {error && <div id="sch-source-error" className="err" role="alert">{error}</div>}
           <div className="actions">

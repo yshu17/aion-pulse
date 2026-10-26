@@ -4,7 +4,7 @@
 
 .sch-bar { display: flex; align-items: center; gap: 10px; padding: 12px 0 10px; flex-wrap: nowrap; min-width: 0; }
 .sch-bar .range { font-size: 17px; font-weight: 600; margin: 0 4px; white-space: nowrap; }
-.sch-nav { width: 34px; height: 34px; border-radius: 9px; border: 0; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex: none; }
+.sch-nav { border: 0; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex: none; }
 .sch-nav:hover { background: var(--surface-3); }
 .sch .segmented { white-space: nowrap; flex: none; }
 .sch .segmented.small button { padding: 4px 10px; font-size: 12px; }
@@ -116,10 +116,10 @@
 .sch-grab { width: 44px; height: 4px; border-radius: 2px; background: var(--border-control); margin: 0 auto 2px; }
 .sch-form h3 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; }
 .sch-form .f > label, .sch-form .f > .label { display: block; font-weight: 600; font-size: 12px; margin-bottom: 5px; }
-.sch-form .inp { width: 100%; background: var(--bg); border: 1px solid var(--border-control); border-radius: 9px; padding: 8px 11px; font-size: 14px; }
+.sch-form .inp { width: 100%; }
 .sch-form .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 140, 26, .18); outline: none; }
 .sch-form .inp.bad { border-color: var(--danger); }
-.sch-form .times { display: flex; align-items: center; gap: 8px; } .sch-form .inp.t { width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
+.sch-form .times { display: flex; align-items: center; gap: 8px; } 
 .sch-form .hint { font-size: 12px; color: var(--muted); } .sch-form .err { font-size: 12px; color: #ffb0b3; margin-top: 5px; }
 .sch-form .days { display: flex; gap: 5px; } .sch-form .days button { width: 40px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); }
 .sch-form .days button:hover { border-color: var(--border-control); }
@@ -163,11 +163,10 @@
 .sch-linkmenu h3 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
 .sch-linkmenu label { font-size: 12px; font-weight: 600; color: var(--muted); }
 .sch-linkmenu .field { display: flex; gap: 6px; }
-.sch-linkmenu .inp { height: 36px; padding: 0 11px; font-size: 13px; background: var(--bg); border: 1px solid var(--border-control); border-radius: 9px; }
 .sch-linkmenu .field .inp { flex: 1; min-width: 0; }
 .sch-linkmenu .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 140, 26, .18); outline: none; }
 .sch-linkmenu .inp.bad { border-color: var(--danger); }
-.sch-linkmenu .btn { height: 36px; padding: 0 12px; flex: none; }
+.sch-linkmenu .btn { flex: none; }
 .sch-linkmenu .err { font-size: 12px; color: #ffb0b3; }
 .sch-linkmenu .actions { display: flex; gap: 6px; margin-top: 2px; }
 .sch-linkmenu .actions .btn:first-child { flex: 1; justify-content: center; }
@@ -187,11 +186,9 @@
 .sch-resetmenu li:hover { background: var(--surface-2); }
 .sch-resetmenu li .what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .sch-resetmenu li .what b { font-size: 13px; font-weight: 600; }
-.sch-resetmenu li .what .inp { height: 30px; font-size: 12px; width: 140px; }
+.sch-resetmenu li .what .inp { font-size: 12px; width: 140px; }
 .sch-resetmenu li .muted { font-size: 12px; color: var(--muted); }
 .sch-resetmenu li .err { flex-basis: 100%; }
-.sch-resetmenu .inp.t { width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
-.sch-resetmenu .btn.icon { width: 36px; padding: 0; justify-content: center; }
 .sch-resetmenu .btn.bell.on { color: var(--accent); }
 .sch-resetmenu .add { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
 .sch-resetmenu .add select.inp { flex: 1; min-width: 0; }
