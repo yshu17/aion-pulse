@@ -1,6 +1,7 @@
 import { useRef } from "react";
 
 import { dayStart, ScheduleEvent } from "../../core/schedule/reminders";
+import type { Reset } from "../../core/schedule/resets";
 import { bellKey, localZone, MSK_OFFSET } from "../../core/schedule/timing";
 import { IconBell, IconClose, IconPencil } from "../icons";
 import { FOLD_MID, FOLD_MID_Y, FOLD_TOP, GRID_H, hm, minuteAt, placeDay, toneOf, yOf } from "./layout";
@@ -21,6 +22,13 @@ const DAY_SHORT: Record<string, string> = { mon: "Пн", tue: "Вт", wed: "Ср
 const HOURS = [2, 4, 10, 12, 14, 16, 18, 20, 22, 24];
 
 /** Minutes to add to an MSK time of day to show it on this computer's clock. */
+/** The short mark of a reset in the folded night: the usual three by their kind, a renamed or own one by its name. */
+function resetLabel(r: Reset): string {
+  if (r.own || r.edited) return r.name;
+  if (r.days.length === 7) return "Откат";
+  return r.name.includes("БП") ? "+ БП" : "+ неделя";
+}
+
 export function zoneShift(zone: "msk" | "local"): number {
   return zone === "msk" ? 0 : localZone(Date.now()) - MSK_OFFSET;
 }
@@ -93,7 +101,7 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
         const own = schedule.visible.filter((e) => e.day === d.key);
         const placed = placeDay(own);
         const isToday = d.date === today;
-        const resets = schedule.resets.filter((r) => r.when === "daily" || r.day === d.key);
+        const resets = schedule.resets.filter((r) => r.days.includes(d.key));
         return (
           <div key={d.key + d.date} className={`sch-col${isToday ? " today" : ""}`} style={{ height: GRID_H }}
             onPointerDown={(e) => down(e, d.key)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
@@ -103,7 +111,7 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
             <div className="sch-resets" style={{ top: FOLD_MID_Y + 11 }}>
               {resets.map((r) => (
                 <span key={r.id} className={schedule.resetBells.has(r.id) ? "belled" : ""} title={`${r.name} в ${r.time} МСК${schedule.resetBells.has(r.id) ? ", напомню" : ""}`}>
-                  {r.own ? r.name : r.when === "daily" ? "Откат" : r.name.includes("БП") ? "+ БП" : "+ неделя"}
+                  {resetLabel(r)}
                 </span>
               ))}
             </div>

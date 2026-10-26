@@ -177,22 +177,35 @@
 .sch-linkmenu .hint { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.4; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .sch-linkmenu { animation: none; } }
 
-/* the resets menu: a row per reset (name, day, time, bell), the add form */
-.sch-resetmenu { width: 420px; max-height: min(70vh, 560px); overflow-y: auto; }
-.sch-resetmenu .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.sch-resetmenu .head h3 { margin: 0; }
-.sch-resetmenu .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.sch-resetmenu li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 6px; border-radius: 9px; }
-.sch-resetmenu li:hover { background: var(--surface-2); }
-.sch-resetmenu li .rs-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.sch-resetmenu li .rs-what b { font-size: 13px; font-weight: 600; }
-.sch-resetmenu li .rs-what .inp { height: var(--ctl-h-sm); font-size: 12px; width: 140px; }
-.sch-resetmenu li .muted { font-size: 12px; color: var(--muted); }
-.sch-resetmenu li .err { flex-basis: 100%; }
+/* the resets menu: a line per reset (bell, name with days and time, edit, delete), a small form in place of a line */
+.sch-resetmenu { width: 440px; max-height: min(74vh, 620px); overflow-y: auto; }
+.sch-resetmenu .rs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
+.sch-resetmenu .rs-head h3 { margin: 0; }
+.sch-resetmenu .rows { list-style: none; margin: 0 calc(-1 * var(--gap-sm)); padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sch-resetmenu li { display: flex; align-items: center; gap: var(--gap-sm); padding: 4px var(--gap-sm); border-radius: var(--r-ctl); }
+.sch-resetmenu li.empty { color: var(--muted); font-size: 13px; padding: 10px var(--gap-sm); }
+.sch-resetmenu .rs-what { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 2px 0;
+  background: none; border: 0; color: var(--text); text-align: left; cursor: pointer; }
+.sch-resetmenu .rs-what b { font-size: 13px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sch-resetmenu .rs-what span { font-size: 12px; color: var(--muted); }
+.sch-resetmenu .btn.ghost { background: transparent; color: var(--muted); }
+.sch-resetmenu .btn.ghost:hover { background: var(--surface-3); color: var(--text); }
+.sch-resetmenu .btn.ghost.red:hover { color: var(--danger); }
+.sch-resetmenu .btn.bell { background: transparent; color: var(--muted); }
+.sch-resetmenu .btn.bell:hover { background: var(--surface-3); }
 .sch-resetmenu .btn.bell.on { color: var(--accent); }
-.sch-resetmenu .add { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
-.sch-resetmenu .add select.inp { flex: 1; min-width: 0; }
+.sch-resetmenu .editing { background: var(--surface-2); border-radius: var(--r-ctl); padding: 10px; }
+.sch-resetmenu li.editing:hover { background: var(--surface-2); }
+.sch-resetmenu .rs-form { flex: 1; display: flex; flex-direction: column; gap: var(--gap); }
+.sch-resetmenu .rs-days { display: flex; flex-wrap: wrap; gap: 4px; }
+.sch-resetmenu .rs-days button { height: var(--ctl-h-sm); min-width: 36px; padding: 0 9px; border: 1px solid var(--border-control); border-radius: var(--r-ctl);
+  background: var(--bg); color: var(--muted); font-size: 12px; }
+.sch-resetmenu .rs-days button:hover { color: var(--text); }
+.sch-resetmenu .rs-days button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.sch-resetmenu .rs-form .muted { font-size: 12px; }
+.sch-resetmenu .btn.add { align-self: flex-start; }
+.sch-resetmenu .undo { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); padding: 6px 6px 6px 12px;
+  background: var(--surface-2); border-radius: var(--r-ctl); font-size: 13px; }
+.sch-resetmenu .btn.sm { height: var(--ctl-h-sm); padding: 0 12px; font-size: 12px; }
+.sch-resetmenu .hint .link { font-size: 12px; }
 .sch-resets span.belled { border-color: var(--accent); color: #ffd9a8; }
-.sch-resetmenu li .rs-what { align-items: flex-start; text-align: left; }
-
-.sch-resetmenu .head { padding: 0; background: none; border: 0; }

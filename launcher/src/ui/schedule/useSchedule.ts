@@ -5,7 +5,7 @@ import { Custom, eventKey, OWN_KIND } from "../../core/schedule/scheduleCustom";
 import { ScheduleEvent } from "../../core/schedule/reminders";
 import { decide, knownFingerprint, sourceFingerprint } from "../../core/schedule/scheduleUpdate";
 import { bellKey, mskNow, parseEvents } from "../../core/schedule/timing";
-import { checkReset, EMPTY_RESETS, nextOwnId, parseResets, Reset, ResetStore, RESETS_FILE, resetBellKey, resetEvents, resolveResets, serializeResets } from "../../core/schedule/resets";
+import { checkReset, daysText, EMPTY_RESETS, nextOwnId, parseResets, removeReset, Reset, ResetDraft, ResetStore, RESETS_FILE, resetBellKey, resetEvents, resolveResets, restoreResets, saveReset, serializeResets } from "../../core/schedule/resets";
 import scheduleText from "../../../../data/schedule.json?raw";
 import type { Boot } from "../useBoot";
 import { countdown, slotOf, TONE_NAME, Tone } from "./layout";
@@ -73,7 +73,9 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   const [undo, setUndo] = useState<Undo | null>(null);
   const [leads, setLeads] = useState<Record<string, number>>({});
   const [site, setSite] = useState<SiteCheck | null>(null);
-  const [resetStore, setResetStore] = useState<ResetStore>(EMPTY_RESETS); // changed times and own resets
+  const [resetStore, setResetStore] = useState<ResetStore>(EMPTY_RESETS); // changed, hidden and own resets
+  const [resetUndo, setResetUndo] = useState<{ label: string; store: ResetStore } | null>(null);
+  const resetUndoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [source, setSource] = useState<Source>(DEFAULT_SOURCE); // the link the schedule is checked by
   const custom = useRef<Custom>(Custom.load(null, null));
   const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -101,7 +103,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
       custom.current = Custom.load(text, (out) => { files.writeText(path, out).catch(() => {}); });
       setVersion((v) => v + 1);
     });
-    files.readText(boot.ownFile(RESETS_FILE)).then((text) => setResetStore(parseResets(text))).catch(() => {});
+    files.readText(boot.ownFile(RESETS_FILE)).then((text) => setResetStore(parseResets(text, data.resets))).catch(() => {});
     files.readText(boot.ownFile(SOURCE_FILE)).then((text) => setSource(parseSource(text))).catch(() => {});
     files.readText(boot.ownFile(LEADS_FILE)).then((text) => {
       try {
@@ -159,7 +161,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
         const lead = leads[resetBellKey(r.id)] ?? cfg.remind_min;
         for (const n of planner.current.due(resetEvents(r), at, lead)) {
           const title = n.title.startsWith("Через") ? `Через ${countdown(n.start - at + 59_999)}: ${r.name}` : n.title;
-          notifyRef.current(title, `${r.when === "daily" ? "Откат каждый день" : "Откат раз в неделю"} · ${r.time} МСК`);
+          notifyRef.current(title, `Откат · ${daysText(r.days).toLowerCase()} · ${r.time} МСК`);
         }
       }
     };
@@ -300,33 +302,31 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
       const key = resetBellKey(r.id);
       boot.save({ remind_events: bells.has(key) ? cfg.remind_events.filter((k) => k !== key) : [...cfg.remind_events, key] });
     },
-    /** New time (and day of a weekly one) of a reset; the time of the server returns it to the original. Error text or null. */
-    editReset: (r: Reset, time: string, day?: string): string | null => {
-      const error = checkReset({ name: r.name, when: r.when, day: day ?? r.day, time });
+    /** Save a reset: a new own one (`reset` null) or any shown one (name, days, time). Error text or null. */
+    saveReset: (reset: Reset | null, draft: ResetDraft): string | null => {
+      const error = checkReset(draft);
       if (error) return error;
-      if (r.own) storeResets({ ...resetStore, own: resetStore.own.map((o) => (o.id === r.id ? { ...o, time, ...(r.when === "weekly" ? { day: day ?? r.day } : {}) } : o)) });
-      else {
-        const original = data.resets[Number(r.id.slice(1))];
-        const edits = { ...resetStore.edits };
-        if (original && original.time === time && (r.when === "daily" || original.day === (day ?? r.day))) delete edits[r.id];
-        else edits[r.id] = r.when === "weekly" ? { time, day: day ?? r.day } : { time };
-        storeResets({ ...resetStore, edits });
-      }
+      const next = saveReset(data.resets, resetStore, reset?.id ?? null, draft);
+      storeResets(next);
+      if (reset === null) boot.save({ remind_events: [...cfg.remind_events, resetBellKey(nextOwnId(resetStore))] }); // a new reset reminds from the start
       return null;
     },
-    addReset: (name: string, when: "daily" | "weekly", day: string | undefined, time: string): string | null => {
-      const error = checkReset({ name, when, day, time });
-      if (error) return error;
-      const id = nextOwnId(resetStore);
-      storeResets({ ...resetStore, own: [...resetStore.own, { id, name: name.trim(), when, ...(when === "weekly" ? { day } : {}), time }] });
-      boot.save({ remind_events: [...cfg.remind_events, resetBellKey(id)] }); // a new reset reminds from the start
-      return null;
-    },
+    /** Delete an own reset, hide a server one; for 30 s it can be brought back. */
     removeReset: (r: Reset) => {
-      if (!r.own) return;
-      storeResets({ ...resetStore, own: resetStore.own.filter((o) => o.id !== r.id) });
-      boot.save({ remind_events: cfg.remind_events.filter((k) => k !== resetBellKey(r.id)) });
+      clearTimeout(resetUndoTimer.current);
+      setResetUndo({ label: `Удалён «${r.name}»`, store: resetStore });
+      resetUndoTimer.current = setTimeout(() => setResetUndo(null), UNDO_MS);
+      storeResets(removeReset(resetStore, r.id));
     },
+    resetUndo,
+    undoReset: () => {
+      if (!resetUndo) return;
+      storeResets(resetUndo.store);
+      clearTimeout(resetUndoTimer.current);
+      setResetUndo(null);
+    },
+    hiddenResets: resetStore.removed.length,
+    restoreResets: () => storeResets(restoreResets(resetStore)),
     /** Made by the user from scratch (a server event the user edited keeps its own look and group). */
     isOwn: (e: ScheduleEvent) => e.kind === OWN_KIND && chipOf(e) === "Своё",
     /** A server event the user changed: an own copy in its place. */
