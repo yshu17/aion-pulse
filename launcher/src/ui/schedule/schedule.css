@@ -152,3 +152,17 @@
 @media (max-width: 1180px) { .sch-check span { display: none; } }
 .sch-form .f > label.bell-row { display: flex; font-weight: 400; font-size: 14px; margin: 0; }
 .sch-form .bell-row .box { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--border-control); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+
+/* the links menu next to «Проверить обновление» */
+.sch-links { position: relative; flex: none; }
+.sch-linkbtn { padding: 8px 10px; }
+.sch-linkbtn.on { background: var(--surface-3); color: var(--accent); }
+.sch-linkmenu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; width: 320px; display: flex; flex-direction: column; gap: 6px;
+  padding: 10px; background: var(--surface-3); border: 1px solid var(--border-control); border-radius: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, .6); }
+.sch-linkmenu .row { display: flex; align-items: center; gap: 4px; }
+.sch-linkmenu .go { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sch-linkmenu .go:hover, .sch-linkmenu .go:focus-visible { background: rgba(255, 255, 255, .08); }
+.sch-linkmenu .x { flex: none; width: 26px; height: 26px; border: 0; border-radius: 7px; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
+.sch-linkmenu .x:hover { color: #ff9a9e; background: rgba(255, 255, 255, .06); }
+.sch-linkmenu .add { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border); }
+.sch-linkmenu .add .btn { align-self: flex-end; }

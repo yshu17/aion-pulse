@@ -3,10 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DAY, DAYS, dayStart, ScheduleEvent, weekday, weekStart } from "../../core/schedule/reminders";
 import { bellKey } from "../../core/schedule/timing";
 import { IconBell, IconCheck, IconCopy, IconLeft, IconPencil, IconPlus, IconReset, IconRight, IconClose } from "../icons";
+import type { Boot } from "../useBoot";
 import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
+import { LinksMenu } from "./LinksMenu";
 import { Ribbon } from "./Ribbon";
 import { CHIP_TONE, CHIPS, Draft, Schedule } from "./useSchedule";
 
@@ -51,7 +53,7 @@ const rangeText = (from: number, to: number) => {
     : `${a.getUTCDate()} ${MONTHS[a.getUTCMonth()]} – ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`;
 };
 
-export function ScheduleTab({ schedule }: { schedule: Schedule }) {
+export function ScheduleTab({ schedule, boot }: { schedule: Schedule; boot: Boot }) {
   const narrow = useNarrow();
   const chipsFold = useNarrow(CHIPS_FIT);
   const [view, setView] = useState<View>(() => (window.innerWidth < NARROW ? "3days" : "week"));
@@ -187,6 +189,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
           title="Сравнить с картинкой расписания в базе знаний" aria-label="Проверить обновление расписания на сайте">
           <IconReset /><span>{schedule.site?.state === "busy" ? "Проверяю…" : "Проверить обновление"}</span>
         </button>
+        <LinksMenu boot={boot} />
         <button className="btn primary" onClick={newByButton}><IconPlus />Своё событие</button>
       </div>
 
