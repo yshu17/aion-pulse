@@ -177,3 +177,25 @@
 .sch-linkmenu .result.error { color: #ffb0b3; }
 .sch-linkmenu .hint { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.4; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .sch-linkmenu { animation: none; } }
+
+/* the resets menu: a row per reset (name, day, time, bell), the add form */
+.sch-resetmenu { width: 420px; max-height: min(70vh, 560px); overflow-y: auto; }
+.sch-resetmenu .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sch-resetmenu .head h3 { margin: 0; }
+.sch-resetmenu .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sch-resetmenu li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 6px; border-radius: 9px; }
+.sch-resetmenu li:hover { background: var(--surface-2); }
+.sch-resetmenu li .what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.sch-resetmenu li .what b { font-size: 13px; font-weight: 600; }
+.sch-resetmenu li .what .inp { height: 30px; font-size: 12px; width: 140px; }
+.sch-resetmenu li .muted { font-size: 12px; color: var(--muted); }
+.sch-resetmenu li .err { flex-basis: 100%; }
+.sch-resetmenu .inp.t { width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
+.sch-resetmenu .btn.icon { width: 36px; padding: 0; justify-content: center; }
+.sch-resetmenu .btn.bell.on { color: var(--accent); }
+.sch-resetmenu .add { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+.sch-resetmenu .add select.inp { flex: 1; min-width: 0; }
+.sch-resets span.belled { border-color: var(--accent); color: #ffd9a8; }
+.sch-resetmenu li .what { align-items: flex-start; text-align: left; }
+.sch-resetmenu .field { background: none; border: 0; padding: 0; box-shadow: none; }
+.sch-resetmenu .head { padding: 0; background: none; border: 0; }

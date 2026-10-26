@@ -7,6 +7,7 @@ import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
+import { ResetsMenu } from "./ResetsMenu";
 import { SourceMenu } from "./SourceMenu";
 import { Ribbon } from "./Ribbon";
 import { CHIP_TONE, CHIPS, Draft, Schedule } from "./useSchedule";
@@ -184,6 +185,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
           )}
         </div>
         <span className="spacer" />
+        <ResetsMenu schedule={schedule} />
         <SourceMenu schedule={schedule} />
         <button className="btn primary" onClick={newByButton}><IconPlus />Своё событие</button>
       </div>

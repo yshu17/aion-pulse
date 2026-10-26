@@ -102,8 +102,8 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
             <div className="sch-fold" style={{ top: FOLD_MID_Y, height: FOLD_MID }} />
             <div className="sch-resets" style={{ top: FOLD_MID_Y + 11 }}>
               {resets.map((r) => (
-                <span key={r.name + r.when} title={`${r.name} в ${r.time} МСК`}>
-                  {r.when === "daily" ? "Откат" : r.name.includes("БП") ? "+ БП" : "+ неделя"}
+                <span key={r.id} className={schedule.resetBells.has(r.id) ? "belled" : ""} title={`${r.name} в ${r.time} МСК${schedule.resetBells.has(r.id) ? ", напомню" : ""}`}>
+                  {r.own ? r.name : r.when === "daily" ? "Откат" : r.name.includes("БП") ? "+ БП" : "+ неделя"}
                 </span>
               ))}
             </div>

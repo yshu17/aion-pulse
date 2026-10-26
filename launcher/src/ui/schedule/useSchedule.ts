@@ -5,6 +5,7 @@ import { Custom, eventKey, OWN_KIND } from "../../core/schedule/scheduleCustom";
 import { ScheduleEvent } from "../../core/schedule/reminders";
 import { decide, knownFingerprint, sourceFingerprint } from "../../core/schedule/scheduleUpdate";
 import { bellKey, mskNow, parseEvents } from "../../core/schedule/timing";
+import { checkReset, EMPTY_RESETS, nextOwnId, parseResets, Reset, ResetStore, RESETS_FILE, resetBellKey, resetEvents, resolveResets, serializeResets } from "../../core/schedule/resets";
 import scheduleText from "../../../../data/schedule.json?raw";
 import type { Boot } from "../useBoot";
 import { countdown, slotOf, TONE_NAME, Tone } from "./layout";
@@ -23,13 +24,6 @@ export function chipOf(event: ScheduleEvent): Chip {
   if (group.startsWith("Арен")) return "Арены";
   if (group.startsWith("Осад")) return "Осады";
   return "Прочее";
-}
-
-export interface Reset {
-  name: string;
-  when: string;
-  day?: string;
-  time: string;
 }
 
 /** What the form edits: the days an event repeats on, with its time, name, group and reminder. */
@@ -55,7 +49,7 @@ export interface Undo {
   until: number; // Date.now() when «Отменить удаление» goes away
 }
 
-const data = JSON.parse(scheduleText) as { events: ScheduleEvent[]; resets: Reset[] };
+const data = JSON.parse(scheduleText) as { events: ScheduleEvent[]; resets: { name: string; when: string; day?: string; time: string }[] };
 const base = parseEvents(scheduleText);
 const COLOR_OF: Record<Chip, string> = { "Дерадиконы": TONE_NAME.blue, "Арены": TONE_NAME.green, "Осады": TONE_NAME.teal, "Прочее": TONE_NAME.amber, "Своё": TONE_NAME.purple };
 const KNOWN = knownFingerprint(data as unknown as Record<string, unknown>);
@@ -79,6 +73,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   const [undo, setUndo] = useState<Undo | null>(null);
   const [leads, setLeads] = useState<Record<string, number>>({});
   const [site, setSite] = useState<SiteCheck | null>(null);
+  const [resetStore, setResetStore] = useState<ResetStore>(EMPTY_RESETS); // changed times and own resets
   const [source, setSource] = useState<Source>(DEFAULT_SOURCE); // the link the schedule is checked by
   const custom = useRef<Custom>(Custom.load(null, null));
   const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -106,6 +101,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
       custom.current = Custom.load(text, (out) => { files.writeText(path, out).catch(() => {}); });
       setVersion((v) => v + 1);
     });
+    files.readText(boot.ownFile(RESETS_FILE)).then((text) => setResetStore(parseResets(text))).catch(() => {});
     files.readText(boot.ownFile(SOURCE_FILE)).then((text) => setSource(parseSource(text))).catch(() => {});
     files.readText(boot.ownFile(LEADS_FILE)).then((text) => {
       try {
@@ -150,6 +146,34 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     const timer = setInterval(check, REMIND_EVERY_MS);
     return () => clearInterval(timer);
   }, [events, bells, leads, cfg.remind_min]);
+
+  const resets = useMemo(() => resolveResets(data.resets, resetStore), [resetStore]);
+  const resetBells = useMemo(() => new Set(resets.filter((r) => bells.has(resetBellKey(r.id))).map((r) => r.id)), [resets, bells]);
+
+  useEffect(() => { // reminders of belled resets, each with its own lead
+    const belled = resets.filter((r) => resetBells.has(r.id));
+    if (!belled.length) return;
+    const check = () => {
+      const at = mskNow();
+      for (const r of belled) {
+        const lead = leads[resetBellKey(r.id)] ?? cfg.remind_min;
+        for (const n of planner.current.due(resetEvents(r), at, lead)) {
+          const title = n.title.startsWith("Через") ? `Через ${countdown(n.start - at + 59_999)}: ${r.name}` : n.title;
+          notifyRef.current(title, `${r.when === "daily" ? "Откат каждый день" : "Откат раз в неделю"} · ${r.time} МСК`);
+        }
+      }
+    };
+    check();
+    const timer = setInterval(check, REMIND_EVERY_MS);
+    return () => clearInterval(timer);
+  }, [resets, resetBells, leads, cfg.remind_min]);
+
+  const storeResets = (next: ResetStore) => {
+    setResetStore(next);
+    const files = boot.platform;
+    const path = boot.ownFile(RESETS_FILE);
+    if (files && path) files.writeText(path, serializeResets(next)).catch(() => {});
+  };
 
   const storeSource = (next: Source) => {
     setSource(next);
@@ -264,7 +288,45 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   const api = {
     now, events, visible, counts, bells, version, undo, hiddenGroups, leadOf, defaultLead: cfg.remind_min,
     hiddenCount: custom.current.data.removed.length,
-    resets: data.resets,
+    resets,
+    resetBells,
+    /** One bell for the whole block: all on unless they all are on already. */
+    toggleAllResets: () => {
+      const keys = resets.map((r) => resetBellKey(r.id));
+      const rest = cfg.remind_events.filter((k) => !keys.includes(k));
+      boot.save({ remind_events: resets.every((r) => resetBells.has(r.id)) ? rest : [...rest, ...keys] });
+    },
+    toggleResetBell: (r: Reset) => {
+      const key = resetBellKey(r.id);
+      boot.save({ remind_events: bells.has(key) ? cfg.remind_events.filter((k) => k !== key) : [...cfg.remind_events, key] });
+    },
+    /** New time (and day of a weekly one) of a reset; the time of the server returns it to the original. Error text or null. */
+    editReset: (r: Reset, time: string, day?: string): string | null => {
+      const error = checkReset({ name: r.name, when: r.when, day: day ?? r.day, time });
+      if (error) return error;
+      if (r.own) storeResets({ ...resetStore, own: resetStore.own.map((o) => (o.id === r.id ? { ...o, time, ...(r.when === "weekly" ? { day: day ?? r.day } : {}) } : o)) });
+      else {
+        const original = data.resets[Number(r.id.slice(1))];
+        const edits = { ...resetStore.edits };
+        if (original && original.time === time && (r.when === "daily" || original.day === (day ?? r.day))) delete edits[r.id];
+        else edits[r.id] = r.when === "weekly" ? { time, day: day ?? r.day } : { time };
+        storeResets({ ...resetStore, edits });
+      }
+      return null;
+    },
+    addReset: (name: string, when: "daily" | "weekly", day: string | undefined, time: string): string | null => {
+      const error = checkReset({ name, when, day, time });
+      if (error) return error;
+      const id = nextOwnId(resetStore);
+      storeResets({ ...resetStore, own: [...resetStore.own, { id, name: name.trim(), when, ...(when === "weekly" ? { day } : {}), time }] });
+      boot.save({ remind_events: [...cfg.remind_events, resetBellKey(id)] }); // a new reset reminds from the start
+      return null;
+    },
+    removeReset: (r: Reset) => {
+      if (!r.own) return;
+      storeResets({ ...resetStore, own: resetStore.own.filter((o) => o.id !== r.id) });
+      boot.save({ remind_events: cfg.remind_events.filter((k) => k !== resetBellKey(r.id)) });
+    },
     /** Made by the user from scratch (a server event the user edited keeps its own look and group). */
     isOwn: (e: ScheduleEvent) => e.kind === OWN_KIND && chipOf(e) === "Своё",
     /** A server event the user changed: an own copy in its place. */
