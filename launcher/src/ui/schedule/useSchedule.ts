@@ -3,11 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ReminderPlanner } from "../../core/schedule/reminderFlow";
 import { Custom, eventKey, OWN_KIND } from "../../core/schedule/scheduleCustom";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { ARTICLE, decide, knownFingerprint, siteFingerprint } from "../../core/schedule/scheduleUpdate";
+import { decide, knownFingerprint, sourceFingerprint } from "../../core/schedule/scheduleUpdate";
 import { bellKey, mskNow, parseEvents } from "../../core/schedule/timing";
 import scheduleText from "../../../../data/schedule.json?raw";
 import type { Boot } from "../useBoot";
 import { countdown, slotOf, TONE_NAME, Tone } from "./layout";
+import { DEFAULT_SOURCE, knownFor, parseSource, serializeSource, Source, SOURCE_FILE, webAddress } from "./source";
 
 export const CHIPS = ["Дерадиконы", "Арены", "Осады", "Прочее", "Своё"] as const;
 export type Chip = (typeof CHIPS)[number];
@@ -78,6 +79,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   const [undo, setUndo] = useState<Undo | null>(null);
   const [leads, setLeads] = useState<Record<string, number>>({});
   const [site, setSite] = useState<SiteCheck | null>(null);
+  const [source, setSource] = useState<Source>(DEFAULT_SOURCE); // the link the schedule is checked by
   const custom = useRef<Custom>(Custom.load(null, null));
   const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const planner = useRef(new ReminderPlanner());
@@ -104,6 +106,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
       custom.current = Custom.load(text, (out) => { files.writeText(path, out).catch(() => {}); });
       setVersion((v) => v + 1);
     });
+    files.readText(boot.ownFile(SOURCE_FILE)).then((text) => setSource(parseSource(text))).catch(() => {});
     files.readText(boot.ownFile(LEADS_FILE)).then((text) => {
       try {
         const clean: Record<string, number> = {};
@@ -148,7 +151,20 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     return () => clearInterval(timer);
   }, [events, bells, leads, cfg.remind_min]);
 
-  /** Ask the knowledge base; a manual check always answers on the tab, the check at start only reports a new version. */
+  const storeSource = (next: Source) => {
+    setSource(next);
+    const files = boot.platform;
+    const path = boot.ownFile(SOURCE_FILE);
+    if (files && path) files.writeText(path, serializeSource(next)).catch(() => {});
+  };
+
+  const failure = (error: unknown) => {
+    const text = String(error).replace(/^Error: /, "").slice(0, 140);
+    if (text.includes("EACCES")) return "этот адрес нельзя проверить, нужна ссылка на общедоступный сайт";
+    return text.includes("нет картинки") ? `${text}. Вставь ссылку на саму картинку расписания.` : text;
+  };
+
+  /** Ask the saved link; a manual check always answers on the tab, the check at start only reports a new version. */
   const checkSite = async (manual: boolean) => {
     const files = boot.platform;
     if (files === null) {
@@ -157,18 +173,51 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     }
     if (manual) setSite({ state: "busy", text: "Проверяю…" });
     try {
-      const current = await siteFingerprint((url, method) => files.httpFetch(url, method));
-      const verdict = decide(KNOWN, current, cfg.schedule_seen, manual);
+      const current = await sourceFingerprint((url, method) => files.httpFetch(url, method), source.url);
+      const known = knownFor(source, KNOWN);
+      if (known === null) { // a link whose state was not taken yet: this is it
+        storeSource({ ...source, known: current });
+        if (manual) setSite({ state: "same", text: "Запомнил, как расписание выглядит по этой ссылке. Об изменениях скажу при следующей проверке." });
+        return;
+      }
+      const verdict = decide(known, current, cfg.schedule_seen, manual);
       if (verdict === "changed") {
         boot.save({ schedule_seen: current }); // said once: the check at start keeps quiet about this version
-        if (manual) setSite({ state: "changed", text: "Расписание на сайте обновилось: сверь сетку со статьёй." });
-        else notifyRef.current("Расписание на сайте обновилось", "Картинка в базе знаний новая: сверь сетку, вкладка «Расписание».");
+        if (manual) setSite({ state: "changed", text: "Расписание по ссылке обновилось: сверь сетку." });
+        else notifyRef.current("Расписание на сайте обновилось", "Картинка по ссылке новая: сверь сетку, вкладка «Расписание».");
       } else if (verdict === "same") {
-        setSite({ state: "same", text: "Расписание актуально: картинка на сайте та же." });
+        setSite({ state: "same", text: "Расписание актуально: картинка по ссылке та же." });
       }
     } catch (error) {
-      if (manual) setSite({ state: "error", text: `Не удалось проверить: ${String(error).slice(0, 120)}` });
+      if (manual) setSite({ state: "error", text: `Не удалось проверить: ${failure(error)}` });
     }
+  };
+
+  /** «Сохранить»: the link is the source from now on, and what it shows now is the current schedule. Gives an error text, or null. */
+  const saveSource = async (text: string): Promise<string | null> => {
+    const url = webAddress(text);
+    if (url === null) return "Адрес должен начинаться с https:// и вести на сайт.";
+    const files = boot.platform;
+    if (files === null) { storeSource({ url, known: null }); return null; }
+    setSite({ state: "busy", text: "Сохраняю…" });
+    try {
+      const now = await sourceFingerprint((u, method) => files.httpFetch(u, method), url);
+      storeSource({ url, known: now });
+      setSite({ state: "same", text: "Сохранено. Эта версия считается текущей." });
+    } catch (error) {
+      storeSource({ url, known: null });
+      setSite({ state: "error", text: `Ссылка сохранена, но проверить её не удалось: ${failure(error)}` });
+    }
+    return null;
+  };
+
+  /** «Проверить обновление» by the link in the field: the saved link is compared, a new one is saved first (no state to compare with yet). */
+  const checkSource = async (text: string): Promise<string | null> => {
+    const url = webAddress(text);
+    if (url === null) return "Адрес должен начинаться с https:// и вести на сайт.";
+    if (url !== source.url) return saveSource(text);
+    await checkSite(true);
+    return null;
   };
   const checkedAtStart = useRef(false);
   useEffect(() => { // once, a few seconds after the start, when the setting allows
@@ -278,8 +327,17 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     },
     keyOf: eventKey,
     site,
-    checkSite: () => checkSite(true),
-    openArticle: () => { boot.platform?.openUrl(ARTICLE).catch(() => {}); if (boot.platform === null) window.open(ARTICLE, "_blank"); },
+    source,
+    saveSource,
+    checkSource,
+    /** Open an address (the field of the menu, else the saved link) in the browser. */
+    openLink: (text?: string) => {
+      const url = webAddress(text ?? source.url);
+      if (url === null) return false;
+      if (boot.platform) boot.platform.openUrl(url).catch(() => {});
+      else window.open(url, "_blank");
+      return true;
+    },
   };
   return api;
 }

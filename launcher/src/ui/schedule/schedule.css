@@ -153,16 +153,27 @@
 .sch-form .f > label.bell-row { display: flex; font-weight: 400; font-size: 14px; margin: 0; }
 .sch-form .bell-row .box { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--border-control); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
 
-/* the links menu next to «Проверить обновление» */
+/* the schedule source: a link button with a small menu (address, «Перейти», «Проверить обновление», «Сохранить») */
 .sch-links { position: relative; flex: none; }
-.sch-linkbtn { padding: 8px 10px; }
+.sch-linkbtn { position: relative; padding: 8px 10px; }
 .sch-linkbtn.on { background: var(--surface-3); color: var(--accent); }
-.sch-linkmenu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; width: 320px; display: flex; flex-direction: column; gap: 6px;
-  padding: 10px; background: var(--surface-3); border: 1px solid var(--border-control); border-radius: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, .6); }
-.sch-linkmenu .row { display: flex; align-items: center; gap: 4px; }
-.sch-linkmenu .go { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sch-linkmenu .go:hover, .sch-linkmenu .go:focus-visible { background: rgba(255, 255, 255, .08); }
-.sch-linkmenu .x { flex: none; width: 26px; height: 26px; border: 0; border-radius: 7px; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
-.sch-linkmenu .x:hover { color: #ff9a9e; background: rgba(255, 255, 255, .06); }
-.sch-linkmenu .add { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border); }
-.sch-linkmenu .add .btn { align-self: flex-end; }
+.sch-linkbtn.alert::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface-2); }
+.sch-linkmenu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; width: 348px; display: flex; flex-direction: column; gap: 8px; padding: 14px;
+  background: var(--surface-3); border: 1px solid var(--border-control); border-radius: 14px; box-shadow: 0 14px 34px rgba(0, 0, 0, .6); animation: arrive .15s ease-out; }
+.sch-linkmenu h3 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+.sch-linkmenu label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.sch-linkmenu .field { display: flex; gap: 6px; }
+.sch-linkmenu .inp { height: 36px; padding: 0 11px; font-size: 13px; background: var(--bg); border: 1px solid var(--border-control); border-radius: 9px; }
+.sch-linkmenu .field .inp { flex: 1; min-width: 0; }
+.sch-linkmenu .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 140, 26, .18); outline: none; }
+.sch-linkmenu .inp.bad { border-color: var(--danger); }
+.sch-linkmenu .btn { height: 36px; padding: 0 12px; flex: none; }
+.sch-linkmenu .err { font-size: 12px; color: #ffb0b3; }
+.sch-linkmenu .actions { display: flex; gap: 6px; margin-top: 2px; }
+.sch-linkmenu .actions .btn:first-child { flex: 1; justify-content: center; }
+.sch-linkmenu .result { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.sch-linkmenu .result.same { color: #8fdca9; }
+.sch-linkmenu .result.changed { color: #ffc27a; }
+.sch-linkmenu .result.error { color: #ffb0b3; }
+.sch-linkmenu .hint { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.4; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .sch-linkmenu { animation: none; } }

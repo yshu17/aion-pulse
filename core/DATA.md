@@ -47,6 +47,8 @@ only, an unknown value is `null`, a missing record means «not checked». Every 
 |---|---|---|
 | `config.json` | one object, the fields of `core.settings.config.Config` (names and defaults there); a wrong type takes its default; a broken file is kept as `config.json.broken-<time>` | `read_config` / `save_config` |
 | `schedule_custom.json` | `{"added": [event], "removed": ["day|start|name"]}`; own events get kind «Свои» | `core.schedule.schedule_custom.Custom` |
+| `schedule_leads.json` | `{"<day>\|<start>\|<name>": minutes}`: how many minutes before the start the reminder of a belled event comes, when it is not the common `remind_min` (Pulse+) | the launcher (`launcher/src/ui/schedule/useSchedule.ts`) |
+| `schedule_source.json` | `{"url": "https://…", "known": "<fingerprint>"}`: the link the schedule is checked by (the KB article by default; a page with the picture or the picture itself, https to a public site) and the state of it that counts as the schedule in use (Pulse+) | the launcher (`launcher/src/ui/schedule/source.ts`) |
 | `Chat.log` | the game's chat log (`g_chatlog = "1"` in `system.cfg`): `YYYY.MM.DD HH:MM:SS : text`, CP1251 or UTF-8 | `core.chat.tailer.LogTailer`, `core.chat.session.LogFeed` |
 
 ## Local, not in the repository

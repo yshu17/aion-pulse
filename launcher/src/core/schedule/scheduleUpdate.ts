@@ -26,12 +26,29 @@ export function knownFingerprint(data: Record<string, unknown>): string {
   return fingerprint(get("image"), get("image_etag"), get("image_modified"));
 }
 
-export async function siteFingerprint(fetch: Fetch): Promise<string> {
-  const [page] = await fetch(ARTICLE, "GET");
+export async function siteFingerprint(fetch: Fetch, article: string = ARTICLE): Promise<string> {
+  const [page] = await fetch(article, "GET");
   const url = imageUrl(page);
   if (url === null) throw new Error("на странице нет картинки расписания");
   const [, headers] = await fetch(url, "HEAD");
   return fingerprint(url, headers["ETag"] ?? "", headers["Last-Modified"] ?? "");
+}
+
+const IMAGE = /\.(?:jpe?g|png|webp)(?:[?#]|$)/i;
+
+/** Is the address a picture file (not a page)? */
+export const isImageUrl = (url: string): boolean => IMAGE.test(url);
+
+/**
+ * The fingerprint of the schedule behind a link the user gave: the address of a picture is that picture (one HEAD
+ * request), any other address is a page with the schedule picture in it (the article's way).
+ */
+export async function sourceFingerprint(fetch: Fetch, url: string): Promise<string> {
+  if (isImageUrl(url)) {
+    const [, headers] = await fetch(url, "HEAD");
+    return fingerprint(url, headers["ETag"] ?? "", headers["Last-Modified"] ?? "");
+  }
+  return siteFingerprint(fetch, url);
 }
 
 /** At start only a new, not yet acknowledged version is reported; a manual check always answers. */

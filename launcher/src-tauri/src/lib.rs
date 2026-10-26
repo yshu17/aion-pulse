@@ -163,14 +163,22 @@ fn write_text(app: AppHandle, path: String, text: String) -> Result<(), String> 
     fs::rename(&temporary, &target).map_err(|e| io_error(&path, e))
 }
 
-/// The server's sites: the knowledge base (aionempire.com) and its pictures (aionempire.net).
-const ALLOWED_HOSTS: [&str; 2] = ["aionempire.com", "aionempire.net"];
+/// Names that only mean this computer or a local network.
+const LOCAL_SUFFIXES: [&str; 6] = [".local", ".localhost", ".internal", ".lan", ".home", ".arpa"];
 
-/// Only the server's sites are asked (the schedule check), over HTTPS.
+/// The schedule check may ask a public https address (the user pastes the link): no plain http, no login in the
+/// address, no IP address (so not this computer or its network), no local names.
 fn allowed_url(url: &str) -> bool {
     let Some(rest) = url.strip_prefix("https://") else { return false };
-    let host = rest.split(['/', '?', '#', ':']).next().unwrap_or("").to_ascii_lowercase();
-    ALLOWED_HOSTS.iter().any(|allowed| host == *allowed || host.ends_with(&format!(".{allowed}")))
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if authority.is_empty() || authority.contains('@') || authority.starts_with('[') {
+        return false;
+    }
+    let host = authority.split(':').next().unwrap_or("").to_ascii_lowercase();
+    if host.parse::<std::net::IpAddr>().is_ok() || host.is_empty() || !host.contains('.') || host == "localhost" {
+        return false;
+    }
+    !LOCAL_SUFFIXES.iter().any(|suffix| host.ends_with(suffix))
 }
 
 /// GET (the page text, at most 2 MB) or HEAD of a knowledge-base address, with the response headers.
@@ -178,7 +186,7 @@ fn allowed_url(url: &str) -> bool {
 #[tauri::command]
 async fn http_fetch(url: String, method: String) -> Result<(String, std::collections::HashMap<String, String>), String> {
     if !allowed_url(&url) {
-        return Err(format!("EACCES: only the server sites can be asked: {url}"));
+        return Err(format!("EACCES: only a public https address can be asked: {url}"));
     }
     if method != "GET" && method != "HEAD" {
         return Err(format!("unsupported method {method}"));
@@ -314,14 +322,20 @@ mod tests {
     }
 
     #[test]
-    fn asks_only_the_knowledge_base() {
+    fn asks_only_public_https_addresses() {
         assert!(allowed_url("https://kb.aionempire.com/article/rasapisanie"));
-        assert!(allowed_url("https://aionempire.com/x.jpg"));
-        assert!(!allowed_url("http://kb.aionempire.com/"));
-        assert!(!allowed_url("https://aionempire.com.evil.net/"));
-        assert!(!allowed_url("https://evil.net/?aionempire.com"));
         assert!(allowed_url("https://news.aionempire.net/storage/app/media/schedule-20ru.jpg"));
-        assert!(!allowed_url("https://aionempire.net.evil.net/"));
+        assert!(allowed_url("https://example.org:8443/a/b.png?x=1"));
+        assert!(!allowed_url("http://kb.aionempire.com/")); // no plain http
+        assert!(!allowed_url("https://aionempire.com@evil.net/")); // a login in the address hides the real host
+        assert!(!allowed_url("https://127.0.0.1/"));
+        assert!(!allowed_url("https://192.168.0.1:8080/router"));
+        assert!(!allowed_url("https://[::1]/"));
+        assert!(!allowed_url("https://localhost/"));
+        assert!(!allowed_url("https://printer.local/"));
+        assert!(!allowed_url("https://intranet/")); // no dot: not a public name
+        assert!(!allowed_url("https:///nohost"));
+        assert!(!allowed_url("file:///C:/Windows/system.ini"));
     }
 
     #[test]

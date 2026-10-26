@@ -189,7 +189,7 @@ function Screen({ boot }: { boot: Boot }) {
           </div>
         </main>
       ) : tab === "Расписание" ? (
-        <ScheduleTab schedule={schedule} boot={boot} />
+        <ScheduleTab schedule={schedule} />
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
