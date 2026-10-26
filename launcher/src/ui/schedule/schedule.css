@@ -162,8 +162,8 @@
   background: var(--surface-3); border: 1px solid var(--border-control); border-radius: 14px; box-shadow: 0 14px 34px rgba(0, 0, 0, .6); animation: arrive .15s ease-out; }
 .sch-linkmenu h3 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
 .sch-linkmenu label { font-size: 12px; font-weight: 600; color: var(--muted); }
-.sch-linkmenu .field { display: flex; gap: 6px; }
-.sch-linkmenu .field .inp { flex: 1; min-width: 0; }
+.sch-linkmenu .ctl-row { display: flex; gap: 6px; }
+.sch-linkmenu .ctl-row .inp { flex: 1; min-width: 0; }
 .sch-linkmenu .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 140, 26, .18); outline: none; }
 .sch-linkmenu .inp.bad { border-color: var(--danger); }
 .sch-linkmenu .btn { flex: none; }
@@ -184,15 +184,15 @@
 .sch-resetmenu .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .sch-resetmenu li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 6px; border-radius: 9px; }
 .sch-resetmenu li:hover { background: var(--surface-2); }
-.sch-resetmenu li .what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.sch-resetmenu li .what b { font-size: 13px; font-weight: 600; }
-.sch-resetmenu li .what .inp { font-size: 12px; width: 140px; }
+.sch-resetmenu li .rs-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.sch-resetmenu li .rs-what b { font-size: 13px; font-weight: 600; }
+.sch-resetmenu li .rs-what .inp { height: var(--ctl-h-sm); font-size: 12px; width: 140px; }
 .sch-resetmenu li .muted { font-size: 12px; color: var(--muted); }
 .sch-resetmenu li .err { flex-basis: 100%; }
 .sch-resetmenu .btn.bell.on { color: var(--accent); }
 .sch-resetmenu .add { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
 .sch-resetmenu .add select.inp { flex: 1; min-width: 0; }
 .sch-resets span.belled { border-color: var(--accent); color: #ffd9a8; }
-.sch-resetmenu li .what { align-items: flex-start; text-align: left; }
-.sch-resetmenu .field { background: none; border: 0; padding: 0; box-shadow: none; }
+.sch-resetmenu li .rs-what { align-items: flex-start; text-align: left; }
+
 .sch-resetmenu .head { padding: 0; background: none; border: 0; }

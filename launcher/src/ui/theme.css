@@ -22,14 +22,15 @@
   --card-radius: 14px;
   /* kit: sizes, spaces and floating layers shared by every panel, menu and form (see kit.css) */
   --ctl-h: 36px;            /* buttons, fields, selects */
-  --ctl-h-sm: 30px;         /* chips, day buttons, options inside a panel */
+  --ctl-h-sm: 30px;         /* secondary buttons in toasts and banners, day buttons, options, close crosses */
+  --ctl-h-xs: 26px;         /* chips and tags */
   --r-ctl: 9px;             /* controls */
   --r-pop: 14px;            /* floating layers */
   --gap: 8px;
   --gap-sm: 6px;
   --pad-pop: 16px;
-  --pop-bg: var(--surface-2);
-  --pop-hover: var(--surface-3);
+  --pop-bg: var(--surface);          /* every floating layer: menu, form, panel, toast, confirm */
+  --pop-hover: var(--surface-2);
   --pop-border: var(--border-control);
   --pop-shadow: 0 14px 34px rgba(0, 0, 0, .6);
   --focus-ring: 0 0 0 3px rgba(255, 140, 26, .18);

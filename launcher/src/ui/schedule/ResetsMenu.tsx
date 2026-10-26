@@ -62,11 +62,11 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
           </ul>
           <div className="add">
             <label htmlFor="reset-name">Свой откат</label>
-            <div className="field">
+            <div className="ctl-row">
               <input id="reset-name" className="inp" value={name} placeholder="Название" maxLength={40}
                 onChange={(e) => { setName(e.target.value); setError(""); }} onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
             </div>
-            <div className="field">
+            <div className="ctl-row">
               <select className="inp" aria-label="Когда" value={when} onChange={(e) => setWhen(e.target.value)}>
                 <option value="daily">Каждый день</option>
                 {DAYS.map((d) => <option key={d} value={d}>{DAY_NAMES[d]}</option>)}
@@ -89,7 +89,7 @@ function ResetRow({ reset, schedule }: { reset: Reset; schedule: Schedule }) {
   const set = (time: string, day?: string) => setError(schedule.editReset(reset, time, day) ?? "");
   return (
     <li className={bell ? "belled" : ""}>
-      <div className="what">
+      <div className="rs-what">
         <b>{reset.name}</b>
         {reset.when === WEEKLY ? (
           <select className="inp" aria-label={`День: ${reset.name}`} value={reset.day} onChange={(e) => set(reset.time, e.target.value)}>

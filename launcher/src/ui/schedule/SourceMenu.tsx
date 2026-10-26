@@ -46,7 +46,7 @@ export function SourceMenu({ schedule }: { schedule: Schedule }) {
         <div className="sch-linkmenu" role="dialog" aria-label="Расписание на сайте">
           <h3>Расписание на сайте</h3>
           <label htmlFor="sch-source">Ссылка</label>
-          <div className="field">
+          <div className="ctl-row">
             <input id="sch-source" ref={field} className={`inp${error ? " bad" : ""}`} value={draft} placeholder="https://…" inputMode="url" spellCheck={false}
               aria-invalid={error !== ""} aria-describedby={error ? "sch-source-error" : undefined}
               onChange={(e) => { setDraft(e.target.value); setError(""); }}
