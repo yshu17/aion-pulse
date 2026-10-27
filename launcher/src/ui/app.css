@@ -117,22 +117,24 @@ time { color: var(--muted); font: 12px var(--mono); }
 .banner.warn { color: var(--warning); background: #2f2614; }
 
 html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background: transparent; height: auto; overflow: hidden; }
-.overlay { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding: 1px 1px 14px; } /* room for the shadows */
-.overlay.up { flex-direction: column-reverse; padding: 14px 1px 1px; } /* near the screen bottom: the menu and notifications open above the strip */
+/* no shadows: over the game they read as a dim box around the strip */
+.overlay { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; padding: 1px; }
+.overlay.up { flex-direction: column-reverse; } /* near the screen bottom: the menu and notifications open above the strip */
+.overlay > * { box-shadow: none !important; }
 .btn.mini-plain { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
 .overlay .toast { width: 100%; }
 /* the overlay is one line: status dot, the event now or next, the time left; the rest is in the right-click menu */
-.ov-line { width: 100%; height: 34px; display: flex; align-items: center; gap: 9px; padding: 0 6px 0 13px; background: var(--surface);
-  border: 1px solid var(--border-control); border-radius: 999px; font-size: 13px; box-shadow: 0 4px 12px rgba(0, 0, 0, .4);
+.ov-line { width: 100%; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; background: var(--surface);
+  border: 1px solid var(--border-control); border-radius: 999px; font-size: 13px;
   cursor: grab; user-select: none; outline: none; position: relative; overflow: hidden; }
 .ov-line:focus-visible { border-color: var(--accent); }
-.ov-line .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.ov-line .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; min-width: 0; }
+.ov-line .dot, .ov-card .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.ov-line .name { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; min-width: 0; }
 .ov-line .muted { color: #a3a8b3; white-space: nowrap; }
 .ov-line .num { font-variant-numeric: tabular-nums; }
 .ov-body { flex: 1; min-width: 0; display: grid; align-items: center; }
 .ov-body.turns { cursor: pointer; }
-.ov-slide { grid-area: 1 / 1; min-width: 0; display: flex; align-items: center; gap: 9px; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+.ov-slide { grid-area: 1 / 1; min-width: 0; display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
 .ov-slide.on { opacity: 1; pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { .ov-slide { transition: none; } }
 .ov-sw { width: 3px; height: 14px; border-radius: 2px; border: 0; flex: none; }
@@ -145,16 +147,16 @@ html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background:
 .ov-gear:hover, .ov-gear.on { background: var(--surface-3); color: var(--text); }
 .ov-gear:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* the card on hover: every running event and the next one with full names and times, the watch state in words */
-.ov-card { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; font-size: 13px;
-  border: 1px solid var(--pop-border); border-radius: var(--r-pop); background: var(--pop-bg); box-shadow: var(--pop-shadow); }
-.ov-card-row { display: flex; gap: 9px; align-items: flex-start; }
-.ov-card-row .ov-sw { margin-top: 3px; }
-.ov-card-row b { font-weight: 600; overflow-wrap: anywhere; }
-.ov-card-row .muted { font-size: 12px; margin-top: 2px; }
-.ov-card-status { display: flex; align-items: center; gap: 8px; font-size: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+.ov-card { width: 100%; display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; font-size: 13px;
+  border: 1px solid var(--border-control); border-radius: var(--r-pop); background: var(--surface); }
+.ov-card-row { display: flex; gap: 8px; align-items: baseline; }
+.ov-card-row .ov-sw { align-self: center; }
+.ov-card-row b { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.ov-card-row .ov-left { font-size: 12px; }
+.ov-card-status { display: flex; align-items: center; gap: 8px; font-size: 12px; padding-top: 6px; border-top: 1px solid var(--border); }
 .ov-card-hint { font-size: 11px; color: var(--muted); }
 .ov-menu { width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--surface);
-  border: 1px solid var(--border-control); border-radius: 14px; font-size: 13px; box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+  border: 1px solid var(--border-control); border-radius: 14px; font-size: 13px; }
 /* the chosen transparency; the overlay is opaque while the mouse is over it, so it stays readable to click */
 .overlay > * { opacity: var(--ov-opacity, .9); transition: opacity .15s; }
 .overlay:hover > * { opacity: 1; }

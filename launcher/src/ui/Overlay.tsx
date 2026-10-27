@@ -165,7 +165,6 @@ export function Overlay() {
             <div key={(now ? "now " : "next ") + e.name + e.from} className={`ov-slide${i === current ? " on" : ""}`} aria-hidden={i !== current}>
               <span className={`ov-sw t-${e.tone}`} aria-hidden />
               <b className="name">{e.name}</b>
-              {now ? <span className="ov-state going">идёт</span> : <span className="ov-state muted num">в {e.from}</span>}
               {several && <span className="muted num" title="Идёт несколько событий и показано, что дальше: строка меняет их по очереди и по щелчку">{i + 1}/{slides.length}</span>}
               <span className="spacer" />
               <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
@@ -188,12 +187,8 @@ export function Overlay() {
           {slides.map(({ event: e, running: now }) => (
             <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
               <span className={`ov-sw t-${e.tone}`} aria-hidden />
-              <div>
-                <b>{e.name}</b>
-                <div className="muted num">
-                  {now ? <><span className="ov-state going">идёт</span> · {e.from}–{e.to} · ещё {e.left}</> : <>в {e.from} · через {e.left}</>}
-                </div>
-              </div>
+              <b>{e.name}</b>
+              <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
             </div>
           ))}
           {slides.length === 0 && <div className="muted">Событий нет</div>}
