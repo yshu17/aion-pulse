@@ -10,6 +10,7 @@ const STRIP_CSS = 36; // the height of the strip when it is not drawn (a popup o
 const RAISE_MS = 3000; // how often the window is put above other always-on-top windows (a game can take the top place)
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
+const HOVER_MS = 350; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
 /** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
@@ -18,6 +19,8 @@ export function Overlay() {
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
   const [menu, setMenu] = useState(false);
   const [turn, setTurn] = useState(0); // which of several running events the line shows now
+  const [card, setCard] = useState(false); // the mouse rests on the strip: the card with the full names is open
+  const hover = useRef<ReturnType<typeof setTimeout>>(undefined);
   const press = useRef<{ x: number; y: number } | null>(null); // where the button went down, until it becomes a drag
   const dragged = useRef(false);
   const setLook = (next: OverlayLook) => { setLookValue(next); saveLook(next); };
@@ -134,15 +137,20 @@ export function Overlay() {
 
   const popup = state?.popup === true; // only the notifications: the program window is open
   const live = state?.watching && !state.problem;
-  const note = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "";
+  // the strip shows the state only by the dot; the words are in its hint and in the card shown on hover
+  const status = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу за чатом";
   const current = several ? turn % slides.length : 0; // the slide that is shown
+  // the card opens after a short rest on the strip (not while it is dragged or the menu is open), closes when the mouse leaves
+  const rest = () => { clearTimeout(hover.current); hover.current = setTimeout(() => setCard(true), HOVER_MS); };
+  const leave = () => { clearTimeout(hover.current); setCard(false); };
+  useEffect(() => () => clearTimeout(hover.current), []);
   return (
-    <div className={`overlay ${side}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
+    <div className={`overlay ${side}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }} onMouseLeave={leave}>
       {!popup && (
       <>
       <div className="ov-line" ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+" 
-        title={state?.problem || (several ? "Щелчок: следующее событие. Потяни: передвинуть. Правый клик: меню" : "Потяни, чтобы передвинуть. Правый клик: меню")}
-        onPointerDown={(e) => { dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
+        onMouseEnter={rest}
+        onPointerDown={(e) => { leave(); dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
         onPointerMove={(e) => {
           const from = press.current;
           if (!from || !(e.buttons & 1) || Math.hypot(e.clientX - from.x, e.clientY - from.y) < DRAG_PX) return;
@@ -151,8 +159,7 @@ export function Overlay() {
         onPointerUp={() => { press.current = null; }} onPointerLeave={() => { press.current = null; }}
         onContextMenu={(e) => { e.preventDefault(); setMenu(!menu); }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
-        <span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />
-        {note && <span className="muted">{note}</span>}
+        <span className="dot" role="img" aria-label={status} title={status} style={{ background: live ? "var(--success)" : "var(--warning)" }} />
         <div className={`ov-body${several ? " turns" : ""}`} aria-live="polite" onClick={() => { if (several && !dragged.current) setTurn((t) => t + 1); }}>
           {slides.length > 0 ? slides.map(({ event: e, running: now }, i) => (
             <div key={(now ? "now " : "next ") + e.name + e.from} className={`ov-slide${i === current ? " on" : ""}`} aria-hidden={i !== current}>
@@ -176,6 +183,24 @@ export function Overlay() {
         <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность и фокус"
           onClick={() => setMenu(!menu)}><IconSettings /></button>
       </div>
+      {card && !menu && (
+        <div className="ov-card" role="tooltip">
+          {slides.map(({ event: e, running: now }) => (
+            <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
+              <span className={`ov-sw t-${e.tone}`} aria-hidden />
+              <div>
+                <b>{e.name}</b>
+                <div className="muted num">
+                  {now ? <><span className="ov-state going">идёт</span> · {e.from}–{e.to} · ещё {e.left}</> : <>в {e.from} · через {e.left}</>}
+                </div>
+              </div>
+            </div>
+          ))}
+          {slides.length === 0 && <div className="muted">Событий нет</div>}
+          <div className="ov-card-status muted"><span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />{state?.problem || status}</div>
+          <div className="ov-card-hint">{several ? "Щелчок: следующее событие. " : ""}Потяни, чтобы передвинуть. Правый клик: меню.</div>
+        </div>
+      )}
       {menu && (
         <div className="ov-menu" role="menu">
           <label className="ov-opacity">
