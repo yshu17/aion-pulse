@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { daysText, Reset, ResetDraft } from "../../core/schedule/resets";
 import { DAYS } from "../../core/schedule/reminders";
-import { IconBell, IconClose, IconPencil, IconPlus, IconReset } from "../icons";
+import { IconBell, IconClose, IconPencil, IconPlus } from "../icons";
 import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
@@ -40,7 +40,7 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
       <button className={`btn rs-add${open ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={open}
         title="Откаты: время, дни, свои откаты" aria-label="Откат: добавить или изменить"
         onClick={() => { if (!open) announce("resets"); setOpen(!open); }}>
-        <IconReset />+ Откат
+        + Откат
       </button>
       {open && (
         <div className="sch-linkmenu sch-resetmenu" role="dialog" aria-label="Откаты">
