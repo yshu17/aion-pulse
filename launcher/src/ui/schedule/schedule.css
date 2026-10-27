@@ -58,23 +58,26 @@
 .sch-col.today { background: rgba(255, 140, 26, .055); }
 .sch-hl { position: absolute; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, .05); pointer-events: none; }
 .sch-fold { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .035) 0 6px, transparent 6px 12px); border-top: 1px dashed #4a505e; border-bottom: 1px dashed #4a505e; pointer-events: none; }
-.sch-resets { position: absolute; left: 4px; right: 4px; display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; font-size: 11px; color: #ffc27a; pointer-events: none; }
+.sch-fold.resets { display: flex; align-items: center; justify-content: center; }
+.sch-resets { position: relative; width: 100%; padding: 0 4px; display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; font-size: 11px; color: #ffc27a; pointer-events: none; }
 .sch-resets span { background: var(--accent-subtle); border: 1px solid #6b4a1a; border-radius: 6px; padding: 0 6px; white-space: nowrap; }
 .sch-nowrow { position: absolute; left: 0; right: 0; height: 2px; background: rgba(255, 140, 26, .45); z-index: 2; pointer-events: none; }
 .sch-nowrow i { position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
 
-.sch-card { position: absolute; border-radius: 8px; border: 1px solid; border-left-width: 3px; padding: 3px 6px 3px 7px; overflow: hidden; cursor: pointer; text-align: left; transition: box-shadow .12s; }
+.sch-card { position: absolute; border-radius: 8px; border: 1px solid; border-left-width: 3px; padding: 3px 4px; overflow: hidden; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: box-shadow .12s; }
 .sch-card:hover, .sch-card:focus-visible { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); overflow: visible; z-index: 6; }
 .sch-card.own { border-style: dashed; border-left-style: dashed; }
 .sch-card.sel { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 3; }
-.sch-card b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; line-height: 1.15; font-weight: 600; padding-right: 17px; }
-.sch-card b.one { display: inline; -webkit-line-clamp: 1; }
-.sch-card b.tiny { font-size: 11px; line-height: 1.08; }
-.sch-card small { display: block; font-size: 11px; line-height: 1.25; opacity: .92; } .sch-card small.inline { display: inline; }
+.sch-card b { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%; font-size: 1em; line-height: calc(1em + 2px); font-weight: 600; overflow-wrap: anywhere; }
+.sch-card small { display: block; font-size: 11px; line-height: 13px; opacity: .92; }
 .sch-card .tag { display: inline-block; font-size: 10px; font-weight: 600; border: 1px solid currentColor; border-radius: 5px; padding: 0 4px; margin-left: 5px; vertical-align: 1px; }
 .sch-card .acts { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; z-index: 5; }
 .sch-card .a { width: 20px; height: 20px; border: 0; border-radius: 6px; background: transparent; color: inherit; display: none; align-items: center; justify-content: center; padding: 0; }
-.sch-card .a.bell { display: flex; opacity: 0; } .sch-card .a.bell.on { opacity: 1; }
+.sch-card .a.bell { display: flex; opacity: 0; }
+/* a card that reminds: a small dot in its corner (the bell itself shows on hover), so the centred text stays free */
+.sch-card.belled::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.sch-card.belled:hover::after, .sch-card.belled:focus-within::after { display: none; }
 .sch-card:hover .a, .sch-card:focus-within .a { display: flex; opacity: 1; background: #10131a; color: var(--text); border: 1px solid var(--border-control); }
 .sch-card .a.x { color: #ff9a9e; } .sch-card .a:hover { background: var(--surface-3); }
 .sch-card:hover .a.bell:not(.on) { color: var(--muted); }

@@ -2,28 +2,70 @@ import { describe, expect, it } from "vitest";
 
 import { naiveMs } from "../../core/chat/tailer";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { countdown, GRID_H, hm, minuteAt, occurrencesIn, placeDay, ribbonLanes, slotOf, toneOf, yOf } from "./layout";
+import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, ribbonLanes, slotOf, toneOf, yOf } from "./layout";
 
 const ev = (day: string, start: string, end: string, name = "x", color = "Голубой"): ScheduleEvent => ({ day, start, end, name, color });
 
 describe("schedule layout", () => {
-  it("folds the empty bands: 00–02 and 04–10 are short, the shown hours are full", () => {
-    expect(yOf(0)).toBe(0);
-    expect(yOf(120)).toBe(18);
-    expect(yOf(240)).toBe(18 + 56); // two shown hours
-    expect(yOf(600) - yOf(240)).toBe(40); // the whole 04–10 band is 40 px
-    expect(yOf(1440)).toBe(GRID_H);
-    expect(yOf(12 * 60) - yOf(10 * 60)).toBe(56);
+  it("shows only the hours with events; an empty run of hours is one thin strip", () => {
+    const axis = buildAxis({ spans: [{ s: 600, e: 720, px: 0 }, { s: 1200, e: 1440, px: 0 }], resets: [] });
+    expect(axis.bands.map((b) => [b.kind, b.from, b.to])).toEqual([
+      ["fold", 0, 600], ["hours", 600, 720], ["fold", 720, 1200], ["hours", 1200, 1440],
+    ]);
+    expect(axis.bands.map((b) => b.h)).toEqual([FOLD_PX, 2 * HOUR_PX, FOLD_PX, 4 * HOUR_PX]);
+    expect(axis.height).toBe(2 * FOLD_PX + 6 * HOUR_PX);
+    expect(yOf(axis, 600)).toBe(FOLD_PX);
+    expect(yOf(axis, 660)).toBe(FOLD_PX + HOUR_PX);
+    expect(yOf(axis, 1440)).toBe(axis.height);
   });
 
-  it("finds the minute under a pixel row, snapped to 15 min, nothing inside a folded band", () => {
-    expect(minuteAt(yOf(18 * 60))).toBe(18 * 60);
-    expect(minuteAt(yOf(18 * 60 + 37))).toBe(18 * 60 + 30);
-    expect(minuteAt(yOf(3 * 60))).toBe(180);
-    expect(minuteAt(5)).toBeNull(); // 00–02
-    expect(minuteAt(yOf(7 * 60))).toBeNull(); // 04–10
-    expect(minuteAt(-1)).toBeNull();
-    expect(minuteAt(GRID_H + 1)).toBeNull();
+  it("an hour grows until the event in it fits; a long event spreads its need over its hours", () => {
+    const axis = buildAxis({ spans: [{ s: 600, e: 660, px: 70 }, { s: 720, e: 840, px: 70 }], resets: [] });
+    expect(yOf(axis, 660) - yOf(axis, 600)).toBe(70); // one hour must hold all 70 px
+    expect(yOf(axis, 780) - yOf(axis, 720)).toBe(HOUR_PX + 7); // two hours share 70 px: 35 each
+  });
+
+  it("puts the resets in their own band at their hour, as tall as their chips; an event ends above it and starts below", () => {
+    const axis = buildAxis({ spans: [{ s: 480, e: 540, px: 0 }, { s: 540, e: 600, px: 0 }], resets: [{ minute: 540, px: 30 }] });
+    expect(axis.bands.map((b) => [b.kind, b.from, b.to])).toEqual([["fold", 0, 480], ["hours", 480, 540], ["resets", 540, 540], ["hours", 540, 600], ["fold", 600, 1440]]);
+    const band = axis.bands[2];
+    expect(band.h).toBe(30);
+    expect(yOf(axis, 540, true)).toBe(band.y); // the end of 08:00–09:00
+    expect(yOf(axis, 540)).toBe(band.y + 30); // the start of 09:00–10:00
+  });
+
+  it("finds the minute under a pixel row, snapped to 15 min; nothing in a strip or the resets", () => {
+    const axis = buildAxis({ spans: [{ s: 1080, e: 1200, px: 0 }], resets: [{ minute: 540, px: 24 }] });
+    expect(minuteAt(axis, yOf(axis, 18 * 60))).toBe(18 * 60);
+    expect(minuteAt(axis, yOf(axis, 18 * 60 + 37))).toBe(18 * 60 + 30);
+    expect(minuteAt(axis, 2)).toBeNull();
+    expect(minuteAt(axis, axis.bands.find((b) => b.kind === "resets")!.y + 5)).toBeNull();
+    expect(minuteAt(axis, -1)).toBeNull();
+    expect(minuteAt(axis, axis.height + 1)).toBeNull();
+  });
+
+  it("with nothing to show keeps 10:00–24:00, so a new event can still be drawn", () => {
+    const axis = buildAxis({ spans: [], resets: [] });
+    expect(axis.bands.filter((b) => b.kind === "hours").map((b) => [b.from, b.to])).toEqual([[600, 1440]]);
+  });
+
+  it("a card needs room for its whole name (up to three lines) and its time at its width", () => {
+    expect(cardNeed("Аренка", 120)).toBe(cardNeed("Аренка", 300)); // one line either way
+    expect(cardNeed("Ру / Астерия вместе", 50)).toBeGreaterThan(cardNeed("Ру / Астерия вместе", 200));
+    expect(cardNeed("очень длинное название события которое не влезет", 40)).toBe(cardNeed("и ещё длиннее название события которое не влезет никак", 40)); // four lines at most
+    expect(cardNeed("Око", 54)).toBe(cardNeed("Око", 200) + 13); // a narrow card puts the end of its time on a second line
+  });
+
+  it("a card title gets smaller until its longest word fits, but not below 10 px", () => {
+    expect(cardFont("Аренка", 150)).toBe(12);
+    expect(cardFont("Дерадикон", 74)).toBe(11);
+    expect(cardFont("Дерадикон", 40)).toBe(10);
+  });
+
+  it("cuts only a word that does not fit even then, with «…»; the others stay whole", () => {
+    const measure = (text: string) => text.length * 6; // 6 px a letter
+    expect(fitName("Ру / Астерия", 16 + 42, measure)).toBe("Ру / Астерия"); // 7 letters = 42 px fit
+    expect(fitName("Дерадикон", 16 + 42, measure)).toBe("Деради…"); // 6 letters and «…» = 42 px
   });
 
   it("puts overlapping events in lanes of their cluster and leaves a lone event full width", () => {
