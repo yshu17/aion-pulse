@@ -90,6 +90,9 @@ export function Overlay() {
 
   useLayoutEffect(() => { place(); }, [side]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // the game is gone: the taskbar is back, the strip left over it (or under it) moves up into the work area
+  useEffect(() => { if (state && state.game !== true) place(); }, [state?.game]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const el = root.current;
     if (!el) return;

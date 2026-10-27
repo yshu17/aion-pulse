@@ -40,14 +40,16 @@ fn config_path(app: AppHandle) -> Result<String, String> {
 /// The client process of the game: bin32 and bin64 clients have the same name.
 const GAME_PROCESSES: [&str; 1] = ["aion.bin"];
 
-fn has_game(names: &[String]) -> bool {
-    names.iter().any(|name| GAME_PROCESSES.contains(&name.to_lowercase().as_str()))
+/// Is a game client among the processes (name, thread count)? A client without threads has exited: something still
+/// holds its process (seen for days after the game was closed), so it does not count.
+fn has_game(processes: &[(String, u32)]) -> bool {
+    processes.iter().any(|(name, threads)| *threads > 0 && GAME_PROCESSES.contains(&name.to_lowercase().as_str()))
 }
 
-/// Names of the running processes, from the ToolHelp snapshot (no console window, no rights on the processes); None
-/// when the list cannot be read.
+/// Names and thread counts of the running processes, from the ToolHelp snapshot (no console window, no rights on the
+/// processes); None when the list cannot be read.
 #[cfg(windows)]
-fn process_names() -> Option<Vec<String>> {
+fn process_names() -> Option<Vec<(String, u32)>> {
     #[repr(C)]
     struct ProcessEntry {
         size: u32,
@@ -80,7 +82,7 @@ fn process_names() -> Option<Vec<String>> {
         let mut ok = Process32FirstW(snapshot, &mut entry);
         while ok != 0 {
             let len = entry.exe_file.iter().position(|&c| c == 0).unwrap_or(entry.exe_file.len());
-            names.push(String::from_utf16_lossy(&entry.exe_file[..len]));
+            names.push((String::from_utf16_lossy(&entry.exe_file[..len]), entry.threads));
             ok = Process32NextW(snapshot, &mut entry);
         }
         CloseHandle(snapshot);
@@ -89,7 +91,7 @@ fn process_names() -> Option<Vec<String>> {
 }
 
 #[cfg(not(windows))]
-fn process_names() -> Option<Vec<String>> {
+fn process_names() -> Option<Vec<(String, u32)>> {
     None
 }
 
@@ -302,11 +304,18 @@ mod tests {
 
     #[test]
     fn finds_the_game_process_whatever_the_case() {
-        let list = |names: &[&str]| names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+        let list = |names: &[&str]| names.iter().map(|n| (n.to_string(), 40)).collect::<Vec<_>>();
         assert!(has_game(&list(&["explorer.exe", "Aion.bin"])));
         assert!(has_game(&list(&["AION.BIN"])));
         assert!(!has_game(&list(&["explorer.exe", "aion.bin.exe", "aion.exe"])));
         assert!(!has_game(&[]));
+    }
+
+    #[test]
+    fn a_closed_game_left_without_threads_is_not_running() {
+        // the client exited, but something still holds its process: no threads, no window
+        assert!(!has_game(&[("aion.bin".to_string(), 0), ("aion.bin".to_string(), 0)]));
+        assert!(has_game(&[("aion.bin".to_string(), 0), ("aion.bin".to_string(), 57)]));
     }
 
     #[test]
