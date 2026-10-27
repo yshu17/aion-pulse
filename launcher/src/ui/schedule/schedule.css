@@ -54,10 +54,12 @@
 .sch-axis span { position: absolute; right: 6px; transform: translateY(-50%); white-space: nowrap; }
 .sch-axis .quiet { font-size: 10px; line-height: 1.1; }
 .sch-axis .nowchip { right: auto; left: 0; transform: translate(-2px, -50%); background: var(--accent); color: var(--accent-text); font-weight: 700; border-radius: 6px; padding: 1px 6px; z-index: 4; }
-.sch-col { position: relative; background: rgba(255, 255, 255, .018); border-radius: 10px; touch-action: none; cursor: crosshair; }
-.sch-col.today { background: rgba(255, 140, 26, .055); }
+/* the hatching is the background of the whole column, the same from the top to the end of the day */
+.sch-col { --hatch: repeating-linear-gradient(135deg, rgba(255, 255, 255, .035) 0 6px, transparent 6px 12px);
+  position: relative; background: var(--hatch), rgba(255, 255, 255, .018); border-radius: 10px; touch-action: none; cursor: crosshair; }
+.sch-col.today { background: var(--hatch), rgba(255, 140, 26, .055); }
 .sch-hl { position: absolute; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, .05); pointer-events: none; }
-.sch-fold { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .035) 0 6px, transparent 6px 12px); border-top: 1px dashed #4a505e; border-bottom: 1px dashed #4a505e; pointer-events: none; }
+.sch-fold { position: absolute; left: 0; right: 0; border-top: 1px dashed #4a505e; border-bottom: 1px dashed #4a505e; pointer-events: none; }
 .sch-fold.resets { display: flex; align-items: center; justify-content: center; }
 .sch-resets { position: relative; width: 100%; padding: 0 4px; display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; font-size: 11px; color: #ffc27a; pointer-events: none; }
 .sch-resets span { background: var(--accent-subtle); border: 1px solid #6b4a1a; border-radius: 6px; padding: 0 6px; white-space: nowrap; }
