@@ -8,7 +8,7 @@ import { bellKey } from "../../core/schedule/timing";
 import type { Schedule } from "./useSchedule";
 
 const SPAN = 24 * 60 * MINUTE;
-const BEFORE = 60 * MINUTE;
+const BEFORE = SPAN / 2; // «now» stays in the middle, the events slide past it
 
 interface Props {
   schedule: Schedule;
@@ -17,7 +17,7 @@ interface Props {
   onSelect(event: Occurrence["event"]): void;
 }
 
-/** «Now and the next 24 hours»: a clock, what comes next, and the events on a line with the NOW marker. */
+/** «Now» in the middle of 24 hours (12 before, 12 after): a clock, what comes next, and the events sliding past the NOW marker. */
 export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const { now } = schedule;
   const start = now - BEFORE;
@@ -35,7 +35,7 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const height = 24 + laneCount * 27;
 
   return (
-    <section className="sch-ribbon card" aria-label="Сейчас и ближайшие 24 часа">
+    <section className="sch-ribbon card" aria-label="12 часов до и после текущего момента">
       <div className="rl">
         <div className="row">
           <div className="big">{nowText}<small>{zone === "msk" ? "МСК" : "у тебя"}</small></div>
