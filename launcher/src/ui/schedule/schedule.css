@@ -209,3 +209,8 @@
 .sch-resetmenu .btn.sm { height: var(--ctl-h-sm); padding: 0 12px; font-size: 12px; }
 .sch-resetmenu .hint .link { font-size: 12px; }
 .sch-resets span.belled { border-color: var(--accent); color: #ffd9a8; }
+
+/* «+ Откат»: the colour of the reset cards; the bell for everything sits next to it */
+.btn.rs-add { background: #3a2810; border-color: #b36a16; color: #ffd19a; }
+.btn.rs-add:hover, .btn.rs-add.on { background: #4a3314; border-color: #d98a2c; color: #ffe0b8; }
+.sch-bar .btn.bell-all.on { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }

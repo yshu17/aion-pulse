@@ -190,9 +190,12 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
           )}
         </div>
         <span className="spacer" />
-        <ResetsMenu schedule={schedule} />
         <SourceMenu schedule={schedule} />
-        <button className="btn primary" onClick={newByButton}><IconPlus />Своё событие</button>
+        <button className={`btn sq bell-all${schedule.allBells ? " on" : ""}`} aria-pressed={schedule.allBells} onClick={schedule.toggleAllBells}
+          title={schedule.allBells ? "Выключить напоминания обо всех событиях и откатах" : "Напоминать обо всех событиях и откатах"}
+          aria-label="Напоминать обо всех событиях и откатах"><IconBell on={schedule.allBells} /></button>
+        <ResetsMenu schedule={schedule} />
+        <button className="btn primary" onClick={newByButton}><IconPlus />Событие</button>
       </div>
 
       <Ribbon schedule={schedule} zone={zone} onZone={setZone} onSelect={setSelected} />

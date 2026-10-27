@@ -292,6 +292,15 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     hiddenCount: custom.current.data.removed.length,
     resets,
     resetBells,
+    /** Every event shown and every reset reminds. */
+    allBells: visible.length + resets.length > 0 && visible.every((e) => bells.has(bellKey(e))) && resets.every((r) => resetBells.has(r.id)),
+    /** One bell for the whole schedule: all shown events and resets on, unless they all are on already (then off). */
+    toggleAllBells: () => {
+      const keys = [...visible.map(bellKey), ...resets.map((r) => resetBellKey(r.id))];
+      const on = keys.every((k) => bells.has(k));
+      const rest = cfg.remind_events.filter((k) => !keys.includes(k));
+      boot.save({ remind_events: on ? rest : [...rest, ...keys] });
+    },
     /** One bell for the whole block: all on unless they all are on already. */
     toggleAllResets: () => {
       const keys = resets.map((r) => resetBellKey(r.id));

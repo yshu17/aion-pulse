@@ -2,17 +2,17 @@ import { useEffect, useRef, useState } from "react";
 
 import { daysText, Reset, ResetDraft } from "../../core/schedule/resets";
 import { DAYS } from "../../core/schedule/reminders";
-import { IconBell, IconClose, IconPencil, IconPlus } from "../icons";
+import { IconBell, IconClose, IconPencil, IconPlus, IconReset } from "../icons";
 import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
 const SHORT: Record<string, string> = { mon: "Пн", tue: "Вт", wed: "Ср", thu: "Чт", fri: "Пт", sat: "Сб", sun: "Вс" };
 
 /**
- * The «Откаты» button of the schedule bar and its menu. Each reset is one line: bell, name, days and time, and on the
+ * The «+ Откат» button of the schedule bar and its menu. Each reset is one line: bell, name, days and time, and on the
  * right «изменить» and «удалить». «Изменить» opens the line as a small form (name, days, time); «Свой откат» opens the
  * same form empty. A server reset that is deleted is only hidden (a link brings it back), and any deletion can be undone
- * for 30 s. The button's bell is filled when every reset reminds, and has a dot when only some do.
+ * for 30 s.
  */
 export function ResetsMenu({ schedule }: { schedule: Schedule }) {
   const { resets, resetBells } = schedule;
@@ -20,7 +20,6 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
   const [editing, setEditing] = useState<string | null>(null); // the id of the reset in the form, "new" for a new one
   const root = useRef<HTMLDivElement>(null);
   const all = resets.length > 0 && resets.every((r) => resetBells.has(r.id));
-  const some = resetBells.size > 0 && !all;
   useYields("resets", () => setOpen(false));
 
   useEffect(() => {
@@ -38,10 +37,10 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
 
   return (
     <div className="sch-links" ref={root}>
-      <button className={`btn sch-linkbtn${open ? " on" : ""}${some ? " alert" : ""}`} aria-haspopup="dialog" aria-expanded={open}
-        title="Откаты: время и напоминания" aria-label="Откаты: время, напоминания, свои откаты"
+      <button className={`btn rs-add${open ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={open}
+        title="Откаты: время, дни, свои откаты" aria-label="Откат: добавить или изменить"
         onClick={() => { if (!open) announce("resets"); setOpen(!open); }}>
-        <IconBell on={all} />Откаты
+        <IconReset />+ Откат
       </button>
       {open && (
         <div className="sch-linkmenu sch-resetmenu" role="dialog" aria-label="Откаты">
