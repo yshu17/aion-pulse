@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { naiveMs } from "../../core/chat/tailer";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, ribbonLanes, slotOf, toneOf, yOf } from "./layout";
+import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, ribbonLanes, ribbonX, slotOf, toneOf, yOf } from "./layout";
 
 const ev = (day: string, start: string, end: string, name = "x", color = "Голубой"): ScheduleEvent => ({ day, start, end, name, color });
 
@@ -100,6 +100,17 @@ describe("schedule layout", () => {
     const base = naiveMs(2026, 10, 21, 12, 0);
     const at = (h: number, len: number) => ({ event: ev("wed", "1:00", "2:00"), start: base + h * 3600000, end: base + (h + len) * 3600000 });
     expect(ribbonLanes([at(8, 4), at(9, 1), at(10, 1), at(12, 1)])).toEqual([0, 1, 1, 0]);
+  });
+
+  it("the ribbon is a magnifier: the 4 hours around now take the middle 60 %, the 8 hours at each side the 20 %", () => {
+    const H = 3_600_000;
+    expect(ribbonX(0)).toBe(0.5);
+    expect(ribbonX(-4 * H)).toBeCloseTo(0.2);
+    expect(ribbonX(4 * H)).toBeCloseTo(0.8);
+    expect(ribbonX(12 * H)).toBeCloseTo(1);
+    expect(ribbonX(-12 * H)).toBeCloseTo(0);
+    expect(ribbonX(30 * H)).toBe(1); // outside the ribbon: held at its edge
+    expect(ribbonX(H) - ribbonX(0)).toBeCloseTo(3 * (ribbonX(9 * H) - ribbonX(8 * H))); // an hour in the middle is 3× wider
   });
 
   it("writes the countdown", () => {

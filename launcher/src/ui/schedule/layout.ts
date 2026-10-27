@@ -231,6 +231,21 @@ export function occurrencesIn(events: ScheduleEvent[], from: number, to: number)
 }
 
 /** Lanes for a list of overlapping occurrences on the ribbon: the lane of each, in order. */
+const HOUR_MS = 3_600_000;
+export const RIBBON_HALF = 12 * HOUR_MS; // the ribbon shows 12 hours before now and 12 after
+export const RIBBON_FOCUS = 4 * HOUR_MS; // the hours on each side of now that are magnified
+const FOCUS_X = 0.3; // the magnified hours take 30 % of the width on each side of now (60 % in all)
+
+/**
+ * Where a moment `ms` from now is on the ribbon, 0…1: a magnifier, the 4 hours on each side of now take the middle 60 %,
+ * the other 8 hours on each side are squeezed into the outer 20 %. Outside the ribbon: its edge.
+ */
+export function ribbonX(ms: number): number {
+  const d = Math.min(RIBBON_HALF, Math.abs(ms));
+  const x = d <= RIBBON_FOCUS ? (d / RIBBON_FOCUS) * FOCUS_X : FOCUS_X + ((d - RIBBON_FOCUS) / (RIBBON_HALF - RIBBON_FOCUS)) * (0.5 - FOCUS_X);
+  return 0.5 + Math.sign(ms) * x;
+}
+
 export function ribbonLanes(items: Occurrence[]): number[] {
   const ends: number[] = [];
   return items.map((o) => {
