@@ -66,10 +66,18 @@ async function overlayAnchor(): Promise<Point | null> {
   return { x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale), y: area.y + Math.round(MARGIN * scale) };
 }
 
-async function showOverlayWindow(): Promise<Window | null> {
+/** The bottom-right corner of the work area of this monitor: where the notifications come while the program window is open. */
+async function cornerAnchor(): Promise<Point | null> {
+  const area = await workArea();
+  if (!area) return null;
+  const scale = await getCurrentWindow().scaleFactor();
+  return { x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale), y: area.y + area.height - Math.round(MARGIN * scale) };
+}
+
+async function showOverlayWindow(where: () => Promise<Point | null>): Promise<Window | null> {
   const overlay = await Window.getByLabel(OVERLAY);
   if (overlay === null) return null;
-  const anchor = await overlayAnchor();
+  const anchor = await where();
   if (anchor) {
     await overlay.setPosition(new PhysicalPosition(anchor.x, anchor.y));
     await emitTo(OVERLAY, "pulse-place", anchor); // the overlay page puts its window exactly, for the side it opens notifications to
@@ -80,12 +88,15 @@ async function showOverlayWindow(): Promise<Window | null> {
 
 /** Hide the main window and show the overlay where the user left it, or in the top-right corner of this monitor. */
 export async function enterOverlay(): Promise<void> {
-  if (await showOverlayWindow()) await getCurrentWindow().hide();
+  if (await showOverlayWindow(overlayAnchor)) await getCurrentWindow().hide();
 }
 
-/** The program window stays; the overlay shows only the notifications, over the game (the window may be under it). */
+/**
+ * The program window stays; the overlay shows only the notifications, over the game (the window may be under it). They
+ * come from the bottom-right corner of the screen, not from where the strip was last time.
+ */
 export async function showPopup(): Promise<void> {
-  await showOverlayWindow();
+  await showOverlayWindow(cornerAnchor);
 }
 
 export async function hidePopup(): Promise<void> {
