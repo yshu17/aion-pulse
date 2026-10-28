@@ -43,7 +43,7 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
     return () => observer.disconnect();
   }, []);
   const zoom = ribbonZoom(width); // the narrower the ribbon, the fewer hours around now and the bigger they are
-  const start = now - zoom.half;
+  const start = now - zoom.back; // at most 3 hours of the past
   const items = useMemo(() => occurrencesIn(schedule.visible, start, now + zoom.half), [schedule.visible, start, now, zoom.half]);
   const next = items.find((o) => o.start > now);
   const shift = zoneShift(zone);
@@ -75,7 +75,7 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const height = 24 + laneCount * 27;
 
   return (
-    <section className="sch-ribbon card" aria-label="12 часов до и после текущего момента">
+    <section className="sch-ribbon card" aria-label="Последние часы и ближайшие события">
       <div className="rl">
         <div className="row">
           <div className="big">{nowText}<small>{zone === "msk" ? "МСК" : "у тебя"}</small></div>

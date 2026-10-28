@@ -235,34 +235,42 @@ const HOUR_MS = 3_600_000;
 export const RIBBON_HALF = 12 * HOUR_MS; // a wide ribbon shows 12 hours before now and 12 after
 export const RIBBON_FOCUS = 4 * HOUR_MS; // the hours on each side of now that are magnified on a wide ribbon
 
-/** How the ribbon looks at a width: the hours shown on each side of now, the magnified ones, their part of the width. */
-export interface RibbonZoom { half: number; focus: number; focusX: number }
-export const WIDE_ZOOM: RibbonZoom = { half: RIBBON_HALF, focus: RIBBON_FOCUS, focusX: 0.3 };
-const WIDE_PX = 1000; // this wide and wider: the whole 12 + 12 hours
-const NARROW_PX = 500; // this narrow and narrower: 6 + 6 hours, the magnified ones take 76 % of the width
+/**
+ * How the ribbon looks at a width: the hours shown after now (`half`) and before it (`back`, never more than 3: what is
+ * over matters little), the hours on each side that are magnified (`focus`) and their part of the width (`focusX` each).
+ */
+export interface RibbonZoom { half: number; back: number; focus: number; focusX: number }
+export const RIBBON_BACK = 3 * HOUR_MS; // at most 3 hours of the past on the ribbon
+export const WIDE_ZOOM: RibbonZoom = { half: RIBBON_HALF, back: RIBBON_BACK, focus: RIBBON_FOCUS, focusX: 0.3 };
+const WIDE_PX = 1000; // this wide and wider: 12 hours ahead
+const NARROW_PX = 500; // this narrow and narrower: 6 hours ahead, the magnified hours take 76 % of the width
 
 /**
- * The narrower the ribbon, the stronger its focus on now: fewer hours shown (12 on each side at 1000 px and wider, down to
- * 6 at 500 px), fewer magnified hours (4, then 3 below 800 px), and the magnified ones take more of the width (60 % to 76 %).
+ * The narrower the ribbon, the stronger its focus on now: fewer hours ahead (12 at 1000 px and wider, down to 6 at 500 px),
+ * fewer magnified hours (4, then 3 below 800 px), and the magnified ones take more of the width (60 % to 76 %).
  */
 export function ribbonZoom(width: number): RibbonZoom {
   const t = Math.min(1, Math.max(0, (WIDE_PX - width) / (WIDE_PX - NARROW_PX))); // 0 wide … 1 narrow
-  return {
-    half: Math.round(12 - 6 * t) * HOUR_MS,
-    focus: (width < 800 ? 3 : 4) * HOUR_MS,
-    focusX: 0.3 + 0.08 * t,
-  };
+  const half = Math.round(12 - 6 * t) * HOUR_MS;
+  return { half, back: Math.min(RIBBON_BACK, half), focus: (width < 800 ? 3 : 4) * HOUR_MS, focusX: 0.3 + 0.08 * t };
 }
 
 /**
- * Where a moment `ms` from now is on the ribbon, 0…1: a magnifier, the `focus` hours on each side of now take the middle
- * (2 · focusX of the width), the other hours up to `half` are squeezed into the rest. Outside the ribbon: its edge.
+ * Where a moment `ms` from now is on the ribbon, 0…1 from its left edge (`back` hours ago) to its right edge (`half`
+ * hours ahead): a magnifier, the hours within `focus` of now are wide (together 2 · focusX of the width), the others
+ * squeezed into the rest. With 3 hours of the past, «now» is left of the middle. Outside the ribbon: its edge.
  */
 export function ribbonX(ms: number, zoom: RibbonZoom = WIDE_ZOOM): number {
-  const { half, focus, focusX } = zoom;
-  const d = Math.min(half, Math.abs(ms));
-  const x = d <= focus ? (d / focus) * focusX : focusX + ((d - focus) / (half - focus)) * (0.5 - focusX);
-  return 0.5 + Math.sign(ms) * x;
+  const { half, back, focus, focusX } = zoom;
+  const wide = Math.min(back, focus) + Math.min(half, focus); // magnified hours (ms)
+  const narrow = Math.max(0, back - focus) + Math.max(0, half - focus); // squeezed hours (ms)
+  const wideShare = narrow > 0 ? 2 * focusX : 1;
+  const rate = (u: number) => (Math.abs(u) <= focus ? wideShare / wide : (1 - wideShare) / narrow); // width per ms at u
+  // the width from the left edge to t: the magnified and the squeezed parts of [-back, t]
+  const part = (from: number, to: number, lo: number, hi: number) => Math.max(0, Math.min(to, hi) - Math.max(from, lo));
+  const t = Math.max(-back, Math.min(half, ms));
+  const inWide = part(-back, t, -focus, focus);
+  return inWide * rate(0) + (t + back - inWide) * (narrow > 0 ? rate(focus + 1) : 0);
 }
 
 /** What an event on the ribbon needs: its time (ms from now) and the width of its name, px. */
@@ -273,19 +281,19 @@ const FOCUS_FLOOR = 0.6; // a magnified hour gives room only after the squeezed 
 /**
  * The ribbon's scale with room for the names: the magnifier of `ribbonX`, then each hour that holds an event whose name
  * does not fit is stretched, and the room is taken from the squeezed hours (beyond the magnified 4) on the same side of
- * now: «now» stays in the middle, the ribbon keeps its width, the other side does not move. Returns ms-from-now → px.
+ * now: «now» stays where it is, the ribbon keeps its width, the other side does not move. Returns ms-from-now → px.
  */
 export function ribbonScale(needs: RibbonNeed[], width: number, zoom: RibbonZoom = WIDE_ZOOM): (ms: number) => number {
   const H = HOUR_MS;
   const hours = Math.round(zoom.half / H);
-  const first = -hours; // segment k covers [k·H, (k+1)·H)
-  const w = Array.from({ length: 2 * hours }, (_, i) => (ribbonX((first + i + 1) * H, zoom) - ribbonX((first + i) * H, zoom)) * width);
+  const first = -Math.round(zoom.back / H); // segment k covers [k·H, (k+1)·H)
+  const w = Array.from({ length: hours - first }, (_, i) => (ribbonX((first + i + 1) * H, zoom) - ribbonX((first + i) * H, zoom)) * width);
   const base = [...w];
   const focus = zoom.focus / H;
   // the nearest events first: the room near now matters most
   const order = [...needs].sort((a, b) => Math.abs(a.from + a.to) - Math.abs(b.from + b.to));
   for (const need of [...order, ...order, ...order]) { // a few rounds: room given for one name may be taken back for another
-    const from = Math.max(-zoom.half, need.from), to = Math.min(zoom.half, need.to);
+    const from = Math.max(-zoom.back, need.from), to = Math.min(zoom.half, need.to);
     if (to <= from) continue;
     const cover = w.map((_, i) => {
       const s = (first + i) * H, e = s + H;
@@ -320,7 +328,7 @@ export function ribbonScale(needs: RibbonNeed[], width: number, zoom: RibbonZoom
   const starts: number[] = [];
   w.reduce((x, wi, i) => { starts[i] = x; return x + wi; }, 0);
   return (ms: number) => {
-    const t = Math.max(-zoom.half, Math.min(zoom.half, ms));
+    const t = Math.max(-zoom.back, Math.min(zoom.half, ms));
     const i = Math.min(w.length - 1, Math.floor(t / H) - first);
     return starts[i] + ((t - (first + i) * H) / H) * w[i];
   };
