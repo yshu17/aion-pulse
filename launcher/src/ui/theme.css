@@ -34,6 +34,13 @@
   --pop-border: var(--border-control);
   --pop-shadow: 0 14px 34px rgba(0, 0, 0, .6);
   --focus-ring: 0 0 0 3px rgba(255, 140, 26, .18);
+  /* motion: every change of state is smooth; prefers-reduced-motion turns all of it off (below) */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);  /* things that appear or answer the pointer */
+  --ease-in: cubic-bezier(.4, 0, 1, 1);     /* things that leave */
+  --t-fast: 120ms;                          /* hover, press, colour */
+  --t: 180ms;                               /* menus, panels, a tab's content */
+  --t-slow: 260ms;                          /* notifications coming in */
+  --t-leave: 160ms;                         /* anything leaving (LEAVE_MS in motion.tsx) */
   --grade-common: #e9e7e4;
   --grade-rare: #6fd56f;
   --grade-legend: #5fa8ff;

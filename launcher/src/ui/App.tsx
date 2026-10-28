@@ -5,6 +5,7 @@ import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
 import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
 import { ItemsPanel } from "./ItemsPanel";
+import { Presence } from "./motion";
 import { SettingsPanel } from "./SettingsPanel";
 import { enterOverlay, hidePopup, leaveOverlay, loadLook, onAction, sendState, showPopup } from "./overlayWindow";
 import { ScheduleTab } from "./schedule/ScheduleTab";
@@ -193,7 +194,7 @@ function Screen({ boot }: { boot: Boot }) {
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
-      {settings && <SettingsPanel boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}
+      <Presence show={settings}><SettingsPanel boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} /></Presence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
     </div>

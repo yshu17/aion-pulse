@@ -63,3 +63,32 @@
 .sch-form .days button { width: 40px; height: var(--ctl-h-sm); border-radius: var(--r-ctl); }
 .sch-form .o { height: var(--ctl-h-sm); padding: 0 10px; border-radius: var(--r-ctl); }
 .opt { border-radius: var(--r-ctl); }
+
+/* motion: smooth hover and press, layers that fade in and out, notifications that slide (tokens in theme.css) */
+button, .btn, .inp, input, select, textarea, .tab, .sch-chip, .sch-card, .sch-ribbon .ev, .x, .sch-x, .link, .ov-gear, .sch-nav {
+  transition: background-color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out), opacity var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
+}
+button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97); }
+.sch-card:active { transform: scale(.985); }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+@keyframes pop-out { to { opacity: 0; transform: translateY(-4px) scale(.98); } }
+@keyframes toast-in { from { opacity: 0; transform: translateX(16px); } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(16px); } }
+@keyframes tab-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes fade-out { to { opacity: 0; } }
+.sch-linkmenu, .sch-menu, .ov-menu, .ov-card, .confirm, .sch-form.float { animation: pop-in var(--t) var(--ease-out); }
+@keyframes undo-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+@keyframes undo-out { to { opacity: 0; transform: translate(-50%, 8px); } }
+.sch-undo { animation: undo-in var(--t) var(--ease-out); } /* it is centred by a transform: its own keyframes keep that */
+.toast { animation: toast-in var(--t-slow) var(--ease-out); }
+main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
+/* leaving: the wrapper of a closing layer adds no box; what is inside fades the way it came */
+.presence { display: contents; }
+.presence.leaving > *, .toast.leaving { pointer-events: none; }
+.presence.leaving > .sch-linkmenu, .presence.leaving > .sch-menu, .presence.leaving > .ov-menu, .presence.leaving > .ov-card,
+.presence.leaving > .sch-form { animation: pop-out var(--t-leave) var(--ease-in) forwards; }
+.presence.leaving > .sch-undo { animation: undo-out var(--t-leave) var(--ease-in) forwards; }
+.presence.leaving > .sch-drawer, .presence.leaving > .panel { animation: toast-out var(--t-leave) var(--ease-in) forwards; }
+.presence.leaving > .scrim, .presence.leaving > .sch-scrim { animation: fade-out var(--t-leave) var(--ease-in) forwards; }
+.toast.leaving { animation: toast-out var(--t-leave) var(--ease-in) forwards; }

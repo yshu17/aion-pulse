@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { IconExternal, IconLink, IconReset } from "../icons";
+import { Presence } from "../motion";
 import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
@@ -42,7 +43,7 @@ export function SourceMenu({ schedule }: { schedule: Schedule }) {
       <button className={`btn sch-linkbtn${open ? " on" : ""}${site?.state === "changed" ? " alert" : ""}`} aria-haspopup="dialog" aria-expanded={open}
         aria-label={site?.state === "changed" ? "Расписание на сайте обновилось: ссылка и проверка" : "Расписание на сайте: ссылка и проверка обновления"}
         title="Ссылка на расписание и проверка обновления" onClick={() => { if (!open) announce("source"); setOpen(!open); }}><IconLink /></button>
-      {open && (
+      <Presence show={open}>
         <div className="sch-linkmenu" role="dialog" aria-label="Расписание на сайте">
           <h3>Расписание на сайте</h3>
           <label htmlFor="sch-source">Ссылка</label>
@@ -61,7 +62,7 @@ export function SourceMenu({ schedule }: { schedule: Schedule }) {
           {site && <div className={`result ${site.state}`} role="status">{site.text}</div>}
           <p className="hint">Проверяется картинка расписания: ссылка на статью с картинкой или на саму картинку. Новую сетку пока вносим вручную.</p>
         </div>
-      )}
+      </Presence>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
+import { Presence, useLeaving } from "./motion";
 import { IconClose, IconExpand, IconSettings } from "./icons";
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
 import { loadLook, onPlace, onState, onWindowMoved, OverlayEvent, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
@@ -10,6 +11,7 @@ const STRIP_CSS = 36; // the height of the strip when it is not drawn (a popup o
 const RAISE_MS = 3000; // how often the window is put above other always-on-top windows (a game can take the top place)
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
+const NO_TOASTS: OverlayState["toasts"] = [];
 const HOVER_MS = 350; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
@@ -135,6 +137,7 @@ export function Overlay() {
     return () => clearTimeout(timer);
   }, [several, turn, look.turnSec]);
 
+  const toasts = useLeaving(state?.toasts ?? NO_TOASTS, (t) => t.id);
   const popup = state?.popup === true; // only the notifications: the program window is open
   const live = state?.watching && !state.problem;
   // the strip shows the state only by the dot; the words are in its hint and in the card shown on hover
@@ -182,7 +185,7 @@ export function Overlay() {
         <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность и фокус"
           onClick={() => setMenu(!menu)}><IconSettings /></button>
       </div>
-      {card && !menu && (
+      <Presence show={card && !menu}>
         <div className="ov-card" role="tooltip">
           {slides.map(({ event: e, running: now }) => (
             <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
@@ -195,8 +198,8 @@ export function Overlay() {
           <div className="ov-card-status muted"><span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />{state?.problem || status}</div>
           <div className="ov-card-hint">{several ? "Щелчок: следующее событие. " : ""}Потяни, чтобы передвинуть. Правый клик: меню.</div>
         </div>
-      )}
-      {menu && (
+      </Presence>
+      <Presence show={menu}>
         <div className="ov-menu" role="menu">
           <label className="ov-opacity">
             <span>Прозрачность</span>
@@ -219,11 +222,11 @@ export function Overlay() {
             <span>Не забирать фокус у игры: после клика можно сразу писать в игре</span>
           </label>
         </div>
-      )}
+      </Presence>
       </>
       )}
-      {state?.toasts.map((toast) => (
-        <div key={toast.id} className="toast">
+      {toasts.map(({ item: toast, leaving }) => (
+        <div key={toast.id} className={`toast${leaving ? " leaving" : ""}`}>
           {toast.icon && <Icon name={toast.icon} size={40} />}
           <div className="toast-body">
             <div className="toast-title"><b>{toast.title}</b>

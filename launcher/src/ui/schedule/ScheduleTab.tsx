@@ -7,6 +7,7 @@ import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
+import { Presence } from "../motion";
 import { ResetsMenu } from "./ResetsMenu";
 import { SourceMenu } from "./SourceMenu";
 import { announce, useYields } from "./popover";
@@ -216,27 +217,33 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
         <span className="own-legend"><i />своё событие</span>
       </div>
 
-      {selected && !form && (
-        <Drawer event={selected} schedule={schedule} onClose={() => setSelected(null)} onEdit={openEdit}
-          onDelete={(e) => { schedule.removeOne(e); setSelected(null); }} onDeleteSeries={(e) => { schedule.removeSeries(e); setSelected(null); }} />
-      )}
+      <Presence show={selected !== null && !form}>
+        {selected && (
+          <Drawer event={selected} schedule={schedule} onClose={() => setSelected(null)} onEdit={openEdit}
+            onDelete={(e) => { schedule.removeOne(e); setSelected(null); }} onDeleteSeries={(e) => { schedule.removeSeries(e); setSelected(null); }} />
+        )}
+      </Presence>
 
-      {form && (
-        <EventForm title={form.title} draft={form.draft} placement={form.placement} onChange={(draft) => setForm({ ...form, draft })}
-          onSave={save} onCancel={closeForm} />
-      )}
+      <Presence show={form !== null}>
+        {form && (
+          <EventForm title={form.title} draft={form.draft} placement={form.placement} onChange={(draft) => setForm({ ...form, draft })}
+            onSave={save} onCancel={closeForm} />
+        )}
+      </Presence>
 
-      {menu && (
-        <ContextMenu menu={menu} schedule={schedule} onEdit={openEdit} onCopy={copyAsOwn} onClose={() => setMenu(null)} />
-      )}
+      <Presence show={menu !== null}>
+        {menu && <ContextMenu menu={menu} schedule={schedule} onEdit={openEdit} onCopy={copyAsOwn} onClose={() => setMenu(null)} />}
+      </Presence>
 
-      {schedule.undo && (
-        <div className="sch-undo" role="status">
-          <span>{schedule.undo.label}</span>
-          <button className="btn primary" onClick={schedule.undoLast}>Отменить удаление</button>
-          <UndoLeft until={schedule.undo.until} />
-        </div>
-      )}
+      <Presence show={schedule.undo !== null}>
+        {schedule.undo && (
+          <div className="sch-undo" role="status">
+            <span>{schedule.undo.label}</span>
+            <button className="btn primary" onClick={schedule.undoLast}>Отменить удаление</button>
+            <UndoLeft until={schedule.undo.until} />
+          </div>
+        )}
+      </Presence>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import { Icon } from "./Icon";
 import { IconClose } from "./icons";
+import { useLeaving } from "./motion";
 import type { Toast } from "./useWatch";
 
 interface Props {
@@ -13,11 +14,12 @@ interface Props {
 
 /** The notification stack: bottom-right of the window for now; the same cards go to an overlay window later. */
 export function Toasts({ toasts, onAccept, onRetry, onSnooze, onDismiss }: Props) {
-  if (!toasts.length) return null;
+  const shown = useLeaving(toasts, (t) => t.note.id);
+  if (!shown.length) return null;
   return (
     <div className="toasts" role="region" aria-label="Уведомления" aria-live="polite">
-      {toasts.map((toast) => (
-        <div key={toast.note.id} className={`toast ${toast.note.kind}`}>
+      {shown.map(({ item: toast, leaving }) => (
+        <div key={toast.note.id} className={`toast ${toast.note.kind}${leaving ? " leaving" : ""}`}>
           {toast.icon && <Icon name={toast.icon} size={40} />}
           <div className="toast-body">
             <div className="toast-title"><b>{toast.note.title}</b>

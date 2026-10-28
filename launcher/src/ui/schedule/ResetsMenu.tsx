@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { daysText, Reset, ResetDraft } from "../../core/schedule/resets";
 import { DAYS } from "../../core/schedule/reminders";
 import { IconBell, IconClose, IconPencil, IconPlus } from "../icons";
+import { Presence } from "../motion";
 import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
@@ -42,7 +43,7 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
         onClick={() => { if (!open) announce("resets"); setOpen(!open); }}>
         + Откат
       </button>
-      {open && (
+      <Presence show={open}>
         <div className="sch-linkmenu sch-resetmenu" role="dialog" aria-label="Откаты">
           <div className="rs-head">
             <h3>Откаты</h3>
@@ -75,7 +76,7 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
             {schedule.hiddenResets > 0 && <> Скрыто откатов сервера: {schedule.hiddenResets}. <button className="link accent" onClick={schedule.restoreResets}>Вернуть</button></>}
           </p>
         </div>
-      )}
+      </Presence>
     </div>
   );
 }
