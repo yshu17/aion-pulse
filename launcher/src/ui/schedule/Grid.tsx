@@ -208,6 +208,7 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
                       onMenu(p.event, r.left + 20, r.top + 20);
                     }
                   }}>
+                  {bell && <span className="bell-mark" aria-hidden><IconBell on /></span>}
                   <span className="acts">
                     <button className="a" aria-label={`Изменить «${p.event.name}»`} title="Изменить" onClick={(e) => { e.stopPropagation(); onEdit(p.event); }}><IconPencil /></button>
                     <button className="a x" aria-label={`Удалить «${p.event.name}»`} title="Удалить" onClick={(e) => { e.stopPropagation(); onDelete(p.event); }}><IconClose /></button>
