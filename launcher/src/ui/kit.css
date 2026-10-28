@@ -76,7 +76,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 @keyframes toast-out { to { opacity: 0; transform: translateX(16px); } }
 @keyframes tab-in { from { opacity: 0; transform: translateY(4px); } }
 @keyframes fade-out { to { opacity: 0; } }
-.sch-linkmenu, .sch-menu, .ov-menu, .ov-card, .confirm, .sch-form.float { animation: pop-in var(--t) var(--ease-out); }
+.sch-linkmenu, .sch-menu, .ov-menu, .confirm, .sch-form.float { animation: pop-in var(--t) var(--ease-out); }
 @keyframes undo-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @keyframes undo-out { to { opacity: 0; transform: translate(-50%, 8px); } }
 .sch-undo { animation: undo-in var(--t) var(--ease-out); } /* it is centred by a transform: its own keyframes keep that */
@@ -86,7 +86,7 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 /* leaving: the wrapper of a closing layer adds no box; what is inside fades the way it came */
 .presence { display: contents; }
 .presence.leaving > *, .toast.leaving { pointer-events: none; }
-.presence.leaving > .sch-linkmenu, .presence.leaving > .sch-menu, .presence.leaving > .ov-menu, .presence.leaving > .ov-card,
+.presence.leaving > .sch-linkmenu, .presence.leaving > .sch-menu, .presence.leaving > .ov-menu,
 .presence.leaving > .sch-form { animation: pop-out var(--t-leave) var(--ease-in) forwards; }
 .presence.leaving > .sch-undo { animation: undo-out var(--t-leave) var(--ease-in) forwards; }
 .presence.leaving > .sch-drawer, .presence.leaving > .panel { animation: toast-out var(--t-leave) var(--ease-in) forwards; }
@@ -95,8 +95,8 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 /* the overlay near the screen bottom opens its card and menu upwards: they come from below and go back down */
 @keyframes pop-in-up { from { opacity: 0; transform: translateY(4px) scale(.98); } }
 @keyframes pop-out-up { to { opacity: 0; transform: translateY(4px) scale(.98); } }
-.overlay.up .ov-card, .overlay.up .ov-menu { animation-name: pop-in-up; }
-.overlay.up .presence.leaving > .ov-card, .overlay.up .presence.leaving > .ov-menu { animation-name: pop-out-up; }
+.overlay.up .ov-menu { animation-name: pop-in-up; }
+.overlay.up .presence.leaving > .ov-menu { animation-name: pop-out-up; }
 
 /* Motion (fx.tsx): the highlight of the chosen option glides between options, the tab line glides between tabs */
 .segmented button { position: relative; z-index: 0; }
@@ -116,5 +116,14 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 @keyframes toast-out-left { to { opacity: 0; transform: translateX(-16px); } }
 .overlay.edge-left .toast { animation-name: toast-in-left; }
 .overlay.edge-left .toast.leaving { animation-name: toast-out-left; }
-/* the hover card of the overlay: twice as slow to appear (0.36 s); it opens after the mouse has rested 2 s on the strip */
-.ov-card { animation-duration: calc(var(--t) * 2); }
+/* the hover card of the overlay: it waits invisible (.hold) until its window is big enough, then fades in slowly (ease in and out, no sudden start) */
+@keyframes card-in { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes card-out { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes card-in-up { from { opacity: 0; transform: translateY(4px); } }
+@keyframes card-out-up { to { opacity: 0; transform: translateY(4px); } }
+.ov-card { animation: card-in 520ms cubic-bezier(.4, 0, .2, 1) both; }
+.ov-card.hold { animation: none; opacity: 0; }
+.presence.leaving > .ov-card { animation: card-out var(--leave-ms, 320ms) cubic-bezier(.4, 0, .6, 1) forwards; }
+.overlay.up .ov-card { animation-name: card-in-up; }
+.overlay.up .presence.leaving > .ov-card { animation-name: card-out-up; }
+.overlay.up .ov-card.hold { animation: none; }

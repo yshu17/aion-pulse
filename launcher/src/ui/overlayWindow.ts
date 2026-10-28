@@ -137,7 +137,7 @@ export const onPlace = (handler: (anchor: Point) => void): Promise<UnlistenFn> =
 export async function placeWindow(x: number, y: number, heightCss: number, keepInWorkArea = true): Promise<Point> {
   const win = getCurrentWindow();
   const scale = await win.scaleFactor();
-  const size = new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(heightCss * window.devicePixelRatio)));
+  const size = new PhysicalSize(Math.round(WIDTH * scale), Math.max(36, Math.ceil(heightCss * window.devicePixelRatio)));
   const area = await workArea();
   const origin = area && keepInWorkArea ? keepInside({ x, y }, { width: size.width, height: size.height }, area) : { x, y };
   // one step: position and size together, so the content never shows a frame out of place

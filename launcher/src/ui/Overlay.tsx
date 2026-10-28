@@ -16,7 +16,7 @@ const SETTLE_MS = 250; // the strip stays this long after the last move before t
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const NO_TOASTS: OverlayState["toasts"] = [];
 const WIDTH_CSS = 380; // the overlay window's width (overlayWindow.ts)
-const HOVER_MS = 2000; // the mouse rests this long on the strip before the card with the full names opens
+const HOVER_MS = 1500; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
 /** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
@@ -25,6 +25,7 @@ export function Overlay() {
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
   const [menu, setMenu] = useState(false);
   const [turn, setTurn] = useState(0); // which of several running events the line shows now
+  const [cardReady, setCardReady] = useState(false); // the window has grown for the card: only then it fades in, so it never shows in a window still too small
   const [card, setCard] = useState(false); // the mouse rests on the strip: the card with the full names is open
   const hover = useRef<ReturnType<typeof setTimeout>>(undefined);
   const press = useRef<{ x: number; y: number } | null>(null); // where the button went down, until it becomes a drag
@@ -51,6 +52,8 @@ export function Overlay() {
     return { left: 1, top: sideRef.current === "up" ? Math.max(1, height - 1) : 1 };
   };
 
+  const placedHeight = useRef(0); // the content height the window was last sized for
+  const [placedTick, setPlacedTick] = useState(0);
   const placing = useRef(false); // one placement at a time: a newer request waits and then uses the newest content
   const again = useRef(false);
 
@@ -78,6 +81,8 @@ export function Overlay() {
       .catch(() => {})
       .finally(() => {
         placedAt.current = performance.now();
+        placedHeight.current = height;
+        setPlacedTick((n) => n + 1);
         placing.current = false;
         if (again.current) { again.current = false; place(); }
       });
@@ -171,6 +176,11 @@ export function Overlay() {
   const status = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу за чатом";
   const current = several ? turn % slides.length : 0; // the slide that is shown
   // the card opens after a short rest on the strip (not while it is dragged or the menu is open), closes when the mouse leaves
+  useEffect(() => { // the card is in the page (invisible); when the window is as tall as the page, it fades in
+    if (!card) { setCardReady(false); return; }
+    const height = root.current?.getBoundingClientRect().height ?? 0;
+    if (placedHeight.current >= height - 2) setCardReady(true);
+  }, [card, placedTick]);
   const rest = () => { clearTimeout(hover.current); hover.current = setTimeout(() => setCard(true), HOVER_MS); };
   const leave = () => { clearTimeout(hover.current); setCard(false); };
   useEffect(() => () => clearTimeout(hover.current), []);
@@ -217,8 +227,8 @@ export function Overlay() {
             onClick={() => setMenu(!menu)}><IconSettings /></button>
         </div>
       </div>
-      <Presence show={card && !menu}>
-        <div className="ov-card" role="tooltip">
+      <Presence show={card && !menu} ms={320}>
+        <div className={`ov-card${cardReady ? "" : " hold"}`} role="tooltip">
           {slides.map(({ event: e, running: now }) => (
             <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
               <span className={`ov-sw t-${e.tone}`} aria-hidden />

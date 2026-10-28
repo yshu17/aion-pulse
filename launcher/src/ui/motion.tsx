@@ -10,17 +10,18 @@ const leaveMs = () => (reduced() ? 0 : LEAVE_MS);
  * Shows its children while `show`, and for a short fade after it turns off: the wrapper adds no box (display: contents),
  * only the class `leaving` the CSS fades by. Turning `show` on again during the fade brings them straight back.
  */
-export function Presence({ show, children }: { show: boolean; children: ReactNode }) {
+export function Presence({ show, children, ms }: { show: boolean; children: ReactNode; ms?: number }) {
+  const leave = reduced() ? 0 : ms ?? LEAVE_MS;
   const [mounted, setMounted] = useState(show);
   const last = useRef<ReactNode>(children);
   if (show) last.current = children;
   useEffect(() => {
     if (show) { setMounted(true); return; }
-    const timer = setTimeout(() => setMounted(false), leaveMs());
+    const timer = setTimeout(() => setMounted(false), leave);
     return () => clearTimeout(timer);
-  }, [show]);
+  }, [show]); // eslint-disable-line react-hooks/exhaustive-deps -- `leave` is read when `show` turns off
   if (!show && !mounted) return null;
-  return <div className={`presence${show ? "" : " leaving"}`}>{show ? children : last.current}</div>;
+  return <div className={`presence${show ? "" : " leaving"}`} style={ms ? { ["--leave-ms" as string]: `${ms}ms` } : undefined}>{show ? children : last.current}</div>;
 }
 
 /**
