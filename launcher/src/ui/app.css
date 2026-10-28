@@ -146,7 +146,9 @@ html.overlay-mode, html.overlay-mode body, html.overlay-mode #root { background:
 .ov-left { flex: none; white-space: nowrap; } .ov-left b { color: var(--accent); font-weight: 700; }
 .ov-state { flex: none; font-size: 12px; }
 .ov-state.going { color: var(--success); font-weight: 600; }
-.ov-gear { flex: none; width: 24px; height: 24px; margin-left: 0; border: 0; border-radius: 50%; background: transparent; color: #a3a8b3; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.ov-tools { flex: none; display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; padding-left: 8px; border-left: 1px solid var(--border); }
+.ov-gear .ico { width: 15px; height: 15px; }
+.ov-gear { flex: none; width: 26px; height: 26px; margin-left: 0; border: 0; border-radius: 50%; background: transparent; color: #a3a8b3; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 .ov-gear:hover, .ov-gear.on { background: var(--surface-3); color: var(--text); }
 .ov-gear:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* the card on hover: every running event and the next one with full names and times, the watch state in words */

@@ -116,3 +116,5 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 @keyframes toast-out-left { to { opacity: 0; transform: translateX(-16px); } }
 .overlay.edge-left .toast { animation-name: toast-in-left; }
 .overlay.edge-left .toast.leaving { animation-name: toast-out-left; }
+/* the hover card of the overlay: twice as slow to appear (0.36 s); it opens after the mouse has rested 2 s on the strip */
+.ov-card { animation-duration: calc(var(--t) * 2); }
