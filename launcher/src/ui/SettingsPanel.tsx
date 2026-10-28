@@ -6,6 +6,10 @@ import type { Config } from "../core/settings/config";
 import { IconCheck, IconClose } from "./icons";
 import type { Boot } from "./useBoot";
 
+const MEDIA = "C:\\Windows\\Media\\"; // the Windows sounds to choose from
+const DEMO_SOUNDS = ["Alarm01.wav", "Windows Ding.wav", "Windows Exclamation.wav", "Windows Notify.wav"]; // the plain browser has no files
+const OWN = "own"; // the choice «Свой файл…»: the path is typed in
+
 const LEADS = [5, 10, 15, 30, 60]; // how many minutes before an event its reminder comes (unless the event has its own)
 
 const MODES: [string, string, string][] = [
@@ -41,6 +45,9 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
   const [word, setWord] = useState("");
   const [saved, setSaved] = useState(false);
   const [logState, setLogState] = useState<"checking" | "found" | "missing" | "browser">(boot.platform ? "checking" : "browser");
+  const [sounds, setSounds] = useState<string[]>(boot.platform ? [] : DEMO_SOUNDS);
+  const known = cfg.sound_path === "" || sounds.some((name) => MEDIA + name === cfg.sound_path);
+  const [own, setOwn] = useState(false); // «Свой файл…» chosen, the path still empty or being typed
   const panel = useRef<HTMLDivElement>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -55,6 +62,8 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
     if (text && !cfg.keywords.some((k) => k.toLowerCase() === text.toLowerCase())) save({ keywords: [...cfg.keywords, text] });
     setWord("");
   };
+
+  useEffect(() => { boot.platform?.windowsSounds().then(setSounds).catch(() => setSounds([])); }, [boot.platform]);
 
   useEffect(() => { // is there a Chat.log at the path?
     const files = boot.platform;
@@ -116,7 +125,7 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
 
           <section className="sec">
             <h3>Когда нашлось</h3>
-            <Toggle on={cfg.alert_mode === "nag"} label="Ждать «Принять»" hint="совпадение ждёт ответа и считается принятым или пропущенным"
+            <Toggle on={cfg.alert_mode === "nag"} label="Ждать «Принять»" hint="звук повторяется, пока не нажмёшь «Принять» или не выйдет время"
               onChange={(on) => save({ alert_mode: on ? "nag" : "standard" })} />
             <Seconds value={cfg.react_sec} label="Время на реакцию" hint="потом совпадение считается пропущенным" min={5} max={600}
               onChange={(v) => save({ react_sec: v })} />
@@ -126,12 +135,20 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
 
           <section className="sec">
             <h3>Звук и уведомления</h3>
-            <div className="lbl"><label htmlFor="sound">Звук (файл WAV, пусто — сигнал Windows)</label></div>
+            <div className="lbl"><label htmlFor="sound">Звук</label></div>
             <div className="row-field">
-              <input id="sound" className="field" value={cfg.sound_path} placeholder="C:\Windows\Media\Windows Exclamation.wav"
-                onChange={(e) => save({ sound_path: e.target.value })} />
+              <select id="sound" className="field" value={own || !known ? OWN : cfg.sound_path}
+                onChange={(e) => { const v = e.target.value; setOwn(v === OWN); if (v !== OWN) save({ sound_path: v }); }}>
+                <option value="">Сигнал Windows</option>
+                {sounds.map((name) => <option key={name} value={MEDIA + name}>{name.replace(/\.wav$/i, "")}</option>)}
+                <option value={OWN}>Свой файл…</option>
+              </select>
               <button className="btn" onClick={onTrySound}>Проверить звук</button>
             </div>
+            {(own || !known) && (
+              <input id="sound-file" className="field" aria-label="Путь к своему файлу WAV" value={cfg.sound_path} autoFocus={own}
+                placeholder="D:\Sounds\alert.wav" onChange={(e) => save({ sound_path: e.target.value })} />
+            )}
             <div className="lbl"><label htmlFor="volume">Громкость</label></div>
             <div className="slider">
               <input id="volume" type="range" min={0} max={100} step={5} value={cfg.sound_volume}

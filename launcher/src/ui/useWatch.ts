@@ -68,6 +68,7 @@ const wallClock = () => {
 const SNOOZE_SEC = 300;
 const PRUNE_EVERY_MS = 20_000; // how often old messages are taken out of the feed
 const MAX_TOASTS = 3;
+const LOOP_PAUSE_MS = 700; // between the rounds of the sound while a match waits for «Принять»
 const TOAST_SHOWN_SEC = 14;
 const DEMO_STEP_MS = 3500;
 const MAX_ROWS = 800; // the chat feed keeps the newest rows
@@ -156,9 +157,10 @@ export function useWatch(boot: Boot): Watch {
   const finish = useCallback((ids: number[], how: AlertState) => {
     if (!ids.length) return;
     bridge.alertsDone(ids);
+    setRemaining(session.remaining(now())); // answered: the ringing stops now, not at the next tick
     setState((old) => ({ ...old, ...Object.fromEntries(ids.map((id) => [id, how])) }));
     sync();
-  }, [bridge, sync]);
+  }, [bridge, sync, session]);
 
   const watchNames = useCallback((ids: Set<string>) => {
     const names: Record<string, string> = {};
@@ -187,7 +189,8 @@ export function useWatch(boot: Boot): Watch {
       const note = bridge.chatMatch(loud.map((e) => e.alert_id!), loud.map((e) => [e.msg.nick, e.msg.text.replace(/[⟪⟫]/g, ""), e.hits]), nag);
       const item = loud.flatMap((e) => e.msg.item_ids.map((id) => itemById[id])).find(Boolean);
       if (note) icons.current.set(note.id, item?.icon ?? null);
-      if (!quiet) play();
+      if (nag) setRemaining(session.remaining(now())); // waiting: the ringing below starts at once
+      else if (!quiet) play();
     }
     sync();
   }, [session, bridge, nag, sync, play, quiet, addRows]);
@@ -259,6 +262,17 @@ export function useWatch(boot: Boot): Watch {
     const timer = setInterval(checkGame, GAME_CHECK_SEC * 1000);
     return () => clearInterval(timer);
   }, [boot.platform, checkGame]);
+
+  // «Ждать «Принять»»: the sound goes round, a short pause between, while a match still waits for an answer
+  const ringing = nag && !quiet && Object.keys(remaining).length > 0;
+  useEffect(() => {
+    if (!ringing) return;
+    const halt = new AbortController();
+    let timer = 0;
+    const ring = () => { if (!halt.signal.aborted) play(halt.signal).then(() => { timer = window.setTimeout(ring, LOOP_PAUSE_MS); }); };
+    ring();
+    return () => { halt.abort(); clearTimeout(timer); }; // the sound stops mid-way too
+  }, [ringing, play]);
 
   useEffect(() => { // every second: countdowns, missed alerts, repeats, the toast stack
     const timer = setInterval(() => {

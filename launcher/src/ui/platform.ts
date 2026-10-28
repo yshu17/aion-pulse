@@ -10,6 +10,8 @@ export interface Platform {
   gameRunning(): Promise<boolean | null>;
   /** config.json files near the launcher where an old Pulse may keep its settings, nearest first. */
   pulseConfigCandidates(): Promise<string[]>;
+  /** The .wav names in C:\Windows\Media, sorted. */
+  windowsSounds(): Promise<string[]>;
   /** The text of a file, or null when it does not exist. */
   readText(path: string): Promise<string | null>;
   /** Only inside the launcher's config folder (the Rust side refuses any other place). */
@@ -45,6 +47,7 @@ const tauri: Platform = {
   configPath: () => call("config_path"),
   gameRunning: () => call("game_running"),
   pulseConfigCandidates: () => call("pulse_config_candidates"),
+  windowsSounds: () => call("windows_sounds"),
   readText: (path) => call("read_text", { path }),
   writeText: (path, text) => call("write_text", { path, text }),
   fileSize: (path) => call("file_size", { path }),

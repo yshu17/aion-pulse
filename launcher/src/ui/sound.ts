@@ -6,7 +6,8 @@ import type { Platform } from "./platform";
 const WINDOWS_MEDIA = "C:\\Windows\\Media\\";
 const BEEP_FILES = ["Windows Exclamation.wav", "Windows Background.wav", "Windows Ding.wav"]; // watcher/notifier.py
 
-function tone(volume: number): void {
+function tone(volume: number): Promise<void> {
+  return new Promise((done) => {
   try {
     const audio = new AudioContext();
     const osc = audio.createOscillator();
@@ -17,10 +18,11 @@ function tone(volume: number): void {
     osc.connect(gain).connect(audio.destination);
     osc.start();
     osc.stop(audio.currentTime + 0.35);
-    osc.onended = () => audio.close();
+    osc.onended = () => { audio.close(); done(); };
   } catch {
-    // no audio device: stay silent
+    done(); // no audio device: stay silent
   }
+  });
 }
 
 async function wavUrl(files: Platform, path: string): Promise<string | null> {
@@ -34,8 +36,8 @@ async function wavUrl(files: Platform, path: string): Promise<string | null> {
   }
 }
 
-/** A player for the settings: play() is cheap, the file is read once. */
-export function makeSound(files: Platform | null, config: Config): () => void {
+/** A player for the settings: play() is cheap, the file is read once; it resolves when the sound is over. */
+export function makeSound(files: Platform | null, config: Config): (halt?: AbortSignal) => Promise<void> {
   const volume = Math.min(Math.max(config.sound_volume, 0), 100) / 100;
   if (files === null) return () => tone(volume);
   let url: Promise<string | null> | null = null;
@@ -48,13 +50,19 @@ export function makeSound(files: Platform | null, config: Config): () => void {
     }
     return null;
   };
-  return () => {
+  return async (halt) => {
     url ??= find();
-    url.then((src) => {
-      if (src === null) return tone(volume);
-      const audio = new Audio(src);
-      audio.volume = volume;
-      audio.play().catch(() => tone(volume));
-    });
+    const src = await url;
+    if (halt?.aborted) return;
+    if (src === null) return tone(volume);
+    const audio = new Audio(src);
+    halt?.addEventListener("abort", () => { audio.pause(); audio.dispatchEvent(new Event("ended")); });
+    audio.volume = volume;
+    try {
+      await audio.play();
+    } catch {
+      return tone(volume);
+    }
+    await new Promise<void>((done) => { audio.onended = () => done(); audio.onerror = () => done(); });
   };
 }

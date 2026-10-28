@@ -129,6 +129,19 @@ fn read_text(path: String) -> Result<Option<String>, String> {
     }
 }
 
+/// The .wav names in C:\Windows\Media, sorted: the alert sounds to choose from in the settings.
+#[tauri::command]
+fn windows_sounds() -> Vec<String> {
+    let Ok(dir) = fs::read_dir(r"C:\Windows\Media") else { return Vec::new() };
+    let mut names: Vec<String> = dir
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| name.to_ascii_lowercase().ends_with(".wav"))
+        .collect();
+    names.sort_by_key(|name| name.to_lowercase());
+    names
+}
+
 #[tauri::command]
 fn file_size(path: String) -> Result<u64, String> {
     fs::metadata(&path).map(|m| m.len()).map_err(|e| io_error(&path, e))
@@ -349,7 +362,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds, overlay_clip])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds, overlay_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
