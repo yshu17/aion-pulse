@@ -109,3 +109,5 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 /* the schedule cards are moved by Motion (its transform): CSS animates only their colours and shadow */
 .sch-card { transition: background-color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out); }
 .ov-slide { transition: none; }
+/* Motion moves these itself (SettingsPanel, Drawer, Feed): no CSS keyframes on top of it */
+.panel, .sch-drawer, .scrim, .msg.motion, .msg.loud.motion:not(.old) { animation: none; }

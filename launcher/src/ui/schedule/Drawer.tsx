@@ -1,3 +1,5 @@
+import { m } from "motion/react";
+import { FADE, SPRING } from "../fx";
 import { useEffect, useRef } from "react";
 
 import { DAY, ScheduleEvent, startsAt, weekStart } from "../../core/schedule/reminders";
@@ -47,7 +49,8 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
   const days = schedule.seriesDays(event);
 
   return (
-    <aside className="sch-drawer" ref={panel} tabIndex={-1} aria-label={`Событие «${event.name}»`}
+    <m.aside className="sch-drawer" ref={panel} initial={{ x: 56, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 56, opacity: 0, transition: FADE }}
+      transition={{ ...SPRING, opacity: FADE }} tabIndex={-1} aria-label={`Событие «${event.name}»`}
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
       <div className="hd"><span className="muted">{own ? "Своё событие" : edited ? "Событие, изменено тобой" : "Событие"}</span><span className="spacer" />
         <button className="sch-x" aria-label="Закрыть карточку" onClick={onClose}><IconClose /></button></div>
@@ -85,7 +88,7 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
         <button className="btn" onClick={() => onDelete(event)}>{days.length > 1 ? "Удалить только этот день" : "Удалить"}</button>
         {days.length > 1 && <button className="btn danger-text" onClick={() => onDeleteSeries(event)}>Удалить все повторы</button>}
       </div>
-    </aside>
+    </m.aside>
   );
 }
 

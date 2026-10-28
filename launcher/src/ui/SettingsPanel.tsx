@@ -1,3 +1,5 @@
+import { m } from "motion/react";
+import { FADE, SPRING } from "./fx";
 import { useEffect, useRef, useState } from "react";
 
 import type { Config } from "../core/settings/config";
@@ -72,8 +74,9 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
 
   return (
     <>
-      <div className="scrim" onClick={onClose} />
-      <aside className="panel" role="dialog" aria-label="Настройки" tabIndex={-1} ref={panel}>
+      <m.div className="scrim" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE} />
+      <m.aside className="panel" initial={{ x: 56, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 56, opacity: 0, transition: FADE }}
+        transition={{ ...SPRING, opacity: FADE }} role="dialog" aria-label="Настройки" tabIndex={-1} ref={panel}>
         <div className="ph">
           <h2>Настройки</h2>
           <span className={`saved${saved ? " on" : ""}`} aria-live="polite"><IconCheck />Сохранено</span>
@@ -160,7 +163,7 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
             </div>
           </section>
         </div>
-      </aside>
+      </m.aside>
     </>
   );
 }

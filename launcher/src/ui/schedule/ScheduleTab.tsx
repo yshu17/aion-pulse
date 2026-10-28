@@ -7,6 +7,7 @@ import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
+import { AnimatePresence } from "motion/react";
 import { Glide } from "../fx";
 import { Presence } from "../motion";
 import { ResetsMenu } from "./ResetsMenu";
@@ -218,12 +219,12 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
         <span className="own-legend"><i />своё событие</span>
       </div>
 
-      <Presence show={selected !== null && !form}>
-        {selected && (
-          <Drawer event={selected} schedule={schedule} onClose={() => setSelected(null)} onEdit={openEdit}
+      <AnimatePresence>
+        {selected && !form && (
+          <Drawer key="drawer" event={selected} schedule={schedule} onClose={() => setSelected(null)} onEdit={openEdit}
             onDelete={(e) => { schedule.removeOne(e); setSelected(null); }} onDeleteSeries={(e) => { schedule.removeSeries(e); setSelected(null); }} />
         )}
-      </Presence>
+      </AnimatePresence>
 
       <Presence show={form !== null}>
         {form && (
