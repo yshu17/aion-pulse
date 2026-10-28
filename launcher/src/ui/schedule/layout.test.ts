@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { naiveMs } from "../../core/chat/tailer";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, packLanes, ribbonLanes, ribbonScale, ribbonX, slotOf, toneOf, yOf } from "./layout";
+import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, packLanes, ribbonLanes, ribbonScale, ribbonX, ribbonZoom, slotOf, WIDE_ZOOM, toneOf, yOf } from "./layout";
 
 const ev = (day: string, start: string, end: string, name = "x", color = "Голубой"): ScheduleEvent => ({ day, start, end, name, color });
 
@@ -122,6 +122,20 @@ describe("schedule layout", () => {
     expect(x(3 * H)).toBeCloseTo(plain(3 * H)); // nor the magnified hours before it
     // a name that fits changes nothing
     expect(ribbonScale([{ from: H, to: 2 * H, px: 20 }], W)(2 * H)).toBeCloseTo(plain(2 * H));
+  });
+
+  it("the narrower the ribbon, the stronger its focus on now", () => {
+    const H = 3_600_000;
+    expect(ribbonZoom(1400)).toEqual(WIDE_ZOOM);
+    expect(ribbonZoom(500)).toEqual({ half: 6 * H, focus: 3 * H, focusX: 0.38 });
+    const mid = ribbonZoom(750);
+    expect(mid.half).toBe(9 * H);
+    expect(mid.focusX).toBeGreaterThan(0.3);
+    // an hour next to now takes more of a narrow ribbon than of a wide one
+    expect(ribbonX(H, ribbonZoom(500)) - 0.5).toBeGreaterThan(ribbonX(H) - 0.5);
+    const x = ribbonScale([], 500, ribbonZoom(500));
+    expect(x(0)).toBeCloseTo(250);
+    expect(x(6 * H)).toBeCloseTo(500);
   });
 
   it("the ribbon is a magnifier: the 4 hours around now take the middle 60 %, the 8 hours at each side the 20 %", () => {

@@ -4,7 +4,7 @@ import { MINUTE } from "../../core/schedule/reminders";
 import { Glide } from "../fx";
 import { IconBell } from "../icons";
 import { zoneShift } from "./Grid";
-import { countdown, hm, occurrencesIn, Occurrence, RIBBON_FOCUS, RIBBON_HALF, packLanes, ribbonScale, toneOf } from "./layout";
+import { countdown, hm, occurrencesIn, Occurrence, packLanes, ribbonScale, ribbonZoom, toneOf } from "./layout";
 import { bellKey } from "../../core/schedule/timing";
 import type { Schedule } from "./useSchedule";
 
@@ -32,18 +32,6 @@ interface Props {
  */
 export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const { now } = schedule;
-  const start = now - RIBBON_HALF;
-  const items = useMemo(() => occurrencesIn(schedule.visible, start, now + RIBBON_HALF), [schedule.visible, start, now]);
-  const next = items.find((o) => o.start > now);
-  const shift = zoneShift(zone);
-  const clock = (ms: number) => hm((((Math.floor((ms % 86_400_000) / MINUTE) + shift) % 1440) + 1440) % 1440);
-  const nowText = clock(now);
-  const localText = hm((((Math.floor((now % 86_400_000) / MINUTE) + zoneShift("local")) % 1440) + 1440) % 1440);
-  const firstHour = Math.ceil(start / (60 * MINUTE)) * 60 * MINUTE;
-  const ticks: number[] = []; // every hour near now, every second hour further away
-  for (let t = firstHour; t < now + RIBBON_HALF; t += 60 * MINUTE) {
-    if (Math.abs(t - now) <= RIBBON_FOCUS || Math.round(t / (60 * MINUTE)) % 2 === 0) ticks.push(t);
-  }
   const line = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800); // the ribbon's width: how much room a short event has for its name
   useEffect(() => {
@@ -54,16 +42,29 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
     setWidth(el.clientWidth);
     return () => observer.disconnect();
   }, []);
+  const zoom = ribbonZoom(width); // the narrower the ribbon, the fewer hours around now and the bigger they are
+  const start = now - zoom.half;
+  const items = useMemo(() => occurrencesIn(schedule.visible, start, now + zoom.half), [schedule.visible, start, now, zoom.half]);
+  const next = items.find((o) => o.start > now);
+  const shift = zoneShift(zone);
+  const clock = (ms: number) => hm((((Math.floor((ms % 86_400_000) / MINUTE) + shift) % 1440) + 1440) % 1440);
+  const nowText = clock(now);
+  const localText = hm((((Math.floor((now % 86_400_000) / MINUTE) + zoneShift("local")) % 1440) + 1440) % 1440);
+  const firstHour = Math.ceil(start / (60 * MINUTE)) * 60 * MINUTE;
+  const ticks: number[] = []; // every hour near now, every second hour further away
+  for (let t = firstHour; t < now + zoom.half; t += 60 * MINUTE) {
+    if (Math.abs(t - now) <= zoom.focus || Math.round(t / (60 * MINUTE)) % 2 === 0) ticks.push(t);
+  }
   // the hours of an event whose name does not fit are stretched (the squeezed hours on its side give the room); a very
   // long name is cut at NAME_MAX with «…»; events that still touch go one above the other
   const sized = items.map((o) => {
-    const far = o.end < now - RIBBON_FOCUS || o.start > now + RIBBON_FOCUS;
+    const far = o.end < now - zoom.focus || o.start > now + zoom.focus;
     const long = o.end - o.start > 120 * MINUTE;
     const text = o.event.name + (long ? ` ${clock(o.start)}` : "");
     const need = Math.min(NAME_MAX, measure(text, far ? 10 : 12) + (far ? 15 : 21) + (schedule.bells.has(bellKey(o.event)) ? 16 : 0));
     return { o, far, long, need };
   });
-  const x = ribbonScale(sized.map(({ o, need }) => ({ from: o.start - now, to: o.end - now, px: need })), width);
+  const x = ribbonScale(sized.map(({ o, need }) => ({ from: o.start - now, to: o.end - now, px: need })), width, zoom);
   const at = (ms: number) => x(ms - now); // px from the ribbon's left edge
   const boxes = sized.map(({ o, far, long, need }) => {
     const from = at(o.start);
