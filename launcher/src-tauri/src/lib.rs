@@ -282,8 +282,9 @@ fn overlay_bounds(app: AppHandle, x: i32, y: i32, width: i32, height: i32) -> Re
         const NO_Z_ORDER: u32 = 0x0004;
         const NO_ACTIVATE: u32 = 0x0010;
         const NO_OWNER_Z_ORDER: u32 = 0x0200;
+        const NO_COPY_BITS: u32 = 0x0100; // the old picture is not stretched into the new size: nothing flashes while the page repaints
         let hwnd = overlay.hwnd().map_err(|e| e.to_string())?.0 as isize;
-        let ok = unsafe { SetWindowPos(hwnd, 0, x, y, width, height, NO_Z_ORDER | NO_ACTIVATE | NO_OWNER_Z_ORDER) };
+        let ok = unsafe { SetWindowPos(hwnd, 0, x, y, width, height, NO_Z_ORDER | NO_ACTIVATE | NO_OWNER_Z_ORDER | NO_COPY_BITS) };
         if ok == 0 { Err("SetWindowPos failed".into()) } else { Ok(()) }
     }
     #[cfg(not(windows))]
