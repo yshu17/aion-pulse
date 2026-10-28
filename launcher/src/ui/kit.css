@@ -65,12 +65,11 @@
 .opt { border-radius: var(--r-ctl); }
 
 /* motion: smooth hover and press, layers that fade in and out, notifications that slide (tokens in theme.css) */
-button, .btn, .inp, input, select, textarea, .tab, .sch-chip, .sch-card, .sch-ribbon .ev, .x, .sch-x, .link, .ov-gear, .sch-nav {
+button, .btn, .inp, input, select, textarea, .tab, .sch-chip, .sch-ribbon .ev, .x, .sch-x, .link, .ov-gear, .sch-nav {
   transition: background-color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out),
     box-shadow var(--t-fast) var(--ease-out), opacity var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
 }
 button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97); }
-.sch-card:active { transform: scale(.985); }
 @keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes pop-out { to { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes toast-in { from { opacity: 0; transform: translateX(16px); } }
@@ -98,3 +97,15 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 @keyframes pop-out-up { to { opacity: 0; transform: translateY(4px) scale(.98); } }
 .overlay.up .ov-card, .overlay.up .ov-menu { animation-name: pop-in-up; }
 .overlay.up .presence.leaving > .ov-card, .overlay.up .presence.leaving > .ov-menu { animation-name: pop-out-up; }
+
+/* Motion (fx.tsx): the highlight of the chosen option glides between options, the tab line glides between tabs */
+.segmented button { position: relative; z-index: 0; }
+.segmented button.on { background: transparent; }
+.segmented button > span:not(.seg-pill) { position: relative; }
+.seg-pill { position: absolute; inset: 0; z-index: -1; border-radius: 6px; background: var(--surface-3); box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset; }
+.tab { position: relative; }
+.tab.on { border-bottom-color: transparent; }
+.tab-line { position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 10px rgba(255, 140, 26, .55); }
+/* the schedule cards are moved by Motion (its transform): CSS animates only their colours and shadow */
+.sch-card { transition: background-color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out); }
+.ov-slide { transition: none; }

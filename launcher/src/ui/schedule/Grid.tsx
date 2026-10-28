@@ -1,8 +1,10 @@
+import { AnimatePresence, m } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { dayStart, ScheduleEvent } from "../../core/schedule/reminders";
 import type { Reset } from "../../core/schedule/resets";
 import { bellKey, localZone, MSK_OFFSET } from "../../core/schedule/timing";
+import { FADE, SPRING } from "../fx";
 import { IconBell, IconClose, IconPencil } from "../icons";
 import { Axis, buildAxis, cardFont, cardNeed, fitName, Measure, hm, minuteAt, Placed, placeDay, toMinutes, toneOf, yOf } from "./layout";
 import type { Schedule } from "./useSchedule";
@@ -179,6 +181,7 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
                 )}
               </div>
             ))}
+            <AnimatePresence initial={false}>
             {placed.map((p) => {
               const top = yOf(axis, p.s) + 1;
               const height = yOf(axis, p.e, true) - top - 1;
@@ -190,7 +193,8 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
               const font = cardFont(p.event.name, colW / p.lanes, measure);
               const label = `${p.event.name}, ${DAY_SHORT[d.key]} ${shown(p.s, shift)}–${shown(p.e === 1440 ? 0 : p.e, shift)}`;
               return (
-                <div key={schedule.keyOf(p.event)} className={`sch-card t-${toneOf(p.event)}${past ? " past" : ""}${isOwn ? " own" : ""}${isSel ? " sel" : ""}${bell ? " belled" : ""}`}
+                <m.div key={schedule.keyOf(p.event)} layout="position" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.94 }} transition={{ layout: SPRING, default: FADE }} className={`sch-card t-${toneOf(p.event)}${past ? " past" : ""}${isOwn ? " own" : ""}${isSel ? " sel" : ""}${bell ? " belled" : ""}`}
                   style={{ top, height, left: `calc(${p.lane * width}% + 2px)`, width: `calc(${width}% - 4px)`, fontSize: font }}
                   role="button" tabIndex={0} aria-label={label} title={label}
                   onClick={() => onSelect(p.event)}
@@ -212,9 +216,10 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
                   </span>
                   <b>{fitName(p.event.name, colW / p.lanes, (text) => measure(text, font))}</b>
                   <small>{shown(p.s, shift)}–<wbr />{shown(p.e === 1440 ? 0 : p.e, shift)}</small>
-                </div>
+                </m.div>
               );
             })}
+            </AnimatePresence>
             {ghost && ghost.day === d.key && (
               <div className="sch-ghost" data-ghost style={{ top: yOf(axis, ghost.s) + 1, height: yOf(axis, ghost.e, true) - yOf(axis, ghost.s) - 2 }}>
                 Новое событие<small>{shown(ghost.s, shift)}–{shown(ghost.e === 1440 ? 0 : ghost.e, shift)}</small>

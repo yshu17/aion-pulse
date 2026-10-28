@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { MINUTE } from "../../core/schedule/reminders";
+import { Glide } from "../fx";
 import { IconBell } from "../icons";
 import { zoneShift } from "./Grid";
 import { countdown, hm, occurrencesIn, Occurrence, RIBBON_FOCUS, RIBBON_HALF, ribbonLanes, ribbonX, toneOf } from "./layout";
@@ -45,7 +46,7 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
           <div className="big">{nowText}<small>{zone === "msk" ? "МСК" : "у тебя"}</small></div>
           <div className="segmented small" role="radiogroup" aria-label="Какое время показывать">
             {([["msk", "МСК"], ["local", "Моё"]] as const).map(([value, label]) => (
-              <button key={value} role="radio" aria-checked={zone === value} className={zone === value ? "on" : ""} onClick={() => onZone(value)}>{label}</button>
+              <button key={value} role="radio" aria-checked={zone === value} className={zone === value ? "on" : ""} onClick={() => onZone(value)}>{zone === value && <Glide group="seg-zone" />}<span>{label}</span></button>
             ))}
           </div>
         </div>

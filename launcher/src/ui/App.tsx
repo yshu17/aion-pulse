@@ -5,6 +5,7 @@ import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
 import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
 import { ItemsPanel } from "./ItemsPanel";
+import { Glide, Pop } from "./fx";
 import { Presence } from "./motion";
 import { SettingsPanel } from "./SettingsPanel";
 import { enterOverlay, hidePopup, leaveOverlay, loadLook, onAction, sendState, showPopup } from "./overlayWindow";
@@ -114,7 +115,7 @@ function Screen({ boot }: { boot: Boot }) {
         <nav className="tabs" role="tablist">
           {TABS.map((name) => (
             <button key={name} role="tab" aria-selected={tab === name} className={`tab${tab === name ? " on" : ""}`}
-              onClick={() => setTab(name)}>{name}</button>
+              onClick={() => setTab(name)}>{name}{tab === name && <Glide group="tab-line" className="tab-line" />}</button>
           ))}
         </nav>
         <span className="spacer" />
@@ -138,9 +139,9 @@ function Screen({ boot }: { boot: Boot }) {
                   ? "проверь папку игры в настройках" : watch.game ? "Chat.log · игра запущена" : "Chat.log"}</span>
               </div>
               <span className="sep" />
-              <div className="count"><b>{found}</b><span>найдено</span></div>
-              <div className="count ok"><b>{reacted}</b><span>принято</span></div>
-              <div className="count no"><b>{missed}</b><span>пропущено</span></div>
+              <div className="count"><Pop value={found} /><span>найдено</span></div>
+              <div className="count ok"><Pop value={reacted} /><span>принято</span></div>
+              <div className="count no"><Pop value={missed} /><span>пропущено</span></div>
               <div className="reset-box">
                 <button className="link" aria-expanded={confirmReset} onClick={() => setConfirmReset(true)}><IconReset />Сбросить</button>
                 <span className="since">{sinceText}</span>
@@ -165,7 +166,7 @@ function Screen({ boot }: { boot: Boot }) {
               <div className="segmented" role="radiogroup" aria-label="Что показывать">
                 {([["matches", "Совпадения"], ["all", "Весь чат"]] as [FeedMode, string][]).map(([value, label]) => (
                   <button key={value} role="radio" aria-checked={feedMode === value} className={feedMode === value ? "on" : ""}
-                    onClick={() => setFeedMode(value)}>{label}</button>
+                    onClick={() => setFeedMode(value)}>{feedMode === value && <Glide group="seg-feed" />}<span>{label}</span></button>
                 ))}
               </div>
             </div>

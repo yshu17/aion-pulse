@@ -2,6 +2,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Icon } from "./Icon";
+import { AnimatePresence, m } from "motion/react";
+
+import { FADE } from "./fx";
 import { Presence, useLeaving } from "./motion";
 import { IconClose, IconExpand, IconSettings } from "./icons";
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
@@ -184,11 +187,12 @@ export function Overlay() {
         onKeyDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
         <span className="dot" role="img" aria-label={status} title={status} style={{ background: live ? "var(--success)" : "var(--warning)" }} />
         <div className={`ov-body${several ? " turns" : ""}`} aria-live="polite" onClick={() => { if (several && !dragged.current) setTurn((t) => t + 1); }}>
-          {slides.length > 0 ? slides.map(({ event: e, running: now }, i) => (
-            <div key={(now ? "now " : "next ") + e.name + e.from} className={`ov-slide${i === current ? " on" : ""}`} aria-hidden={i !== current}>
+          <AnimatePresence initial={false} mode="popLayout">
+          {slides.length > 0 ? slides.filter((_, i) => i === current).map(({ event: e, running: now }) => (
+            <m.div key={(now ? "now " : "next ") + e.name + e.from} className="ov-slide on" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={FADE}>
               <span className={`ov-sw t-${e.tone}`} aria-hidden />
               <b className="name">{e.name}</b>
-              {several && <span className="muted num" title="Идёт несколько событий и показано, что дальше: строка меняет их по очереди и по щелчку">{i + 1}/{slides.length}</span>}
+              {several && <span className="muted num" title="Идёт несколько событий и показано, что дальше: строка меняет их по очереди и по щелчку">{current + 1}/{slides.length}</span>}
               <span className="spacer" />
               <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
               {now && e.progress !== null && (
@@ -196,10 +200,11 @@ export function Overlay() {
                   <i className={`t-${e.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, e.progress))})` }} />
                 </span>
               )}
-            </div>
+            </m.div>
           )) : (
             <div className="ov-slide on"><span className="spacer" /><span className="muted">событий нет</span></div>
           )}
+          </AnimatePresence>
         </div>
         <button className="ov-gear" aria-label="Развернуть Pulse+" title="Развернуть Pulse+" onClick={() => sendAction({ kind: "expand" })}><IconExpand /></button>
         <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки" aria-expanded={menu} title="Прозрачность и фокус"

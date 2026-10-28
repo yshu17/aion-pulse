@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Glide } from "../fx";
 
 import { DAY_NAMES, LEADS, localZone, MSK_OFFSET } from "../../core/schedule/timing";
 import { DAYS } from "../../core/schedule/reminders";
@@ -137,7 +138,7 @@ export function LeadPicker({ value, onChange }: { value: number; onChange(minute
       <div className="segmented small" role="radiogroup" aria-labelledby="lead-label">
         {options.map(([label, minutes]) => (
           <button key={minutes} type="button" role="radio" aria-checked={value === minutes} className={value === minutes ? "on" : ""}
-            onClick={() => onChange(minutes)}>{label}</button>
+            onClick={() => onChange(minutes)}>{value === minutes && <Glide group="seg-lead" />}<span>{label}</span></button>
         ))}
       </div>
     </div>

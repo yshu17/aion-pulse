@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { daysText, Reset, ResetDraft } from "../../core/schedule/resets";
 import { DAYS } from "../../core/schedule/reminders";
 import { IconBell, IconClose, IconPencil, IconPlus } from "../icons";
+import { AnimatePresence, m } from "motion/react";
+
+import { FADE, SPRING } from "../fx";
 import { Presence } from "../motion";
 import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
@@ -54,9 +57,11 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
           </div>
 
           <ul className="rows">
+            <AnimatePresence initial={false}>
             {resets.map((r) => editing === r.id
-              ? <li key={r.id} className="editing"><ResetForm initial={r} schedule={schedule} reset={r} onDone={() => setEditing(null)} /></li>
+              ? <m.li key={r.id} layout className="editing" transition={{ layout: SPRING }}><ResetForm initial={r} schedule={schedule} reset={r} onDone={() => setEditing(null)} /></m.li>
               : <ResetLine key={r.id} reset={r} schedule={schedule} onEdit={() => setEditing(r.id)} />)}
+            </AnimatePresence>
             {resets.length === 0 && <li className="empty">Откатов нет. Добавь свой ниже.</li>}
           </ul>
 
@@ -84,7 +89,8 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
 function ResetLine({ reset, schedule, onEdit }: { reset: Reset; schedule: Schedule; onEdit(): void }) {
   const bell = schedule.resetBells.has(reset.id);
   return (
-    <li className={bell ? "belled" : ""}>
+    <m.li layout className={bell ? "belled" : ""} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }} transition={{ layout: SPRING, default: FADE }} style={{ overflow: "hidden" }}>
       <button className={`btn sq bell${bell ? " on" : ""}`} aria-pressed={bell} title={bell ? "Не напоминать" : "Напоминать"}
         aria-label={`${bell ? "Не напоминать" : "Напоминать"}: ${reset.name}`} onClick={() => schedule.toggleResetBell(reset)}><IconBell on={bell} /></button>
       <button className="rs-what" onClick={onEdit} title="Изменить">
@@ -94,7 +100,7 @@ function ResetLine({ reset, schedule, onEdit }: { reset: Reset; schedule: Schedu
       <button className="btn sq ghost" title="Изменить" aria-label={`Изменить: ${reset.name}`} onClick={onEdit}><IconPencil /></button>
       <button className="btn sq ghost red" title={reset.own ? "Удалить" : "Скрыть откат сервера"} aria-label={`Удалить: ${reset.name}`}
         onClick={() => schedule.removeReset(reset)}><IconClose /></button>
-    </li>
+    </m.li>
   );
 }
 

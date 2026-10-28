@@ -7,6 +7,7 @@ import { Drawer } from "./Drawer";
 import { EventForm } from "./EventForm";
 import { Ghost, Grid } from "./Grid";
 import { hm } from "./layout";
+import { Glide } from "../fx";
 import { Presence } from "../motion";
 import { ResetsMenu } from "./ResetsMenu";
 import { SourceMenu } from "./SourceMenu";
@@ -167,7 +168,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
         <button className="btn" onClick={() => setOffset(0)}>Сегодня</button>
         <div className="segmented" role="radiogroup" aria-label="Сколько дней показывать">
           {([["3days", "3 дня"], ["week", "Неделя"]] as [View, string][]).map(([v, label]) => (
-            <button key={v} role="radio" aria-checked={view === v} className={view === v ? "on" : ""} onClick={() => changeView(v)}>{label}</button>
+            <button key={v} role="radio" aria-checked={view === v} className={view === v ? "on" : ""} onClick={() => changeView(v)}>{view === v && <Glide group="seg-view" />}<span>{label}</span></button>
           ))}
         </div>
         <div className={`sch-chips${chipsFold ? " drop" : ""}${chipsOpen ? " open" : ""}`} role="group" aria-label="Что показывать">
