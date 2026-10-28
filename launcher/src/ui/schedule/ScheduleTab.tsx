@@ -29,6 +29,7 @@ interface FormState {
   draft: Draft;
   old?: ScheduleEvent;
   placement: { kind: "float"; left: number; top: number } | { kind: "sheet" };
+  byButton?: boolean; // opened by «+ Событие»: it drops from the button and closes like the «+ Откат» menu
 }
 
 interface MenuState {
@@ -83,7 +84,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
   const closeAll = useCallback(() => { setForm(null); setGhost(null); setMenu(null); setChipsOpen(false); }, []);
   useYields("grid", closeAll); // the link and resets menus close the form, the right-click menu and the filters
 
-  const openCreate = (draft: Draft, near: Ghost | null, title = "Новое событие") => {
+  const openCreate = (draft: Draft, near: Ghost | null, title = "Новое событие", from: HTMLElement | null = null) => {
     setMenu(null);
     setSelected(null);
     const sheet = narrow;
@@ -96,7 +97,11 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
         const left = r.left - FORM_WIDTH - 14 >= 12 ? r.left - FORM_WIDTH - 14 : Math.min(window.innerWidth - FORM_WIDTH - 12, r.right + 14);
         placement = { kind: "float", left, top: Math.max(70, Math.min(r.top - 150, window.innerHeight - 560)) };
       }
-      setForm({ mode: "create", title, draft, placement: sheet ? { kind: "sheet" } : placement });
+      if (from) { // under the button, its right edge on the button's right edge, as the «+ Откат» menu
+        const r = from.getBoundingClientRect();
+        placement = { kind: "float", left: Math.max(12, r.right - FORM_WIDTH), top: r.bottom + 8 };
+      }
+      setForm({ mode: "create", title, draft, placement: sheet ? { kind: "sheet" } : placement, byButton: from !== null });
     }, 0);
   };
 
@@ -108,10 +113,20 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
     setForm({ mode: "edit", title: "Изменить событие", draft: schedule.draftOf(event), old: event, placement: narrow ? { kind: "sheet" } : { kind: "float", left: Math.max(12, window.innerWidth - FORM_WIDTH - 24), top: 150 } });
   };
 
+  const addButton = useRef<HTMLButtonElement>(null);
+  const byButton = form?.byButton === true;
   const newByButton = () => {
+    if (byButton) { closeForm(); return; } // a second press closes it
     const minute = Math.min(22 * 60, (Math.floor((schedule.now - today) / 3_600_000) + 1) * 60);
-    openCreate({ name: "", start: hm(minute), end: minute + 60 >= 1440 ? "24:00" : hm(minute + 60), days: [DAYS[weekday(schedule.now)]], chip: "Своё", bell: true, lead: schedule.defaultLead }, null);
+    openCreate({ name: "", start: hm(minute), end: minute + 60 >= 1440 ? "24:00" : hm(minute + 60), days: [DAYS[weekday(schedule.now)]], chip: "Своё", bell: true, lead: schedule.defaultLead }, null, "Новое событие", addButton.current);
   };
+
+  useEffect(() => { // opened by the button: a press anywhere else closes it, as the «+ Откат» menu
+    if (!byButton) return;
+    const off = (e: Event) => { if (!(e.target as HTMLElement).closest?.(".sch-form, .sch-add")) closeForm(); };
+    window.addEventListener("pointerdown", off);
+    return () => window.removeEventListener("pointerdown", off);
+  }, [byButton, closeForm]);
 
   const onGhost = (g: Ghost | null, done: boolean) => {
     setGhost(g);
@@ -198,7 +213,8 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
           title={schedule.allBells ? "Выключить напоминания обо всех событиях и откатах" : "Напоминать обо всех событиях и откатах"}
           aria-label="Напоминать обо всех событиях и откатах"><IconBell on={schedule.allBells} /></button>
         <ResetsMenu schedule={schedule} />
-        <button className="btn primary" onClick={newByButton}><IconPlus />Событие</button>
+        <button ref={addButton} className={`btn primary sch-add${byButton ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={byButton}
+          onClick={newByButton}><IconPlus />Событие</button>
       </div>
 
       <Ribbon schedule={schedule} zone={zone} onZone={setZone} onSelect={setSelected} />

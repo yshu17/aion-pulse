@@ -222,3 +222,6 @@
 .btn.rs-add { background: #3a2810; border-color: #b36a16; color: #ffd19a; }
 .btn.rs-add:hover, .btn.rs-add.on { background: #4a3314; border-color: #d98a2c; color: #ffe0b8; }
 .sch-bar .btn.bell-all.on { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
+
+/* «+ Событие» while its form is open: pressed in, as «+ Откат» with its menu open */
+.sch-bar .btn.primary.sch-add.on { background: var(--accent-hover); box-shadow: 0 0 0 3px rgba(255, 140, 26, .25); }
