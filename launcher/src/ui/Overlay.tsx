@@ -8,7 +8,7 @@ import { FADE } from "./fx";
 import { Presence, useLeaving } from "./motion";
 import { IconClose, IconExpand, IconSettings } from "./icons";
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
-import { loadLook, onPlace, onState, onWindowMoved, OverlayEvent, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
+import { clipWindow, loadLook, onPlace, onState, onWindowMoved, OverlayEvent, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
 
 const STRIP_CSS = 36; // the height of the strip when it is not drawn (a popup of notifications)
 const RAISE_MS = 3000; // how often the window is put above other always-on-top windows (a game can take the top place)
@@ -16,6 +16,7 @@ const SETTLE_MS = 250; // the strip stays this long after the last move before t
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const NO_TOASTS: OverlayState["toasts"] = [];
 const WIDTH_CSS = 380; // the overlay window's width (overlayWindow.ts)
+const CARD_OUT_MS = 320; // the card fades out this long before the clip shrinks (kit.css)
 const HOVER_MS = 1500; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
@@ -25,7 +26,6 @@ export function Overlay() {
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
   const [menu, setMenu] = useState(false);
   const [turn, setTurn] = useState(0); // which of several running events the line shows now
-  const [cardReady, setCardReady] = useState(false); // the window has grown for the card: only then it fades in, so it never shows in a window still too small
   const [card, setCard] = useState(false); // the mouse rests on the strip: the card with the full names is open
   const hover = useRef<ReturnType<typeof setTimeout>>(undefined);
   const press = useRef<{ x: number; y: number } | null>(null); // where the button went down, until it becomes a drag
@@ -52,8 +52,22 @@ export function Overlay() {
     return { left: 1, top: sideRef.current === "up" ? Math.max(1, height - 1) : 1 };
   };
 
-  const placedHeight = useRef(0); // the content height the window was last sized for
-  const [placedTick, setPlacedTick] = useState(0);
+  const cardShown = useRef(false); // read by clip(): the hover card is part of what is shown
+  const cardEl = useRef<HTMLDivElement>(null);
+  const unclip = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  /**
+   * The window is always as tall as the page with the hover card in it, so the card never waits for a resize; the part
+   * of the window that is shown (and takes the mouse) is clipped to what is visible: the strip, the menu, notifications,
+   * and the card only while it is open.
+   */
+  const clip = () => {
+    const parts = [...(root.current?.querySelectorAll<HTMLElement>(".ov-line, .ov-menu, .toast") ?? [])];
+    if (cardShown.current && cardEl.current) parts.push(cardEl.current);
+    const boxes = parts.map((p) => p.getBoundingClientRect()).filter((r) => r.height > 0);
+    if (!boxes.length) return;
+    clipWindow(Math.min(...boxes.map((r) => r.top)) - 1, Math.max(...boxes.map((r) => r.bottom)) + 1);
+  };
   const placing = useRef(false); // one placement at a time: a newer request waits and then uses the newest content
   const again = useRef(false);
 
@@ -80,14 +94,13 @@ export function Overlay() {
     // with the game running the strip can go anywhere; without it the work area keeps it above the taskbar
     placeWindow(origin.x, origin.y, height + 2, !gameRunning.current)
       .then((placed) => {
-        const alone = height <= (pill.current?.getBoundingClientRect().height ?? STRIP_CSS) + 4;
+        const alone = !el.querySelector(".ov-menu, .toast"); // only the strip shows (the hidden card does not count)
         if (alone && (placed.x !== origin.x || placed.y !== origin.y)) anchor.current = anchorOf(placed, offset, dpr);
       })
       .catch(() => {})
       .finally(() => {
         placedAt.current = performance.now();
-        placedHeight.current = height;
-        setPlacedTick((n) => n + 1);
+        clip();
         placing.current = false;
         if (again.current) { again.current = false; place(); }
       });
@@ -181,11 +194,14 @@ export function Overlay() {
   const status = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу за чатом";
   const current = several ? turn % slides.length : 0; // the slide that is shown
   // the card opens after a short rest on the strip (not while it is dragged or the menu is open), closes when the mouse leaves
-  useEffect(() => { // the card is in the page (invisible); when the window is as tall as the page, it fades in
-    if (!card) { setCardReady(false); return; }
-    const height = root.current?.getBoundingClientRect().height ?? 0;
-    if (placedHeight.current >= height - 2) setCardReady(true);
-  }, [card, placedTick]);
+  const shown = card && !menu;
+  useEffect(() => { // open: the clip grows first, then the card fades in; closed: it fades out, then the clip shrinks
+    clearTimeout(unclip.current);
+    cardShown.current = shown;
+    if (shown) clip();
+    else unclip.current = setTimeout(clip, CARD_OUT_MS);
+    return () => clearTimeout(unclip.current);
+  }, [shown]); // eslint-disable-line react-hooks/exhaustive-deps -- clip reads refs
   const rest = () => { clearTimeout(hover.current); hover.current = setTimeout(() => setCard(true), HOVER_MS); };
   const leave = () => { clearTimeout(hover.current); setCard(false); };
   useEffect(() => () => clearTimeout(hover.current), []);
@@ -232,20 +248,6 @@ export function Overlay() {
             onClick={() => setMenu(!menu)}><IconSettings /></button>
         </div>
       </div>
-      <Presence show={card && !menu} ms={320}>
-        <div className={`ov-card${cardReady ? "" : " hold"}`} role="tooltip">
-          {slides.map(({ event: e, running: now }) => (
-            <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
-              <span className={`ov-sw t-${e.tone}`} aria-hidden />
-              <b>{e.name}</b>
-              <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
-            </div>
-          ))}
-          {slides.length === 0 && <div className="muted">Событий нет</div>}
-          <div className="ov-card-status muted"><span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />{state?.problem || status}</div>
-          <div className="ov-card-hint">{several ? "Щелчок: следующее событие. " : ""}Потяни, чтобы передвинуть. Правый клик: меню.</div>
-        </div>
-      </Presence>
       <Presence show={menu}>
         <div className="ov-menu" role="menu">
           <label className="ov-opacity">
@@ -283,6 +285,21 @@ export function Overlay() {
           </div>
         </div>
       ))}
+      {/* the hover card: drawn in advance, hidden by the clip and its opacity until the mouse rests on the strip */}
+      {!popup && (
+        <div ref={cardEl} className={`ov-card${shown ? " shown" : ""}`} role="tooltip" aria-hidden={!shown}>
+          {slides.map(({ event: e, running: now }) => (
+            <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
+              <span className={`ov-sw t-${e.tone}`} aria-hidden />
+              <b>{e.name}</b>
+              <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
+            </div>
+          ))}
+          {slides.length === 0 && <div className="muted">Событий нет</div>}
+          <div className="ov-card-status muted"><span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />{state?.problem || status}</div>
+          <div className="ov-card-hint">{several ? "Щелчок: следующее событие. " : ""}Потяни, чтобы передвинуть. Правый клик: меню.</div>
+        </div>
+      )}
     </div>
   );
 }

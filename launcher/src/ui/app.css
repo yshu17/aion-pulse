@@ -167,7 +167,7 @@ html.overlay-mode:has(.overlay.up) #root { display: flex; flex-direction: column
 .ov-menu { width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--surface);
   border: 1px solid var(--border-control); border-radius: 14px; font-size: 13px; }
 /* the chosen transparency; the overlay is opaque while the mouse is over it, so it stays readable to click */
-.overlay > * { opacity: var(--ov-opacity, .9); transition: opacity .15s; }
+.overlay > * { opacity: var(--ov-opacity, .9); transition: opacity .45s cubic-bezier(.4, 0, .2, 1); } /* slow: no blink when the mouse comes and goes */
 .overlay:hover > * { opacity: 1; }
 .ov-opacity { display: flex; align-items: center; gap: 10px; }
 .ov-opacity input { flex: 1; accent-color: var(--accent); }

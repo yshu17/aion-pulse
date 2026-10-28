@@ -146,6 +146,13 @@ export async function placeWindow(x: number, y: number, heightCss: number, keepI
   return origin; // not under the taskbar: the caller keeps the strip where the window really is
 }
 
+/** Show only this part of the overlay window (CSS pixels of the page): the rest is not drawn and lets the mouse through. */
+export async function clipWindow(top: number, bottom: number): Promise<void> {
+  const dpr = window.devicePixelRatio;
+  const y = Math.max(0, Math.floor(top * dpr));
+  await invoke("overlay_clip", { x: 0, y, width: Math.ceil(WIDTH * dpr) + 2, height: Math.ceil(bottom * dpr) - y }).catch(() => {});
+}
+
 /** The work area of the monitor the overlay is on (physical pixels): the screen without the taskbar and docked panels. */
 export interface Area { x: number; y: number; width: number; height: number }
 export async function workArea(): Promise<Area | null> {

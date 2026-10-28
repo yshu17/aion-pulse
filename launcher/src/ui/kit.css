@@ -116,14 +116,11 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 @keyframes toast-out-left { to { opacity: 0; transform: translateX(-16px); } }
 .overlay.edge-left .toast { animation-name: toast-in-left; }
 .overlay.edge-left .toast.leaving { animation-name: toast-out-left; }
-/* the hover card of the overlay: it waits invisible (.hold) until its window is big enough, then fades in slowly (ease in and out, no sudden start) */
-@keyframes card-in { from { opacity: 0; transform: translateY(-4px); } }
-@keyframes card-out { to { opacity: 0; transform: translateY(-4px); } }
-@keyframes card-in-up { from { opacity: 0; transform: translateY(4px); } }
-@keyframes card-out-up { to { opacity: 0; transform: translateY(4px); } }
-.ov-card { animation: card-in 520ms cubic-bezier(.4, 0, .2, 1) both; }
-.ov-card.hold { animation: none; opacity: 0; }
-.presence.leaving > .ov-card { animation: card-out var(--leave-ms, 320ms) cubic-bezier(.4, 0, .6, 1) forwards; }
-.overlay.up .ov-card { animation-name: card-in-up; }
-.overlay.up .presence.leaving > .ov-card { animation-name: card-out-up; }
-.overlay.up .ov-card.hold { animation: none; }
+/* the hover card of the overlay: always in the page and drawn in advance (its own layer); it fades in slowly (0.52 s,
+   soft start and end) and out (0.32 s, CARD_OUT_MS in Overlay.tsx). The window clip decides what can be seen and clicked. */
+.overlay > .ov-card { animation: none; will-change: opacity, transform; pointer-events: none; opacity: 0; transform: translateY(-4px);
+  transition: opacity 320ms cubic-bezier(.4, 0, .6, 1), transform 320ms cubic-bezier(.4, 0, .6, 1); }
+.overlay.up > .ov-card { transform: translateY(4px); }
+.overlay > .ov-card.shown { pointer-events: auto; opacity: var(--ov-opacity, .9); transform: none;
+  transition: opacity 520ms cubic-bezier(.4, 0, .2, 1), transform 520ms cubic-bezier(.4, 0, .2, 1); }
+.overlay:hover > .ov-card.shown { opacity: 1; }

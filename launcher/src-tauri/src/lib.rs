@@ -294,6 +294,37 @@ fn overlay_bounds(app: AppHandle, x: i32, y: i32, width: i32, height: i32) -> Re
     }
 }
 
+/// Clip the overlay window to one rectangle (physical pixels, window coordinates): only that part is drawn and takes the
+/// mouse, the rest of the window is as if it were not there (clicks go to the game). Changing the clip is instant: the
+/// page is not laid out again, so the hover card, already drawn, appears without a flash or a jump.
+#[tauri::command]
+fn overlay_clip(app: AppHandle, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
+    let overlay = app.get_webview_window("overlay").ok_or("no overlay window")?;
+    #[cfg(windows)]
+    {
+        #[link(name = "gdi32")]
+        unsafe extern "system" {
+            fn CreateRectRgn(x1: i32, y1: i32, x2: i32, y2: i32) -> isize;
+        }
+        #[link(name = "user32")]
+        unsafe extern "system" {
+            fn SetWindowRgn(hwnd: isize, region: isize, redraw: i32) -> i32;
+        }
+        let hwnd = overlay.hwnd().map_err(|e| e.to_string())?.0 as isize;
+        // the window owns the region after SetWindowRgn: it is not deleted here
+        let region = unsafe { CreateRectRgn(x, y, x + width.max(1), y + height.max(1)) };
+        if region == 0 || unsafe { SetWindowRgn(hwnd, region, 1) } == 0 {
+            return Err("SetWindowRgn failed".into());
+        }
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (overlay, x, y, width, height);
+        Ok(())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -318,7 +349,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds, overlay_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
