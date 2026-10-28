@@ -246,6 +246,66 @@ export function ribbonX(ms: number): number {
   return 0.5 + Math.sign(ms) * x;
 }
 
+/** What an event on the ribbon needs: its time (ms from now) and the width of its name, px. */
+export interface RibbonNeed { from: number; to: number; px: number }
+const SQUEEZE_FLOOR = 0.35; // a squeezed hour that gives room keeps at least this part of its width
+const FOCUS_FLOOR = 0.6; // a magnified hour gives room only after the squeezed ones, and keeps at least this part
+
+/**
+ * The ribbon's scale with room for the names: the magnifier of `ribbonX`, then each hour that holds an event whose name
+ * does not fit is stretched, and the room is taken from the squeezed hours (beyond the magnified 4) on the same side of
+ * now: «now» stays in the middle, the ribbon keeps its width, the other side does not move. Returns ms-from-now → px.
+ */
+export function ribbonScale(needs: RibbonNeed[], width: number): (ms: number) => number {
+  const H = RIBBON_HALF / 12;
+  const first = -12; // segment k covers [k·H, (k+1)·H)
+  const w = Array.from({ length: 24 }, (_, i) => (ribbonX((first + i + 1) * H) - ribbonX((first + i) * H)) * width);
+  const base = [...w];
+  const focus = RIBBON_FOCUS / H;
+  // the nearest events first: the room near now matters most
+  const order = [...needs].sort((a, b) => Math.abs(a.from + a.to) - Math.abs(b.from + b.to));
+  for (const need of [...order, ...order, ...order]) { // a few rounds: room given for one name may be taken back for another
+    const from = Math.max(-RIBBON_HALF, need.from), to = Math.min(RIBBON_HALF, need.to);
+    if (to <= from) continue;
+    const cover = w.map((_, i) => {
+      const s = (first + i) * H, e = s + H;
+      return Math.max(0, Math.min(e, to) - Math.max(s, from)) / H;
+    });
+    const span = cover.reduce((sum, f, i) => sum + f * w[i], 0);
+    if (span >= need.px) continue;
+    const total = cover.reduce((a, b) => a + b, 0);
+    const deficit = need.px - span;
+    for (const side of [-1, 1]) { // what each side grows, that side gives back from its squeezed hours
+      const mine = (i: number) => (side < 0 ? first + i < 0 : first + i >= 0);
+      const share = cover.reduce((sum, f, i) => sum + (mine(i) ? f : 0), 0) / total;
+      if (share === 0) continue;
+      // first the squeezed hours on that side; when they have nothing left, the free magnified ones (they keep 60 %)
+      const free = w.map((_, i) => i).filter((i) => mine(i) && cover[i] === 0);
+      const squeezed = (i: number) => Math.abs(first + i + (side < 0 ? 1 : 0)) >= focus;
+      let take = 0;
+      for (const [donors, floor] of [[free.filter(squeezed), SQUEEZE_FLOOR], [free.filter((i) => !squeezed(i)), FOCUS_FLOOR]] as const) {
+        const want = deficit * share - take;
+        if (want <= 0) break;
+        const spare = donors.reduce((sum, i) => sum + Math.max(0, w[i] - base[i] * floor), 0);
+        const part = Math.min(want, spare);
+        if (part <= 0) continue;
+        for (const i of donors) w[i] -= (part * Math.max(0, w[i] - base[i] * floor)) / spare;
+        take += part;
+      }
+      if (take <= 0) continue;
+      const grow = cover.reduce((sum, f, i) => sum + (mine(i) ? f : 0), 0);
+      for (let i = 0; i < w.length; i++) if (mine(i) && cover[i] > 0) w[i] += (take * cover[i]) / grow;
+    }
+  }
+  const starts: number[] = [];
+  w.reduce((x, wi, i) => { starts[i] = x; return x + wi; }, 0);
+  return (ms: number) => {
+    const t = Math.max(-RIBBON_HALF, Math.min(RIBBON_HALF, ms));
+    const i = Math.min(23, Math.floor(t / H) - first);
+    return starts[i] + ((t - (first + i) * H) / H) * w[i];
+  };
+}
+
 /**
  * Lanes for boxes on a line (`from`…`to`, any unit; `to` already includes the room the box needs for its text): each box
  * takes the first lane where it does not touch the one before it, so neighbours with no room for their names go one

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { naiveMs } from "../../core/chat/tailer";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, packLanes, ribbonLanes, ribbonX, slotOf, toneOf, yOf } from "./layout";
+import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, packLanes, ribbonLanes, ribbonScale, ribbonX, slotOf, toneOf, yOf } from "./layout";
 
 const ev = (day: string, start: string, end: string, name = "x", color = "Голубой"): ScheduleEvent => ({ day, start, end, name, color });
 
@@ -106,6 +106,22 @@ describe("schedule layout", () => {
     expect(packLanes([{ from: 0, to: 50 }, { from: 40, to: 90 }, { from: 100, to: 140 }])).toEqual([0, 1, 0]);
     expect(packLanes([{ from: 0, to: 50 }, { from: 52, to: 90 }], 4)).toEqual([0, 1]); // closer than the gap
     expect(packLanes([{ from: 60, to: 90 }, { from: 0, to: 50 }])).toEqual([0, 0]); // any order
+  });
+
+  it("stretches the hours of an event whose name does not fit, taking the room from the squeezed hours on its side", () => {
+    const H = 3_600_000, W = 1000;
+    const plain = ribbonScale([], W);
+    expect(plain(0)).toBeCloseTo(500);
+    expect(plain(4 * H)).toBeCloseTo(ribbonX(4 * H) * W);
+    // an hour at 6–7 h from now is squeezed (25 px): its name needs 100 px
+    const x = ribbonScale([{ from: 6 * H, to: 7 * H, px: 100 }], W);
+    expect(x(7 * H) - x(6 * H)).toBeCloseTo(100);
+    expect(x(0)).toBeCloseTo(500); // «now» stays in the middle
+    expect(x(12 * H)).toBeCloseTo(W); // the ribbon keeps its width
+    expect(x(-3 * H)).toBeCloseTo(plain(-3 * H)); // the other side does not move
+    expect(x(3 * H)).toBeCloseTo(plain(3 * H)); // nor the magnified hours before it
+    // a name that fits changes nothing
+    expect(ribbonScale([{ from: H, to: 2 * H, px: 20 }], W)(2 * H)).toBeCloseTo(plain(2 * H));
   });
 
   it("the ribbon is a magnifier: the 4 hours around now take the middle 60 %, the 8 hours at each side the 20 %", () => {
