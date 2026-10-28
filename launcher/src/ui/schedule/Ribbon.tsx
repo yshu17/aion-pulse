@@ -13,6 +13,7 @@ const BACK_HOURS = 3; // the line starts 3 whole hours before the current hour
 const AHEAD = 24 * HOUR; // and goes 24 hours ahead
 const VIEW_HOURS = 6; // the visible part is 6 hours: the focus; the rest is reached with the mouse wheel, an hour a notch
 const LEAD_HOURS = 2; // the view starts 2 hours before the current hour: the event of an hour ago is seen whole, «now» near the middle
+const INSET = 4; // px a box keeps off its hour lines on each side: the «next» outline (3 px) never crosses a line
 const FOLLOW_AFTER_MS = 60_000; // after the user scrolled, the ribbon comes back to «now» when left alone this long
 
 interface Props {
@@ -116,12 +117,12 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
             <div key={t} className="tick" style={{ left: at(t) }}><span>{clock(t)}</span></div>
           ))}
           {items.map((o, i) => {
-            const left = at(o.start);
+            const left = at(o.start) + INSET;
             const past = o.end <= now;
             const long = o.end - o.start > 2 * HOUR;
             return (
               <button key={`${o.event.name}${o.start}`} className={`ev t-${toneOf(o.event)}${past ? " past" : ""}${o === next ? " nxt" : ""}`}
-                style={{ left, width: Math.max(4, at(o.end) - left - 3), top: `calc(50% + 10px - ${(laneCount * 27) / 2}px + ${lanes[i] * 27}px)` }}
+                style={{ left, width: Math.max(4, at(o.end) - left - INSET), top: `calc(50% + 10px - ${(laneCount * 27) / 2}px + ${lanes[i] * 27}px)` }}
                 title={`${o.event.name} ${clock(o.start)}–${clock(o.end)}`} onClick={() => onSelect(o.event)}>
                 <span className="nm">{o.event.name}</span>{long && <span className="at"> {clock(o.start)}</span>}
                 {schedule.bells.has(bellKey(o.event)) && <IconBell on />}
