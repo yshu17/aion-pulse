@@ -268,6 +268,31 @@ async fn game_drops(by: String, id: i64) -> Result<Vec<Drop>, String> {
     tauri::async_runtime::spawn_blocking(move || query_drops(&path, &by, id)).await.map_err(|e| e.to_string())?
 }
 
+/// Move and resize the overlay window in one step (physical pixels). Two separate calls (position, then size) show one
+/// frame with the content in the wrong place while the window grows upwards: the strip jumps.
+#[tauri::command]
+fn overlay_bounds(app: AppHandle, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
+    let overlay = app.get_webview_window("overlay").ok_or("no overlay window")?;
+    #[cfg(windows)]
+    {
+        #[link(name = "user32")]
+        unsafe extern "system" {
+            fn SetWindowPos(hwnd: isize, after: isize, x: i32, y: i32, cx: i32, cy: i32, flags: u32) -> i32;
+        }
+        const NO_Z_ORDER: u32 = 0x0004;
+        const NO_ACTIVATE: u32 = 0x0010;
+        const NO_OWNER_Z_ORDER: u32 = 0x0200;
+        let hwnd = overlay.hwnd().map_err(|e| e.to_string())?.0 as isize;
+        let ok = unsafe { SetWindowPos(hwnd, 0, x, y, width, height, NO_Z_ORDER | NO_ACTIVATE | NO_OWNER_Z_ORDER) };
+        if ok == 0 { Err("SetWindowPos failed".into()) } else { Ok(()) }
+    }
+    #[cfg(not(windows))]
+    {
+        overlay.set_position(tauri::PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
+        overlay.set_size(tauri::PhysicalSize::new(width.max(0) as u32, height.max(0) as u32)).map_err(|e| e.to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -292,7 +317,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch, game_drops])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

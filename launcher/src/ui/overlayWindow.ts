@@ -1,6 +1,7 @@
 // «В накладку»: the main window hides, a small always-on-top window in the corner of the same monitor shows the
 // state and the notifications. The main window keeps watching Chat.log and sends the overlay what to show; the
 // overlay sends back what the user pressed.
+import { invoke } from "@tauri-apps/api/core";
 import { emitTo, listen, UnlistenFn } from "@tauri-apps/api/event";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { availableMonitors, currentMonitor, getCurrentWindow, Window } from "@tauri-apps/api/window";
@@ -135,7 +136,9 @@ export async function placeWindow(x: number, y: number, heightCss: number, keepI
   const size = new PhysicalSize(Math.round(WIDTH * scale), Math.max(48, Math.ceil(heightCss * window.devicePixelRatio)));
   const area = await workArea();
   const origin = area && keepInWorkArea ? keepInside({ x, y }, { width: size.width, height: size.height }, area) : { x, y };
-  await Promise.all([win.setPosition(new PhysicalPosition(origin.x, origin.y)), win.setSize(size)]);
+  // one step: position and size together, so the content never shows a frame out of place
+  await invoke("overlay_bounds", { x: origin.x, y: origin.y, width: size.width, height: size.height })
+    .catch(() => Promise.all([win.setPosition(new PhysicalPosition(origin.x, origin.y)), win.setSize(size)]));
   return origin; // not under the taskbar: the caller keeps the strip where the window really is
 }
 

@@ -46,16 +46,36 @@ export function Overlay() {
     return { left: 1, top: sideRef.current === "up" ? Math.max(1, height - 1) : 1 };
   };
 
-  /** Put the window where the anchor says, as tall as the content: the strip does not move when notifications come. */
+  const placing = useRef(false); // one placement at a time: a newer request waits and then uses the newest content
+  const again = useRef(false);
+
+  /**
+   * Put the window where the anchor says, as tall as the content: the strip does not move when the card, the menu or
+   * notifications open. The anchor is only the user's: a window pushed off a screen edge for a moment (a tall card)
+   * does not move it, only the strip alone pushed off the taskbar does.
+   */
   const place = () => {
     const el = root.current, at = anchor.current;
     if (!el || !at) return;
-    const origin = windowOrigin(at, inside(), window.devicePixelRatio);
+    if (placing.current) { again.current = true; return; }
+    placing.current = true;
+    const dpr = window.devicePixelRatio;
+    const offset = inside(); // where the strip is in the window for this content: read now, not after the move
+    const height = el.getBoundingClientRect().height;
+    const origin = windowOrigin(at, offset, dpr);
     placedAt.current = performance.now();
     // with the game running the strip can go anywhere; without it the work area keeps it above the taskbar
-    placeWindow(origin.x, origin.y, el.getBoundingClientRect().height + 2, !gameRunning.current)
-      .then((placed) => { anchor.current = anchorOf(placed, inside(), window.devicePixelRatio); }) // the strip may have been pushed off the taskbar
-      .catch(() => {});
+    placeWindow(origin.x, origin.y, height + 2, !gameRunning.current)
+      .then((placed) => {
+        const alone = height <= (pill.current?.getBoundingClientRect().height ?? STRIP_CSS) + 4;
+        if (alone && (placed.x !== origin.x || placed.y !== origin.y)) anchor.current = anchorOf(placed, offset, dpr);
+      })
+      .catch(() => {})
+      .finally(() => {
+        placedAt.current = performance.now();
+        placing.current = false;
+        if (again.current) { again.current = false; place(); }
+      });
   };
 
   /** Choose the side from the strip's place on its monitor: near the bottom of the screen the notifications open upwards. */

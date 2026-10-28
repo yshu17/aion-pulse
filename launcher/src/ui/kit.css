@@ -92,3 +92,8 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 .presence.leaving > .sch-drawer, .presence.leaving > .panel { animation: toast-out var(--t-leave) var(--ease-in) forwards; }
 .presence.leaving > .scrim, .presence.leaving > .sch-scrim { animation: fade-out var(--t-leave) var(--ease-in) forwards; }
 .toast.leaving { animation: toast-out var(--t-leave) var(--ease-in) forwards; }
+/* the overlay near the screen bottom opens its card and menu upwards: they come from below and go back down */
+@keyframes pop-in-up { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+@keyframes pop-out-up { to { opacity: 0; transform: translateY(4px) scale(.98); } }
+.overlay.up .ov-card, .overlay.up .ov-menu { animation-name: pop-in-up; }
+.overlay.up .presence.leaving > .ov-card, .overlay.up .presence.leaving > .ov-menu { animation-name: pop-out-up; }
