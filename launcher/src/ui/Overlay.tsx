@@ -15,6 +15,7 @@ const RAISE_MS = 3000; // how often the window is put above other always-on-top 
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const NO_TOASTS: OverlayState["toasts"] = [];
+const WIDTH_CSS = 380; // the overlay window's width (overlayWindow.ts)
 const HOVER_MS = 350; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
@@ -36,6 +37,7 @@ export function Overlay() {
   gameRunning.current = state?.game === true;
   const [side, setSide] = useState<Side>("down"); // notifications and the menu open below the strip, or above it near the screen bottom
   const sideRef = useRef<Side>("down");
+  const [edge, setEdge] = useState<"left" | "right">("right"); // the screen edge the strip is nearer to
   const anchor = useRef<Point | null>(null); // the strip's top-left corner on the screen: it stays put whatever opens around it
   const placedAt = useRef(0);
   const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -87,6 +89,8 @@ export function Overlay() {
     if (!at) return;
     const area = await workArea();
     if (area) {
+      const middle = at.x + (WIDTH_CSS * window.devicePixelRatio) / 2;
+      setEdge(middle < area.x + area.width / 2 ? "left" : "right");
       const stripHeight = (pill.current?.getBoundingClientRect().height ?? STRIP_CSS) * window.devicePixelRatio;
       const next = chooseSide(at.y, stripHeight, area.y, area.height, sideRef.current);
       if (next !== sideRef.current) { sideRef.current = next; setSide(next); return; } // the layout effect below places it
@@ -171,7 +175,7 @@ export function Overlay() {
   const leave = () => { clearTimeout(hover.current); setCard(false); };
   useEffect(() => () => clearTimeout(hover.current), []);
   return (
-    <div className={`overlay ${side}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }} onMouseLeave={leave}>
+    <div className={`overlay ${side} edge-${edge}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }} onMouseLeave={leave}>
       {!popup && (
       <>
       <div className="ov-line" ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+" 
@@ -237,10 +241,6 @@ export function Overlay() {
             <input type="range" min={2} max={20} step={1} value={look.turnSec} aria-valuetext={`каждые ${look.turnSec} с`}
               onChange={(e) => setLook({ ...look, turnSec: Number(e.target.value) })} />
             <b>{look.turnSec} с</b>
-          </label>
-          <label className="ov-check">
-            <input type="checkbox" checked={look.returnWhenGameClosed} onChange={(e) => setLook({ ...look, returnWhenGameClosed: e.target.checked })} />
-            <span>Вернуться в окно, когда игра закрыта</span>
           </label>
           <label className="ov-check">
             <input type="checkbox" checked={look.keepGameFocus} onChange={(e) => setLook({ ...look, keepGameFocus: e.target.checked })} />

@@ -4,7 +4,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo, listen, UnlistenFn } from "@tauri-apps/api/event";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
-import { availableMonitors, currentMonitor, getCurrentWindow, Window } from "@tauri-apps/api/window";
+import { availableMonitors, currentMonitor, getCurrentWindow, primaryMonitor, Window } from "@tauri-apps/api/window";
 
 import { keepInside, onScreen } from "./overlayPlacement";
 import { platform } from "./platform";
@@ -67,9 +67,13 @@ async function overlayAnchor(): Promise<Point | null> {
   return { x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale), y: area.y + Math.round(MARGIN * scale) };
 }
 
-/** The bottom-right corner of the work area of this monitor: where the notifications come while the program window is open. */
+/**
+ * The bottom-right corner of the work area of the main (primary) monitor: where the notifications come while the program
+ * window is open, wherever that window is.
+ */
 async function cornerAnchor(): Promise<Point | null> {
-  const area = await workArea();
+  const main = await primaryMonitor();
+  const area = main ? { x: main.workArea.position.x, y: main.workArea.position.y, width: main.workArea.size.width, height: main.workArea.size.height } : await workArea();
   if (!area) return null;
   const scale = await getCurrentWindow().scaleFactor();
   return { x: area.x + area.width - Math.round((WIDTH + MARGIN) * scale), y: area.y + area.height - Math.round(MARGIN * scale) };

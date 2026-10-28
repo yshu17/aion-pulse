@@ -111,3 +111,8 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 .ov-slide { transition: none; }
 /* Motion moves these itself (SettingsPanel, Drawer, Feed): no CSS keyframes on top of it */
 .panel, .sch-drawer, .scrim, .msg.motion, .msg.loud.motion:not(.old) { animation: none; }
+/* the overlay on the left half of the screen: its notifications come from the left edge and go back to it */
+@keyframes toast-in-left { from { opacity: 0; transform: translateX(-16px); } }
+@keyframes toast-out-left { to { opacity: 0; transform: translateX(-16px); } }
+.overlay.edge-left .toast { animation-name: toast-in-left; }
+.overlay.edge-left .toast.leaving { animation-name: toast-out-left; }

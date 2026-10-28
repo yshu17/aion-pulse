@@ -8,7 +8,7 @@ import { ItemsPanel } from "./ItemsPanel";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
 import { SettingsPanel } from "./SettingsPanel";
-import { enterOverlay, hidePopup, leaveOverlay, loadLook, onAction, sendState, showPopup } from "./overlayWindow";
+import { enterOverlay, hidePopup, leaveOverlay, onAction, sendState, showPopup } from "./overlayWindow";
 import { ScheduleTab } from "./schedule/ScheduleTab";
 import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
@@ -25,7 +25,6 @@ export default function App() {
   return <Screen boot={boot} />;
 }
 
-const GAME_GONE_MS = 15_000; // the game must be gone this long (three checks) before the overlay goes back
 
 function Screen({ boot }: { boot: Boot }) {
   const watch = useWatch(boot);
@@ -69,12 +68,6 @@ function Screen({ boot }: { boot: Boot }) {
       popup: !overlay,
     });
   }, [overlay, popupWanted, watch.watching, watch.counters, watch.toasts, watch.source, problem, schedule.visible, schedule.now, watch.game]);
-
-  useEffect(() => { // the game is closed for a while: the overlay is no more use, the main window comes back
-    if (!overlay || watch.game !== false || !loadLook().returnWhenGameClosed) return;
-    const timer = setTimeout(() => { setOverlay(false); leaveOverlay(); }, GAME_GONE_MS);
-    return () => clearTimeout(timer); // the game is back (or the check failed): nothing to do
-  }, [overlay, watch.game]);
 
   useEffect(() => { // the program started again: the running one comes back from the overlay (Rust shows this window)
     if (!boot.platform) return;

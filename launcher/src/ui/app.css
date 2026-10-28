@@ -101,6 +101,9 @@ time { color: var(--muted); font: 12px var(--mono); }
 .toast { width: 340px; display: flex; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border-control);
   border-left: 3px solid var(--accent); border-radius: 0 12px 12px 0; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: arrive .25s ease-out; }
 .toast.warning { border-left-color: var(--warning); }
+/* near the right edge of the screen (the window's own stack, the overlay on the right): the straight side is on the right */
+.toasts .toast, .overlay.edge-right .toast { border-left-width: 1px; border-left-color: var(--border-control); border-right: 3px solid var(--accent); border-radius: 12px 0 0 12px; }
+.toasts .toast.warning, .overlay.edge-right .toast.warning { border-right-color: var(--warning); }
 .toast-body { flex: 1; min-width: 0; }
 .toast-title { display: flex; align-items: flex-start; gap: 8px; }
 .toast-title b { flex: 1; font-weight: 600; }
