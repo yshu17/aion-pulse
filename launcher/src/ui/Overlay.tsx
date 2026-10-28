@@ -68,8 +68,13 @@ export function Overlay() {
     if (placing.current) { again.current = true; return; }
     placing.current = true;
     const dpr = window.devicePixelRatio;
-    const offset = inside(); // where the strip is in the window for this content: read now, not after the move
     const height = el.getBoundingClientRect().height;
+    // where the strip will be in the resized window. Opening upwards, the page sits on the window's bottom edge (app.css),
+    // so the strip is always 1 px above it: a whole pixel, the same with or without the card, nothing shifts by a fraction
+    const windowCss = Math.max(36, Math.ceil((height + 2) * dpr)) / dpr;
+    const offset = sideRef.current === "up"
+      ? { left: inside().left, top: windowCss - 1 - (pill.current?.getBoundingClientRect().height ?? 0) }
+      : inside();
     const origin = windowOrigin(at, offset, dpr);
     placedAt.current = performance.now();
     // with the game running the strip can go anywhere; without it the work area keeps it above the taskbar
