@@ -5,7 +5,7 @@ import { Glide } from "../fx";
 import { IconBell } from "../icons";
 import { zoneShift } from "./Grid";
 import { countdown, hm, occurrencesIn, Occurrence, ribbonLanes, toneOf } from "./layout";
-import { bellKey } from "../../core/schedule/timing";
+import { bellKey, mskNow } from "../../core/schedule/timing";
 import type { Schedule } from "./useSchedule";
 
 const HOUR = 60 * MINUTE;
@@ -30,6 +30,11 @@ interface Props {
  */
 export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const { now } = schedule;
+  const [live, setLive] = useState(() => mskNow()); // the time to the second: the «now» line and its label move with it
+  useEffect(() => {
+    const timer = setInterval(() => setLive(mskNow()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const view = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800); // the visible width: VIEW_HOURS fit into it
   useEffect(() => {
@@ -108,7 +113,7 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
       <div className="rt" ref={view}>
         <div className="rt-track" style={{ width: at(end), minHeight: height }}>
           {ticks.map((t) => (
-            <div key={t} className="tick" style={{ left: at(t) }}><span>{clock(t).slice(0, 2)}</span></div>
+            <div key={t} className="tick" style={{ left: at(t) }}><span>{clock(t)}</span></div>
           ))}
           {items.map((o, i) => {
             const left = at(o.start);
@@ -123,7 +128,7 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
               </button>
             );
           })}
-          <div className="nowline" style={{ left: at(now) }}><i /></div>
+          <div className="nowline" style={{ left: at(live) }}><i /><b className="now-t num">{clock(live)}:{String(Math.floor(live / 1000) % 60).padStart(2, "0")}</b></div>
         </div>
       </div>
     </section>
