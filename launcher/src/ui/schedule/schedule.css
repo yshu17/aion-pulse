@@ -22,7 +22,7 @@
 /* the 24 h ribbon */
 .sch-ribbon { display: flex; margin-bottom: 10px; overflow: hidden; flex: none; }
 .sch-ribbon { --hour-line: rgba(255, 255, 255, .05); } /* the hour lines and the line after the clock: one look */
-.sch-ribbon .rl { width: 236px; flex: none; padding: 10px 14px; border-right: 1px solid var(--hour-line); display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.sch-ribbon .rl { width: 236px; flex: none; padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
 .sch-ribbon .rl .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sch-ribbon .big { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
 .sch-ribbon .big small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 5px; }
