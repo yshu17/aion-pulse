@@ -9,10 +9,10 @@ import { bellKey } from "../../core/schedule/timing";
 import type { Schedule } from "./useSchedule";
 
 const HOUR = 60 * MINUTE;
-const BACK = 3 * HOUR; // the ribbon starts 3 hours ago
+const BACK_HOURS = 3; // the line starts 3 whole hours before the current hour
 const AHEAD = 24 * HOUR; // and goes 24 hours ahead
-const VIEW_HOURS = 6; // the visible part is 6 hours: the focus; the rest is reached with the mouse wheel
-const LEAD = 1 * HOUR; // «now» stands this far from the left edge of the visible part
+const VIEW_HOURS = 6; // the visible part is 6 hours: the focus; the rest is reached with the mouse wheel, an hour a notch
+const LEAD_HOURS = 2; // the view starts 2 hours before the current hour: the event of an hour ago is seen whole, «now» near the middle
 const FOLLOW_AFTER_MS = 60_000; // after the user scrolled, the ribbon comes back to «now» when left alone this long
 
 interface Props {
@@ -23,9 +23,10 @@ interface Props {
 }
 
 /**
- * The ribbon: a clock, what comes next, and the events on a time line where an hour has one width everywhere. 6 hours
- * fill the view («now» an hour from its left edge); the line goes from 3 hours ago to 24 hours ahead and the mouse wheel
- * scrolls it. An event's box covers exactly its time, never another hour; a long name ends with «…».
+ * The ribbon: a clock, what comes next, and the events on a time line where an hour has one width everywhere. 6 whole
+ * hours fill the view, from 2 hours before the current one: «now» walks through its hour near the middle, and when the
+ * hour is over the view moves on by one. The mouse wheel moves it an hour a notch (3 hours back, 24 ahead). An event's
+ * box covers exactly its time, never another hour; a long name ends with «…».
  */
 export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const { now } = schedule;
@@ -40,7 +41,8 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
     return () => observer.disconnect();
   }, []);
   const perHour = width / VIEW_HOURS;
-  const start = now - BACK;
+  const hour = Math.floor(now / HOUR) * HOUR; // the current whole hour
+  const start = hour - BACK_HOURS * HOUR;
   const end = now + AHEAD;
   const at = (ms: number) => ((Math.max(start, Math.min(end, ms)) - start) / HOUR) * perHour; // px from the line's start
   const items = useMemo(() => occurrencesIn(schedule.visible, start, end), [schedule.visible, start, end]);
@@ -55,25 +57,35 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const laneCount = Math.max(1, ...lanes.map((l) => l + 1));
   const height = 24 + laneCount * 27;
 
-  // the wheel scrolls the line; it follows «now» until the user scrolls, and again a minute after
+  // the view's first hour (counted from the line's start); the wheel moves it one hour a notch, and it follows the
+  // current hour until the user scrolls, and again a minute after
+  const home = BACK_HOURS - LEAD_HOURS;
+  const lastFirst = BACK_HOURS + AHEAD / HOUR - VIEW_HOURS;
+  const [first, setFirst] = useState(home);
   const touched = useRef(0);
+  const firstRef = useRef(first);
+  firstRef.current = first;
   useEffect(() => {
     const el = view.current;
     if (!el) return;
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (delta === 0) return;
       touched.current = Date.now();
-      el.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      setFirst(Math.min(lastFirst, Math.max(0, firstRef.current + Math.sign(delta))));
     };
     el.addEventListener("wheel", wheel, { passive: false });
     return () => el.removeEventListener("wheel", wheel);
-  }, []);
-  const follow = at(now) - (LEAD / HOUR) * perHour;
-  useEffect(() => {
-    const el = view.current;
-    if (!el || Date.now() - touched.current < FOLLOW_AFTER_MS) return;
-    el.scrollTo({ left: follow, behavior: touched.current ? "smooth" : "auto" });
-  }, [follow]);
+  }, [lastFirst]);
+  useEffect(() => { // a new hour (or back from scrolling): the view goes home
+    if (Date.now() - touched.current >= FOLLOW_AFTER_MS) setFirst(home);
+    const timer = setInterval(() => { if (touched.current && Date.now() - touched.current >= FOLLOW_AFTER_MS) { touched.current = 0; setFirst(home); } }, 5000);
+    return () => clearInterval(timer);
+  }, [hour, home]);
+  useEffect(() => { // whole hours: the view's left edge is always on an hour
+    view.current?.scrollTo({ left: first * perHour, behavior: touched.current ? "smooth" : "auto" });
+  }, [first, perHour]);
 
   return (
     <section className="sch-ribbon card" aria-label="Лента событий: 3 часа назад и сутки вперёд">
