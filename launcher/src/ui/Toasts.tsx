@@ -1,6 +1,6 @@
 import { Icon } from "./Icon";
 import { IconClose } from "./icons";
-import { useLeaving } from "./motion";
+import { AnimatePresence, m } from "motion/react";
 import type { Toast } from "./useWatch";
 
 interface Props {
@@ -14,12 +14,14 @@ interface Props {
 
 /** The notification stack: bottom-right of the window for now; the same cards go to an overlay window later. */
 export function Toasts({ toasts, onAccept, onRetry, onSnooze, onDismiss }: Props) {
-  const shown = useLeaving(toasts, (t) => t.note.id);
-  if (!shown.length) return null;
+  // Motion: a card slides in, the others move aside smoothly (layout), a closed one slides out
   return (
     <div className="toasts" role="region" aria-label="Уведомления" aria-live="polite">
-      {shown.map(({ item: toast, leaving }) => (
-        <div key={toast.note.id} className={`toast ${toast.note.kind}${leaving ? " leaving" : ""}`}>
+      <AnimatePresence initial={false}>
+      {toasts.map((toast) => (
+        <m.div key={toast.note.id} className={`toast motion ${toast.note.kind}`} layout
+          initial={{ opacity: 0, x: 24, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 24, scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 420, damping: 34, opacity: { duration: 0.18 } }}>
           {toast.icon && <Icon name={toast.icon} size={40} />}
           <div className="toast-body">
             <div className="toast-title"><b>{toast.note.title}</b>
@@ -34,8 +36,9 @@ export function Toasts({ toasts, onAccept, onRetry, onSnooze, onDismiss }: Props
                 <button className="btn" onClick={() => onSnooze(toast)}>Через 5 мин</button>)}
             </div>
           </div>
-        </div>
+        </m.div>
       ))}
+      </AnimatePresence>
     </div>
   );
 }

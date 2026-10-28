@@ -82,6 +82,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 @keyframes undo-out { to { opacity: 0; transform: translate(-50%, 8px); } }
 .sch-undo { animation: undo-in var(--t) var(--ease-out); } /* it is centred by a transform: its own keyframes keep that */
 .toast { animation: toast-in var(--t-slow) var(--ease-out); }
+.toast.motion { animation: none; } /* Motion moves these itself (Toasts.tsx) */
 main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 /* leaving: the wrapper of a closing layer adds no box; what is inside fades the way it came */
 .presence { display: contents; }
