@@ -33,7 +33,7 @@
 .sch-ribbon .ev.far { height: 19px; margin-top: 3px; padding: 0 5px; font-size: 10px; line-height: 17px; }
 .sch-ribbon .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, .05); }
 .sch-ribbon .tick span { position: absolute; top: 4px; left: 5px; font-size: 11px; color: var(--muted); }
-.sch-ribbon .ev { position: absolute; height: 25px; border-radius: 7px; border: 1px solid; padding: 0 8px; overflow: hidden; white-space: nowrap; font: 600 12px/23px var(--font); text-align: left; display: flex; align-items: center; gap: 4px; }
+.sch-ribbon .ev { position: absolute; height: 25px; border-radius: 7px; border: 1px solid; padding: 0 8px; overflow: hidden; white-space: nowrap; font: 600 12px/23px var(--font); text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .sch-ribbon .ev .at { font-weight: 400; opacity: .85; }
 .sch-ribbon .ev.nxt { outline: 2px solid var(--accent); outline-offset: 1px; }
 .sch-ribbon .nowline { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 0 3px rgba(255, 140, 26, .14); pointer-events: none; }

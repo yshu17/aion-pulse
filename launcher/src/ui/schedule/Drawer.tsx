@@ -1,6 +1,6 @@
 import { m } from "motion/react";
 import { FADE, SPRING } from "../fx";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DAY, ScheduleEvent, startsAt, weekStart } from "../../core/schedule/reminders";
 import { bellKey, DAY_NAMES, endOf } from "../../core/schedule/timing";
@@ -23,7 +23,10 @@ interface Props {
   onDeleteSeries(event: ScheduleEvent): void;
 }
 
-/** The card of one event: its time on both clocks, the countdown, the bell and the next times. */
+/**
+ * The card of one event: its time on both clocks, the countdown, the bell and the next times. The bell and its lead are
+ * a draft: «Сохранить» keeps them; a press anywhere else in the program, Esc or the cross close the card without them.
+ */
 export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSeries }: Props) {
   const { now } = schedule;
   const slot = slotOf(event)!;
@@ -31,6 +34,11 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
   const edited = schedule.isEdited(event);
   const panel = useRef<HTMLElement>(null);
   useEffect(() => { panel.current?.focus(); }, [event]);
+  useEffect(() => { // a press outside the card closes it, nothing saved
+    const off = (e: Event) => { if (!(e.target as HTMLElement).closest?.(".sch-drawer")) onClose(); };
+    window.addEventListener("pointerdown", off);
+    return () => window.removeEventListener("pointerdown", off);
+  }, [onClose]);
 
   // the next three occurrences from now
   const monday = weekStart(now);
@@ -45,7 +53,17 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
   const local = (m: number) => hm((((m + shift) % 1440) + 1440) % 1440);
   const date = first ? new Date(first.start) : null;
   const tone = toneOf(event);
-  const bell = schedule.bells.has(bellKey(event));
+  const savedBell = schedule.bells.has(bellKey(event));
+  const savedLead = schedule.leadOf(event);
+  const [bell, setBell] = useState(savedBell);
+  const [lead, setLead] = useState(savedLead);
+  useEffect(() => { setBell(savedBell); setLead(savedLead); }, [event]); // eslint-disable-line react-hooks/exhaustive-deps -- another event: its own values
+  const changed = bell !== savedBell || (bell && lead !== savedLead);
+  const save = () => {
+    if (bell !== savedBell) schedule.toggleBell(event);
+    if (bell && lead !== savedLead) schedule.setLead(event, lead);
+    onClose();
+  };
   const days = schedule.seriesDays(event);
 
   return (
@@ -68,10 +86,10 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
 
       <div>
         <div className="lbl">Напоминание</div>
-        <button className={`sch-switch${bell ? " on" : ""}`} role="switch" aria-checked={bell} onClick={() => schedule.toggleBell(event)}>
+        <button className={`sch-switch${bell ? " on" : ""}`} role="switch" aria-checked={bell} onClick={() => setBell(!bell)}>
           <i /> {bell ? "Напомню заранее и когда начнётся" : "Не напоминаю"}
         </button>
-        {bell && <LeadPicker value={schedule.leadOf(event)} onChange={(minutes) => schedule.setLead(event, minutes)} />}
+        {bell && <LeadPicker value={lead} onChange={setLead} />}
       </div>
 
       <div>
@@ -84,7 +102,8 @@ export function Drawer({ event, schedule, onClose, onEdit, onDelete, onDeleteSer
 
       <span className="spacer" />
       <div className="actions">
-        <button className="btn primary" onClick={() => onEdit(event)}><IconPencil />Изменить</button>
+        <button className="btn primary" disabled={!changed} onClick={save} title={changed ? "Сохранить напоминание" : "Нечего сохранять"}>Сохранить</button>
+        <button className="btn" onClick={() => onEdit(event)}><IconPencil />Изменить</button>
         <button className="btn" onClick={() => onDelete(event)}>{days.length > 1 ? "Удалить только этот день" : "Удалить"}</button>
         {days.length > 1 && <button className="btn danger-text" onClick={() => onDeleteSeries(event)}>Удалить все повторы</button>}
       </div>
