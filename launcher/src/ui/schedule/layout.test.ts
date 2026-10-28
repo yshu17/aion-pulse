@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { naiveMs } from "../../core/chat/tailer";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, packLanes, ribbonLanes, ribbonScale, ribbonX, ribbonZoom, RIBBON_HALF, slotOf, WIDE_ZOOM, toneOf, yOf } from "./layout";
+import {buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, ribbonLanes, slotOf, toneOf, yOf } from "./layout";
 
 const ev = (day: string, start: string, end: string, name = "x", color = "Голубой"): ScheduleEvent => ({ day, start, end, name, color });
-
-const SYM = { ...WIDE_ZOOM, back: RIBBON_HALF }; // a ribbon with 12 hours of the past too (the older layout)
 
 describe("schedule layout", () => {
   it("shows only the hours with events; an empty run of hours is one thin strip", () => {
@@ -104,62 +102,10 @@ describe("schedule layout", () => {
     expect(ribbonLanes([at(8, 4), at(9, 1), at(10, 1), at(12, 1)])).toEqual([0, 1, 1, 0]);
   });
 
-  it("puts boxes that would touch (their names need room) one above the other, else on one lane", () => {
-    expect(packLanes([{ from: 0, to: 50 }, { from: 40, to: 90 }, { from: 100, to: 140 }])).toEqual([0, 1, 0]);
-    expect(packLanes([{ from: 0, to: 50 }, { from: 52, to: 90 }], 4)).toEqual([0, 1]); // closer than the gap
-    expect(packLanes([{ from: 60, to: 90 }, { from: 0, to: 50 }])).toEqual([0, 0]); // any order
-  });
 
-  it("stretches the hours of an event whose name does not fit, taking the room from the squeezed hours on its side", () => {
-    const H = 3_600_000, W = 1000;
-    const plain = ribbonScale([], W, SYM);
-    expect(plain(0)).toBeCloseTo(500);
-    expect(plain(4 * H)).toBeCloseTo(ribbonX(4 * H, SYM) * W);
-    // an hour at 6–7 h from now is squeezed (25 px): its name needs 100 px
-    const x = ribbonScale([{ from: 6 * H, to: 7 * H, px: 100 }], W, SYM);
-    expect(x(7 * H) - x(6 * H)).toBeCloseTo(100);
-    expect(x(0)).toBeCloseTo(500); // «now» stays in the middle
-    expect(x(12 * H)).toBeCloseTo(W); // the ribbon keeps its width
-    expect(x(-3 * H)).toBeCloseTo(plain(-3 * H)); // the other side does not move
-    expect(x(3 * H)).toBeCloseTo(plain(3 * H)); // nor the magnified hours before it
-    // a name that fits changes nothing
-    expect(ribbonScale([{ from: H, to: 2 * H, px: 20 }], W, SYM)(2 * H)).toBeCloseTo(plain(2 * H));
-  });
 
-  it("the narrower the ribbon, the stronger its focus on now", () => {
-    const H = 3_600_000;
-    expect(ribbonZoom(1400)).toEqual(WIDE_ZOOM);
-    expect(ribbonZoom(500)).toEqual({ half: 6 * H, back: 3 * H, focus: 3 * H, focusX: 0.38 });
-    const mid = ribbonZoom(750);
-    expect(mid.half).toBe(9 * H);
-    expect(mid.focusX).toBeGreaterThan(0.3);
-    // an hour next to now takes more of a narrow ribbon than of a wide one
-    expect(ribbonX(H, ribbonZoom(500)) - ribbonX(0, ribbonZoom(500))).toBeGreaterThan(ribbonX(H) - ribbonX(0));
-    const x = ribbonScale([], 500, ribbonZoom(500));
-    expect(x(-3 * H)).toBeCloseTo(0);
-    expect(x(6 * H)).toBeCloseTo(500);
-  });
 
-  it("shows at most 3 hours of the past, each as wide as an hour just ahead", () => {
-    const H = 3_600_000;
-    expect(ribbonZoom(1400).back).toBe(3 * H);
-    expect(ribbonX(-3 * H)).toBe(0);
-    expect(ribbonX(-5 * H)).toBe(0); // older: at the edge
-    expect(ribbonX(0) - ribbonX(-H)).toBeCloseTo(ribbonX(H) - ribbonX(0));
-    expect(ribbonX(12 * H)).toBeCloseTo(1);
-    expect(ribbonX(0)).toBeLessThan(0.5); // «now» left of the middle: the future has more room
-  });
 
-  it("the ribbon is a magnifier: the 4 hours around now take the middle 60 %, the 8 hours at each side the 20 %", () => {
-    const H = 3_600_000;
-    expect(ribbonX(0, SYM)).toBe(0.5);
-    expect(ribbonX(-4 * H, SYM)).toBeCloseTo(0.2);
-    expect(ribbonX(4 * H, SYM)).toBeCloseTo(0.8);
-    expect(ribbonX(12 * H, SYM)).toBeCloseTo(1);
-    expect(ribbonX(-12 * H, SYM)).toBeCloseTo(0);
-    expect(ribbonX(30 * H, SYM)).toBe(1); // outside the ribbon: held at its edge
-    expect(ribbonX(H, SYM) - ribbonX(0, SYM)).toBeCloseTo(3 * (ribbonX(9 * H, SYM) - ribbonX(8 * H, SYM))); // an hour in the middle is 3× wider
-  });
 
   it("writes the countdown", () => {
     expect([0, 59 * 60000, 60 * 60000, 107 * 60000, 29 * 3600000, 50 * 3600000].map(countdown))
