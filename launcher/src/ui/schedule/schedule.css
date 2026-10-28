@@ -3,8 +3,8 @@
 .sch .small { font-size: 12px; }
 
 .sch-bar { display: flex; align-items: center; gap: 10px; padding: 12px 0 10px; flex-wrap: nowrap; min-width: 0; }
-.sch-bar .range { font-size: 17px; font-weight: 600; margin: 0 4px; white-space: nowrap; flex: none; min-width: 13.5em; font-variant-numeric: tabular-nums; }
-/* one width for the longest range («30 сентября – 6 октября»): switching «3 дня» / «Неделя» does not move the bar */
+.sch-bar .range { font-size: 17px; font-weight: 600; margin: 0 2px; white-space: nowrap; flex: none; width: 7.2em; text-align: center; font-variant-numeric: tabular-nums; }
+/* one width for the longest range («30 сен – 6 окт»), the text centred: switching «3 дня» / «Неделя» does not move the bar */
 .sch-nav { border: 0; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex: none; }
 .sch-nav:hover { background: var(--surface-3); }
 .sch .segmented { white-space: nowrap; flex: none; }

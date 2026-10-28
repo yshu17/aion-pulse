@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { naiveMs } from "../../core/chat/tailer";
 import { ScheduleEvent } from "../../core/schedule/reminders";
-import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, ribbonLanes, ribbonX, slotOf, toneOf, yOf } from "./layout";
+import { buildAxis, cardFont, cardNeed, fitName, countdown, FOLD_PX, hm, HOUR_PX, minuteAt, occurrencesIn, placeDay, packLanes, ribbonLanes, ribbonX, slotOf, toneOf, yOf } from "./layout";
 
 const ev = (day: string, start: string, end: string, name = "x", color = "Голубой"): ScheduleEvent => ({ day, start, end, name, color });
 
@@ -100,6 +100,12 @@ describe("schedule layout", () => {
     const base = naiveMs(2026, 10, 21, 12, 0);
     const at = (h: number, len: number) => ({ event: ev("wed", "1:00", "2:00"), start: base + h * 3600000, end: base + (h + len) * 3600000 });
     expect(ribbonLanes([at(8, 4), at(9, 1), at(10, 1), at(12, 1)])).toEqual([0, 1, 1, 0]);
+  });
+
+  it("puts boxes that would touch (their names need room) one above the other, else on one lane", () => {
+    expect(packLanes([{ from: 0, to: 50 }, { from: 40, to: 90 }, { from: 100, to: 140 }])).toEqual([0, 1, 0]);
+    expect(packLanes([{ from: 0, to: 50 }, { from: 52, to: 90 }], 4)).toEqual([0, 1]); // closer than the gap
+    expect(packLanes([{ from: 60, to: 90 }, { from: 0, to: 50 }])).toEqual([0, 0]); // any order
   });
 
   it("the ribbon is a magnifier: the 4 hours around now take the middle 60 %, the 8 hours at each side the 20 %", () => {

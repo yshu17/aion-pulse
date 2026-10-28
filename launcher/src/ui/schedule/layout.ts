@@ -246,6 +246,24 @@ export function ribbonX(ms: number): number {
   return 0.5 + Math.sign(ms) * x;
 }
 
+/**
+ * Lanes for boxes on a line (`from`…`to`, any unit; `to` already includes the room the box needs for its text): each box
+ * takes the first lane where it does not touch the one before it, so neighbours with no room for their names go one
+ * above the other instead of side by side.
+ */
+export function packLanes(boxes: { from: number; to: number }[], gap = 0): number[] {
+  const order = boxes.map((_, i) => i).sort((a, b) => boxes[a].from - boxes[b].from);
+  const ends: number[] = [];
+  const lanes = new Array<number>(boxes.length).fill(0);
+  for (const i of order) {
+    let lane = ends.findIndex((end) => end + gap <= boxes[i].from);
+    if (lane < 0) { lane = ends.length; ends.push(0); }
+    ends[lane] = boxes[i].to;
+    lanes[i] = lane;
+  }
+  return lanes;
+}
+
 export function ribbonLanes(items: Occurrence[]): number[] {
   const ends: number[] = [];
   return items.map((o) => {

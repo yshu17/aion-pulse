@@ -1,10 +1,12 @@
 import { m } from "motion/react";
-import { FADE, SPRING } from "./fx";
+import { FADE, Glide, SPRING } from "./fx";
 import { useEffect, useRef, useState } from "react";
 
 import type { Config } from "../core/settings/config";
 import { IconCheck, IconClose } from "./icons";
 import type { Boot } from "./useBoot";
+
+const LEADS = [5, 10, 15, 30, 60]; // how many minutes before an event its reminder comes (unless the event has its own)
 
 const MODES: [string, string, string][] = [
   ["or", "Слово или предмет", "любое из двух"], ["words", "Только слова", "предметы не важны"],
@@ -138,6 +140,14 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
             </div>
             <Toggle on={cfg.notify_dnd} label="Не беспокоить" hint="без звука и всплывающих уведомлений"
               onChange={(on) => save({ notify_dnd: on })} />
+            <div className="lbl"><span id="lead-all">Напоминать о событиях и откатах за</span></div>
+            <div className="segmented" role="radiogroup" aria-labelledby="lead-all">
+              {LEADS.map((minutes) => (
+                <button key={minutes} type="button" role="radio" aria-checked={cfg.remind_min === minutes} className={cfg.remind_min === minutes ? "on" : ""}
+                  onClick={() => save({ remind_min: minutes })}>{cfg.remind_min === minutes && <Glide group="seg-lead-all" />}<span>{minutes} мин</span></button>
+              ))}
+            </div>
+            <div className="hint">У события можно поставить своё время в его форме.</div>
           </section>
 
           <section className="sec">

@@ -49,13 +49,14 @@ function useNarrow(width = NARROW): boolean {
   return narrow;
 }
 
+const month = (d: Date) => MONTHS[d.getUTCMonth()].slice(0, 3); // «ноя», «окт»: short, so the range keeps one width
 const rangeText = (from: number, to: number) => {
   const a = new Date(from);
   const b = new Date(to);
-  if (from === to) return `${a.getUTCDate()} ${MONTHS[a.getUTCMonth()]}`;
+  if (from === to) return `${a.getUTCDate()} ${month(a)}`;
   return a.getUTCMonth() === b.getUTCMonth()
-    ? `${a.getUTCDate()} – ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`
-    : `${a.getUTCDate()} ${MONTHS[a.getUTCMonth()]} – ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`;
+    ? `${a.getUTCDate()} – ${b.getUTCDate()} ${month(b)}`
+    : `${a.getUTCDate()} ${month(a)} – ${b.getUTCDate()} ${month(b)}`;
 };
 
 export function ScheduleTab({ schedule }: { schedule: Schedule }) {

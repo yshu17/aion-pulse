@@ -1,13 +1,21 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MINUTE } from "../../core/schedule/reminders";
 import { Glide } from "../fx";
 import { IconBell } from "../icons";
 import { zoneShift } from "./Grid";
-import { countdown, hm, occurrencesIn, Occurrence, RIBBON_FOCUS, RIBBON_HALF, ribbonLanes, ribbonX, toneOf } from "./layout";
+import { countdown, hm, occurrencesIn, Occurrence, RIBBON_FOCUS, RIBBON_HALF, packLanes, ribbonX, toneOf } from "./layout";
 import { bellKey } from "../../core/schedule/timing";
 import type { Schedule } from "./useSchedule";
 
+
+/** The width of an event's name on the ribbon (semibold, 12 px near now, 10 px far away), as the screen draws it. */
+const ctx = typeof document !== "undefined" ? document.createElement("canvas").getContext("2d") : null;
+function measure(text: string, size: number): number {
+  if (!ctx) return text.length * size * 0.6;
+  ctx.font = `600 ${size}px "Segoe UI", system-ui, sans-serif`;
+  return Math.ceil(ctx.measureText(text).width);
+}
 
 interface Props {
   schedule: Schedule;
@@ -24,7 +32,6 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
   const { now } = schedule;
   const start = now - RIBBON_HALF;
   const items = useMemo(() => occurrencesIn(schedule.visible, start, now + RIBBON_HALF), [schedule.visible, start, now]);
-  const lanes = ribbonLanes(items);
   const next = items.find((o) => o.start > now);
   const shift = zoneShift(zone);
   const clock = (ms: number) => hm((((Math.floor((ms % 86_400_000) / MINUTE) + shift) % 1440) + 1440) % 1440);
@@ -36,6 +43,27 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
     if (Math.abs(t - now) <= RIBBON_FOCUS || Math.round(t / (60 * MINUTE)) % 2 === 0) ticks.push(t);
   }
   const at = (ms: number) => ribbonX(ms - now) * 100; // percent of the width
+  const line = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(800); // the ribbon's width: how much room a short event has for its name
+  useEffect(() => {
+    const el = line.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
+    observer.observe(el);
+    setWidth(el.clientWidth);
+    return () => observer.disconnect();
+  }, []);
+  // each event is at least as wide as its name; events that would then touch go one above the other
+  const boxes = items.map((o) => {
+    const far = o.end < now - RIBBON_FOCUS || o.start > now + RIBBON_FOCUS;
+    const long = o.end - o.start > 120 * MINUTE;
+    const text = o.event.name + (long ? ` ${clock(o.start)}` : "");
+    const need = measure(text, far ? 10 : 12) + (far ? 15 : 21) + (schedule.bells.has(bellKey(o.event)) ? 16 : 0);
+    const from = (at(o.start) / 100) * width;
+    const to = Math.max((at(o.end) / 100) * width, from + need);
+    return { from, to, far, long };
+  });
+  const lanes = packLanes(boxes, 3);
   const laneCount = Math.max(1, ...lanes.map((l) => l + 1));
   const height = 24 + laneCount * 27;
 
@@ -57,19 +85,16 @@ export function Ribbon({ schedule, zone, onZone, onSelect }: Props) {
           </div>
         )}
       </div>
-      <div className="rt" style={{ minHeight: height }}>
+      <div className="rt" ref={line} style={{ minHeight: height }}>
         {ticks.map((t) => (
           <div key={t} className="tick" style={{ left: `${at(t)}%` }}><span>{clock(t).slice(0, 2)}</span></div>
         ))}
         {items.map((o, i) => {
-          const left = at(o.start);
-          const right = at(o.end);
+          const { from, to, far, long } = boxes[i]; // far: all of it outside the magnified hours
           const past = o.end <= now;
-          const far = o.end < now - RIBBON_FOCUS || o.start > now + RIBBON_FOCUS; // all of it outside the magnified hours
-          const long = o.end - o.start > 120 * MINUTE;
           return (
             <button key={`${o.event.name}${o.start}`} className={`ev t-${toneOf(o.event)}${past ? " past" : ""}${far ? " far" : ""}${o === next ? " nxt" : ""}`}
-              style={{ left: `${left}%`, width: `calc(${right - left}% - 3px)`, top: `calc(50% + 10px - ${(laneCount * 27) / 2}px + ${lanes[i] * 27}px)` }}
+              style={{ left: from, width: to - from - 3, top: `calc(50% + 10px - ${(laneCount * 27) / 2}px + ${lanes[i] * 27}px)` }}
               title={`${o.event.name} ${clock(o.start)}–${clock(o.end)}`} onClick={() => onSelect(o.event)}>
               {o.event.name}{long && <span className="at"> {clock(o.start)}</span>}
               {schedule.bells.has(bellKey(o.event)) && <IconBell on />}
