@@ -63,10 +63,16 @@ export function Overlay() {
    */
   const clip = () => {
     const parts = [...(root.current?.querySelectorAll<HTMLElement>(".ov-line, .ov-menu, .toast") ?? [])];
-    if (cardShown.current && cardEl.current) parts.push(cardEl.current);
-    const boxes = parts.map((p) => p.getBoundingClientRect()).filter((r) => r.height > 0);
+    const boxes = parts.map((p) => p.getBoundingClientRect()).filter((r) => r.height > 0).map((r) => ({ top: r.top - 1, bottom: r.bottom + 1 }));
+    // the card by its place in the layout, not its rect: read during its small slide, the rect is a few pixels off and
+    // the clip would cut its border; a few pixels of room around it
+    const card = cardEl.current, page = root.current;
+    if (cardShown.current && card && page) {
+      const top = page.getBoundingClientRect().top + card.offsetTop - page.offsetTop;
+      boxes.push({ top: top - 8, bottom: top + card.offsetHeight + 8 });
+    }
     if (!boxes.length) return;
-    clipWindow(Math.min(...boxes.map((r) => r.top)) - 1, Math.max(...boxes.map((r) => r.bottom)) + 1);
+    clipWindow(Math.min(...boxes.map((r) => r.top)), Math.max(...boxes.map((r) => r.bottom)));
   };
   const placing = useRef(false); // one placement at a time: a newer request waits and then uses the newest content
   const again = useRef(false);
