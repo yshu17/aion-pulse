@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
 import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
+import { closeCardWindow, openCardWindow } from "./cardLink";
 import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
+import { platform } from "./platform";
 import { ItemsPanel } from "./ItemsPanel";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
@@ -97,6 +99,17 @@ function Screen({ boot }: { boot: Boot }) {
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
   const closeCard = useCallback(() => setCard(null), []);
+  // the program: the card is a window of its own (it may stand outside this one); the plain browser: inside the page
+  const openCard = useCallback((open: OpenCard) => { if (platform) openCardWindow(open.id); else setCard(open); }, []);
+  useEffect(() => { // the card's window goes with the chat: away from the tab or into the overlay, it hides
+    if (platform && (tab !== "Чат" || overlay)) closeCardWindow();
+  }, [tab, overlay]);
+  useEffect(() => { // Esc here closes the card's window too (it has no focus while the chat is read)
+    if (!platform) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") closeCardWindow(); };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, []);
   const [confirmReset, setConfirmReset] = useState(false);
   const [found, reacted, missed] = watch.counters;
   const cfg = boot.config;
@@ -180,7 +193,7 @@ function Screen({ boot }: { boot: Boot }) {
                 <button className="btn" onClick={() => watch.checkGame().then((r) => { if (r !== false) watch.setWatching(true); })}>Проверить снова</button>
               </div>)}
             {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
-            <OpenItem.Provider value={setCard}>
+            <OpenItem.Provider value={openCard}>
               <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
                 alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
             </OpenItem.Provider>

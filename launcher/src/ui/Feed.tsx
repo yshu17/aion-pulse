@@ -38,7 +38,11 @@ function Text({ text, hits, links }: { text: string; hits: string[]; links: stri
         const show = (x: number, y: number) => open({ id, x, y });
         return (
           <span key={i} className={`${className} card-link`} role="button" tabIndex={0} title="Открыть описание"
-            onClick={(e) => show(e.clientX, e.clientY)}
+            onPointerDown={(e) => { // on the press, not the click: a line that moves under the mouse (new lines) does not lose it
+              if (e.button !== 0) return;
+              e.preventDefault();
+              show(e.clientX, e.clientY);
+            }}
             onKeyDown={(e) => {
               if (e.key !== "Enter" && e.key !== " ") return;
               e.preventDefault();

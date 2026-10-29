@@ -50,8 +50,12 @@ h1, h2 { margin: 0; font-weight: 600; }
 time { color: var(--muted); font: 12px var(--mono); }
 .msg-text { overflow-wrap: anywhere; }
 .hit { color: var(--accent); background: var(--accent-subtle); border-radius: 4px; padding: 0 4px; font-weight: 600; }
-.seg-item, .seg-place { color: var(--accent); }
-.seg-item.g-epic, .seg-item.g-unique, .seg-item.g-legend, .seg-item.g-rare, .seg-item.g-mythic, .seg-item.g-finality { color: inherit; }
+.seg-item { color: var(--accent); }
+.seg-place { color: var(--place); } /* «Место» links: the game's teal */
+/* an item link has its grade's colour, as in the game and in Pulse (watcher/textview.py grade_* tags) */
+.seg-item.g-common { color: var(--grade-common); } .seg-item.g-rare { color: var(--grade-rare); } .seg-item.g-legend { color: var(--grade-legend); }
+.seg-item.g-unique { color: var(--grade-unique); } .seg-item.g-epic { color: var(--grade-epic); } .seg-item.g-mythic { color: var(--grade-mythic); }
+.seg-item.g-finality { color: var(--grade-finality); }
 @keyframes arrive { from { opacity: 0; transform: translateY(6px); } }
 
 .icon { border-radius: 8px; flex: none; object-fit: cover; display: block; }

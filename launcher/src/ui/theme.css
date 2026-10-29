@@ -18,6 +18,7 @@
   --success: #5fd38d;
   --warning: #f5b544;
   --nick: #9cc4ff;
+  --place: #4fd1c5;          /* place links, as watcher/theme.py PLACE */
   --radius: 9px;
   --card-radius: 14px;
   /* kit: sizes, spaces and floating layers shared by every panel, menu and form (see kit.css) */

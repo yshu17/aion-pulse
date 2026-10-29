@@ -6,11 +6,15 @@
   --tip-slot: #1c1f26;
   --tip-props: #e8c55a;   /* 11.39 on --tip-bg */
   --tip-warning: #ff5b5b; /* 6.26 on --tip-bg */
-  position: fixed; z-index: 25; width: min(400px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto;
-  padding: 0 14px 12px; background: var(--tip-bg); border: 1px solid var(--tip-frame); border-radius: 6px;
+  width: 400px; overflow-y: auto; padding: 0 14px 12px; background: var(--tip-bg); border: 1px solid var(--tip-frame); border-radius: 6px;
   box-shadow: var(--pop-shadow); font-size: 13px; line-height: 1.45; color: var(--text); transform-origin: top left;
   scrollbar-width: thin;
 }
+/* inside the page (the plain browser): over the program, inside its window */
+.item-card.in-page { position: fixed; z-index: 25; width: min(400px, calc(100vw - 16px)); max-height: calc(100vh - 16px); }
+/* a window of its own (the program): the window is the card's size, transparent around its corners */
+html.card-mode, html.card-mode body, html.card-mode #root { background: transparent; height: auto; overflow: hidden; }
+.item-card.in-window { box-shadow: none; }
 .item-card .ic-title { position: sticky; top: 0; z-index: 1; display: flex; align-items: flex-start; gap: 8px; margin: 0 -14px 8px;
   padding: 10px 8px 6px 14px; background: var(--tip-bg); cursor: grab; user-select: none; touch-action: none; }
 .item-card .ic-title:active { cursor: grabbing; }
@@ -45,6 +49,44 @@
 .item-card .ic-set li { color: var(--accent); }
 .item-card .ic-recipe b { color: var(--accent); }
 .item-card .ic-recipe + .ic-recipe { border-top: 1px solid var(--tip-line); margin-top: 4px; padding-top: 4px; }
+
+/* Medal records: the compact, scannable item-database layout. */
+.item-card.database {
+  --tip-bg: #2b2e36;
+  --tip-frame: #a88649;
+  --tip-line: #50515a;
+  width: min(370px, calc(100vw - 16px));
+  padding: 0 16px 14px;
+  border-radius: 10px;
+  box-shadow: 0 18px 42px #0009, inset 0 1px #ffffff1a;
+}
+.item-card.database .ic-db-heading {
+  align-items: center;
+  gap: 12px;
+  margin: 0 -16px 0;
+  padding: 16px 12px 13px 16px;
+}
+.item-card.database .ic-db-heading > .icon { flex: none; border: 1px solid var(--tip-frame); border-radius: 8px; }
+.item-card .ic-db-names { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.item-card .ic-db-names .ic-name { padding: 0; font-size: 19px; }
+.item-card .ic-db-names > span { color: var(--text); font-size: 12px; }
+.item-card.database .ic-x { align-self: flex-start; }
+.item-card .ic-db-facts { display: block; margin: 0; border-top: 1px solid var(--tip-line); }
+.item-card .ic-db-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  padding: 7px 0; border-bottom: 1px dotted var(--tip-line); }
+.item-card .ic-db-row dt { flex: 1; color: var(--text); }
+.item-card .ic-db-row dd { flex: 0 1 auto; text-align: right; font-weight: 700; }
+.item-card .ic-db-restrictions { padding: 8px 0; border-bottom: 1px solid var(--tip-line); color: var(--tip-props); font-size: 12px; }
+.item-card .ic-db-description { display: grid; grid-template-columns: 104px 1fr; gap: 8px; padding: 9px 0 14px; }
+.item-card .ic-db-description > span { color: var(--text); }
+.item-card .ic-db-description p { margin: 0; font-size: 12px; font-style: italic; font-weight: 600; }
+.item-card .ic-db-link { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 9px; border: 1px dashed var(--tip-frame); border-radius: 8px; background: #35343a; }
+.item-card .ic-db-link code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; }
+.item-card .ic-db-link button { flex: none; padding: 3px; border: 0; background: transparent; color: #f0d27b; font: inherit;
+  font-size: 12px; cursor: pointer; }
+.item-card .ic-db-link button:hover { text-decoration: underline; }
+.item-card .ic-db-link button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* an item in a chat message opens its card */
 .seg-item.card-link { cursor: pointer; border-radius: 3px; text-decoration: underline dotted transparent; text-underline-offset: 3px;
