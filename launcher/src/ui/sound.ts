@@ -1,6 +1,6 @@
-// The alert sound, as in Pulse: the WAV of the settings (sound_path) or the Windows exclamation, at sound_volume.
+// The alert sounds, as in Pulse: a WAV of the settings (sound_path for a match, notify_sound_path for the other
+// notifications) or the Windows exclamation, at sound_volume.
 // A plain browser has no files: a short tone instead.
-import type { Config } from "../core/settings/config";
 import type { Platform } from "./platform";
 
 const WINDOWS_MEDIA = "C:\\Windows\\Media\\";
@@ -37,13 +37,13 @@ async function wavUrl(files: Platform, path: string): Promise<string | null> {
 }
 
 /** A player for the settings: play() is cheap, the file is read once; it resolves when the sound is over. */
-export function makeSound(files: Platform | null, config: Config): (halt?: AbortSignal) => Promise<void> {
-  const volume = Math.min(Math.max(config.sound_volume, 0), 100) / 100;
+export function makeSound(files: Platform | null, path: string, volumePercent: number): (halt?: AbortSignal) => Promise<void> {
+  const volume = Math.min(Math.max(volumePercent, 0), 100) / 100;
   if (files === null) return () => tone(volume);
   let url: Promise<string | null> | null = null;
   const find = async () => {
-    const own = config.sound_path ? await wavUrl(files, config.sound_path) : null;
-    if (own || config.sound_path) return own;
+    const own = path ? await wavUrl(files, path) : null;
+    if (own || path) return own;
     for (const name of BEEP_FILES) {
       const found = await wavUrl(files, WINDOWS_MEDIA + name);
       if (found) return found;

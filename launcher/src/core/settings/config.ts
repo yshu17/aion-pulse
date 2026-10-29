@@ -56,9 +56,14 @@ export const DEFAULTS = {
   schedule_seen: "",
   update_check: true,
   update_seen: "",
+  // the launcher only (not in Pulse): the sound of plain notifications, and whether the match sound repeats while it waits
+  notify_sound_path: "",
+  sound_loop: true,
 };
 
 export type Config = typeof DEFAULTS;
+/** Fields Pulse (Python) does not have: the comparisons with Pulse leave them out. */
+export const LAUNCHER_ONLY = ["notify_sound_path", "sound_loop"] as const;
 export type ConfigAction = "write_defaults" | "backup_and_write" | null;
 
 export interface ReadResult {

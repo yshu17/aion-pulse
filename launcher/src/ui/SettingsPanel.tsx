@@ -40,14 +40,38 @@ function Seconds({ value, label, hint, min, max, unit = "с", onChange }: {
 }
 
 /** Settings slide in from the right; every change is saved at once (config.json). */
-export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClose(): void; onTrySound(): void }) {
+/** A sound to choose: the Windows signal, a sound of C:\Windows\Media, or an own WAV file (its path in a field under). */
+function SoundPick({ id, label, path, sounds, onPath, onTry }: {
+  id: string; label: string; path: string; sounds: string[]; onPath(path: string): void; onTry(): void;
+}) {
+  const known = path === "" || sounds.some((name) => MEDIA + name === path);
+  const [own, setOwn] = useState(false); // «Свой файл…» chosen, the path still empty or being typed
+  return (
+    <>
+      <div className="lbl"><label htmlFor={id}>{label}</label></div>
+      <div className="row-field">
+        <select id={id} className="field" value={own || !known ? OWN : path}
+          onChange={(e) => { const v = e.target.value; setOwn(v === OWN); if (v !== OWN) onPath(v); }}>
+          <option value="">Сигнал Windows</option>
+          {sounds.map((name) => <option key={name} value={MEDIA + name}>{name.replace(/\.wav$/i, "")}</option>)}
+          <option value={OWN}>Свой файл…</option>
+        </select>
+        <button className="btn" onClick={onTry}>Проверить</button>
+      </div>
+      {(own || !known) && (
+        <input className="field" aria-label={`${label}: путь к своему файлу WAV`} value={path} autoFocus={own}
+          placeholder="D:\Sounds\alert.wav" onChange={(e) => onPath(e.target.value)} />
+      )}
+    </>
+  );
+}
+
+export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClose(): void; onTrySound(which: "match" | "notify"): void }) {
   const cfg = boot.config;
   const [word, setWord] = useState("");
   const [saved, setSaved] = useState(false);
   const [logState, setLogState] = useState<"checking" | "found" | "missing" | "browser">(boot.platform ? "checking" : "browser");
   const [sounds, setSounds] = useState<string[]>(boot.platform ? [] : DEMO_SOUNDS);
-  const known = cfg.sound_path === "" || sounds.some((name) => MEDIA + name === cfg.sound_path);
-  const [own, setOwn] = useState(false); // «Свой файл…» chosen, the path still empty or being typed
   const panel = useRef<HTMLDivElement>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -125,7 +149,7 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
 
           <section className="sec">
             <h3>Когда нашлось</h3>
-            <Toggle on={cfg.alert_mode === "nag"} label="Ждать «Принять»" hint="звук повторяется, пока не нажмёшь «Принять» или не выйдет время"
+            <Toggle on={cfg.alert_mode === "nag"} label="Ждать «Принять»" hint="совпадение ждёт ответа и считается принятым или пропущенным"
               onChange={(on) => save({ alert_mode: on ? "nag" : "standard" })} />
             <Seconds value={cfg.react_sec} label="Время на реакцию" hint="потом совпадение считается пропущенным" min={5} max={600}
               onChange={(v) => save({ react_sec: v })} />
@@ -135,20 +159,12 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
 
           <section className="sec">
             <h3>Звук и уведомления</h3>
-            <div className="lbl"><label htmlFor="sound">Звук</label></div>
-            <div className="row-field">
-              <select id="sound" className="field" value={own || !known ? OWN : cfg.sound_path}
-                onChange={(e) => { const v = e.target.value; setOwn(v === OWN); if (v !== OWN) save({ sound_path: v }); }}>
-                <option value="">Сигнал Windows</option>
-                {sounds.map((name) => <option key={name} value={MEDIA + name}>{name.replace(/\.wav$/i, "")}</option>)}
-                <option value={OWN}>Свой файл…</option>
-              </select>
-              <button className="btn" onClick={onTrySound}>Проверить звук</button>
-            </div>
-            {(own || !known) && (
-              <input id="sound-file" className="field" aria-label="Путь к своему файлу WAV" value={cfg.sound_path} autoFocus={own}
-                placeholder="D:\Sounds\alert.wav" onChange={(e) => save({ sound_path: e.target.value })} />
-            )}
+            <SoundPick id="sound" label="Звук находки" path={cfg.sound_path} sounds={sounds}
+              onPath={(path) => save({ sound_path: path })} onTry={() => onTrySound("match")} />
+            <Toggle on={cfg.sound_loop} label="Повторять, пока не примешь" hint="звук находки звучит по кругу, пока совпадение ждёт «Принять»"
+              onChange={(on) => save({ sound_loop: on })} />
+            <SoundPick id="sound-notify" label="Звук уведомлений" path={cfg.notify_sound_path} sounds={sounds}
+              onPath={(path) => save({ notify_sound_path: path })} onTry={() => onTrySound("notify")} />
             <div className="lbl"><label htmlFor="volume">Громкость</label></div>
             <div className="slider">
               <input id="volume" type="range" min={0} max={100} step={5} value={cfg.sound_volume}

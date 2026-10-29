@@ -51,7 +51,7 @@ export interface Watch {
   toastById(id: number): Toast | undefined;
   reset(): void;
   /** The alert sound, to try it in the settings. */
-  playSound(): void;
+  playSound(which: "match" | "notify"): void;
   /** A schedule reminder: a toast with the alert sound, unless the schedule source is off or muted. */
   notify(title: string, text: string): void;
 }
@@ -87,7 +87,8 @@ export function useWatch(boot: Boot): Watch {
     return { session, center, bridge: new AlertBridge(center) };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one session per window, settings flow in below
   const { session, center, bridge } = core;
-  const play = useMemo(() => makeSound(boot.platform, cfg), [boot.platform, cfg.sound_path, cfg.sound_volume]); // eslint-disable-line react-hooks/exhaustive-deps
+  const play = useMemo(() => makeSound(boot.platform, cfg.sound_path, cfg.sound_volume), [boot.platform, cfg.sound_path, cfg.sound_volume]); // a match
+  const chime = useMemo(() => makeSound(boot.platform, cfg.notify_sound_path, cfg.sound_volume), [boot.platform, cfg.notify_sound_path, cfg.sound_volume]); // the other toasts, once
   const quiet = cfg.notify_dnd || cfg.notify_off.includes("chat") || cfg.notify_mute.includes("chat");
 
   const [rows, setRows] = useState<FeedRow[]>([]);
@@ -189,11 +190,11 @@ export function useWatch(boot: Boot): Watch {
       const note = bridge.chatMatch(loud.map((e) => e.alert_id!), loud.map((e) => [e.msg.nick, e.msg.text.replace(/[⟪⟫]/g, ""), e.hits]), nag);
       const item = loud.flatMap((e) => e.msg.item_ids.map((id) => itemById[id])).find(Boolean);
       if (note) icons.current.set(note.id, item?.icon ?? null);
-      if (nag) setRemaining(session.remaining(now())); // waiting: the ringing below starts at once
+      if (nag && cfg.sound_loop) setRemaining(session.remaining(now())); // waiting: the ringing below starts at once
       else if (!quiet) play();
     }
     sync();
-  }, [session, bridge, nag, sync, play, quiet, addRows]);
+  }, [session, bridge, nag, cfg.sound_loop, sync, play, quiet, addRows]);
 
   useEffect(() => { watchNames(checked); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -251,10 +252,10 @@ export function useWatch(boot: Boot): Watch {
     setGame(running);
     const step = gameStep(running, cfg.game_check, watchingRef.current, warned.current);
     if (step.stop) setWatching(false);
-    if (step.warn) { warned.current = true; bridge.gameRunning(false); if (!quiet) play(); }
+    if (step.warn) { warned.current = true; bridge.gameRunning(false); if (!quiet) chime(); }
     if (step.clear) { warned.current = false; bridge.gameRunning(true); }
     return running;
-  }, [boot.platform, cfg.game_check, bridge, play, quiet, setWatching]);
+  }, [boot.platform, cfg.game_check, bridge, chime, quiet, setWatching]);
 
   useEffect(() => { // while the program runs: is the game still there?
     if (boot.platform === null) return;
@@ -264,7 +265,7 @@ export function useWatch(boot: Boot): Watch {
   }, [boot.platform, checkGame]);
 
   // «Ждать «Принять»»: the sound goes round, a short pause between, while a match still waits for an answer
-  const ringing = nag && !quiet && Object.keys(remaining).length > 0;
+  const ringing = nag && cfg.sound_loop && !quiet && Object.keys(remaining).length > 0;
   useEffect(() => {
     if (!ringing) return;
     const halt = new AbortController();
@@ -322,11 +323,11 @@ export function useWatch(boot: Boot): Watch {
     dismissToast: (toast) => showToasts(openToasts.current.filter((x) => x !== toast)),
     toastById: (id) => openToasts.current.find((toast) => toast.note.id === id),
     reset: () => { session.resetCounters(); setTally({ found: 0, reacted: 0, missed: 0, since: new Date().toISOString() }); sync(); },
-    playSound: () => play(),
+    playSound: (which) => (which === "match" ? play() : chime()),
     notify: (title, text) => {
       if (cfg.notify_off.includes("schedule")) return;
       center.notify("schedule", "reminder", title, text);
-      if (!cfg.notify_dnd && !cfg.notify_mute.includes("schedule")) play();
+      if (!cfg.notify_dnd && !cfg.notify_mute.includes("schedule")) chime();
     },
   };
 }

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { parseLinkNames, parseNames, parseWatchItems } from "./items/catalog";
-import { readConfig, serializeConfig, defaultConfig } from "./settings/config";
+import { readConfig, serializeConfig, defaultConfig, LAUNCHER_ONLY } from "./settings/config";
 import { parseZones } from "./map/zones";
 
 const ROOT = join(__dirname, "..", "..", "..");
@@ -27,20 +27,22 @@ const byKey = (record: Record<string, string>) => Object.entries(record).sort(([
 
 describe("settings", () => {
   const g = golden("settings");
+  // Pulse's fields only: the launcher's own ones (LAUNCHER_ONLY) are not in the Python golden files
+  const pulse = (config: object) => Object.fromEntries(Object.entries(config).filter(([key]) => !(LAUNCHER_ONLY as readonly string[]).includes(key)));
   it("defaults match", () => {
-    expect(defaultConfig()).toEqual(g.defaults);
+    expect(pulse(defaultConfig())).toEqual(g.defaults);
   });
   it("a value of the wrong type takes its default and is named", () => {
     const input = { keywords: ["wts", 5], cooldown_sec: 30, alert_mode: "nag", react_sec: "30", notify_corner: "top",
       unknown_key: 1 };
     const result = readConfig(JSON.stringify(input));
-    expect(result.config).toEqual(g.mixed_types.config);
+    expect(pulse(result.config)).toEqual(g.mixed_types.config);
     expect(result.notice).toBe(g.mixed_types.notice);
     expect(result.action).toBeNull();
   });
   it("a broken file gives the defaults and a backup", () => {
     const result = readConfig("не json", "config.json.broken-20261022-120000");
-    expect(result.config).toEqual(g.broken_file.config);
+    expect(pulse(result.config)).toEqual(g.broken_file.config);
     expect(result.notice.slice(0, 20)).toBe(g.broken_file.notice_starts);
     expect(result.action).toBe("backup_and_write");
     expect(readConfig(null).action).toBe("write_defaults");
@@ -51,7 +53,7 @@ describe("settings", () => {
     writeFileSync(join(dir, "config.json"), serializeConfig(config), "utf-8");
     const saved = JSON.parse(readFileSync(join(dir, "config.json"), "utf-8"));
     expect({ keywords: saved.keywords, watch_items: saved.watch_items }).toEqual(g.saved_keys);
-    expect(Object.keys(saved)).toEqual(Object.keys(g.defaults).length ? Object.keys(defaultConfig()) : []);
+    expect(Object.keys(saved)).toEqual(Object.keys(defaultConfig()));
   });
 });
 
