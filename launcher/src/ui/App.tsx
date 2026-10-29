@@ -198,7 +198,9 @@ function Screen({ boot }: { boot: Boot }) {
                 alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
             </OpenItem.Provider>
           </section>
-          <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
+          <OpenItem.Provider value={openCard}>
+            <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
+          </OpenItem.Provider>
           </div>
         </main>
       ) : tab === "Расписание" ? (

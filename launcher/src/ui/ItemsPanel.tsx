@@ -4,13 +4,20 @@ import { GRADE_LABELS, ItemBrowser } from "../core/items/browser";
 import type { WatchItem } from "../core/items/catalog";
 import { watchItems } from "./data";
 import { Icon } from "./Icon";
-import { IconChevron, IconClose } from "./icons";
+import { IconChevron, IconClose, IconEye } from "./icons";
+import { useOpenItem } from "./ItemCard";
 
 const SHOWN_PER_GROUP = 80;
+const OPEN_AT_START = "Рудра и Фланас"; // the other groups start folded: the list is long
 const SHOWN_FOUND = 120; // per group while searching: hundreds of rows with pictures slow the panel down
 
 export function ItemsPanel({ checked, onChange }: { checked: Set<string>; onChange(ids: Set<string>): void }) {
-  const browser = useMemo(() => new ItemBrowser(watchItems, checked, []), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const browser = useMemo(() => {
+    const list = new ItemBrowser(watchItems, checked, []);
+    for (const category of list.groups.keys()) if (category !== OPEN_AT_START) list.toggleCollapsed(category);
+    return list;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const openItem = useOpenItem();
   const [, redraw] = useReducer((n: number) => n + 1, 0);
   const [query, setQuery] = useState("");
   const commit = () => { onChange(new Set(browser.checked)); redraw(); };
@@ -93,6 +100,10 @@ export function ItemsPanel({ checked, onChange }: { checked: Set<string>; onChan
                 <Icon name={item.icon} />
                 <span className={`name g-${item.grade}`}><Marked text={item.name} query={query} /></span>
                 <span className="lvl">{item.level}</span>
+                <button type="button" className="peek" aria-label={`Описание: ${item.name}`} title="Открыть описание"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); openItem({ id: item.id, x: e.clientX, y: e.clientY }); }}>
+                  <IconEye />
+                </button>
               </label>
             ))}
           </div>

@@ -35,6 +35,7 @@ export const IconBell = ({ on }: { on: boolean }) => (
 );
 export const IconPencil = () => <Svg size={14}><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z" /><path d="M14 6l3 3" /></Svg>;
 export const IconCopy = () => <Svg size={14}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></Svg>;
+export const IconEye = () => <Svg size={15}><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" /><circle cx="12" cy="12" r="2.5" /></Svg>;
 export const IconEyeOff = () => <Svg size={14}><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" /><path d="M4 4l16 16" /></Svg>;
 export const IconPlus = () => <Svg size={14}><path d="M12 5v14M5 12h14" /></Svg>;
 export const IconLeft = () => <Svg size={16}><path d="M15 6l-6 6 6 6" /></Svg>;

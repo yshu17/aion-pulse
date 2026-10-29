@@ -79,6 +79,12 @@ time { color: var(--muted); font: 12px var(--mono); }
 .item.found { outline: 1px solid var(--accent); }
 .item .name { flex: 1; min-width: 0; }
 .lvl { color: var(--muted); font-size: 12px; }
+/* the eye beside the level: the item's card (a click on the row still ticks it) */
+.item .peek { flex: none; width: 26px; height: 26px; margin-left: -4px; padding: 0; border: 0; border-radius: 6px; background: transparent;
+  color: var(--muted); display: grid; place-items: center; cursor: pointer; opacity: .55; }
+.item:hover .peek { opacity: 1; }
+.item .peek:hover { background: var(--surface-3); color: var(--accent); }
+.item .peek:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
 .g-finality { color: var(--grade-finality); } .g-mythic { color: var(--grade-mythic); } .g-epic { color: var(--grade-epic); }
 .g-unique { color: var(--grade-unique); } .g-legend { color: var(--grade-legend); } .g-rare { color: var(--grade-rare); } .g-common { color: var(--grade-common); }
 
