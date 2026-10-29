@@ -43,7 +43,7 @@ html.card-mode, html.card-mode body, html.card-mode #root { background: transpar
 .item-card .ic-text.muted { color: var(--muted); }
 .item-card .ic-stones { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
 .item-card .ic-stones span { width: 22px; height: 22px; background: var(--tip-slot); border: 1px solid var(--tip-line); border-radius: 3px; }
-.item-card .ic-stones span.bonus { border-color: var(--accent); }
+.item-card .ic-stones span.bonus { border-color: var(--accent); color: var(--accent); font-size: 13px; font-weight: 700; line-height: 20px; text-align: center; cursor: help; }
 .item-card ul { margin: 0; padding: 0 0 0 8px; list-style: none; }
 .item-card ul li::before { content: "•  "; }
 .item-card .ic-set li { color: var(--accent); }

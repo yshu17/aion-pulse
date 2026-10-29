@@ -66,7 +66,7 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
         }}>
           {item?.icon && <Icon name={item.icon} size={56} />}
           <div className="ic-db-names">
-            <b className={`ic-name g-${grade}`}>{name}</b>
+            <b className={`ic-name g-${spec.title_grade ?? grade}`}>{name}</b>
             {spec.subtitle && <span>{spec.subtitle}</span>}
           </div>
           <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
@@ -170,7 +170,9 @@ function SpecBlock({ block }: { block: Block }) {
       const bonus = block.bonus ?? 0;
       return (
         <div className="ic-stones" aria-label={`Гнёзд для камней: ${block.count}`}>
-          {Array.from({ length: block.count as number }, (_, i) => <span key={i} className={i >= block.count - bonus ? "bonus" : ""} />)}
+          {Array.from({ length: block.count as number }, (_, i) => i >= block.count - bonus
+            ? <span key={i} className="bonus" title="Дополнительное гнездо: у предмета оно может быть, а может и не быть">?</span>
+            : <span key={i} />)}
         </div>
       );
     }
