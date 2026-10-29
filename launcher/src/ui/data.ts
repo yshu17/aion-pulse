@@ -4,14 +4,19 @@ import itemNamesText from "../../../data/item_names.tsv?raw";
 import mapNamesText from "../../../data/map_names.tsv?raw";
 import questNamesText from "../../../data/quest_names.tsv?raw";
 import watchItemsText from "../../../data/watch_items.csv?raw";
-import { parseLinkNames, parseNames, parseWatchItems, isListed } from "../core/items/catalog";
+import { parseLinkNames, parseNames, parseWatchItems, isListed, WatchItem } from "../core/items/catalog";
 
 export const itemNames = parseNames(itemNamesText);
 export const [mapNames, questNames] = parseLinkNames(mapNamesText, questNamesText);
-export const watchItems = parseWatchItems(watchItemsText).filter(isListed);
-export const gradeOf: Record<string, string> = Object.fromEntries(watchItems.map((item) => [item.id, item.grade]));
-export const itemById: Record<string, (typeof watchItems)[number]> = Object.fromEntries(watchItems.map((item) => [item.id, item]));
-export const specByName: Record<string, string> = Object.fromEntries(watchItems.map((item) => [item.name, item.id]));
+/** Every item with a description (data/item_specs.json.gz has one for each row of watch_items.csv). */
+export const catalog = parseWatchItems(watchItemsText);
+/** The «Что искать» list: no white/green items, materials, supplies or misc. */
+export const watchItems = catalog.filter(isListed);
+export const itemById: Record<string, WatchItem> = Object.fromEntries(watchItems.map((item) => [item.id, item]));
+// chat links and item cards: the whole catalog, so stones, scrolls and supplies open too (as Pulse's spec_items)
+export const catalogById: Record<string, WatchItem> = Object.fromEntries(catalog.map((item) => [item.id, item]));
+export const gradeOf: Record<string, string> = Object.fromEntries(catalog.map((item) => [item.id, item.grade.toLowerCase()]));
+export const specByName: Record<string, string> = Object.fromEntries(catalog.map((item) => [item.name, item.id]));
 
 const icons = import.meta.glob("../../../data/icons/*.png", { query: "?url", import: "default", eager: false });
 

@@ -1,9 +1,10 @@
 import { listen } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
 import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
+import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
 import { ItemsPanel } from "./ItemsPanel";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
@@ -94,6 +95,8 @@ function Screen({ boot }: { boot: Boot }) {
   const [tab, setTab] = useState("Чат");
   const [feedMode, setFeedMode] = useState<FeedMode>("matches");
   const [settings, setSettings] = useState(false);
+  const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
+  const closeCard = useCallback(() => setCard(null), []);
   const [confirmReset, setConfirmReset] = useState(false);
   const [found, reacted, missed] = watch.counters;
   const cfg = boot.config;
@@ -177,8 +180,10 @@ function Screen({ boot }: { boot: Boot }) {
                 <button className="btn" onClick={() => watch.checkGame().then((r) => { if (r !== false) watch.setWatching(true); })}>Проверить снова</button>
               </div>)}
             {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
-            <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
-              alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
+            <OpenItem.Provider value={setCard}>
+              <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
+                alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
+            </OpenItem.Provider>
           </section>
           <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
           </div>
@@ -188,6 +193,7 @@ function Screen({ boot }: { boot: Boot }) {
       ) : (
         <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
       )}
+      <AnimatePresence>{card && tab === "Чат" && <ItemCard key="item-card" card={card} onClose={closeCard} />}</AnimatePresence>
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}

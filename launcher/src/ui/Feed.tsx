@@ -5,8 +5,10 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LOUD } from "../core/chat/session";
 import { messageSegments } from "../core/chat/segments";
 import { CHANNEL_COLORS, channelLabel, FeedMode, FeedRow, shown } from "./chatRows";
-import { gradeOf, itemById, specByName } from "./data";
+import { segmentItemIds } from "../core/items/card";
+import { catalogById, gradeOf, itemNames, specByName } from "./data";
 import { Icon } from "./Icon";
+import { useOpenItem } from "./ItemCard";
 import { IconDown } from "./icons";
 import type { AlertState } from "./useWatch";
 
@@ -19,12 +21,32 @@ interface Alerts {
   onAccept(alertId: number): void;
 }
 
-function Text({ text, hits }: { text: string; hits: string[] }) {
+const hasCard = (id: string) => id in catalogById;
+
+/** A message: item links are coloured by grade and open their card (the link's own item, see segmentItemIds). */
+function Text({ text, hits, links }: { text: string; hits: string[]; links: string[] }) {
+  const open = useOpenItem();
+  const segments = messageSegments(text, hits, specByName, gradeOf);
+  const ids = segmentItemIds(segments, links, itemNames, hasCard);
   return (
     <>
-      {messageSegments(text, hits, specByName, gradeOf).map((s, i) => (
-        <span key={i} className={`seg-${s.kind}${s.hit ? " hit" : ""}${s.grade ? ` g-${s.grade}` : ""}`}>{s.text}</span>
-      ))}
+      {segments.map((s, i) => {
+        const id = ids[i];
+        const grade = id ? gradeOf[id] : s.grade;
+        const className = `seg-${s.kind}${s.hit ? " hit" : ""}${grade ? ` g-${grade}` : ""}`;
+        if (!id) return <span key={i} className={className}>{s.text}</span>;
+        const show = (x: number, y: number) => open({ id, x, y });
+        return (
+          <span key={i} className={`${className} card-link`} role="button" tabIndex={0} title="Открыть описание"
+            onClick={(e) => show(e.clientX, e.clientY)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              const box = e.currentTarget.getBoundingClientRect();
+              show(box.right, box.top);
+            }}>{s.text}</span>
+        );
+      })}
     </>
   );
 }
@@ -36,7 +58,7 @@ function Match({ row, alerts, channel, fresh }: { row: FeedRow; alerts: Alerts; 
   const id = entry.alert_id;
   const done = id !== null ? alerts.state[id] : undefined;
   const left = id !== null ? alerts.remaining[id] : undefined;
-  const item = entry.msg.item_ids.map((x) => itemById[x]).find(Boolean);
+  const item = entry.msg.item_ids.map((x) => catalogById[x]).find(Boolean);
   return (
     <m.li className={`msg motion${loud ? " loud" : ""}${row.historic ? " old" : ""}${done ? ` ${done}` : ""}`}
       initial={fresh ? { opacity: 0, x: -14 } : false} animate={{ opacity: 1, x: 0 }} transition={{ ...SPRING, opacity: FADE }}>
@@ -51,7 +73,7 @@ function Match({ row, alerts, channel, fresh }: { row: FeedRow; alerts: Alerts; 
           {id !== null && !done && left !== undefined && <span className={`left${left <= 8 ? " urgent" : ""}`}>{clock(left)}</span>}
           {id !== null && !done && <button className="btn mini" onClick={() => alerts.onAccept(id)}>Принять</button>}
         </div>
-        <div className="msg-text"><Text text={entry.msg.text} hits={entry.hits} /></div>
+        <div className="msg-text"><Text text={entry.msg.text} hits={entry.hits} links={entry.msg.item_ids} /></div>
       </div>
       {id !== null && !done && left !== undefined && alerts.reactSec > 0 && (
         <span className="drain" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(1, left / alerts.reactSec)) * 100}%` }} /></span>
@@ -71,7 +93,7 @@ function Line({ row, fresh }: { row: FeedRow; fresh: boolean }) {
       <span className="line-text">
         {label && <span className="chan" style={color ? { color } : undefined}>[{label}] </span>}
         {row.line.nick !== null && <b className="nick">{row.line.nick}: </b>}
-        <Text text={row.line.text} hits={[]} />
+        <Text text={row.line.text} hits={[]} links={row.line.item_ids} />
       </span>
     </m.li>
   );

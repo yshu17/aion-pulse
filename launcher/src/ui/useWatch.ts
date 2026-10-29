@@ -4,7 +4,7 @@ import { LOUD, WatchSession } from "../core/chat/session";
 import { naiveMs } from "../core/chat/tailer";
 import { AlertBridge } from "../core/notify/bridge";
 import { Notification, NotificationCenter } from "../core/notify/center";
-import { demoLine, itemById, itemNames, mapNames, questNames, watchItems } from "./data";
+import { catalogById, demoLine, itemById, itemNames, mapNames, questNames, watchItems } from "./data";
 import { FeedRow, historyMinutes, makeRows, pruneRows } from "./chatRows";
 import { Game, GAME_CHECK_SEC, gameStep } from "./gameWatch";
 import { AsyncLogFeed } from "./logFeed";
@@ -188,7 +188,7 @@ export function useWatch(boot: Boot): Watch {
     const loud = batch.entries.filter((e) => e.kind === LOUD);
     if (loud.length) {
       const note = bridge.chatMatch(loud.map((e) => e.alert_id!), loud.map((e) => [e.msg.nick, e.msg.text.replace(/[⟪⟫]/g, ""), e.hits]), nag);
-      const item = loud.flatMap((e) => e.msg.item_ids.map((id) => itemById[id])).find(Boolean);
+      const item = loud.flatMap((e) => e.msg.item_ids.map((id) => catalogById[id])).find(Boolean);
       if (note) icons.current.set(note.id, item?.icon ?? null);
       if (nag && cfg.sound_loop) setRemaining(session.remaining(now())); // waiting: the ringing below starts at once
       else if (!quiet) play();

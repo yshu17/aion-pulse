@@ -1,0 +1,53 @@
+/* The item card in the game's style: the colours of Pulse's tooltip (watcher/theme.py TOOLTIP_*). */
+.item-card {
+  --tip-bg: #0e1014;
+  --tip-frame: #5a4a2e;
+  --tip-line: #3a3d46;
+  --tip-slot: #1c1f26;
+  --tip-props: #e8c55a;   /* 11.39 on --tip-bg */
+  --tip-warning: #ff5b5b; /* 6.26 on --tip-bg */
+  position: fixed; z-index: 25; width: min(400px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto;
+  padding: 0 14px 12px; background: var(--tip-bg); border: 1px solid var(--tip-frame); border-radius: 6px;
+  box-shadow: var(--pop-shadow); font-size: 13px; line-height: 1.45; color: var(--text); transform-origin: top left;
+  scrollbar-width: thin;
+}
+.item-card .ic-title { position: sticky; top: 0; z-index: 1; display: flex; align-items: flex-start; gap: 8px; margin: 0 -14px 8px;
+  padding: 10px 8px 6px 14px; background: var(--tip-bg); cursor: grab; user-select: none; touch-action: none; }
+.item-card .ic-title:active { cursor: grabbing; }
+.item-card .ic-name { flex: 1; font-size: 17px; line-height: 1.3; font-weight: 700; padding-top: 2px; }
+.item-card .ic-x { flex: none; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted);
+  display: grid; place-items: center; cursor: pointer; }
+.item-card .ic-x:hover { background: var(--surface-2); color: var(--text); }
+.item-card .ic-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.item-card .ic-x svg { width: 16px; height: 16px; }
+.item-card .ic-top { display: flex; align-items: flex-start; gap: 12px; }
+.item-card .ic-top > .icon { flex: none; border-radius: 4px; }
+.item-card .ic-head { flex: 1; min-width: 0; }
+.item-card dl { margin: 0; display: grid; column-gap: 18px; row-gap: 1px; }
+.item-card dt { color: var(--muted); }
+.item-card dd { margin: 0; }
+.item-card .ic-pairs { grid-template-columns: auto 1fr; }
+.item-card .ic-grid { grid-template-columns: auto 1fr auto 1fr; column-gap: 12px; }
+.item-card .ic-grid dt { color: var(--text); }
+.item-card .ic-grid dd { font-weight: 700; padding-right: 16px; }
+.item-card .ic-grid.dim dt, .item-card .ic-grid.dim dd { color: var(--muted); font-weight: 400; }
+.item-card .ic-props { color: var(--tip-props); }
+.item-card .ic-warning { color: var(--tip-warning); }
+.item-card .ic-hr { border: 0; border-top: 1px solid var(--tip-line); margin: 7px 0; }
+.item-card .ic-text { margin: 1px 0; }
+.item-card .ic-text.epic { color: var(--accent); }
+.item-card .ic-text.muted { color: var(--muted); }
+.item-card .ic-stones { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.item-card .ic-stones span { width: 22px; height: 22px; background: var(--tip-slot); border: 1px solid var(--tip-line); border-radius: 3px; }
+.item-card .ic-stones span.bonus { border-color: var(--accent); }
+.item-card ul { margin: 0; padding: 0 0 0 8px; list-style: none; }
+.item-card ul li::before { content: "•  "; }
+.item-card .ic-set li { color: var(--accent); }
+.item-card .ic-recipe b { color: var(--accent); }
+.item-card .ic-recipe + .ic-recipe { border-top: 1px solid var(--tip-line); margin-top: 4px; padding-top: 4px; }
+
+/* an item in a chat message opens its card */
+.seg-item.card-link { cursor: pointer; border-radius: 3px; text-decoration: underline dotted transparent; text-underline-offset: 3px;
+  transition: text-decoration-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
+.seg-item.card-link:hover { text-decoration-color: currentColor; background: rgba(255, 255, 255, .06); }
+.seg-item.card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
