@@ -1,0 +1,522 @@
+{
+ "globe": {
+  "size": [
+   173,
+   196
+  ],
+  "scale": 4,
+  "parts": [
+   {
+    "region": "dragon",
+    "part": "dragon2",
+    "frame": [
+     11,
+     11,
+     131,
+     84
+    ],
+    "up": "globe_dragon2_up.png",
+    "over": "globe_dragon2_over.png"
+   },
+   {
+    "region": "dragon",
+    "part": "dragon1",
+    "frame": [
+     11,
+     111,
+     131,
+     73
+    ],
+    "up": "globe_dragon1_up.png",
+    "over": "globe_dragon1_over.png"
+   },
+   {
+    "region": "dark",
+    "part": "dark",
+    "frame": [
+     26,
+     35,
+     107,
+     51
+    ],
+    "up": "globe_dark_up.png",
+    "over": "globe_dark_over.png"
+   },
+   {
+    "region": "light",
+    "part": "light",
+    "frame": [
+     26,
+     112,
+     107,
+     56
+    ],
+    "up": "globe_light_up.png",
+    "over": "globe_light_over.png"
+   },
+   {
+    "region": "abyss",
+    "part": "abyss",
+    "frame": [
+     11,
+     83,
+     131,
+     38
+    ],
+    "up": "globe_abyss_up.png",
+    "over": "globe_abyss_over.png"
+   }
+  ]
+ },
+ "regions": {
+  "dark": {
+   "title": "Асмодея",
+   "image": "region_dark.jpg",
+   "size": 590,
+   "scale": 2,
+   "zones": [
+    {
+     "code": "df1a",
+     "map_id": "220030000",
+     "layer": null,
+     "frame": [
+      268,
+      232,
+      291,
+      146
+     ],
+     "highlight": [
+      268,
+      232,
+      291,
+      158
+     ],
+     "highlight_file": "zone_df1a.png",
+     "label": [
+      302,
+      341,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "df1",
+     "map_id": "220010000",
+     "layer": null,
+     "frame": [
+      237,
+      369,
+      224,
+      93
+     ],
+     "highlight": [
+      239,
+      371,
+      222,
+      91
+     ],
+     "highlight_file": "zone_df1.png",
+     "label": [
+      225,
+      421,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "df2",
+     "map_id": "220020000",
+     "layer": null,
+     "frame": [
+      85,
+      162,
+      204,
+      129
+     ],
+     "highlight": [
+      85,
+      162,
+      234,
+      129
+     ],
+     "highlight_file": "zone_df2.png",
+     "label": [
+      115,
+      243,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "df2a",
+     "map_id": "220050000",
+     "layer": null,
+     "frame": [
+      25,
+      250,
+      111,
+      75
+     ],
+     "highlight": [
+      27,
+      252,
+      109,
+      73
+     ],
+     "highlight_file": "zone_df2a.png",
+     "label": [
+      -19,
+      296,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "df3",
+     "map_id": "220040000",
+     "layer": null,
+     "frame": [
+      288,
+      141,
+      206,
+      131
+     ],
+     "highlight": [
+      269,
+      141,
+      225,
+      131
+     ],
+     "highlight_file": "zone_df3.png",
+     "label": [
+      261,
+      221,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "dc1",
+     "map_id": "120010000",
+     "layer": null,
+     "frame": [
+      163,
+      288,
+      116,
+      69
+     ],
+     "highlight": [
+      165,
+      288,
+      112,
+      67
+     ],
+     "highlight_file": "zone_dc1.png",
+     "label": [
+      122,
+      337,
+      206,
+      22
+     ]
+    }
+   ]
+  },
+  "light": {
+   "title": "Элиос",
+   "image": "region_light.jpg",
+   "size": 590,
+   "scale": 2,
+   "zones": [
+    {
+     "code": "lf1",
+     "map_id": "210010000",
+     "layer": null,
+     "frame": [
+      76,
+      204,
+      150,
+      71
+     ],
+     "highlight": [
+      78,
+      206,
+      146,
+      69
+     ],
+     "highlight_file": "zone_lf1.png",
+     "label": [
+      45,
+      250,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "lc1",
+     "map_id": "110010000",
+     "layer": null,
+     "frame": [
+      252,
+      85,
+      57,
+      94
+     ],
+     "highlight": [
+      253,
+      87,
+      55,
+      92
+     ],
+     "highlight_file": "zone_lc1.png",
+     "label": [
+      182,
+      145,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "lf2",
+     "map_id": "210020000",
+     "layer": null,
+     "frame": [
+      27,
+      301,
+      240,
+      187
+     ],
+     "highlight": [
+      29,
+      303,
+      267,
+      185
+     ],
+     "highlight_file": "zone_lf2.png",
+     "label": [
+      91,
+      399,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "lf2a",
+     "map_id": "210060000",
+     "layer": null,
+     "frame": [
+      453,
+      218,
+      114,
+      97
+     ],
+     "highlight": [
+      455,
+      220,
+      112,
+      95
+     ],
+     "highlight_file": "zone_lf2a.png",
+     "label": [
+      404,
+      290,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "lf3",
+     "map_id": "210040000",
+     "layer": null,
+     "frame": [
+      266,
+      307,
+      198,
+      161
+     ],
+     "highlight": [
+      229,
+      309,
+      233,
+      159
+     ],
+     "highlight_file": "zone_lf3.png",
+     "label": [
+      249,
+      410,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "lf1a",
+     "map_id": "210030000",
+     "layer": null,
+     "frame": [
+      223,
+      242,
+      128,
+      78
+     ],
+     "highlight": [
+      225,
+      244,
+      126,
+      88
+     ],
+     "highlight_file": "zone_lf1a.png",
+     "label": [
+      175,
+      298,
+      206,
+      22
+     ]
+    }
+   ]
+  },
+  "abyss": {
+   "title": "Бездна",
+   "image": "region_abyss.jpg",
+   "size": 590,
+   "scale": 2,
+   "zones": [
+    {
+     "code": "ab1_1",
+     "map_id": "400010000",
+     "layer": 1,
+     "frame": [
+      87,
+      365,
+      417,
+      169
+     ],
+     "highlight": [
+      87,
+      362,
+      417,
+      169
+     ],
+     "highlight_file": "zone_ab1_1.png",
+     "label": null
+    },
+    {
+     "code": "ab1_2",
+     "map_id": "400010000",
+     "layer": 2,
+     "frame": [
+      210,
+      219,
+      161,
+      128
+     ],
+     "highlight": [
+      210,
+      219,
+      161,
+      128
+     ],
+     "highlight_file": "zone_ab1_2.png",
+     "label": null
+    },
+    {
+     "code": "ab1_3",
+     "map_id": "400010000",
+     "layer": 3,
+     "frame": [
+      87,
+      73,
+      433,
+      136
+     ],
+     "highlight": [
+      88,
+      73,
+      433,
+      136
+     ],
+     "highlight_file": "zone_ab1_3.png",
+     "label": null
+    }
+   ]
+  },
+  "dragon": {
+   "title": "Балаурея",
+   "image": "region_dragon.jpg",
+   "size": 590,
+   "scale": 2,
+   "zones": [
+    {
+     "code": "lf4",
+     "map_id": "210050000",
+     "layer": null,
+     "frame": [
+      118,
+      282,
+      153,
+      97
+     ],
+     "highlight": [
+      118,
+      282,
+      153,
+      95
+     ],
+     "highlight_file": "zone_lf4.png",
+     "label": [
+      84,
+      329,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "df4",
+     "map_id": "220070000",
+     "layer": null,
+     "frame": [
+      373,
+      245,
+      161,
+      65
+     ],
+     "highlight": [
+      373,
+      245,
+      161,
+      63
+     ],
+     "highlight_file": "zone_df4.png",
+     "label": [
+      349,
+      293,
+      206,
+      22
+     ]
+    },
+    {
+     "code": "underpass",
+     "map_id": "600010000",
+     "layer": null,
+     "frame": [
+      271,
+      337,
+      97,
+      59
+     ],
+     "highlight": [
+      271,
+      337,
+      97,
+      57
+     ],
+     "highlight_file": "zone_underpass.png",
+     "label": [
+      221,
+      389,
+      206,
+      22
+     ]
+    }
+   ]
+  }
+ }
+}

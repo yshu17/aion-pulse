@@ -17,6 +17,7 @@ import { IconChevron, IconClose, IconFilter, IconFit, IconMessage, IconMinus, Ic
 import type { Boot } from "../useBoot";
 import { pictureUrl, PLACE_ICON, poi, typeIcon, zones } from "./mapData";
 import type { ChatPlace } from "./placeLink";
+import { regionOf, world, WorldLayer, zoneTitle } from "./WorldLayer";
 import "./map.css";
 
 const DEFAULT_ZONE = "220070000"; // Келькмарос
@@ -42,6 +43,9 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
   const [layer, setLayer] = useState<number | null>(zone?.layers[0]?.[0] ?? null);
   const [selected, setSelected] = useState<Selected>(null);
   const [shownPlace, setShownPlace] = useState<ChatPlace | null>(place);
+  // the tab opens on Atreia (the world map), a region of it, or a zone; a place from the chat opens its zone at once
+  const [level, setLevel] = useState<"world" | "zone">(place ? "zone" : "world");
+  const [region, setRegion] = useState<string | null>(null);
   const motion = !(cfg.reduce_motion || reducedMotion());
 
   // --- the picture and the view ---------------------------------------------------------------------------------
@@ -114,6 +118,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
   useEffect(() => {
     if (!place) return;
     setShownPlace(place);
+    setLevel("zone");
     setSelected(null);
     const target = zones[place.map_id];
     if (!target) return;
@@ -141,7 +146,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
     return [e.clientX - r.left, e.clientY - r.top] as [number, number];
   };
   const onPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 || !view) return;
+    if (e.button !== 0 || !view || level !== "zone") return;
     stop();
     // the pointer is captured only once the mouse really drags: a plain click must still reach the icon under it
     drag.current = { x: e.clientX, y: e.clientY, view, moved: false };
@@ -177,9 +182,10 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
       const r = el.getBoundingClientRect();
       zoomBy(e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, e.clientX - r.left, e.clientY - r.top);
     };
+    if (level !== "zone") return;
     el.addEventListener("wheel", wheel, { passive: false });
     return () => el.removeEventListener("wheel", wheel);
-  }, [zoomBy]);
+  }, [zoomBy, level]);
 
   // --- what is drawn ---------------------------------------------------------------------------------------------
   const points = useMemo(() => (zone ? poi.inZone(zone.map_id, types, side, layer) : []), [zone, types, side, layer]);
@@ -308,6 +314,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
     if (selected?.kind === "poi" && FILTER_GROUPS[group][1].includes(selected.poi.type) && !hidden.includes(group)) setSelected(null);
   };
   const openZone = (id: string) => {
+    setLevel("zone");
     setZoneId(id);
     setLayer(zones[id]?.layers[0]?.[0] ?? null);
     setSelected(null);
@@ -324,6 +331,10 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
   };
 
   const backToPlace = () => { setSelected(null); centreButton(); };
+  // the breadcrumb: Атрея / the region / the zone (a zone outside the world map, e.g. a temple: Атрея / the zone)
+  const crumbRegion = level === "world" ? region : regionOf(zoneId);
+  const worldZone = Object.values(world.regions).flatMap((r) => r.zones).find((z) => z.map_id === zoneId && (z.layer === null || z.layer === layer));
+  const crumbZone = worldZone ? zoneTitle(worldZone) : zone?.name ?? "";
 
   if (!zone) return <main className="soon"><p>Карт нет: папка data/maps не найдена.</p></main>;
   const [placeX, placeY] = placeHere ? toImage(zone, placeHere.x, placeHere.y) : [0, 0];
@@ -338,11 +349,12 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
             {zoneList.map((z) => <option key={z.map_id} value={z.map_id}>{z.name}</option>)}
           </select>
         </label>
-        {zone.layers.length > 0 && (
+        {level === "zone" && zone.layers.length > 0 && (
           <select className="field map-layer" value={layer ?? ""} aria-label="Слой Бездны" onChange={(e) => setLayer(Number(e.target.value))}>
             {zone.layers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
         )}
+        {level === "zone" ? <>
         <div className="map-search">
           <IconSearch />
           <input ref={search} className="field" placeholder="Поиск по карте (места, NPC, задания…)" value={query} aria-label="Поиск по карте"
@@ -380,11 +392,19 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
             </div>
           )}
         </div>
+        </> : <div className="map-bar-hint">Выбери часть Атреи, потом зону, или найди зону в списке слева.</div>}
       </div>
 
       <div className="map-body">
         <div ref={box} className={`map-view${dragging ? " dragging" : ""}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
           onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={() => setMouse(null)}>
+          <nav className="map-crumbs" aria-label="Где на карте">
+            <button className={level === "world" && !region ? "on" : ""} onClick={() => { setLevel("world"); setRegion(null); }}>Атрея</button>
+            {crumbRegion && <><i>/</i><button className={level === "world" ? "on" : ""} onClick={() => { setLevel("world"); setRegion(crumbRegion); }}>{world.regions[crumbRegion].title}</button></>}
+            {level === "zone" && <><i>/</i><span className="on">{crumbZone}</span></>}
+          </nav>
+          {level === "world" ? (size && <WorldLayer size={size} region={region} onRegion={setRegion}
+            onZone={(z) => { if (!z.map_id) return; openZone(z.map_id); if (z.layer !== null) setLayer(z.layer); }} />) : <>
           {picture && view && (
             <img className="map-picture" src={picture} alt="" draggable={false}
               style={{ width: zone.size, height: zone.size, transform: `translate(${-view.left * view.zoom}px, ${-view.top * view.zoom}px) scale(${view.zoom})` }} />
@@ -433,9 +453,10 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
           </div>
           <button className="map-locate" aria-label={placeHere ? "К метке из чата" : "Вся карта"} title={placeHere ? "К метке из чата" : "Вся карта"}
             onClick={centreButton}>{placeHere ? <IconTarget /> : <IconFit />}</button>
+          </>}
         </div>
 
-        <aside className="map-panel" aria-label="Выбранное на карте">
+        {level === "zone" && <aside className="map-panel" aria-label="Выбранное на карте">
           {selected?.kind === "poi" ? (
             <PointCard title={selected.poi.name || poi.typeName(selected.poi.type)} kind={poi.typeName(selected.poi.type)} icon={typeIcon(selected.poi.type)}
               coords={[selected.poi.gx, selected.poi.gy]} note={selected.poi.note} near={near} onNear={(p) => pick(p, true)}
@@ -469,7 +490,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
               <p>Ссылка «Место» в чате открывает карту на этом месте.</p>
             </div>
           )}
-        </aside>
+        </aside>}
       </div>
     </main>
   );

@@ -110,3 +110,35 @@
   .map-pin .glow { animation: none; }
 }
 @media (max-width: 1240px) { .map-panel { width: 310px; } .map-zone select { width: 190px; } }
+
+/* Atreia and its regions (WorldLayer.tsx): the game's own world map, on a dark night sky */
+.map-bar-hint { flex: 1; color: var(--muted); font-size: 13px; }
+.map-crumbs { position: absolute; left: 50%; top: 14px; z-index: 7; transform: translateX(-50%); display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 10px; background: rgba(14, 16, 20, .82); border: 1px solid var(--border); backdrop-filter: blur(4px); font-size: 13px; white-space: nowrap; }
+.map-crumbs i { color: var(--muted); font-style: normal; }
+.map-crumbs button { padding: 2px 4px; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; font: inherit; }
+.map-crumbs button:hover { color: var(--text); background: var(--surface-2); }
+.map-crumbs .on { color: var(--text); font-weight: 600; }
+.map-crumbs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.map-view:has(.world-globe, .world-region) { cursor: default;
+  background: radial-gradient(ellipse at 50% 55%, #2a2240 0, #17142a 45%, #0b0b12 100%); }
+.world-globe, .world-region { position: absolute; inset: 0; }
+.world-globe.pointing, .world-region.pointing { cursor: pointer; }
+.world-glow { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 214, 140, .16) 0, rgba(140, 110, 220, .08) 45%, transparent 70%); }
+.world-part { position: absolute; pointer-events: none; }
+.world-part img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.world-part .over { opacity: 0; transition: opacity var(--t) var(--ease-out); }
+.world-part.on .over { opacity: 1; }
+.world-part.on { filter: drop-shadow(0 0 14px rgba(255, 196, 90, .45)); }
+.world-label, .world-zone-name { position: absolute; transform: translate(-50%, -50%); padding: 2px 8px; border: 0; border-radius: 6px; background: none;
+  cursor: pointer; color: #fff4d6; font: 700 17px/1.2 var(--font); white-space: nowrap; display: flex; flex-direction: column; align-items: center;
+  text-shadow: -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000, 0 2px 6px #000; transition: color var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out); }
+.world-label small { font-size: 11px; font-weight: 600; color: #d8c8a0; }
+.world-label.on, .world-zone-name.on { color: #ffd27a; transform: translate(-50%, -50%) scale(1.06); }
+.world-label:focus-visible, .world-zone-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.world-region-map { position: absolute; pointer-events: none; border-radius: 6px; box-shadow: 0 10px 40px #000a; }
+.world-zone-light { position: absolute; pointer-events: none; opacity: 0; transition: opacity var(--t) var(--ease-out); }
+.world-zone-light.on { opacity: 1; }
+.world-zone-name { font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .world-part .over, .world-zone-light { transition: none; } }
