@@ -120,8 +120,7 @@
 .map-crumbs button:hover { color: var(--text); background: var(--surface-2); }
 .map-crumbs .on { color: var(--text); font-weight: 600; }
 .map-crumbs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.map-view:has(.world-globe, .world-region) { cursor: default;
-  background: radial-gradient(ellipse at 50% 55%, #2a2240 0, #17142a 45%, #0b0b12 100%); }
+.map-view:has(.world-layer) { cursor: default; }
 .world-globe, .world-region { position: absolute; inset: 0; }
 .world-globe.pointing, .world-region.pointing { cursor: pointer; }
 .world-glow { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
@@ -143,3 +142,21 @@
 .world-zone-name { font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .world-part .over, .world-zone-light { transition: none; } }
 .map-home { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 0 12px 0 8px; }
+
+/* the globe and the night sky of aion-map.vercel.app (data/maps/world/site) */
+.world-layer { position: absolute; inset: 0; display: grid; place-items: center; background: #15121f center / cover no-repeat; }
+.world-layer > .world-region { inset: 0; }
+.world-svg { display: block; overflow: visible; }
+.world-svg.pointing { cursor: pointer; }
+.world-emblem { opacity: .25; pointer-events: none; }
+.world-light { opacity: 0; pointer-events: none; transition: opacity 150ms ease-in-out; }
+.world-light.on { opacity: 1; }
+.world-hit { fill: transparent; stroke: transparent; cursor: pointer; }
+.world-name { cursor: pointer; }
+.world-name text { fill: #f4f7ad; font: 700 20px var(--font); filter: drop-shadow(0 2px 10px rgba(0, 0, 0, .8)); paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 3px; }
+.world-name text.note { font-size: 12px; font-weight: 600; fill: #e8dcb0; }
+.world-name.on text { fill: #ffe9a8; }
+@media (prefers-reduced-motion: reduce) { .world-light { transition: none; } }
+.world-layer::before { content: ""; position: absolute; inset: 0; background: rgba(20, 14, 34, .45); pointer-events: none; } /* the sky dimmed, as on the site */
+.world-layer > * { position: relative; }
+.world-layer > .world-region { position: absolute; }

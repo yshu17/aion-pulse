@@ -25,7 +25,7 @@ export const PLACE_ICON = iconUrl("place.png"); // the blue cross of a place fro
 
 // the dev page only: the pictures come from the dev server (this list is dropped from the program's build)
 const devPictures = import.meta.env.DEV
-  ? import.meta.glob(["../../../../data/maps/client/*.jpg", "../../../../data/maps/world/*.{png,jpg}"], { query: "?url", import: "default" }) as Record<string, () => Promise<string>>
+  ? import.meta.glob(["../../../../data/maps/client/*.jpg", "../../../../data/maps/world/*.{png,jpg}", "../../../../data/maps/world/site/*.png"], { query: "?url", import: "default" }) as Record<string, () => Promise<string>>
   : {};
 
 const pictures = new Map<string, Promise<string | null>>();

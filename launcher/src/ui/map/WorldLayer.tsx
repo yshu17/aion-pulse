@@ -1,9 +1,11 @@
 // The start screen of the «Карта» tab, as the game's world map: Atreia's globe (Asmodae, Elysea, the Abyss and
-// Balaurea, the outer lands on the globe's rims), then a region with its zones. Hovering lights a part up with the
-// game's own «over» sprite, a click opens it. The pictures and the layout come from the client
-// (tools/build_world_map.py -> data/maps/world); the parts are hit-tested by their pixels, not their boxes.
+// Balaurea, the outer lands on the globe's rims), then a region with its zones. Hovering lights a part up, a click
+// opens it. The globe, its highlights, the night sky and the names are those of aion-map.vercel.app
+// (data/maps/world/site, atrea.json), Balaurea added on the rims; the regions are the game's own maps
+// (tools/build_world_map.py -> data/maps/world).
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import atreaJson from "../../../../data/maps/world/site/atrea.json?raw";
 import worldJson from "../../../../data/maps/world/world.json?raw";
 import { mapNames } from "../data";
 import { pictureUrl } from "./mapData";
@@ -16,8 +18,13 @@ interface WorldZone {
 interface Region { title: string; image: string; size: [number, number]; zones: WorldZone[] }
 export const world = JSON.parse(worldJson) as { globe: { size: [number, number]; parts: GlobePart[] }; regions: Record<string, Region> };
 
-const ABYSS_NAMES: Record<string, string> = { ab1_1: "Нижний слой", ab1_2: "Ядро Бездны", ab1_3: "Верхний слой" };
-const REGION_NOTE: Record<string, string> = { dragon: "внешние земли" };
+interface AtreaImage { file: string; x: number; y: number; width: number; height: number; region?: string; emblem?: boolean }
+const atrea = JSON.parse(atreaJson) as {
+  viewBox: [number, number, number, number]; images: AtreaImage[]; paths: Record<string, string[]>;
+  labels: { region: string; x: number; y: number; text: string; note?: string }[]; zone_names: Record<string, string>;
+};
+const ABYSS_NAMES = atrea.zone_names; // the Abyss layers named as on the site
+const BG = "site/bg.png";
 
 /** The region a zone belongs to on the world map (null: a zone the world map has no place for, e.g. a temple). */
 export function regionOf(mapId: string): string | null {
@@ -73,58 +80,53 @@ function opaque(mask: ImageData | undefined, u: number, v: number): boolean {
 export function WorldLayer({ size, region, onRegion, onZone }: {
   size: { w: number; h: number }; region: string | null; onRegion(region: string): void; onZone(zone: WorldZone): void;
 }) {
-  return region ? <RegionMap size={size} region={region} onZone={onZone} /> : <Globe size={size} onRegion={onRegion} />;
+  const bg = usePictures([BG])[BG];
+  return (
+    <div className="world-layer" style={bg ? { backgroundImage: `url(${bg})` } : undefined}>
+      {region ? <RegionMap size={size} region={region} onZone={onZone} /> : <Globe size={size} onRegion={onRegion} />}
+    </div>
+  );
 }
 
-/** Atreia: the globe of five parts; Balaurea's two rims light up together. */
+/** Atreia: the site's globe; a land lights up over its outline, Balaurea over the globe's rims (its own pixels). */
 function Globe({ size, onRegion }: { size: { w: number; h: number }; onRegion(region: string): void }) {
-  const [gw, gh] = world.globe.size;
-  // the client's globe is small: shown at most 2.6 times its size (its pictures are 4 times), so it stays sharp
-  const k = Math.max(1, Math.min((size.w - 60) / gw, (size.h - 70) / gh, 2.6));
-  const left = (size.w - gw * k) / 2, top = (size.h - gh * k) / 2 + 10;
-  const parts = world.globe.parts;
-  const files = useMemo(() => parts.flatMap((p) => [p.up, p.over]), [parts]);
+  const [vx, vy, vw, vh] = atrea.viewBox;
+  const files = useMemo(() => atrea.images.map((i) => `site/${i.file}`), []);
   const urls = usePictures(files);
-  const masks = useMasks(urls, parts.map((p) => p.up));
+  const rims = atrea.images.find((i) => i.region === "dragon")!;
+  const masks = useMasks(urls, [`site/${rims.file}`]);
   const [hover, setHover] = useState<string | null>(null);
-  const hit = (e: { clientX: number; clientY: number; currentTarget: EventTarget }) => {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = (e.clientX - r.left - left) / k, y = (e.clientY - r.top - top) / k;
-    for (const p of [...parts].reverse()) { // the topmost part first (the lands and the Abyss over the rims)
-      const [fx, fy, fw, fh] = p.frame;
-      if (opaque(masks[p.up], (x - fx) / fw, (y - fy) / fh)) return p.region;
-    }
-    return null;
+  const svg = useRef<SVGSVGElement>(null);
+  /** Balaurea under the mouse: a rim pixel of its picture (the lands' outlines are drawn over it and win). */
+  const onRims = (e: React.PointerEvent | React.MouseEvent) => {
+    const m = svg.current?.getScreenCTM();
+    if (!m) return false;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    return opaque(masks[`site/${rims.file}`], (p.x - rims.x) / rims.width, (p.y - rims.y) / rims.height);
   };
-  const labels = Object.entries(world.regions).map(([key, r]) => {
-    const own = parts.filter((p) => p.region === key);
-    const p = key === "dragon" ? own.find((x) => x.part === "dragon2") ?? own[0] : own[0];
-    const [fx, fy, fw, fh] = p.frame;
-    // Balaurea: on the right of the upper rim, where no other name is
-    const at = key === "dragon" ? [fx + fw * 0.93, fy + fh * 0.3] : [fx + fw / 2, fy + fh / 2];
-    return { key, title: r.title, x: left + at[0] * k, y: top + at[1] * k };
-  });
+  const scale = Math.min((size.w - 40) / vw, (size.h - 40) / vh);
   return (
-    <div className={`world-globe${hover ? " pointing" : ""}`} onPointerMove={(e) => setHover(hit(e))} onPointerLeave={() => setHover(null)}
-      onClick={(e) => { const region = hit(e); if (region) onRegion(region); }} role="group" aria-label="Атрея">
-      <div className="world-glow" style={{ left: size.w / 2, top: size.h / 2 + 10, width: gw * k * 1.15, height: gw * k * 1.15 }} />
-      {parts.map((p) => {
-        const [fx, fy, fw, fh] = p.frame;
-        const style = { left: left + fx * k, top: top + fy * k, width: fw * k, height: fh * k };
-        return (
-          <div key={p.part} className={`world-part${hover === p.region ? " on" : ""}`} style={style}>
-            {urls[p.up] && <img src={urls[p.up]} alt="" draggable={false} />}
-            {urls[p.over] && <img className="over" src={urls[p.over]} alt="" draggable={false} />}
-          </div>
-        );
-      })}
-      {labels.map((l) => (
-        <button key={l.key} className={`world-label${hover === l.key ? " on" : ""}`} style={{ left: l.x, top: l.y }}
-          onPointerEnter={() => setHover(l.key)} onClick={(e) => { e.stopPropagation(); onRegion(l.key); }}>
-          {l.title}{REGION_NOTE[l.key] && <small>{REGION_NOTE[l.key]}</small>}
-        </button>
+    <svg ref={svg} className={`world-svg${hover ? " pointing" : ""}`} viewBox={`${vx} ${vy} ${vw} ${vh}`}
+      width={vw * scale} height={vh * scale} role="group" aria-label="Атрея"
+      onPointerMove={(e) => { if ((e.target as Element).tagName !== "path") setHover(onRims(e) ? "dragon" : null); }}
+      onPointerLeave={() => setHover(null)}
+      onClick={(e) => { if ((e.target as Element).tagName !== "path" && onRims(e)) onRegion("dragon"); }}>
+      {atrea.images.map((i) => urls[`site/${i.file}`] && (
+        <image key={i.file} href={urls[`site/${i.file}`]} x={i.x} y={i.y} width={i.width} height={i.height}
+          className={i.emblem ? "world-emblem" : i.region ? `world-light${hover === i.region ? " on" : ""}` : undefined} />
       ))}
-    </div>
+      {Object.entries(atrea.paths).map(([region, paths]) => paths.map((d, n) => (
+        <path key={`${region}${n}`} d={d} className="world-hit" onPointerEnter={() => setHover(region)} onPointerLeave={() => setHover(null)}
+          onClick={(e) => { e.stopPropagation(); onRegion(region); }} />
+      )))}
+      {atrea.labels.map((l) => (
+        <g key={l.region} className={`world-name${hover === l.region ? " on" : ""}`} onPointerEnter={() => setHover(l.region)}
+          onClick={(e) => { e.stopPropagation(); onRegion(l.region); }}>
+          <text x={l.x} y={l.y}>{l.text}</text>
+          {l.note && <text className="note" x={l.x} y={l.y + 16}>{l.note}</text>}
+        </g>
+      ))}
+    </svg>
   );
 }
 
