@@ -1,6 +1,6 @@
 // The «Карта» tab: a zone of Aion with its area names and points (teleporters, kisks, merchants, fortresses …) drawn
 // with the game's own map icons, as Pulse's map (watcher/mapview.py). The wheel zooms to the mouse, dragging moves the
-// map, a double click zooms in. A place link from the chat opens here as a blue cross; the right panel shows it (or
+// map. A click on an icon picks it (a group of icons: zooms in on it). A place link from the chat opens here as a blue cross; the right panel shows it (or
 // the picked point) and what is near it. The rules of the view live in core/map/view.ts.
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -143,8 +143,8 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0 || !view) return;
     stop();
+    // the pointer is captured only once the mouse really drags: a plain click must still reach the icon under it
     drag.current = { x: e.clientX, y: e.clientY, view, moved: false };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (zone && view) setMouse(gameAt(view, zone, ...local(e)));
@@ -152,7 +152,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
     if (!d || !zone || !size) return;
     const dx = e.clientX - d.x, dy = e.clientY - d.y;
     if (!d.moved && Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
-    if (!d.moved) { d.moved = true; setDragging(true); }
+    if (!d.moved) { d.moved = true; setDragging(true); setBubble(null); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }
     setView(clampView({ zoom: d.view.zoom, left: d.view.left - dx / d.view.zoom, top: d.view.top - dy / d.view.zoom }, zone, size.w, size.h));
   };
   const onPointerUp = () => {
@@ -384,8 +384,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
 
       <div className="map-body">
         <div ref={box} className={`map-view${dragging ? " dragging" : ""}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={() => setMouse(null)}
-          onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button")) { const [sx, sy] = local(e); zoomBy(2, sx, sy); } }}>
+          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={() => setMouse(null)}>
           {picture && view && (
             <img className="map-picture" src={picture} alt="" draggable={false}
               style={{ width: zone.size, height: zone.size, transform: `translate(${-view.left * view.zoom}px, ${-view.top * view.zoom}px) scale(${view.zoom})` }} />
