@@ -40,6 +40,9 @@
 .map-poi > i { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid #000; }
 .map-poi:hover { transform: translate(-50%, -50%) scale(1.12); filter: drop-shadow(0 0 6px #ffffff55); z-index: 2; }
 .map-poi:active { transform: translate(-50%, -50%) scale(1.05); }
+/* the kit scales every pressed button; these sit by translate(-50%, -50%), which that rule drops: they jumped sideways on a press */
+button.map-poi:active:not(:disabled), button.map-npc:active:not(:disabled) { transform: translate(-50%, -50%) scale(1.05); }
+button.world-zone-name:active:not(:disabled), button.world-label:active:not(:disabled) { transform: translate(-50%, -50%) scale(1.02); }
 .map-poi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .map-poi.chosen { z-index: 3; animation: map-pulse 1.6s ease-in-out infinite; }
 @keyframes map-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1.25); filter: drop-shadow(0 0 8px var(--accent)); }

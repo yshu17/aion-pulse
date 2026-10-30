@@ -23,8 +23,10 @@ export function iconUrl(file: string | undefined): string | null {
 }
 
 /** Ways between zones (data/maps/transitions.json): a point of a zone and the zone it leads to, where it arrives. */
-export interface Way { from: string; name: string; to: string; at?: [number, number] }
+export interface Way { from: string; name: string; to: string; at?: [number, number]; entrance?: boolean }
 const ways = (JSON.parse(transitionsJson) as { ways: Way[] }).ways.filter((w) => w.from in zones && w.to in zones);
+/** The entrances that lead into a zone (a dungeon): for the way back out. */
+export const waysInto = (mapId: string) => ways.filter((w) => w.to === mapId && w.entrance);
 export const wayFrom = (mapId: string, name: string) => ways.find((w) => w.from === mapId && w.name === name) ?? null;
 
 export const typeIcon = (type: string) => iconUrl((poi.types[type]?.icon as string | undefined) ?? undefined);

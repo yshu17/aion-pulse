@@ -16,7 +16,7 @@ import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
 import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconSearch, IconTarget } from "../icons";
 import type { Boot } from "../useBoot";
-import { loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, zones } from "./mapData";
+import { loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, waysInto, zones } from "./mapData";
 import type { ChatPlace, MapTarget } from "./placeLink";
 import { regionOf, world, WorldLayer, zoneTitle } from "./WorldLayer";
 import "./map.css";
@@ -241,8 +241,9 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
       for (const p of m) { const [sx, sy] = toScreen(view, p.x, p.y); x += sx; y += sy; }
       return [x / m.length, y / m.length, m];
     });
-    // fortresses on top of everything, then teleporters and kisks, the other landmarks at the bottom
-    const rank = (p: Poi) => (p.type === "fortress" ? 3 : BIG_TYPES.has(p.type) ? 2 : p.type in ICON_SCALE ? 0 : 1);
+    // drawn last = on top: fortresses over everything, then teleporters and kisks, then the other landmarks (dungeon
+    // entrances, the tunnel, artifacts: the big ones must stay clickable under nothing), the ordinary points at the bottom
+    const rank = (p: Poi) => (p.type === "fortress" ? 3 : BIG_TYPES.has(p.type) ? 2 : p.type in ICON_SCALE ? 1 : 0);
     return out.filter(([x, y, m]) => {
       const s = iconSize(m[0].type, iconZoom);
       return x > -s && x < size.w + s && y > -s && y < size.h + s;
@@ -385,6 +386,17 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
 
   const backToPlace = () => { setSelected(null); centreButton(); };
   /** A way to another zone (a teleport statue of a capital, its temple's way back): that zone, at the point it arrives. */
+  /** Back out of a dungeon: the zone of its entrance, the entrance picked. */
+  const goOut = (way: Way) => {
+    openZone(way.from);
+    const z = zones[way.from];
+    if (z?.side && z.side !== side) setSide(z.side);
+    const entrance = poi.zone(way.from).find((p) => p.type === "dungeon" && p.name === way.name);
+    if (entrance) {
+      setSelected({ kind: "poi", poi: entrance });
+      pendingPlace.current = { map_id: way.from, x: entrance.gx, y: entrance.gy };
+    }
+  };
   const goWay = (way: Way) => {
     const target = zones[way.to];
     if (!target) return;
@@ -634,6 +646,18 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               <h2>{zone.name}</h2>
               <p>Кликни по значку на карте или найди точку поиском — здесь появится карточка и что рядом.</p>
               <p>Ссылка «Место» в чате открывает карту на этом месте.</p>
+              {waysInto(zone.map_id).length > 0 && (
+                <>
+                  <h3 className="map-near-title">Выход</h3>
+                  <ul className="map-near">
+                    {waysInto(zone.map_id).map((w) => (
+                      <li key={`${w.from}${w.name}`}><button onClick={() => goOut(w)}>
+                        <span className="t"><b>{zones[w.from].name}</b><span>{w.name}</span></span><IconChevron open={false} />
+                      </button></li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
         </aside>}

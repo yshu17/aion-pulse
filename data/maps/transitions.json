@@ -1,13 +1,127 @@
 {
- "about": "Ways between zones the map shows on a point's card: the point (zone, name) and the zone it leads to, with the point it arrives at (game x, y). Checked by hand against data/maps/poi.json: the capitals and their temples, the sacred arenas.",
+ "about": "Ways between zones the map shows on a point's card: the point (its zone and name) and the zone it leads to, with the point it arrives at (game x, y) when known. Checked by hand against data/maps/poi.json and the zone names: the capitals and their temples, the sacred arenas, and the dungeon entrances whose dungeon the client has a map of (rooms inside a dungeon and caves without a map of their own have no way).",
  "ways": [
-  {"from": "120010000", "name": "Статуя телепорта в храм Маркутана", "to": "120020000", "at": [1559, 1429]},
-  {"from": "120020000", "name": "Статуя телепорта Пандемониума", "to": "120010000", "at": [1601, 1389]},
-  {"from": "110010000", "name": "Статуя телепорта в храм Кайсинеля", "to": "110020000", "at": [2154, 1567]},
-  {"from": "110020000", "name": "Телепорт в Элизиум", "to": "110010000", "at": [1366, 1544]},
-  {"from": "110070000", "name": "Телепорт в Элизиум", "to": "110010000"},
-  {"from": "110070000", "name": "Телепорт в Ингисон", "to": "210050000"},
-  {"from": "120080000", "name": "Статуя телепорта Пандемониума", "to": "120010000"},
-  {"from": "120080000", "name": "Телепорт в Келькмарос", "to": "220070000"}
+  {
+   "from": "120010000",
+   "name": "Статуя телепорта в храм Маркутана",
+   "to": "120020000",
+   "at": [
+    1559,
+    1429
+   ]
+  },
+  {
+   "from": "120020000",
+   "name": "Статуя телепорта Пандемониума",
+   "to": "120010000",
+   "at": [
+    1601,
+    1389
+   ]
+  },
+  {
+   "from": "110010000",
+   "name": "Статуя телепорта в храм Кайсинеля",
+   "to": "110020000",
+   "at": [
+    2154,
+    1567
+   ]
+  },
+  {
+   "from": "110020000",
+   "name": "Телепорт в Элизиум",
+   "to": "110010000",
+   "at": [
+    1366,
+    1544
+   ]
+  },
+  {
+   "from": "110070000",
+   "name": "Телепорт в Элизиум",
+   "to": "110010000"
+  },
+  {
+   "from": "110070000",
+   "name": "Телепорт в Ингисон",
+   "to": "210050000"
+  },
+  {
+   "from": "120080000",
+   "name": "Статуя телепорта Пандемониума",
+   "to": "120010000"
+  },
+  {
+   "from": "120080000",
+   "name": "Телепорт в Келькмарос",
+   "to": "220070000"
+  },
+  {
+   "from": "220020000",
+   "name": "Вход в Святилище огня",
+   "to": "320100000",
+   "entrance": true
+  },
+  {
+   "from": "210020000",
+   "name": "Вход в Святилище огня",
+   "to": "320100000",
+   "entrance": true
+  },
+  {
+   "from": "220050000",
+   "name": "Вход в форт Адма",
+   "to": "320130000",
+   "entrance": true
+  },
+  {
+   "from": "220040000",
+   "name": "Вход в пещеру Драубнир",
+   "to": "320080000",
+   "entrance": true
+  },
+  {
+   "from": "220040000",
+   "name": "Вход в лабораторию Альквимии",
+   "to": "320110000",
+   "entrance": true
+  },
+  {
+   "from": "210040000",
+   "name": "Вход в секретную лабораторию повстанцев",
+   "to": "310050000",
+   "entrance": true
+  },
+  {
+   "from": "220070000",
+   "name": "Вход в храм Удас",
+   "to": "300150000",
+   "entrance": true
+  },
+  {
+   "from": "210050000",
+   "name": "Вход в храм Удас",
+   "to": "300150000",
+   "entrance": true
+  },
+  {
+   "from": "220070000",
+   "name": "Вход в подземелье храма Удас",
+   "to": "300160000",
+   "entrance": true
+  },
+  {
+   "from": "210050000",
+   "name": "Вход в подземелье храма Удас",
+   "to": "300160000",
+   "entrance": true
+  },
+  {
+   "from": "600010000",
+   "name": "Вход в храм Пхасумандир",
+   "to": "300170000",
+   "entrance": true
+  }
  ]
 }

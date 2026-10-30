@@ -3,7 +3,8 @@
 Храм Маркутана (dc2), Храм Кайсинель (lc2), Священная арена Маркутана (arena_d_lobby), Священная арена Кайсинель
 (arena_l_lobby). The client has no game map («newmap») for them, only the small radar picture of the area: 128 px
 tiles, two or three to a side, laid out column by column. It is stitched, padded to a square and enlarged four
-times.
+times with Waifu2x (downloads/icon_upscale, as the map icons: clean edges instead of Lanczos blur; without it Lanczos).
+The client has nothing better for these four zones, and aiondb.ru and the Aion Empire KB have no maps of them.
 
 Framing (radar pixels per game metre and the game position of the picture's corner):
 - the arenas: zonemap.xml gives it (offset_x / offset_y, map_width); 26 of 38 NPCs of Kaisinel's arena and 23 of 38
@@ -23,7 +24,9 @@ import csv
 import glob
 import json
 import re
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -51,7 +54,21 @@ def stitch(folder: str, columns: int, rows: int) -> Image.Image:
     for index, tile in enumerate(tiles[: columns * rows]):
         with Image.open(tile) as image:
             picture.paste(image.convert("RGB"), ((index // rows) * TILE, (index % rows) * TILE))
-    return picture.resize((side * ENLARGE, side * ENLARGE), Image.LANCZOS)
+    return enlarge(picture)
+
+
+def enlarge(picture: Image.Image) -> Image.Image:
+    size = (picture.width * ENLARGE, picture.height * ENLARGE)
+    exe = next((ROOT / "downloads" / "icon_upscale").rglob("waifu2x-ncnn-vulkan.exe"), None)
+    if exe is None:
+        return picture.resize(size, Image.LANCZOS)
+    with tempfile.TemporaryDirectory() as tmp:
+        source, target = Path(tmp) / "in.png", Path(tmp) / "out.png"
+        picture.save(source)
+        subprocess.run([str(exe), "-i", str(source), "-o", str(target), "-n", "1", "-s", str(ENLARGE),
+                        "-m", str(exe.parent / "models-cunet")], check=True, capture_output=True)
+        with Image.open(target) as result:
+            return result.convert("RGB").resize(size, Image.LANCZOS)
 
 
 def world_npcs(code: str) -> list[tuple[str, float, float]]:
