@@ -30,6 +30,9 @@ const ZOOM_MS = 170;
 type Selected = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string } | null;
 type Match = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string };
 
+/** An area name: the data writes some twice on two lines («Око Арэшурата|Око Арэшурата»), shown once. */
+const oneLine = (text: string) => text.split("\n").filter((line, i, all) => all.indexOf(line) === i).join("\n");
+
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 const ease = (t: number) => 1 - (1 - t) ** 3;
 
@@ -198,6 +201,8 @@ export function MapTab({ boot, place, home, onPlaceCleared }: {
   const [settled, setSettled] = useState<number | null>(null);
   useEffect(() => { if (view && !frame.current && view.zoom !== settled) setSettled(view.zoom); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const iconZoom = settled ?? view?.zoom ?? 1;
+  // a stable id per point: the data has points of one type at one spot twice (the Abyss: 62), keys must not collide
+  const pointIds = useMemo(() => new Map(points.map((p, i) => [p, i])), [points]);
   const merged = useMemo(() => {
     if (iconZoom >= SPLIT_ZOOM) return points.map((p) => [p]);
     const base: View = { zoom: iconZoom, left: 0, top: 0 }; // the cells do not depend on panning (core cluster)
@@ -210,8 +215,8 @@ export function MapTab({ boot, place, home, onPlaceCleared }: {
       for (const p of m) { const [sx, sy] = toScreen(view, p.x, p.y); x += sx; y += sy; }
       return [x / m.length, y / m.length, m];
     });
-    // big landmarks at the bottom, teleporters and kisks on top
-    const rank = (p: Poi) => (BIG_TYPES.has(p.type) ? 2 : p.type in ICON_SCALE ? 0 : 1);
+    // fortresses on top of everything, then teleporters and kisks, the other landmarks at the bottom
+    const rank = (p: Poi) => (p.type === "fortress" ? 3 : BIG_TYPES.has(p.type) ? 2 : p.type in ICON_SCALE ? 0 : 1);
     return out.filter(([x, y, m]) => {
       const s = iconSize(m[0].type, iconZoom);
       return x > -s && x < size.w + s && y > -s && y < size.h + s;
@@ -421,7 +426,7 @@ export function MapTab({ boot, place, home, onPlaceCleared }: {
           {pictureMissing && <div className="map-empty">Картинки этой зоны нет в data/maps.</div>}
           {view && labels.map(({ label: [x, y, text, level], i }) => {
             const [sx, sy] = toScreen(view, x, y);
-            return <div key={i} className={`map-label ${level}`} style={{ left: sx, top: sy, fontSize: level === "zoom" ? labelPx - 2 : labelPx }}>{text}</div>;
+            return <div key={i} className={`map-label ${level}`} style={{ left: sx, top: sy, fontSize: level === "zoom" ? labelPx - 2 : labelPx }}>{oneLine(text)}</div>;
           })}
           {view && groups.map(([sx, sy, members]) => {
             const first = members[0];
@@ -433,7 +438,7 @@ export function MapTab({ boot, place, home, onPlaceCleared }: {
                 .sort((a, b) => b[1] - a[1]).map(([t, n]) => `${poi.typeName(t)}: ${n}`).join("\n")
               : first.name ? `${first.name} · ${poi.typeName(first.type)}` : poi.typeName(first.type);
             return (
-              <button key={members.map((m) => `${m.type}${m.x},${m.y}`).join("|")} className={`map-poi${chosen ? " chosen" : ""}`}
+              <button key={members.map((m) => pointIds.get(m)).join("|")} className={`map-poi${chosen ? " chosen" : ""}`}
                 style={{ left: sx, top: sy, width: s, height: s }} aria-label={title}
                 onPointerEnter={() => setBubble({ x: sx, y: sy - s / 2, text: title })} onPointerLeave={() => setBubble(null)}
                 onClick={() => {
@@ -482,7 +487,7 @@ export function MapTab({ boot, place, home, onPlaceCleared }: {
                     <IconChevron open={false} /></button></li>
                 )) : Object.entries(world.regions).map(([key, r]) => (
                   <li key={key}><button onClick={() => setRegion(key)}>
-                    <span className="t"><b>{r.title}</b><span>{key === "dragon" ? "внешние земли · " : ""}{r.zones.length} {r.zones.length === 3 ? "зоны" : "зон"}</span></span>
+                    <span className="t"><b>{r.title}</b><span>{r.zones.length} {r.zones.length === 3 ? "зоны" : "зон"}</span></span>
                     <IconChevron open={false} /></button></li>
                 ))}
               </ul>

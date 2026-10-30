@@ -49,7 +49,7 @@ REGIONS = {  # client region -> its title and the globe buttons that open it
     "dark": ("Асмодея", ["dark"]),
     "light": ("Элиос", ["light"]),
     "abyss": ("Бездна", ["abyss"]),
-    "dragon": ("Балаурея", ["dragon1", "dragon2"]),
+    "dragon": ("Внешние земли", ["dragon1", "dragon2"]),
 }
 ABYSS_LAYERS = {"ab1_1": 1, "ab1_2": 2, "ab1_3": 3}  # the Abyss zones of the client are the layers of Reshanta
 

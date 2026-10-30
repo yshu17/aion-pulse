@@ -27,21 +27,22 @@ export function fitZoom(zone: Zone, width: number, height: number): number {
 }
 
 /**
- * Keep the picture on screen: centred when smaller than the view; when zoomed in, it may go half a view past its
- * edge, so a point at the very edge can still be put in the centre.
+ * Keep the picture on screen. Smaller than the view (along an axis): it moves freely while it stays whole inside;
+ * larger: it may go half a view past its edge, so a point at the very edge can still be put in the centre.
  */
 export function clampView(view: View, zone: Zone, width: number, height: number): View {
-  const viewW = width / view.zoom;
-  const viewH = height / view.zoom;
-  const size = zone.size;
-  const left = viewW >= size ? (size - viewW) / 2 : Math.min(Math.max(view.left, -viewW / 2), size - viewW + viewW / 2);
-  const top = viewH >= size ? (size - viewH) / 2 : Math.min(Math.max(view.top, -viewH / 2), size - viewH + viewH / 2);
-  return { zoom: view.zoom, left, top };
+  const axis = (start: number, viewLen: number) => {
+    const size = zone.size;
+    if (viewLen >= size) return Math.min(Math.max(start, size - viewLen), 0);
+    return Math.min(Math.max(start, -viewLen / 2), size - viewLen + viewLen / 2);
+  };
+  return { zoom: view.zoom, left: axis(view.left, width / view.zoom), top: axis(view.top, height / view.zoom) };
 }
 
 /** The whole zone, centred. */
 export function fitView(zone: Zone, width: number, height: number): View {
-  return clampView({ zoom: fitZoom(zone, width, height), left: 0, top: 0 }, zone, width, height);
+  const zoom = fitZoom(zone, width, height);
+  return clampView({ zoom, left: (zone.size - width / zoom) / 2, top: (zone.size - height / zoom) / 2 }, zone, width, height);
 }
 
 /** A new zoom (kept between the fit and MAX_ZOOM) with the picture point under (sx, sy) staying there. */

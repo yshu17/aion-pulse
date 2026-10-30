@@ -45,6 +45,14 @@ describe("map view", () => {
     expect(far.left).toBeCloseTo(-W / 2 / 2);
   });
 
+  it("lets a picture smaller than the view move, but only while it stays whole inside", () => {
+    const v = fitView(zone, W, H); // wider than tall: the picture is narrower than the view
+    const moved = clampView({ ...v, left: v.left - 50 }, zone, W, H);
+    expect(moved.left).toBeCloseTo(v.left - 50);
+    const far = clampView({ ...v, left: -1e6 }, zone, W, H);
+    expect(toScreen(far, zone.size, 0)[0]).toBeCloseTo(W); // its right edge at the view's right edge
+  });
+
   it("gives the game coordinates under the mouse back (the inverse of toImage)", () => {
     const v = { zoom: 1.5, left: 100, top: 200 };
     const [ix, iy] = toImage(zone, 1500, 2100);
