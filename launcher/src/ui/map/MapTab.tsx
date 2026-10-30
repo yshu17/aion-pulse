@@ -23,6 +23,7 @@ const DEFAULT_ZONE = "220070000"; // Келькмарос
 const SPLIT_ZOOM = (MAX_ZOOM / ZOOM_STEP) * 0.999; // the last two zoom levels: every point its own icon, no counts
 const PLACE_ICON_PX = 34; // the blue cross of the chat's place, as on the game's map
 const FLY_MS = 260;
+const FILTER_ICON: Record<string, string> = { rifts: "tunnel" }; // the group's icon in «Фильтры»: the Silentera tunnel for the rifts
 const ZOOM_MS = 170;
 
 type Selected = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string } | null;
@@ -182,22 +183,33 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
 
   // --- what is drawn ---------------------------------------------------------------------------------------------
   const points = useMemo(() => (zone ? poi.inZone(zone.map_id, types, side, layer) : []), [zone, types, side, layer]);
+  // While a zoom glides, the icons keep their size and their merging of the zoom it started from and only move with
+  // the map; they merge or split once, when it settles (recounting every frame made them jump).
+  const [settled, setSettled] = useState<number | null>(null);
+  useEffect(() => { if (view && !frame.current && view.zoom !== settled) setSettled(view.zoom); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+  const iconZoom = settled ?? view?.zoom ?? 1;
+  const merged = useMemo(() => {
+    if (iconZoom >= SPLIT_ZOOM) return points.map((p) => [p]);
+    const base: View = { zoom: iconZoom, left: 0, top: 0 }; // the cells do not depend on panning (core cluster)
+    return cluster(points, (x, y) => toScreen(base, x, y), iconSize("", iconZoom) * 1.1).map(([, , m]) => m);
+  }, [points, iconZoom]);
   const groups = useMemo(() => {
     if (!view || !size) return [];
-    const screen = (x: number, y: number) => toScreen(view, x, y);
-    const out: [number, number, Poi[]][] = view.zoom >= SPLIT_ZOOM
-      ? points.map((p) => [...screen(p.x, p.y), [p]] as [number, number, Poi[]])
-      : cluster(points, screen, iconSize("", view.zoom) * 1.1);
+    const out: [number, number, Poi[]][] = merged.map((m) => {
+      let x = 0, y = 0;
+      for (const p of m) { const [sx, sy] = toScreen(view, p.x, p.y); x += sx; y += sy; }
+      return [x / m.length, y / m.length, m];
+    });
     // big landmarks at the bottom, teleporters and kisks on top
     const rank = (p: Poi) => (BIG_TYPES.has(p.type) ? 2 : p.type in ICON_SCALE ? 0 : 1);
     return out.filter(([x, y, m]) => {
-      const s = iconSize(m[0].type, view.zoom);
+      const s = iconSize(m[0].type, iconZoom);
       return x > -s && x < size.w + s && y > -s && y < size.h + s;
     }).sort((a, b) => rank(a[2][0]) - rank(b[2][0]));
-  }, [points, view, size]);
+  }, [merged, view, size, iconZoom]);
   const labels = useMemo(() => {
     if (!zone || !view || !size) return [];
-    const levels = labelLevels(zone, view.zoom);
+    const levels = labelLevels(zone, iconZoom);
     if (!levels.size) return [];
     return zone.labels.map((label, i) => ({ label, i })).filter(({ label: [x, y, , level], i }) => {
       const onLayer = zone.label_layers[i];
@@ -205,8 +217,8 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
       const [sx, sy] = toScreen(view, x, y);
       return sx > -200 && sx < size.w + 200 && sy > -60 && sy < size.h + 60;
     });
-  }, [zone, view, size, layer]);
-  const labelPx = view ? Math.max(11, Math.min(20, Math.round((5 + 4 * view.zoom) * 1.33))) : 13;
+  }, [zone, view, size, layer, iconZoom]);
+  const labelPx = Math.max(11, Math.min(20, Math.round((5 + 4 * iconZoom) * 1.33))); // settles with the zoom too
   const [bubble, setBubble] = useState<{ x: number; y: number; text: string } | null>(null);
 
   // --- the right panel -------------------------------------------------------------------------------------------
@@ -361,7 +373,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
                 <label key={group} className="check map-check">
                   <input type="checkbox" checked={!hidden.includes(group)} onChange={() => toggleGroup(group)} />
                   <span className="box" />
-                  {typeIcon(kinds[0]) && <img src={typeIcon(kinds[0])!} alt="" />}
+                  {typeIcon(FILTER_ICON[group] ?? kinds[0]) && <img src={typeIcon(FILTER_ICON[group] ?? kinds[0])!} alt="" />}
                   <span>{title}</span>
                 </label>
               ))}
@@ -385,7 +397,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
           })}
           {view && groups.map(([sx, sy, members]) => {
             const first = members[0];
-            const s = iconSize(first.type, view.zoom);
+            const s = iconSize(first.type, iconZoom);
             const chosen = selected?.kind === "poi" && members.includes(selected.poi);
             const src = typeIcon(first.type);
             const title = members.length > 1
@@ -393,7 +405,7 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
                 .sort((a, b) => b[1] - a[1]).map(([t, n]) => `${poi.typeName(t)}: ${n}`).join("\n")
               : first.name ? `${first.name} · ${poi.typeName(first.type)}` : poi.typeName(first.type);
             return (
-              <button key={`${first.type}${first.x}${first.y}${members.length}`} className={`map-poi${chosen ? " chosen" : ""}`}
+              <button key={members.map((m) => `${m.type}${m.x},${m.y}`).join("|")} className={`map-poi${chosen ? " chosen" : ""}`}
                 style={{ left: sx, top: sy, width: s, height: s }} aria-label={title}
                 onPointerEnter={() => setBubble({ x: sx, y: sy - s / 2, text: title })} onPointerLeave={() => setBubble(null)}
                 onClick={() => {
