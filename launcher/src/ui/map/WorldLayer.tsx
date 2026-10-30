@@ -14,6 +14,7 @@ interface GlobePart { region: string; part: string; frame: [number, number, numb
 interface WorldZone {
   code: string; map_id: string | null; layer: number | null; frame: [number, number, number, number];
   highlight: [number, number, number, number] | null; highlight_file: string; label: [number, number, number, number] | null;
+  icon?: string; // a zone the coloured map has no highlight for (the Silentera tunnel): the game's marker, lit on hover
 }
 interface Region { title: string; image: string; size: [number, number]; zones: WorldZone[] }
 export const world = JSON.parse(worldJson) as { globe: { size: [number, number]; parts: GlobePart[] }; regions: Record<string, Region> };
@@ -138,7 +139,7 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
   // under the breadcrumb (TOP), 20 px from the other edges; at most the pictures' own size (2x)
   const k = Math.min((size.w - 40) / rw, (size.h - TOP - 20) / rh, 2);
   const left = (size.w - rw * k) / 2, top = TOP + (size.h - TOP - 20 - rh * k) / 2;
-  const files = useMemo(() => [r.image, ...r.zones.map((z) => z.highlight_file).filter(Boolean)], [r]);
+  const files = useMemo(() => [r.image, ...r.zones.flatMap((z) => [z.highlight_file, z.icon ?? ""]).filter(Boolean)], [r]);
   const urls = usePictures(files);
   const masks = useMasks(urls, r.zones.map((z) => z.highlight_file).filter(Boolean));
   const [hover, setHover] = useState<string | null>(null);
@@ -169,6 +170,11 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
           <img key={z.code} className={`world-zone-light${hover === z.code ? " on" : ""}`} src={urls[z.highlight_file]} alt="" draggable={false}
             style={{ left: left + hx * k, top: top + hy * k, width: hw * k, height: hh * k }} />
         ) : null;
+      })}
+      {r.zones.filter((z) => z.icon && urls[z.icon]).map((z) => {
+        const [fx, fy, fw, fh] = z.frame;
+        return <img key={`${z.code}-icon`} className={`world-zone-icon${hover === z.code ? " on" : ""}`} src={urls[z.icon!]} alt="" draggable={false}
+          style={{ left: left + (fx + fw / 2) * k, top: top + (fy + fh / 2) * k, width: 44 * k, height: 44 * k }} />;
       })}
       {r.zones.filter((z) => z.map_id).map((z) => {
         const [lx, ly, lw, lh] = z.label ?? z.frame;

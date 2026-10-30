@@ -7,8 +7,7 @@ Sources (nothing is drawn here):
 The globe is the game's mini globe (Asmodae and Elysea lands, the Abyss and the two rims of Balaurea, «внешние земли»).
 Asmodae, Elysea and Balaurea use the game's coloured region maps (768x608, worldmap_dark/light/dragon). Their zone
 highlights have no layout in the client: each highlight is found on its map by normalised cross-correlation, named by
-the zone whose place in the newer 590 px layout (new_map_dialog) fits best, and cut to the zone's shape (the pixels the
-highlight turns yellow, its largest piece); the newer layout's buttons and name places are carried over by the same fit. The Abyss keeps its
+the zone whose place in the newer 590 px layout (new_map_dialog) fits best; the sprite is already cut to its zone; the newer layout's buttons and name places are carried over by the same fit. The Abyss keeps its
 590 px map and layout. The pictures are enlarged with the portable Waifu2x (downloads/icon_upscale, as
 tools/upscale_icons.py); without it with Lanczos.
 
@@ -30,7 +29,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 EXTRACT = ROOT / "client_extract"
@@ -51,6 +50,7 @@ REGIONS = {  # client region -> its title and the globe buttons that open it
     "abyss": ("Бездна", ["abyss"]),
     "dragon": ("Внешние земли", ["dragon1", "dragon2"]),
 }
+ICONS = {"underpass": [776, 81, 29, 30]}  # zones the coloured maps have no highlight for: their marker in the same atlas
 ABYSS_LAYERS = {"ab1_1": 1, "ab1_2": 2, "ab1_3": 3}  # the Abyss zones of the client are the layers of Reshanta
 
 
@@ -195,64 +195,9 @@ def old_region(region: str, zones: list[dict]) -> tuple[Image.Image, dict[str, t
     lights = {}
     for (crop, box), index in zip(found, chosen):
         x, y, cw, ch = box
-        piece = Image.fromarray(crop.astype(np.uint8), "RGBA")
-        piece.putalpha(zone_shape(crop[:, :, :3], base[y:y + ch, x:x + cw]))
+        piece = Image.fromarray(crop.astype(np.uint8), "RGBA")  # the game cut it to the zone already (its alpha)
         lights[targets[index]["code"]] = (piece, box)
     return Image.fromarray(base.astype(np.uint8), "RGB"), lights, params
-
-
-def largest(mask: np.ndarray) -> np.ndarray:
-    """The largest 4-connected piece of a mask."""
-    h, w = mask.shape
-    seen = np.zeros_like(mask)
-    best: list[tuple[int, int]] = []
-    for y in range(h):
-        for x in np.where(mask[y] & ~seen[y])[0]:
-            if seen[y, x]:
-                continue
-            stack, piece = [(y, x)], []
-            seen[y, x] = True
-            while stack:
-                cy, cx = stack.pop()
-                piece.append((cy, cx))
-                for ny, nx in ((cy + 1, cx), (cy - 1, cx), (cy, cx + 1), (cy, cx - 1)):
-                    if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not seen[ny, nx]:
-                        seen[ny, nx] = True
-                        stack.append((ny, nx))
-            if len(piece) > len(best):
-                best = piece
-    out = np.zeros_like(mask)
-    if best:
-        ys, xs = zip(*best)
-        out[list(ys), list(xs)] = True
-    return out
-
-
-def fill_holes(mask: np.ndarray) -> np.ndarray:
-    """The mask with its holes filled (what the outside cannot reach)."""
-    h, w = mask.shape
-    outside = np.zeros_like(mask)
-    stack = [(y, x) for y in range(h) for x in (0, w - 1) if not mask[y, x]]
-    stack += [(y, x) for x in range(w) for y in (0, h - 1) if not mask[y, x]]
-    for y, x in stack:
-        outside[y, x] = True
-    while stack:
-        cy, cx = stack.pop()
-        for ny, nx in ((cy + 1, cx), (cy - 1, cx), (cy, cx + 1), (cy, cx - 1)):
-            if 0 <= ny < h and 0 <= nx < w and not mask[ny, nx] and not outside[ny, nx]:
-                outside[ny, nx] = True
-                stack.append((ny, nx))
-    return ~outside
-
-
-def zone_shape(crop: np.ndarray, base: np.ndarray) -> Image.Image:
-    """The zone of a highlight: the pixels it turns yellow (not what merely differs), its largest piece without holes,
-    with soft edges. The highlight crops also hold bits of the neighbours, which must not light up."""
-    yellow = lambda a: (a[..., 0] + a[..., 1]) / 2 - a[..., 2]
-    lit = (np.abs(crop - base).sum(2) > 40) & (yellow(crop) - yellow(base) > 18)
-    lit = np.array(Image.fromarray((lit * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.MinFilter(5))) > 127
-    shape = fill_holes(largest(lit))
-    return Image.fromarray((shape * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))
 
 
 def zone_maps() -> dict[str, str]:
@@ -311,8 +256,11 @@ def main() -> None:
                         piece, box = lights[zone["code"]]
                         zone["highlight"], zone["highlight_file"] = box, f"zone_{zone['code']}.png"
                         enlarge(piece, REGION_SCALE, tmp).save(OUT / zone["highlight_file"])
-                    else:  # no coloured highlight (the Silentera tunnel): its box opens it
+                    else:  # no coloured highlight (the Silentera tunnel): the game's swirl marks it, its box opens it
                         zone["highlight"] = None
+                        if zone["code"] in ICONS:
+                            zone["icon"] = f"zone_{zone['code']}_icon.png"
+                            enlarge(cut(f"worldmap_{region}.png", ICONS[zone["code"]]), GLOBE_SCALE, tmp).save(OUT / zone["icon"])
                 size = list(OLD_SIZE)
             else:
                 texture, rect = sk[f"new_map_region_{region}"]
