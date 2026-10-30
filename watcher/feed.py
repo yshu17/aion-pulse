@@ -41,6 +41,7 @@ class MatchFeed(ttk.Frame):
         grades: Mapping[str, str] | None = None,
         on_place: Callable[[str, float, float, str], None] | None = None,
         motion_enabled: Callable[[], bool] | None = None,
+        item_names: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(parent, style="Card.TFrame", padding=6)
         self.on_accept = on_accept
@@ -80,7 +81,8 @@ class MatchFeed(ttk.Frame):
         self.text.tag_raise("hit")
         self.text.tag_configure("note", foreground=theme.MUTED, justify="center")
         self.text.tag_configure("quiet_note", foreground=theme.QUIET_NOTE)
-        self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades, on_place=on_place)
+        self.linker = ItemLinker(self.text, spec_items, on_item_enter, on_item_leave, grades=grades,
+                                 on_place=on_place, item_names=item_names)
         self.anchor = BottomAnchor(self.text)  # rows start at line 2
         self.copy = CopyMenu(self.text)
         self._relayout_after: str | None = None
@@ -140,7 +142,7 @@ class MatchFeed(ttk.Frame):
         self.text.configure(state="normal")
         start = self.text.index("end-1c")
         parts: list = [f"{msg.time[11:]}  ", ("meta",), f"{msg.nick}: ", ("nick",)]
-        parts += self.linker.parts(msg.text, hits)
+        parts += self.linker.parts(msg.text, hits, msg.item_ids)
         if quiet:
             parts += ["   Уже принято", ("quiet_note",)]
         self.text.insert("end-1c", *parts, "\n", ())

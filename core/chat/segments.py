@@ -36,11 +36,14 @@ class Segment:
 
 
 def message_segments(message: str, hits: list[str] | None = None, spec_items: Mapping[str, str] | None = None,
-                     grades: Mapping[str, str] | None = None) -> list[Segment]:
-    """Segments of a message in order. spec_items: item name -> id (items with a tooltip); grades: id -> grade."""
+                     grades: Mapping[str, str] | None = None, item_ids: tuple[str, ...] = (),
+                     item_names: Mapping[str, str] | None = None) -> list[Segment]:
+    """Segments of a message in order. Original link IDs disambiguate items with the same name."""
     hits = hits or []
     spec_items = spec_items or {}
     grades = grades or {}
+    item_names = item_names or {}
+    unused_ids = list(item_ids)
     out: list[Segment] = []
     pos = 0
     for match in LINKS.finditer(message):
@@ -51,7 +54,8 @@ def message_segments(message: str, hits: list[str] | None = None, spec_items: Ma
             pos = match.end()
             continue
         name = match.group(1)
-        item_id = spec_items.get(name)
+        original = next((index for index, item_id in enumerate(unused_ids) if item_names.get(item_id) == name), None)
+        item_id = unused_ids.pop(original) if original is not None else spec_items.get(name)
         if item_id is None and not HIGHLIGHT_NAMES.search(name):
             continue  # stays in the plain text around it
         out += _plain(message[pos:match.start()], hits)

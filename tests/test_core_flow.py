@@ -19,6 +19,19 @@ def test_message_segments_mark_items_places_and_hits():
     assert rudra[1] == Segment("<Меч Рудры>", "item", True)  # «Рудр» is shown even without a tooltip
 
 
+def test_message_segments_use_link_id_when_item_names_collide():
+    segments = message_segments(
+        "[Золотая медаль] и [Золотая медаль]",
+        spec_items={"Золотая медаль": "182291456"},
+        grades={"186000030": "rare", "182291456": "common"},
+        item_ids=("186000030", "182291456"),
+        item_names={"186000030": "Золотая медаль", "182291456": "Золотая медаль"},
+    )
+    assert [(part.item_id, part.grade) for part in segments if part.kind == "item"] == [
+        ("186000030", "rare"), ("182291456", "common")
+    ]
+
+
 def test_status_texts_and_chip_kinds():
     assert status_chip(watching_status("C:/Chat.log", "нет ключевых слов")) == ("Слежу  ·  нет ключевых слов", "live")
     assert status_chip(GAME_OFF) == ("Игра не запущена", "warn")

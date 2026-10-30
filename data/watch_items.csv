@@ -22655,6 +22655,7 @@ id,name,level,category,grade,icon,kind
 182006282,Герб Теграка,60,Прочее,unique,icon_item_elim_skillstone_01,
 182006409,Предмет для тестирования добычи группы (уникальный),60,Прочее,unique,icon_item_scale01,
 182006408,Предмет для тестирования добычи группы (легендарный),60,Прочее,legend,icon_item_scale01,
+186000096,Платиновая медаль,60,Прочее,rare,icon_item_badge05,
 182006407,Предмет для тестирования добычи группы (редкий),60,Прочее,rare,icon_item_scale01,
 160002393,Вкусное карри императора ужасных драконов,60,Прочее,common,icon_item_dish05,
 160002345,Вкусные полезные пельмени с тифабом,60,Прочее,common,icon_item_dish25,
@@ -22906,6 +22907,7 @@ id,name,level,category,grade,icon,kind
 169500744,Воспламенение клейма тьмы I,50,Прочее,rare,icon_item_skillbook_r01,Умения
 169500743,Вспышка клейма света I,50,Прочее,rare,icon_item_skillbook_r01,Умения
 169500749,Вулканическая вспышка I,50,Прочее,rare,icon_item_skillbook_r01,Умения
+186000030,Золотая медаль,50,Прочее,rare,icon_item_badge02,
 110900193,Изящное храмовое облачение,50,Прочее,rare,icon_item_arena_reward_01,
 110900202,Изящное храмовое облачение,50,Прочее,rare,icon_item_arena_reward_01,
 110900194,Изящные храмовые одежды,50,Прочее,rare,icon_item_arena_reward_02,
@@ -22915,6 +22917,10 @@ id,name,level,category,grade,icon,kind
 169500751,Команда: Жертва I,50,Прочее,rare,icon_item_skillbook_r01,Умения
 169500752,Команда: Самоуничтожение I,50,Прочее,rare,icon_item_skillbook_r01,Умения
 169500750,Лавовое цунами I,50,Прочее,rare,icon_item_skillbook_r01,Умения
+186000162,Медаль из белого золота,50,Прочее,rare,icon_item_badge11,
+186000156,Медаль из голубого золота,50,Прочее,rare,icon_item_badge12,
+186000163,Медаль из черного золота,50,Прочее,rare,icon_item_badge10,
+186000190,Мифриловая медаль,50,Прочее,rare,icon_item_badge07,
 169500748,Обряд границы I,50,Прочее,rare,icon_item_skillbook_r01,Умения
 169500516,Обряд оков I,50,Прочее,rare,icon_item_skillbook_r01,Умения
 169500747,Обряд преграды I,50,Прочее,rare,icon_item_skillbook_r01,Умения
@@ -23201,6 +23207,7 @@ id,name,level,category,grade,icon,kind
 169500946,Призыв: Священный кристалл III,40,Прочее,rare,icon_item_skillbook_r01,Умения
 169500950,Призыв: Священный кристалл III,40,Прочее,rare,icon_item_skillbook_r01,Умения
 169500584,Световая вспышка I,40,Прочее,rare,icon_item_skillbook_r01,Умения
+186000031,Серебряная медаль,40,Прочее,rare,icon_item_badge03,
 169500255,Эфирная стрела I,40,Прочее,rare,icon_item_skillbook_r01,Умения
 169500151,Блистательный удар III,40,Прочее,common,icon_item_skillbook_01,Умения
 169500335,Бросок зверя I,40,Прочее,common,icon_item_skillbook_01,Умения

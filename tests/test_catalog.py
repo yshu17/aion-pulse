@@ -44,6 +44,29 @@ def test_bundled_data_present():
     assert all(i.category in CATEGORY_ORDER for i in items)
 
 
+def test_medal_cards_use_their_own_ids_and_icons():
+    from core.items.specs import load_specs
+
+    data = resource_root() / "data"
+    items = {item.id: item for item in load_watch_items(data / "watch_items.csv")}
+    specs = load_specs(data / "item_specs.json.gz")
+    medal_icons = {
+        "186000031": "icon_item_badge03", "186000030": "icon_item_badge02",
+        "186000096": "icon_item_badge05", "186000156": "icon_item_badge12",
+        "186000162": "icon_item_badge11", "186000163": "icon_item_badge10",
+        "186000190": "icon_item_badge07",
+    }
+    for item_id, icon in medal_icons.items():
+        assert items[item_id].icon == icon
+        assert (data / "icons" / f"{items[item_id].icon}.png").is_file()
+        assert specs[item_id]["layout"] == "empire"
+        assert specs[item_id]["item_link"] == f"[item:{item_id}]"
+        assert specs[item_id]["rank"] == "[Обычный]"
+    assert "Медаль, вручаемая даэвам" in specs["186000030"]["description"]
+    assert "Очень ценная медаль" in specs["186000163"]["description"]
+    assert len(specs["186000163"]["restrictions"]) == 4
+
+
 def test_category_for():
     from core.items.catalog import category_for
 

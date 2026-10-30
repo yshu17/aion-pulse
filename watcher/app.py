@@ -354,12 +354,14 @@ class App:
         self._build_counters(header)
         self._header_gradient = theme.install_header_gradient(header)  # ui:31: quiet title-row gradient
         spec_items = {item.name: item.id for item in self.watch_items if item.id in self.specs}
+        spec_names_by_id = {item.id: item.name for item in self.watch_items if item.id in self.specs}
         grades = {item.id: item.grade for item in self.watch_items}
         self.feed = MatchFeed(
             column,
             on_accept=self._on_feed_accept,
             max_rows=MAX_ROWS,
             spec_items=spec_items,
+            item_names=spec_names_by_id,
             grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,
@@ -379,6 +381,7 @@ class App:
             show_system=self.cfg.chat_system,
             on_settings=self._on_chat_settings,
             spec_items=spec_items,  # the toolbar is the first row of the page: the tab row has no room for it
+            item_names=spec_names_by_id,
             grades=grades,
             on_item_enter=self._schedule_tooltip,
             on_item_leave=self._hide_tooltip,

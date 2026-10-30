@@ -39,6 +39,7 @@ class AllChatView(ttk.Frame):
         motion_enabled: Callable[[], bool] | None = None,
         map_names: Mapping[str, str] | None = None,
         quest_names: Mapping[str, str] | None = None,
+        item_names: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(parent)
         self.get_path = get_path
@@ -47,7 +48,7 @@ class AllChatView(ttk.Frame):
         self.map_names, self.quest_names = map_names or {}, quest_names or {}  # zone and quest links
         self.on_settings = on_settings
         self.motion_enabled = motion_enabled or (lambda: True)
-        self._links = (spec_items, on_item_enter, on_item_leave, grades, on_place)
+        self._links = (spec_items, on_item_enter, on_item_leave, grades, on_place, item_names)
         self.tailer: LogTailer | None = None
         self.paused = False
         self.active = False
@@ -225,7 +226,7 @@ class AllChatView(ttk.Frame):
                 parts += [f"[{line.channel}] ", (self._tag_for(theme.MUTED),)]
             if line.nick:
                 parts += [f"{line.nick}: ", ("nick",)]
-                parts += self.linker.parts(line.text)
+                parts += self.linker.parts(line.text, item_ids=line.item_ids)
             else:
                 parts += [line.text, (self._tag_for(theme.MUTED),)]
             parts += ["\n", ()]

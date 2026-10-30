@@ -61,12 +61,14 @@ class ItemLinker:
         on_leave: Callable[[], None] | None = None,
         grades: Mapping[str, str] | None = None,
         on_place: Callable[[str, float, float, str], None] | None = None,
+        item_names: Mapping[str, str] | None = None,
     ) -> None:
         self.text = text
         self.on_place = on_place  # click on a place link: (map id, game x, game y, label)
         self._places = 0
         self.grades = grades or {}  # item id -> grade (epic, legend, …) for the link colour
         self.spec_items = dict(spec_items or {})  # item name -> id, for items with a tooltip
+        self.item_names = dict(item_names or {})  # item id -> name, for exact links in the log
         self.on_enter = on_enter
         self.on_leave = on_leave
         self._bound: set[str] = set()
@@ -77,10 +79,10 @@ class ItemLinker:
         if "hit" in text.tag_names():
             text.tag_raise("hit")
 
-    def parts(self, message: str, hits: list[str] | None = None) -> list:
+    def parts(self, message: str, hits: list[str] | None = None, item_ids: tuple[str, ...] = ()) -> list:
         """Insert-ready (chunk, tags, ...) for a message; hits are highlighted as matches (core.chat.segments)."""
         parts: list = []
-        for segment in message_segments(message, hits, self.spec_items, self.grades):
+        for segment in message_segments(message, hits, self.spec_items, self.grades, item_ids, self.item_names):
             if segment.kind == "place":
                 tags: tuple = ("place",)
                 if segment.place is not None and self.on_place is not None:

@@ -101,6 +101,14 @@ CHAT_COLORS = {  # chat channels, as [charname:Name;r g b] in Chat.log (Aion's d
 }
 TOOLTIP_BG = "#0e1014"  # item tooltip in the game's style (watcher/tooltip.py)
 TOOLTIP_FRAME = "#5a4a2e"
+TOOLTIP_DB_BG = "#2b2e36"  # compact item-database cards
+TOOLTIP_DB_FRAME = "#a88649"
+TOOLTIP_EMPIRE_BG = "#14212a"  # Aion Empire medal card
+TOOLTIP_EMPIRE_FRAME = "#718797"
+TOOLTIP_EMPIRE_TAB = "#28536f"
+TOOLTIP_EMPIRE_TAB_FRAME = "#8fb3ca"
+TOOLTIP_EMPIRE_LINE = "#8b9398"
+TOOLTIP_EMPIRE_PROPS = "#e9cf86"
 TOOLTIP_LINE = "#3a3d46"
 TOOLTIP_SLOT = "#1c1f26"  # empty manastone / socket slot
 TOOLTIP_PROPS = "#e8c55a"  # 11.39 on TOOLTIP_BG

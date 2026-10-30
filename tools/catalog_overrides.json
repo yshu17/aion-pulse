@@ -1,0 +1,63 @@
+[
+  {
+    "id": "186000031", "name": "Серебряная медаль", "level": 40, "grade": "rare",
+    "icon": "icon_item_badge03.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge03.dds",
+    "source_url": "https://kb.aionempire.com/items/186000031", "type": "other",
+    "spec": {"name": "Серебряная медаль", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": [], "description": "Медаль, вручаемая даэвам за заслуги в захвате крепости.",
+      "item_link": "[item:186000031]", "blocks": []}
+  },
+  {
+    "id": "186000030", "name": "Золотая медаль", "level": 50, "grade": "rare",
+    "icon": "icon_item_badge02.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge02.dds",
+    "source_url": "https://kb.aionempire.com/items/186000030", "type": "other",
+    "spec": {"name": "Золотая медаль", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": [], "description": "Медаль, вручаемая даэвам за заслуги в захвате крепости.",
+      "item_link": "[item:186000030]", "blocks": []}
+  },
+  {
+    "id": "186000096", "name": "Платиновая медаль", "level": 60, "grade": "rare",
+    "icon": "icon_item_badge05.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge05.dds",
+    "source_url": "https://kb.aionempire.com/items/186000096", "type": "other",
+    "spec": {"name": "Платиновая медаль", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": ["Нельзя обменять", "Нельзя положить на склад аккаунта", "Нельзя положить на склад легиона"],
+      "description": "Медаль, вручаемая даэвам за заслуги в захвате крепости.",
+      "item_link": "[item:186000096]", "blocks": []}
+  },
+  {
+    "id": "186000156", "name": "Медаль из голубого золота", "level": 50, "grade": "rare",
+    "icon": "icon_item_badge12.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge12.dds",
+    "source_url": "https://kb.aionempire.com/items/186000156", "type": "other",
+    "spec": {"name": "Медаль из голубого золота", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": ["Нельзя обменять", "Нельзя продать торговцу", "Нельзя положить на склад аккаунта", "Нельзя положить на склад легиона"],
+      "description": "Медаль из голубого золота. Позволяет получить 1 платиновую медаль. Чтобы открыть, дважды щелкните по предмету левой кнопкой мыши (или один раз правой).",
+      "item_link": "[item:186000156]", "blocks": []}
+  },
+  {
+    "id": "186000162", "name": "Медаль из белого золота", "level": 50, "grade": "rare",
+    "icon": "icon_item_badge11.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge11.dds",
+    "source_url": "https://kb.aionempire.com/items/186000162", "type": "other",
+    "spec": {"name": "Медаль из белого золота", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": ["Нельзя обменять", "Нельзя положить на склад аккаунта", "Нельзя положить на склад легиона"],
+      "description": "Очень ценная медаль, изготовленная из особого материала.",
+      "item_link": "[item:186000162]", "blocks": []}
+  },
+  {
+    "id": "186000163", "name": "Медаль из черного золота", "level": 50, "grade": "rare",
+    "icon": "icon_item_badge10.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge10.dds",
+    "source_url": "https://kb.aionempire.com/items/186000163", "type": "other",
+    "spec": {"name": "Медаль из черного золота", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": ["Нельзя обменять", "Нельзя продать торговцу", "Нельзя положить на склад аккаунта", "Нельзя положить на склад легиона"],
+      "description": "Очень ценная медаль, изготовленная из особого материала.",
+      "item_link": "[item:186000163]", "blocks": []}
+  },
+  {
+    "id": "186000190", "name": "Мифриловая медаль", "level": 50, "grade": "rare",
+    "icon": "icon_item_badge07.jpg", "icon_source": "client_extract/bestiary/items.zip:icon_item_badge07.dds",
+    "source_url": "https://kb.aionempire.com/items/186000190", "type": "other",
+    "spec": {"name": "Мифриловая медаль", "grade": "rare", "layout": "empire", "rank": "[Обычный]",
+      "restrictions": ["Нельзя обменять", "Нельзя продать торговцу", "Нельзя положить на склад аккаунта", "Нельзя положить на склад легиона"],
+      "description": "Очень ценная медаль, изготовленная из особого материала.",
+      "item_link": "[item:186000190]", "blocks": []}
+  }
+]

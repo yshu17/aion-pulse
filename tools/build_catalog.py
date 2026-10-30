@@ -5,7 +5,8 @@ Writes:
                            shows its listed part (see core.items.catalog.is_listed)
   data/item_specs.json.gz  item id -> tooltip spec (compact JSON text, parsed on demand)
   data/icons/<icon>.png    one picture per distinct site icon, 56 px
-Dev tool (needs Pillow). Usage: python tools/build_catalog.py <cache.jsonl> [<cache.jsonl> ...]
+Dev tool (needs Pillow). Usage: python tools/build_catalog.py [--offline] <cache.jsonl> [<cache.jsonl> ...]
+tools/catalog_overrides.json adds client-verified medals absent from the crawl cache.
 """
 
 import concurrent.futures as cf
@@ -19,6 +20,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+OVERRIDES = Path(__file__).with_name("catalog_overrides.json")
 sys.path.insert(0, str(ROOT))
 
 from core.items.catalog import CATEGORY_ORDER, category_for  # noqa: E402
@@ -112,16 +114,24 @@ def shrink_old_icons(icons_dir: Path) -> int:
 
 
 def main() -> int:
+    offline = "--offline" in sys.argv[1:]
+    caches = [arg for arg in sys.argv[1:] if arg != "--offline"]
+    if not caches:
+        print("Usage: python tools/build_catalog.py [--offline] <cache.jsonl> [<cache.jsonl> ...]")
+        return 2
     data = ROOT / "data"
     icons_dir = data / "icons"
     icons_dir.mkdir(exist_ok=True)
     items = {}
-    for cache in sys.argv[1:]:
+    for cache in caches:
         with open(cache, encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     item = json.loads(line)
                     items.setdefault(item["id"], item)
+    if OVERRIDES.is_file():
+        for item in json.loads(OVERRIDES.read_text(encoding="utf-8")):
+            items[item["id"]] = item
     for item in items.values():
         item["category"], item["kind"] = category(item)
     order = {name: i for i, name in enumerate(CATEGORY_ORDER)}
@@ -142,8 +152,10 @@ def main() -> int:
 
     wanted = {i["icon"] for i in rows if i["icon"]}
     missing = [name for name in sorted(wanted) if not (icons_dir / f"{Path(name).stem}.png").exists()]
-    with cf.ThreadPoolExecutor(6) as pool:
-        errors = [e for e in pool.map(lambda n: save_icon(n, icons_dir / f"{Path(n).stem}.png"), missing) if e]
+    errors = []
+    if not offline:
+        with cf.ThreadPoolExecutor(6) as pool:
+            errors = [e for e in pool.map(lambda n: save_icon(n, icons_dir / f"{Path(n).stem}.png"), missing) if e]
     shrunk = shrink_old_icons(icons_dir)
     keep = {f"{Path(name).stem}.png" for name in wanted}
     stale = [p for p in icons_dir.glob("*.png") if p.name not in keep]
@@ -152,7 +164,7 @@ def main() -> int:
     counts = {c: sum(1 for i in rows if i["category"] == c) for c in CATEGORY_ORDER}
     print(f"{len(rows)} items {counts}")
     print(
-        f"{len(wanted)} icons ({len(missing)} downloaded, {len(errors)} unavailable, "
+        f"{len(wanted)} icons ({len(missing) if not offline else 0} requested, {len(errors)} unavailable, "
         f"{len(stale)} old removed, {shrunk} shrunk to 256 colours)"
     )
     for error in errors:

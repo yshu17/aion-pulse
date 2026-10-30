@@ -1,4 +1,4 @@
-"""Game-style item tooltip rendered from a spec (see core.items.specs)."""
+"""Item tooltip rendered from a spec (see core.items.specs)."""
 
 import tkinter as tk
 
@@ -7,6 +7,10 @@ from watcher import theme
 BG = theme.TOOLTIP_BG
 FRAME = theme.TOOLTIP_FRAME
 LINE = theme.TOOLTIP_LINE
+DB_BG = theme.TOOLTIP_DB_BG
+DB_FRAME = theme.TOOLTIP_DB_FRAME
+EMPIRE_BG = theme.TOOLTIP_EMPIRE_BG
+EMPIRE_FRAME = theme.TOOLTIP_EMPIRE_FRAME
 NAME_COLORS = theme.GRADE_COLORS
 PROPS = theme.TOOLTIP_PROPS
 WARNING = theme.TOOLTIP_WARNING
@@ -22,10 +26,14 @@ class SpecTooltip:
 
     def show(self, spec: dict, icon: tk.PhotoImage | None, x: int, y: int) -> None:
         self.hide()
-        win = tk.Toplevel(self.root, background=FRAME, padx=1, pady=1)
+        layout = spec.get("layout")
+        surface = DB_BG if layout == "database" else EMPIRE_BG if layout == "empire" else BG
+        frame = DB_FRAME if layout == "database" else EMPIRE_FRAME if layout == "empire" else FRAME
+        win = tk.Toplevel(self.root, background=frame, padx=1, pady=1)
         win.overrideredirect(True)
         win.attributes("-topmost", True)
-        body = tk.Frame(win, background=BG, padx=14, pady=12)
+        body = tk.Frame(win, background=surface, padx=10 if layout == "empire" else 14,
+                        pady=10 if layout == "empire" else 12)
         body.pack(fill="both", expand=True)
         self._render(body, spec, icon)
         win.update_idletasks()
@@ -50,19 +58,27 @@ class SpecTooltip:
     def _label(self, parent: tk.Misc, text: str, color: str = theme.TEXT, **kw) -> tk.Label:
         size = kw.pop("size", theme.TYPE["caption"][0])
         weight = kw.pop("weight", "normal")
+        background = kw.pop("background", BG)
+        wraplength = kw.pop("wraplength", WIDTH)
         return tk.Label(
             parent,
             text=text,
-            background=BG,
+            background=background,
             foreground=color,
             font=(theme.FONT_FAMILY, size, weight),
             justify="left",
             anchor="w",
-            wraplength=WIDTH,
+            wraplength=wraplength,
             **kw,
         )
 
     def _render(self, body: tk.Frame, spec: dict, icon: tk.PhotoImage | None) -> None:
+        if spec.get("layout") == "database":
+            self._render_database(body, spec, icon)
+            return
+        if spec.get("layout") == "empire":
+            self._render_empire(body, spec, icon)
+            return
         name_color = NAME_COLORS.get(spec.get("grade", ""), theme.TEXT)
         self._label(body, spec.get("name", ""), name_color, size=theme.TYPE["tooltip_name"][0], weight="bold").pack(
             fill="x", pady=(0, 8)
@@ -80,6 +96,66 @@ class SpecTooltip:
             rest = rest[1:]
         for block in rest:
             self._block(body, block)
+
+    def _render_database(self, body: tk.Frame, spec: dict, icon: tk.PhotoImage | None) -> None:
+        """Compact field card for medal records, following the linked item database layout."""
+        top = tk.Frame(body, background=DB_BG)
+        top.pack(fill="x", pady=(0, 10))
+        if icon is not None:
+            tk.Label(top, image=icon, background=DB_BG, highlightthickness=1,
+                     highlightbackground=DB_FRAME).pack(side="left", padx=(0, 12))
+        names = tk.Frame(top, background=DB_BG)
+        names.pack(side="left", fill="x", expand=True)
+        self._label(names, spec["name"], NAME_COLORS.get(spec.get("title_grade", spec.get("grade")), theme.TEXT),
+                    background=DB_BG, size=theme.TYPE["tooltip_name"][0], weight="bold").pack(fill="x")
+        if spec.get("subtitle"):
+            self._label(names, spec["subtitle"], background=DB_BG).pack(fill="x")
+        tk.Frame(body, background=DB_FRAME, height=1).pack(fill="x", pady=(0, 6))
+        for name, value in spec.get("facts", []):
+            row = tk.Frame(body, background=DB_BG)
+            row.pack(fill="x", pady=(4, 4))
+            self._label(row, name, background=DB_BG).pack(side="left")
+            value_color = NAME_COLORS["rare"] if name == "Качество" and spec.get("grade") == "rare" else theme.TEXT
+            self._label(row, value, value_color, background=DB_BG, weight="bold").pack(side="right")
+            tk.Frame(body, background=LINE, height=1).pack(fill="x")
+        for restriction in spec.get("restrictions", []):
+            self._label(body, restriction, PROPS, background=DB_BG).pack(fill="x", pady=(2, 0))
+        if spec.get("description"):
+            self._label(body, "Описание", theme.MUTED, background=DB_BG).pack(fill="x", pady=(10, 2))
+            self._label(body, spec["description"], background=DB_BG).pack(fill="x", pady=(0, 10))
+        if spec.get("item_link"):
+            code = tk.Frame(body, background=DB_BG, highlightthickness=1, highlightbackground=DB_FRAME,
+                            padx=8, pady=6)
+            code.pack(fill="x")
+            self._label(code, spec["item_link"], background=DB_BG, weight="bold").pack(side="left")
+
+    def _render_empire(self, body: tk.Frame, spec: dict, icon: tk.PhotoImage | None) -> None:
+        """Aion Empire's compact medal tooltip: title, information tab, rank and restrictions."""
+        self._label(body, spec["name"], NAME_COLORS["rare"], background=EMPIRE_BG,
+                    size=theme.TYPE["tooltip_name"][0], weight="bold").pack(fill="x", pady=(0, 12))
+        tk.Label(body, text="Общая информация", background=theme.TOOLTIP_EMPIRE_TAB,
+                 foreground=theme.TEXT, font=(theme.FONT_FAMILY, theme.TYPE["caption"][0]),
+                 padx=9, pady=4, relief="solid", borderwidth=1,
+                 highlightthickness=1, highlightbackground=theme.TOOLTIP_EMPIRE_TAB_FRAME).pack(
+                     anchor="w", pady=(0, 13))
+        details = tk.Frame(body, background=EMPIRE_BG)
+        details.pack(fill="x")
+        if icon is not None:
+            tk.Label(details, image=icon, background=EMPIRE_BG, highlightthickness=1,
+                     highlightbackground=theme.TOOLTIP_EMPIRE_TAB_FRAME).pack(side="left", anchor="n", padx=(0, 11))
+        info = tk.Frame(details, background=EMPIRE_BG)
+        info.pack(side="left", fill="x", expand=True)
+        rank = tk.Frame(info, background=EMPIRE_BG)
+        rank.pack(fill="x", pady=(0, 3))
+        self._label(rank, "Ранг", background=EMPIRE_BG).pack(side="left", padx=(0, 42))
+        self._label(rank, spec.get("rank", "[Обычный]"), background=EMPIRE_BG).pack(side="left")
+        restrictions = "; ".join(f"[{line}]" for line in spec.get("restrictions", []))
+        if restrictions:
+            self._label(info, restrictions, theme.TOOLTIP_EMPIRE_PROPS, background=EMPIRE_BG,
+                        wraplength=345).pack(fill="x")
+        tk.Frame(body, background=theme.TOOLTIP_EMPIRE_LINE, height=1).pack(fill="x", pady=(9, 9))
+        self._label(body, spec.get("description", ""), background=EMPIRE_BG,
+                    wraplength=460).pack(fill="x")
 
     def _block(self, parent: tk.Misc, block: dict) -> None:
         kind = block["kind"]
