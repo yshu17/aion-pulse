@@ -9,6 +9,8 @@ import { segmentItemIds } from "../core/items/card";
 import { catalogById, gradeOf, itemNames, specByName } from "./data";
 import { Icon } from "./Icon";
 import { useOpenItem } from "./ItemCard";
+import { zones } from "./map/mapData";
+import { plainMessage, useOpenPlace } from "./map/placeLink";
 import { IconDown } from "./icons";
 import type { AlertState } from "./useWatch";
 
@@ -23,9 +25,13 @@ interface Alerts {
 
 const hasCard = (id: string) => id in catalogById;
 
-/** A message: item links are coloured by grade and open their card (the link's own item, see segmentItemIds). */
-function Text({ text, hits, links }: { text: string; hits: string[]; links: string[] }) {
+/**
+ * A message: item links are coloured by grade and open their card (the link's own item, see segmentItemIds); place
+ * links with coordinates open the map there.
+ */
+function Text({ text, hits, links, from }: { text: string; hits: string[]; links: string[]; from: { nick: string; time: string } }) {
   const open = useOpenItem();
+  const openPlace = useOpenPlace();
   const segments = messageSegments(text, hits, specByName, gradeOf);
   const ids = segmentItemIds(segments, links, itemNames);
   return (
@@ -34,6 +40,16 @@ function Text({ text, hits, links }: { text: string; hits: string[]; links: stri
         const id = ids[i];
         const grade = id ? gradeOf[id] : s.grade;
         const className = `seg-${s.kind}${s.hit ? " hit" : ""}${grade ? ` g-${grade}` : ""}`;
+        if (s.kind === "place" && s.place && openPlace && s.place[0] in zones) {
+          const [mapId, x, y] = s.place;
+          const go = () => openPlace({ map_id: mapId, x, y, label: s.text.slice(1, -1), note: "", nick: from.nick, time: from.time,
+            text: plainMessage(text) });
+          return (
+            <span key={i} className={`${className} place-link`} role="button" tabIndex={0} title="Показать на карте"
+              onPointerDown={(e) => { if (e.button === 0) { e.preventDefault(); go(); } }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }}>{s.text}</span>
+          );
+        }
         if (!id || !hasCard(id)) return <span key={i} className={className}>{s.text}</span>; // no description: no card
         const show = (x: number, y: number) => open({ id, x, y });
         return (
@@ -77,7 +93,7 @@ function Match({ row, alerts, channel, fresh }: { row: FeedRow; alerts: Alerts; 
           {id !== null && !done && left !== undefined && <span className={`left${left <= 8 ? " urgent" : ""}`}>{clock(left)}</span>}
           {id !== null && !done && <button className="btn mini" onClick={() => alerts.onAccept(id)}>Принять</button>}
         </div>
-        <div className="msg-text"><Text text={entry.msg.text} hits={entry.hits} links={entry.msg.item_ids} /></div>
+        <div className="msg-text"><Text text={entry.msg.text} hits={entry.hits} links={entry.msg.item_ids} from={{ nick: entry.msg.nick, time: entry.msg.time.slice(-8) }} /></div>
       </div>
       {id !== null && !done && left !== undefined && alerts.reactSec > 0 && (
         <span className="drain" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(1, left / alerts.reactSec)) * 100}%` }} /></span>
@@ -97,7 +113,7 @@ function Line({ row, fresh }: { row: FeedRow; fresh: boolean }) {
       <span className="line-text">
         {label && <span className="chan" style={color ? { color } : undefined}>[{label}] </span>}
         {row.line.nick !== null && <b className="nick">{row.line.nick}: </b>}
-        <Text text={row.line.text} hits={[]} links={row.line.item_ids} />
+        <Text text={row.line.text} hits={[]} links={row.line.item_ids} from={{ nick: row.line.nick ?? "", time: row.line.time.slice(-8) }} />
       </span>
     </m.li>
   );

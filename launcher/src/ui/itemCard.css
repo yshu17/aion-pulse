@@ -114,6 +114,12 @@ html.card-mode, html.card-mode body, html.card-mode #root { background: transpar
 .item-card .ic-empire-rule { width: 82%; margin: 8px 0 8px; border: 0; border-top: 1px solid #8b9398; }
 .item-card .ic-empire-description { margin: 0; font-size: 12px; line-height: 1.4; }
 
+/* a place in a chat message opens the map there */
+.seg-place.place-link { cursor: pointer; border-radius: 3px; text-decoration: underline dotted transparent; text-underline-offset: 3px;
+  transition: text-decoration-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
+.seg-place.place-link:hover { text-decoration-color: currentColor; background: rgba(79, 209, 197, .1); }
+.seg-place.place-link:focus-visible { outline: 2px solid var(--place); outline-offset: 1px; }
+
 /* an item in a chat message opens its card */
 .seg-item.card-link { cursor: pointer; border-radius: 3px; text-decoration: underline dotted transparent; text-underline-offset: 3px;
   transition: text-decoration-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }

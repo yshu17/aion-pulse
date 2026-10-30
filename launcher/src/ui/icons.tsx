@@ -37,6 +37,13 @@ export const IconPencil = () => <Svg size={14}><path d="M4 20l4-1 11-11a2.1 2.1 
 export const IconCopy = () => <Svg size={14}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></Svg>;
 export const IconEye = () => <Svg size={15}><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" /><circle cx="12" cy="12" r="2.5" /></Svg>;
 export const IconEyeOff = () => <Svg size={14}><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" /><path d="M4 4l16 16" /></Svg>;
+export const IconSearch = () => <Svg size={16}><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></Svg>;
+export const IconFilter = () => <Svg size={15}><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></Svg>;
+export const IconMinus = () => <Svg size={16}><path d="M5 12h14" /></Svg>;
+export const IconTarget = () => <Svg size={17}><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="1.5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></Svg>;
+export const IconFit = () => <Svg size={16}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></Svg>;
+export const IconMessage = () => <Svg size={15}><path d="M4 5h16v11H9l-5 4z" /></Svg>;
+export const IconNavigate = () => <Svg size={16}><path d="M21 3L3 10.5l7.5 3 3 7.5z" /></Svg>;
 export const IconPlus = () => <Svg size={14}><path d="M12 5v14M5 12h14" /></Svg>;
 export const IconLeft = () => <Svg size={16}><path d="M15 6l-6 6 6 6" /></Svg>;
 export const IconRight = () => <Svg size={16}><path d="M9 6l6 6-6 6" /></Svg>;

@@ -10,6 +10,8 @@ export interface Platform {
   gameRunning(): Promise<boolean | null>;
   /** config.json files near the launcher where an old Pulse may keep its settings, nearest first. */
   pulseConfigCandidates(): Promise<string[]>;
+  /** The folder of the map pictures (data/maps), or null when the program has none near it. */
+  mapsDir(): Promise<string | null>;
   /** The .wav names in C:\Windows\Media, sorted. */
   windowsSounds(): Promise<string[]>;
   /** The text of a file, or null when it does not exist. */
@@ -48,6 +50,7 @@ const tauri: Platform = {
   gameRunning: () => call("game_running"),
   pulseConfigCandidates: () => call("pulse_config_candidates"),
   windowsSounds: () => call("windows_sounds"),
+  mapsDir: () => call("maps_dir"),
   readText: (path) => call("read_text", { path }),
   writeText: (path, text) => call("write_text", { path, text }),
   fileSize: (path) => call("file_size", { path }),

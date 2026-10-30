@@ -231,6 +231,18 @@ async fn http_fetch(url: String, method: String) -> Result<(String, std::collect
     .map_err(|e| e.to_string())?
 }
 
+/// Where the map pictures are: `PULSE_MAPS` (a folder, for tests), else `data/maps/` next to the program or in a
+/// folder above it, as drops.sqlite. The pictures (44 MB) are read from there, not built into the program.
+#[tauri::command]
+fn maps_dir() -> Option<String> {
+    if let Ok(dir) = std::env::var("PULSE_MAPS") {
+        return Some(dir);
+    }
+    let exe = std::env::current_exe().ok()?;
+    exe.ancestors().skip(1).map(|dir| dir.join("data").join("maps")).find(|dir| dir.join("maps.json").is_file())
+        .map(|dir| dir.to_string_lossy().into_owned())
+}
+
 /// The drops of data/game (1.4 million rows, too many for a JSON file): `drops.sqlite`, built by tools/build_game_data.py.
 const DROPS_FILE: &str = "drops.sqlite";
 const DROPS_LIMIT: i64 = 10_000; // a popular item can drop from thousands of NPCs: a screen never needs more
@@ -362,7 +374,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds, overlay_clip])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds, overlay_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

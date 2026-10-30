@@ -8,6 +8,8 @@ import { closeCardWindow, openCardWindow } from "./cardLink";
 import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
 import { platform } from "./platform";
 import { ItemsPanel } from "./ItemsPanel";
+import { MapTab } from "./map/MapTab";
+import { ChatPlace, OpenPlace } from "./map/placeLink";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
 import { SettingsPanel } from "./SettingsPanel";
@@ -98,6 +100,11 @@ function Screen({ boot }: { boot: Boot }) {
   const [feedMode, setFeedMode] = useState<FeedMode>("matches");
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
+  const [mapPlace, setMapPlace] = useState<(ChatPlace & { n: number }) | null>(null); // a place link of the chat, shown on the map
+  const openPlace = useCallback((place: ChatPlace) => {
+    setMapPlace((old) => ({ ...place, n: (old?.n ?? 0) + 1 }));
+    setTab("Карта");
+  }, []);
   const closeCard = useCallback(() => setCard(null), []);
   // the program: the card is a window of its own (it may stand outside this one); the plain browser: inside the page
   const openCard = useCallback((open: OpenCard) => { if (platform) openCardWindow(open.id); else setCard(open); }, []);
@@ -194,8 +201,10 @@ function Screen({ boot }: { boot: Boot }) {
               </div>)}
             {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
             <OpenItem.Provider value={openCard}>
+              <OpenPlace.Provider value={openPlace}>
               <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
                 alerts={{ state: watch.state, remaining: watch.remaining, onAccept: watch.accept }} />
+              </OpenPlace.Provider>
             </OpenItem.Provider>
           </section>
           <OpenItem.Provider value={openCard}>
@@ -203,6 +212,8 @@ function Screen({ boot }: { boot: Boot }) {
           </OpenItem.Provider>
           </div>
         </main>
+      ) : tab === "Карта" ? (
+        <MapTab boot={boot} place={mapPlace} onPlaceCleared={() => setMapPlace(null)} />
       ) : tab === "Расписание" ? (
         <ScheduleTab schedule={schedule} />
       ) : (
