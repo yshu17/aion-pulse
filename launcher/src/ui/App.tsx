@@ -9,7 +9,7 @@ import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
 import { platform } from "./platform";
 import { ItemsPanel } from "./ItemsPanel";
 import { MapTab } from "./map/MapTab";
-import { ChatPlace, OpenPlace } from "./map/placeLink";
+import { ChatPlace, MapTarget, OpenMap, OpenPlace } from "./map/placeLink";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
 import { SettingsPanel } from "./SettingsPanel";
@@ -101,11 +101,13 @@ function Screen({ boot }: { boot: Boot }) {
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
   const [mapHome, setMapHome] = useState(0); // «Карта» pressed again: back to Atreia
-  const [mapPlace, setMapPlace] = useState<(ChatPlace & { n: number }) | null>(null); // a place link of the chat, shown on the map
-  const openPlace = useCallback((place: ChatPlace) => {
-    setMapPlace((old) => ({ ...place, n: (old?.n ?? 0) + 1 }));
+  // what the map is asked to show (a place of the chat, an NPC of a card): one way in, see placeLink.ts
+  const [mapTarget, setMapTarget] = useState<(MapTarget & { n: number }) | null>(null);
+  const openMap = useCallback((target: MapTarget) => {
+    setMapTarget((old) => ({ ...target, n: (old?.n ?? 0) + 1 }));
     setTab("Карта");
   }, []);
+  const openPlace = useCallback((place: ChatPlace) => openMap({ type: "place", ...place }), [openMap]);
   const closeCard = useCallback(() => setCard(null), []);
   // the program: the card is a window of its own (it may stand outside this one); the plain browser: inside the page
   const openCard = useCallback((open: OpenCard) => { if (platform) openCardWindow(open.id); else setCard(open); }, []);
@@ -214,7 +216,9 @@ function Screen({ boot }: { boot: Boot }) {
           </div>
         </main>
       ) : tab === "Карта" ? (
-        <MapTab boot={boot} place={mapPlace} home={mapHome} onPlaceCleared={() => setMapPlace(null)} />
+        <OpenMap.Provider value={openMap}>
+          <MapTab boot={boot} target={mapTarget} home={mapHome} onPlaceCleared={() => setMapTarget(null)} />
+        </OpenMap.Provider>
       ) : tab === "Расписание" ? (
         <ScheduleTab schedule={schedule} />
       ) : (

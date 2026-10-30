@@ -4,7 +4,9 @@
 import labelsText from "../../../../data/maps/labels.tsv?raw";
 import mapsJson from "../../../../data/maps/maps.json?raw";
 import poiJson from "../../../../data/maps/poi.json?raw";
+import transitionsJson from "../../../../data/maps/transitions.json?raw";
 import { PoiStore } from "../../core/map/poi";
+import { Spawns } from "../../core/map/spawns";
 import { parseZones, toImage, Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
 import { platform } from "../platform";
@@ -20,8 +22,32 @@ export function iconUrl(file: string | undefined): string | null {
   return file ? icons[`../../../../data/maps/icons/${file}`] ?? null : null;
 }
 
+/** Ways between zones (data/maps/transitions.json): a point of a zone and the zone it leads to, where it arrives. */
+export interface Way { from: string; name: string; to: string; at?: [number, number] }
+const ways = (JSON.parse(transitionsJson) as { ways: Way[] }).ways.filter((w) => w.from in zones && w.to in zones);
+export const wayFrom = (mapId: string, name: string) => ways.find((w) => w.from === mapId && w.name === name) ?? null;
+
 export const typeIcon = (type: string) => iconUrl((poi.types[type]?.icon as string | undefined) ?? undefined);
 export const PLACE_ICON = iconUrl("place.png"); // the blue cross of a place from the chat, as the game's map
+
+// the NPC and monster points (1.8 MB): read when a search first needs them, from data/maps as the pictures
+const devSpawns = import.meta.env.DEV
+  ? import.meta.glob("../../../../data/maps/spawns.json", { query: "?url", import: "default" }) as Record<string, () => Promise<string>>
+  : {};
+let spawns: Promise<Spawns> | null = null;
+
+export function loadSpawns(): Promise<Spawns> {
+  spawns ??= (async () => {
+    if (platform === null) {
+      const load = devSpawns["../../../../data/maps/spawns.json"];
+      return Spawns.parse(load ? await (await fetch(await load())).text() : null);
+    }
+    mapsDir ??= platform.mapsDir().catch(() => null);
+    const dir = await mapsDir;
+    return Spawns.parse(dir ? await platform.readText(`${dir}\\spawns.json`) : null);
+  })().catch(() => Spawns.parse(null));
+  return spawns;
+}
 
 // the dev page only: the pictures come from the dev server (this list is dropped from the program's build)
 const devPictures = import.meta.env.DEV

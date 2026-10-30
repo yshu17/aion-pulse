@@ -1,0 +1,13 @@
+{
+ "about": "Ways between zones the map shows on a point's card: the point (zone, name) and the zone it leads to, with the point it arrives at (game x, y). Checked by hand against data/maps/poi.json: the capitals and their temples, the sacred arenas.",
+ "ways": [
+  {"from": "120010000", "name": "Статуя телепорта в храм Маркутана", "to": "120020000", "at": [1559, 1429]},
+  {"from": "120020000", "name": "Статуя телепорта Пандемониума", "to": "120010000", "at": [1601, 1389]},
+  {"from": "110010000", "name": "Статуя телепорта в храм Кайсинеля", "to": "110020000", "at": [2154, 1567]},
+  {"from": "110020000", "name": "Телепорт в Элизиум", "to": "110010000", "at": [1366, 1544]},
+  {"from": "110070000", "name": "Телепорт в Элизиум", "to": "110010000"},
+  {"from": "110070000", "name": "Телепорт в Ингисон", "to": "210050000"},
+  {"from": "120080000", "name": "Статуя телепорта Пандемониума", "to": "120010000"},
+  {"from": "120080000", "name": "Телепорт в Келькмарос", "to": "220070000"}
+ ]
+}

@@ -275,5 +275,707 @@
    -5819.89
   ],
   "side": "light"
+ },
+ "300030000": {
+  "file": "client/idab1_minicastle.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300040000": {
+  "file": "client/idlf1.jpg",
+  "size": 3072,
+  "x": [
+   2.0,
+   -0.0
+  ],
+  "y": [
+   2.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300050000": {
+  "file": "client/idabre_up_asteria.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300060000": {
+  "file": "client/idabre_low_divine.jpg",
+  "size": 3072,
+  "x": [
+   3.310345,
+   -0.0
+  ],
+  "y": [
+   3.310345,
+   -208.552
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300070000": {
+  "file": "client/idabre_up_rhoo.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300080000": {
+  "file": "client/idabre_low_wciel.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300090000": {
+  "file": "client/idabre_low_eciel.jpg",
+  "size": 3072,
+  "x": [
+   5.437168,
+   -0.0
+  ],
+  "y": [
+   5.437168,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300100000": {
+  "file": "client/idshulackship_1.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true,
+  "layers": [
+   {
+    "id": 1,
+    "name": "Этаж 1",
+    "file": "client/idshulackship_1.jpg"
+   },
+   {
+    "id": 2,
+    "name": "Этаж 2",
+    "file": "client/idshulackship_2.jpg"
+   },
+   {
+    "id": 3,
+    "name": "Этаж 3",
+    "file": "client/idshulackship_3.jpg"
+   }
+  ]
+ },
+ "300110000": {
+  "file": "client/idab1_dreadgion.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300120000": {
+  "file": "client/idabre_up3_dkisas.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -195.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300130000": {
+  "file": "client/idabre_up3_lamiren.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300140000": {
+  "file": "client/idabre_up3_crotan.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300150000": {
+  "file": "client/idtemple_up.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300160000": {
+  "file": "client/idtemple_low.jpg",
+  "size": 3072,
+  "x": [
+   1.5,
+   -0.0
+  ],
+  "y": [
+   1.5,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300170000": {
+  "file": "client/idcatacombs.jpg",
+  "size": 3072,
+  "x": [
+   1.5,
+   15.0
+  ],
+  "y": [
+   1.5,
+   -12.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300190000": {
+  "file": "client/idelim.jpg",
+  "size": 3072,
+  "x": [
+   2.55574,
+   -0.0
+  ],
+  "y": [
+   2.55574,
+   587.82
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300200000": {
+  "file": "client/idnovice.jpg",
+  "size": 3072,
+  "x": [
+   4.458636,
+   436.946
+  ],
+  "y": [
+   4.458636,
+   383.443
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300210000": {
+  "file": "client/iddreadgion_02.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300220000": {
+  "file": "client/idabre_core.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300230000": {
+  "file": "client/idcromede.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300240000": {
+  "file": "client/idstation.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300250000": {
+  "file": "client/idf4re_drana.jpg",
+  "size": 3072,
+  "x": [
+   2.0,
+   -0.0
+  ],
+  "y": [
+   2.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300260000": {
+  "file": "client/idelemental_1.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300270000": {
+  "file": "client/idelemental_2_1.jpg",
+  "size": 3072,
+  "x": [
+   6.413361,
+   -5925.946
+  ],
+  "y": [
+   6.413361,
+   -4457.286
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true,
+  "layers": [
+   {
+    "id": 1,
+    "name": "Этаж 1",
+    "file": "client/idelemental_2_1.jpg"
+   },
+   {
+    "id": 2,
+    "name": "Этаж 2",
+    "file": "client/idelemental_2_2.jpg"
+   },
+   {
+    "id": 3,
+    "name": "Этаж 3",
+    "file": "client/idelemental_2_3.jpg"
+   }
+  ]
+ },
+ "300280000": {
+  "file": "client/idyun.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300310000": {
+  "file": "client/idraksha_1.jpg",
+  "size": 3072,
+  "x": [
+   2.0,
+   -0.0
+  ],
+  "y": [
+   2.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true,
+  "layers": [
+   {
+    "id": 1,
+    "name": "Этаж 1",
+    "file": "client/idraksha_1.jpg"
+   },
+   {
+    "id": 2,
+    "name": "Этаж 2",
+    "file": "client/idraksha_2.jpg"
+   },
+   {
+    "id": 3,
+    "name": "Этаж 3",
+    "file": "client/idraksha_3.jpg"
+   }
+  ]
+ },
+ "300460000": {
+  "file": "client/idshulackship_solo_1.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true,
+  "layers": [
+   {
+    "id": 1,
+    "name": "Этаж 1",
+    "file": "client/idshulackship_solo_1.jpg"
+   },
+   {
+    "id": 2,
+    "name": "Этаж 2",
+    "file": "client/idshulackship_solo_2.jpg"
+   },
+   {
+    "id": 3,
+    "name": "Этаж 3",
+    "file": "client/idshulackship_solo_3.jpg"
+   }
+  ]
+ },
+ "300470000": {
+  "file": "client/idtiamat_reward.jpg",
+  "size": 3072,
+  "x": [
+   2.920152,
+   67.163
+  ],
+  "y": [
+   2.920152,
+   61.323
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "300480000": {
+  "file": "client/idtiamat_2_1.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true,
+  "layers": [
+   {
+    "id": 1,
+    "name": "Этаж 1",
+    "file": "client/idtiamat_2_1.jpg"
+   },
+   {
+    "id": 2,
+    "name": "Этаж 2",
+    "file": "client/idtiamat_2_2.jpg"
+   }
+  ]
+ },
+ "310050000": {
+  "file": "client/idlf3lp.jpg",
+  "size": 3072,
+  "x": [
+   3.98961,
+   514.66
+  ],
+  "y": [
+   3.98961,
+   514.66
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "310090000": {
+  "file": "client/idlf3_castle_indratoo.jpg",
+  "size": 3072,
+  "x": [
+   2.985423,
+   -0.0
+  ],
+  "y": [
+   2.985423,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "310100000": {
+  "file": "client/idlf3_castle_lehpar.jpg",
+  "size": 3072,
+  "x": [
+   2.985423,
+   -2.985
+  ],
+  "y": [
+   2.985423,
+   -5.971
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "310110000": {
+  "file": "client/idlf2a_lab.jpg",
+  "size": 3072,
+  "x": [
+   2.982524,
+   -0.0
+  ],
+  "y": [
+   2.982524,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "320050000": {
+  "file": "client/iddf2flying.jpg",
+  "size": 3072,
+  "x": [
+   5.72067,
+   -0.0
+  ],
+  "y": [
+   5.72067,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "320080000": {
+  "file": "client/iddf3_dragon.jpg",
+  "size": 3072,
+  "x": [
+   2.968116,
+   -0.0
+  ],
+  "y": [
+   2.968116,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "320100000": {
+  "file": "client/iddf2_dflame.jpg",
+  "size": 3072,
+  "x": [
+   5.965049,
+   -0.0
+  ],
+  "y": [
+   5.965049,
+   -0.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "320110000": {
+  "file": "client/iddf3_lp.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -9.0
+  ],
+  "y": [
+   3.0,
+   -9.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "320130000": {
+  "file": "client/iddf2a_adma.jpg",
+  "size": 3072,
+  "x": [
+   3.0,
+   -0.0
+  ],
+  "y": [
+   3.0,
+   3.0
+  ],
+  "side": "",
+  "kind": "instance",
+  "imported": true
+ },
+ "600020000": {
+  "file": "client/ldf4a.jpg",
+  "size": 3072,
+  "x": [
+   1.0,
+   -0.0
+  ],
+  "y": [
+   1.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "zone",
+  "imported": true,
+  "layers": [
+   {
+    "id": 1,
+    "name": "Вариант 1",
+    "file": "client/ldf4a.jpg"
+   },
+   {
+    "id": 2,
+    "name": "Вариант 2",
+    "file": "client/ldf4a_1.jpg"
+   },
+   {
+    "id": 3,
+    "name": "Вариант 3",
+    "file": "client/ldf4a_2.jpg"
+   },
+   {
+    "id": 4,
+    "name": "Вариант 4",
+    "file": "client/ldf4a_3.jpg"
+   }
+  ]
+ },
+ "600030000": {
+  "file": "client/ldf4b.jpg",
+  "size": 3072,
+  "x": [
+   1.0,
+   -0.0
+  ],
+  "y": [
+   1.0,
+   -0.0
+  ],
+  "side": "",
+  "kind": "zone",
+  "imported": true
  }
 }

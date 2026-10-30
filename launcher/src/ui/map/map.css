@@ -165,3 +165,40 @@
   transition: transform var(--t) var(--ease-out), filter var(--t) var(--ease-out); }
 .world-zone-icon.on { transform: translate(-50%, -50%) scale(1.25); filter: drop-shadow(0 0 14px rgba(110, 220, 255, .95)) brightness(1.25); }
 @media (prefers-reduced-motion: reduce) { .world-zone-icon { transition: none; } }
+
+/* the search's list: this map's matches and NPCs / monsters of every zone */
+.map-results { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; max-height: 420px; overflow-y: auto; padding: 6px;
+  background: var(--pop-bg); border: 1px solid var(--pop-border); border-radius: var(--r-pop); box-shadow: var(--pop-shadow);
+  animation: pop-in var(--t) var(--ease-out); scrollbar-width: thin; }
+.map-results-head { display: flex; justify-content: space-between; gap: 10px; padding: 6px 8px 4px; font-size: 12px; font-weight: 600; color: var(--text); }
+.map-results-head + .map-results-head { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+.map-results-head .muted { font-weight: 400; }
+.map-results-empty { padding: 6px 8px 8px; color: var(--muted); font-size: 13px; }
+.map-result { padding: 2px 0; }
+.map-result-main { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 8px; border: 0; border-radius: 8px;
+  background: none; color: var(--text); text-align: left; cursor: pointer; }
+.map-result-main b { font-weight: 600; font-size: 13px; }
+.map-result-main .muted { font-size: 12px; }
+.map-result-main:hover, .map-result-main:focus-visible { background: var(--surface-2); outline: none; }
+.map-result-zones { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px 6px; }
+.map-result-zones button { padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--muted); font-size: 11px; cursor: pointer; }
+.map-result-zones button:hover, .map-result-zones button:focus-visible { color: var(--text); border-color: var(--border-control); outline: none; }
+.map-result-zones .muted { font-size: 11px; align-self: center; }
+
+/* an NPC's points: red rings, the chosen one larger and pulsing */
+.map-npc { position: absolute; z-index: 3; width: 16px; height: 16px; padding: 0; transform: translate(-50%, -50%); border-radius: 50%; cursor: pointer;
+  border: 2px solid #fff; background: #e5484d; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); }
+.map-npc:hover { transform: translate(-50%, -50%) scale(1.2); }
+.map-npc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.map-npc.chosen { z-index: 4; width: 22px; height: 22px; animation: map-npc-pulse 1.6s ease-in-out infinite; }
+@keyframes map-npc-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), 0 0 0 0 rgba(229, 72, 77, .6); }
+  50% { box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), 0 0 0 10px rgba(229, 72, 77, 0); } }
+.map-npc-badge, .map-npc-dot { flex: none; border-radius: 50%; background: #e5484d; border: 2px solid #fff; }
+.map-npc-badge { width: 22px; height: 22px; }
+.map-npc-dot { width: 12px; height: 12px; margin: 0 7px; }
+.map-npc-points button.on { border-color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .map-npc.chosen { animation: none; } }
+
+/* long names: smaller titles that wrap, as in the game's own cards */
+.map-point-title h2 { font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.map-card h2 { overflow-wrap: anywhere; }

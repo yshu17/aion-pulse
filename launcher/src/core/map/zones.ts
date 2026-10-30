@@ -48,6 +48,7 @@ export interface Zone {
   layers: [number, string, string][]; // Abyss layer id, display name, picture file
   label_layers: (number | null)[]; // the Abyss layer of each label (same order), null: every layer
   side: string; // "dark", "light" or "" for a zone both sides share
+  kind: "zone" | "instance"; // an open zone or a dungeon (an instance: the client's game maps of tools/import_missing_maps.py)
 }
 
 export function toImage(zone: Zone, x: number, y: number): [number, number] {
@@ -114,6 +115,7 @@ export function parseZones(mapsJson: string | null, labelsText: string | null, n
         .map((layer: any) => [parseInt(String(layer.id), 10), layer.name ?? `Слой ${layer.id}`, layer.file]),
       label_layers: labelLayers[mapId] ?? [],
       side: info.side in SIDES ? info.side : "",
+      kind: info.kind === "instance" ? "instance" : "zone",
     };
   }
   return zones;
