@@ -88,18 +88,11 @@ html.card-mode, html.card-mode body, html.card-mode #root { background: transpar
 .item-card .ic-db-link button:hover { text-decoration: underline; }
 .item-card .ic-db-link button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* The black gold medal follows its Aion Empire item page. */
+/* The award medals follow their Aion Empire item page, on the black of the other item cards. */
 .item-card.empire {
   width: 485px;
   padding: 12px 10px 14px;
-  border-color: #718797;
-  border-radius: 3px;
-  background:
-    radial-gradient(ellipse at 11% 91%, #293858 0, transparent 43%),
-    radial-gradient(ellipse at 84% 87%, #2b4c58 0, transparent 47%),
-    radial-gradient(circle at 27% 7%, #31507a 0, transparent 17%),
-    #0c1b23;
-  box-shadow: inset 0 0 34px #5b718060;
+  background: var(--tip-bg); /* black, as the other item cards */
   color: #e4e9ea;
 }
 .item-card.empire.in-page { width: min(485px, calc(100vw - 16px)); }
