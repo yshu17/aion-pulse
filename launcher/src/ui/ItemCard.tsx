@@ -5,7 +5,7 @@
 import { m } from "motion/react";
 import { createContext, Fragment, Ref, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Block, cardGrade, headBlocks } from "../core/items/card";
+import { Block, cardGrade, headBlocks, statValue } from "../core/items/card";
 import { catalogById } from "./data";
 import { FADE, SPRING } from "./fx";
 import { Icon } from "./Icon";
@@ -55,12 +55,30 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
   const [copied, setCopied] = useState(false);
   useEffect(() => setCopied(false), [id]);
   const database = spec?.layout === "database";
+  const empire = spec?.layout === "empire";
   const [head, rest] = headBlocks((spec?.blocks as Block[] | undefined) ?? []);
   return (
-    <m.div ref={cardRef} className={`item-card ${className}${database ? " database" : ""}`} role="dialog" aria-label={name} style={style}
+    <m.div ref={cardRef} className={`item-card ${className}${database ? " database" : ""}${empire ? " empire" : ""}`} role="dialog" aria-label={name} style={style}
       initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97, transition: FADE }}
       transition={{ ...SPRING, opacity: FADE }}>
-      {database ? <>
+      {empire ? <>
+        <div className="ic-empire-title" onPointerDown={(e) => {
+          if (e.button === 0 && !(e.target as HTMLElement).closest("button")) onDrag(e);
+        }}>
+          <b>{name}</b>
+          <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
+        </div>
+        <div className="ic-empire-tab">Общая информация</div>
+        <div className="ic-empire-info">
+          {item?.icon && <Icon name={item.icon} size={44} />}
+          <div>
+            <div className="ic-empire-rank"><span>Ранг</span><strong>{spec.rank ?? "[Обычный]"}</strong></div>
+            <p>{(spec.restrictions as string[]).map((line) => `[${line}]`).join("; ")}</p>
+          </div>
+        </div>
+        <hr className="ic-empire-rule" />
+        <p className="ic-empire-description">{spec.description}</p>
+      </> : database ? <>
         <div className="ic-title ic-db-heading" onPointerDown={(e) => {
           if (e.button === 0 && !(e.target as HTMLElement).closest("button")) onDrag(e);
         }}>
@@ -151,7 +169,7 @@ function SpecBlock({ block }: { block: Block }) {
     case "pairs":
       return (
         <dl className="ic-pairs">
-          {(block.rows as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd>{value}</dd></Fragment>)}
+          {(block.rows as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd>{statValue(label, value)}</dd></Fragment>)}
         </dl>
       );
     case "props":
@@ -161,7 +179,7 @@ function SpecBlock({ block }: { block: Block }) {
     case "grid":
       return (
         <dl className={`ic-grid${block.dim ? " dim" : ""}`}>
-          {(block.pairs as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd>{value}</dd></Fragment>)}
+          {(block.pairs as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd>{statValue(label, value)}</dd></Fragment>)}
         </dl>
       );
     case "text":

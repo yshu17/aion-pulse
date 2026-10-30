@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { messageSegments } from "../chat/segments";
-import { cardGrade, headBlocks, segmentItemIds } from "./card";
+import { cardGrade, headBlocks, segmentItemIds, statValue } from "./card";
 
 describe("item card", () => {
   const names = { "1": "Камень Рудры", "2": "Камень Рудры", "3": "Свиток скорости" };
@@ -22,6 +22,17 @@ describe("item card", () => {
   it("keeps plain text and places without an id", () => {
     const segments = messageSegments("ищу группу", [], {});
     expect(segmentItemIds(segments, ["3"], names, known)).toEqual([null]);
+  });
+
+  it("writes stats as the game: one minus, tenths of a percent for aggression and PvP", () => {
+    expect(statValue("Агрессия", "+50%")).toBe("+5.0%");
+    expect(statValue("Агрессия", "+-16%")).toBe("-1.6%");
+    expect(statValue("Защита в ПвП", "+52")).toBe("+5.2%");
+    expect(statValue("Защита в ПвП", "+-40")).toBe("-4.0%");
+    expect(statValue("Урон в ПвП", "+100")).toBe("+10.0%");
+    expect(statValue("Сила исцеления", "+-7")).toBe("-7");
+    expect(statValue("Скорость атаки", "+19%")).toBe("+19%");
+    expect(statValue("Физ. защита", "+74")).toBe("+74");
   });
 
   it("writes every grade in lower case (some descriptions have «Unique»)", () => {
