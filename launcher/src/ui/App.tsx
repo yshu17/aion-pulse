@@ -100,6 +100,7 @@ function Screen({ boot }: { boot: Boot }) {
   const [feedMode, setFeedMode] = useState<FeedMode>("matches");
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
+  const [mapHome, setMapHome] = useState(0); // «Карта» pressed again: back to Atreia
   const [mapPlace, setMapPlace] = useState<(ChatPlace & { n: number }) | null>(null); // a place link of the chat, shown on the map
   const openPlace = useCallback((place: ChatPlace) => {
     setMapPlace((old) => ({ ...place, n: (old?.n ?? 0) + 1 }));
@@ -131,7 +132,7 @@ function Screen({ boot }: { boot: Boot }) {
         <nav className="tabs" role="tablist">
           {TABS.map((name) => (
             <button key={name} role="tab" aria-selected={tab === name} className={`tab${tab === name ? " on" : ""}`}
-              onClick={() => setTab(name)}>{name}{tab === name && <Glide group="tab-line" className="tab-line" />}</button>
+              onClick={() => { if (name === "Карта" && tab === "Карта") setMapHome((n) => n + 1); setTab(name); }}>{name}{tab === name && <Glide group="tab-line" className="tab-line" />}</button>
           ))}
         </nav>
         <span className="spacer" />
@@ -213,7 +214,7 @@ function Screen({ boot }: { boot: Boot }) {
           </div>
         </main>
       ) : tab === "Карта" ? (
-        <MapTab boot={boot} place={mapPlace} onPlaceCleared={() => setMapPlace(null)} />
+        <MapTab boot={boot} place={mapPlace} home={mapHome} onPlaceCleared={() => setMapPlace(null)} />
       ) : tab === "Расписание" ? (
         <ScheduleTab schedule={schedule} />
       ) : (

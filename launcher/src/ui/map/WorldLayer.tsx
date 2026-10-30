@@ -13,7 +13,7 @@ interface WorldZone {
   code: string; map_id: string | null; layer: number | null; frame: [number, number, number, number];
   highlight: [number, number, number, number] | null; highlight_file: string; label: [number, number, number, number] | null;
 }
-interface Region { title: string; image: string; size: number; zones: WorldZone[] }
+interface Region { title: string; image: string; size: [number, number]; zones: WorldZone[] }
 export const world = JSON.parse(worldJson) as { globe: { size: [number, number]; parts: GlobePart[] }; regions: Record<string, Region> };
 
 const ABYSS_NAMES: Record<string, string> = { ab1_1: "Нижний слой", ab1_2: "Ядро Бездны", ab1_3: "Верхний слой" };
@@ -79,7 +79,8 @@ export function WorldLayer({ size, region, onRegion, onZone }: {
 /** Atreia: the globe of five parts; Balaurea's two rims light up together. */
 function Globe({ size, onRegion }: { size: { w: number; h: number }; onRegion(region: string): void }) {
   const [gw, gh] = world.globe.size;
-  const k = Math.max(1, Math.min((size.w - 60) / gw, (size.h - 70) / gh));
+  // the client's globe is small: shown at most 2.6 times its size (its pictures are 4 times), so it stays sharp
+  const k = Math.max(1, Math.min((size.w - 60) / gw, (size.h - 70) / gh, 2.6));
   const left = (size.w - gw * k) / 2, top = (size.h - gh * k) / 2 + 10;
   const parts = world.globe.parts;
   const files = useMemo(() => parts.flatMap((p) => [p.up, p.over]), [parts]);
@@ -130,11 +131,12 @@ function Globe({ size, onRegion }: { size: { w: number; h: number }; onRegion(re
 /** A region: its map with each zone lit up on hover and named where the game names it. */
 function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; region: string; onZone(zone: WorldZone): void }) {
   const r = world.regions[region];
-  const k = Math.min(size.w - 40, size.h - 40) / r.size;
-  const left = (size.w - r.size * k) / 2, top = (size.h - r.size * k) / 2;
-  const files = useMemo(() => [r.image, ...r.zones.map((z) => z.highlight_file)], [r]);
+  const [rw, rh] = r.size;
+  const k = Math.min((size.w - 40) / rw, (size.h - 40) / rh, 2); // at most the pictures' own size (2x)
+  const left = (size.w - rw * k) / 2, top = (size.h - rh * k) / 2;
+  const files = useMemo(() => [r.image, ...r.zones.map((z) => z.highlight_file).filter(Boolean)], [r]);
   const urls = usePictures(files);
-  const masks = useMasks(urls, r.zones.map((z) => z.highlight_file));
+  const masks = useMasks(urls, r.zones.map((z) => z.highlight_file).filter(Boolean));
   const [hover, setHover] = useState<string | null>(null);
   const zoneAt = (e: { clientX: number; clientY: number; currentTarget: EventTarget }) => {
     const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -143,7 +145,7 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
     const order = [...r.zones].sort((a, b) => a.frame[2] * a.frame[3] - b.frame[2] * b.frame[3]);
     for (const z of order) {
       const [hx, hy, hw, hh] = z.highlight ?? z.frame;
-      const mask = masks[z.highlight_file];
+      const mask = z.highlight ? masks[z.highlight_file] : undefined;
       if (mask ? opaque(mask, (x - hx) / hw, (y - hy) / hh)
         : x >= z.frame[0] && y >= z.frame[1] && x < z.frame[0] + z.frame[2] && y < z.frame[1] + z.frame[3]) return z;
     }
@@ -156,10 +158,10 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
       onPointerLeave={() => { last.current = null; setHover(null); }}
       onClick={(e) => { const z = zoneAt(e); if (z?.map_id) onZone(z); }}>
       {urls[r.image] && <img className="world-region-map" src={urls[r.image]} alt="" draggable={false}
-        style={{ left, top, width: r.size * k, height: r.size * k }} />}
+        style={{ left, top, width: rw * k, height: rh * k }} />}
       {r.zones.map((z) => {
         const [hx, hy, hw, hh] = z.highlight ?? z.frame;
-        return urls[z.highlight_file] ? (
+        return z.highlight_file && urls[z.highlight_file] ? (
           <img key={z.code} className={`world-zone-light${hover === z.code ? " on" : ""}`} src={urls[z.highlight_file]} alt="" draggable={false}
             style={{ left: left + hx * k, top: top + hy * k, width: hw * k, height: hh * k }} />
         ) : null;

@@ -142,3 +142,4 @@
 .world-zone-light.on { opacity: 1; }
 .world-zone-name { font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .world-part .over, .world-zone-light { transition: none; } }
+.map-home { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 0 12px 0 8px; }

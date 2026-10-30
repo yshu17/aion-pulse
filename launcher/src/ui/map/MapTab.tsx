@@ -13,7 +13,7 @@ import {
 import { FILTER_GROUPS, SIDES, toImage, Zone } from "../../core/map/zones";
 import { metresText } from "../../core/text";
 import { Glide } from "../fx";
-import { IconChevron, IconClose, IconFilter, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconSearch, IconTarget } from "../icons";
+import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconSearch, IconTarget } from "../icons";
 import type { Boot } from "../useBoot";
 import { pictureUrl, PLACE_ICON, poi, typeIcon, zones } from "./mapData";
 import type { ChatPlace } from "./placeLink";
@@ -33,7 +33,9 @@ type Match = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; t
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 const ease = (t: number) => 1 - (1 - t) ** 3;
 
-export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (ChatPlace & { n: number }) | null; onPlaceCleared(): void }) {
+export function MapTab({ boot, place, home, onPlaceCleared }: {
+  boot: Boot; place: (ChatPlace & { n: number }) | null; home: number; onPlaceCleared(): void;
+}) {
   const cfg = boot.config;
   const [side, setSide] = useState(cfg.map_side in SIDES ? cfg.map_side : "dark");
   const [hidden, setHidden] = useState<string[]>(() => [...cfg.map_hidden.filter((g) => g in FILTER_GROUPS), ...(cfg.map_quests ? [] : ["quests"])]);
@@ -46,6 +48,8 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
   // the tab opens on Atreia (the world map), a region of it, or a zone; a place from the chat opens its zone at once
   const [level, setLevel] = useState<"world" | "zone">(place ? "zone" : "world");
   const [region, setRegion] = useState<string | null>(null);
+  const goHome = () => { setLevel("world"); setRegion(null); };
+  useEffect(() => { if (home) goHome(); }, [home]);
   const motion = !(cfg.reduce_motion || reducedMotion());
 
   // --- the picture and the view ---------------------------------------------------------------------------------
@@ -343,6 +347,11 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
   return (
     <main className="map-page">
       <div className="map-bar">
+        {(level === "zone" || region) && (
+          <button className="btn map-home" title="К карте мира" onClick={() => (level === "zone" && regionOf(zoneId) ? (setLevel("world"), setRegion(regionOf(zoneId))) : goHome())}>
+            <IconLeft /> {level === "zone" && regionOf(zoneId) ? world.regions[regionOf(zoneId)!].title : "Атрея"}
+          </button>
+        )}
         <label className="map-zone">
           <select className="field" value={zone.map_id} aria-label="Зона" onChange={(e) => openZone(e.target.value)}>
             {!zoneList.some((z) => z.map_id === zone.map_id) && <option value={zone.map_id}>{zone.name}</option>}
@@ -456,6 +465,30 @@ export function MapTab({ boot, place, onPlaceCleared }: { boot: Boot; place: (Ch
           </>}
         </div>
 
+        {level === "world" && (
+          <aside className="map-panel" aria-label="Части Атреи">
+            <div className="map-card map-hint">
+              <h2>{region ? world.regions[region].title : "Атрея"}</h2>
+              <p>{region ? "Выбери зону на карте или в списке." : "Выбери часть мира на глобусе или в списке."}</p>
+              {shownPlace && zones[shownPlace.map_id] && (
+                <button className="btn primary map-near-btn" onClick={() => { setLevel("zone"); if (zoneId !== shownPlace.map_id) openZone(shownPlace.map_id); pendingPlace.current = shownPlace; }}>
+                  <IconTarget /> К метке из чата
+                </button>
+              )}
+              <ul className="map-near">
+                {region ? world.regions[region].zones.filter((z) => z.map_id && zones[z.map_id]).map((z) => (
+                  <li key={z.code}><button onClick={() => { openZone(z.map_id!); if (z.layer !== null) setLayer(z.layer); }}>
+                    <span className="t"><b>{zoneTitle(z)}</b><span>{z.layer !== null ? "Арэшурат" : world.regions[region].title}</span></span>
+                    <IconChevron open={false} /></button></li>
+                )) : Object.entries(world.regions).map(([key, r]) => (
+                  <li key={key}><button onClick={() => setRegion(key)}>
+                    <span className="t"><b>{r.title}</b><span>{key === "dragon" ? "внешние земли · " : ""}{r.zones.length} {r.zones.length === 3 ? "зоны" : "зон"}</span></span>
+                    <IconChevron open={false} /></button></li>
+                ))}
+              </ul>
+            </div>
+          </aside>
+        )}
         {level === "zone" && <aside className="map-panel" aria-label="Выбранное на карте">
           {selected?.kind === "poi" ? (
             <PointCard title={selected.poi.name || poi.typeName(selected.poi.type)} kind={poi.typeName(selected.poi.type)} icon={typeIcon(selected.poi.type)}
