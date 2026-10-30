@@ -66,6 +66,8 @@ describe("map view", () => {
     expect(iconSize("merchant", 0.3)).toBe(28);
     expect(iconSize("teleport", 0.3)).toBe(36);
     expect(iconSize("fortress", 4)).toBe(Math.round(40 * 1.85));
+    expect(iconSize("direct_portal", 0.3)).toBe(28); // the spatial rifts: small, the same at every zoom
+    expect(iconSize("direct_portal", 4)).toBe(28);
   });
 
   it("draws area names only when the zone is big enough on screen", () => {

@@ -69,8 +69,12 @@ export function gameAt(view: View, zone: Zone, sx: number, sy: number): [number,
   return [(iy - zone.ky[1]) / zone.ky[0], (ix - zone.kx[1]) / zone.kx[0]];
 }
 
+/** Types drawn at one size whatever the zoom: the spatial rifts, as small as the tunnel icon of the filter menu (22 px) +25 %. */
+export const FIXED_SIZE: Record<string, number> = { direct_portal: 28 };
+
 /** Icon px for a zoom: big enough to read on the whole map, teleporters bigger, landmarks scaled. */
 export function iconSize(type: string, zoom: number): number {
+  if (type in FIXED_SIZE) return FIXED_SIZE[type];
   let size = Math.max(28, Math.min(40, Math.round(22 + 8 * zoom)));
   if (BIG_TYPES.has(type)) size += 8;
   return Math.round(size * (ICON_SCALE[type] ?? 1.0));

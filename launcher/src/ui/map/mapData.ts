@@ -29,7 +29,9 @@ const ways = (JSON.parse(transitionsJson) as { ways: Way[] }).ways.filter((w) =>
 export const waysInto = (mapId: string) => ways.filter((w) => w.to === mapId && w.entrance);
 export const wayFrom = (mapId: string, name: string) => ways.find((w) => w.from === mapId && w.name === name) ?? null;
 
-export const typeIcon = (type: string) => iconUrl((poi.types[type]?.icon as string | undefined) ?? undefined);
+// the spatial rifts wear the Silentera tunnel's icon (smaller, see FIXED_SIZE in core/map/view.ts), as in the filter menu
+const ICON_OF: Record<string, string> = { direct_portal: "tunnel.png" };
+export const typeIcon = (type: string) => iconUrl(ICON_OF[type] ?? (poi.types[type]?.icon as string | undefined) ?? undefined);
 export const PLACE_ICON = iconUrl("place.png"); // the blue cross of a place from the chat, as the game's map
 
 // the NPC and monster points (1.8 MB): read when a search first needs them, from data/maps as the pictures
