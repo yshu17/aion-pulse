@@ -25,6 +25,7 @@ const atrea = JSON.parse(atreaJson) as {
 };
 const ABYSS_NAMES = atrea.zone_names; // the Abyss layers named as on the site
 const BG = "site/bg.png";
+const TOP = 56; // the breadcrumb's band at the top of the map
 
 /** The region a zone belongs to on the world map (null: a zone the world map has no place for, e.g. a temple). */
 export function regionOf(mapId: string): string | null {
@@ -104,7 +105,7 @@ function Globe({ size, onRegion }: { size: { w: number; h: number }; onRegion(re
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
     return opaque(masks[`site/${rims.file}`], (p.x - rims.x) / rims.width, (p.y - rims.y) / rims.height);
   };
-  const scale = Math.min((size.w - 40) / vw, (size.h - 40) / vh);
+  const scale = Math.min((size.w - 40) / vw, (size.h - TOP - 10) / vh);
   return (
     <svg ref={svg} className={`world-svg${hover ? " pointing" : ""}`} viewBox={`${vx} ${vy} ${vw} ${vh}`}
       width={vw * scale} height={vh * scale} role="group" aria-label="Атрея"
@@ -134,8 +135,9 @@ function Globe({ size, onRegion }: { size: { w: number; h: number }; onRegion(re
 function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; region: string; onZone(zone: WorldZone): void }) {
   const r = world.regions[region];
   const [rw, rh] = r.size;
-  const k = Math.min((size.w - 40) / rw, (size.h - 40) / rh, 2); // at most the pictures' own size (2x)
-  const left = (size.w - rw * k) / 2, top = (size.h - rh * k) / 2;
+  // under the breadcrumb (TOP), 20 px from the other edges; at most the pictures' own size (2x)
+  const k = Math.min((size.w - 40) / rw, (size.h - TOP - 20) / rh, 2);
+  const left = (size.w - rw * k) / 2, top = TOP + (size.h - TOP - 20 - rh * k) / 2;
   const files = useMemo(() => [r.image, ...r.zones.map((z) => z.highlight_file).filter(Boolean)], [r]);
   const urls = usePictures(files);
   const masks = useMasks(urls, r.zones.map((z) => z.highlight_file).filter(Boolean));
