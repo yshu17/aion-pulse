@@ -93,3 +93,19 @@ describe("tooltips (item_specs.json.gz)", () => {
     expect(specs.has("no-such-id")).toBe(g.has_missing);
   });
 });
+
+describe("award medals (Aion Empire cards)", () => {
+  const items = parseWatchItems(readFileSync(join(ROOT, "data", "watch_items.csv"), "utf-8"));
+  const specs = parseSpecs(gunzipSync(readFileSync(join(ROOT, "data", "item_specs.json.gz"))).toString("utf-8"));
+  const MEDALS = ["186000031", "186000030", "186000096", "186000156", "186000162", "186000163", "186000190"];
+
+  it("are in the catalog as green items with the Empire card", () => {
+    for (const id of MEDALS) {
+      const item = items.find((x) => x.id === id);
+      expect(item?.grade, id).toBe("rare"); // green in the chat
+      expect(item?.icon, id).toMatch(/^icon_item_badge\d+$/);
+      expect(specs.get(id)?.layout, id).toBe("empire");
+      expect(Array.isArray(specs.get(id)?.restrictions), id).toBe(true);
+    }
+  });
+});

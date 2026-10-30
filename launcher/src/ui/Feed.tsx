@@ -27,14 +27,14 @@ const hasCard = (id: string) => id in catalogById;
 function Text({ text, hits, links }: { text: string; hits: string[]; links: string[] }) {
   const open = useOpenItem();
   const segments = messageSegments(text, hits, specByName, gradeOf);
-  const ids = segmentItemIds(segments, links, itemNames, hasCard);
+  const ids = segmentItemIds(segments, links, itemNames);
   return (
     <>
       {segments.map((s, i) => {
         const id = ids[i];
         const grade = id ? gradeOf[id] : s.grade;
         const className = `seg-${s.kind}${s.hit ? " hit" : ""}${grade ? ` g-${grade}` : ""}`;
-        if (!id) return <span key={i} className={className}>{s.text}</span>;
+        if (!id || !hasCard(id)) return <span key={i} className={className}>{s.text}</span>; // no description: no card
         const show = (x: number, y: number) => open({ id, x, y });
         return (
           <span key={i} className={`${className} card-link`} role="button" tabIndex={0} title="Открыть описание"

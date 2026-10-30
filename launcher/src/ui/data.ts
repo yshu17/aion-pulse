@@ -42,6 +42,7 @@ const TEMPLATES: ((n: number) => string)[] = [
   (n) => `wts ${link(pick(RUDRA, n).id)} + ${link(pick(RUDRA, n + 1).id)} 3kk`,
   () => "собираю рейд на Инг, 6/12, нужны хилы",
   () => "продам перья и камни, оптом дешевле",
+  () => `обменяю ${link("186000163")} x20 на ${link("186000030")}`, // the award medals: green links, Empire cards
   () => "ищу группу на арену хаоса, ДД 54",
 ];
 

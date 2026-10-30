@@ -9,16 +9,16 @@ export type Block = Record<string, any>; // one block of a description: kind pai
 
 /**
  * The item id of each segment (null for text and places). A chat link carries its item's own id, and several items
- * share one name (a link's text is only the name), so each item segment takes the first unused id of the message's
- * links that has this name and a description; otherwise the id its name stands for.
+ * share one name (a link's text is only the name: a quest «Золотая медаль» and the reward one), so each item segment
+ * takes the first unused id of the message's links that has this name, even one without a description (the caller
+ * then shows no card, not the card of another item); with no such link, the id its name stands for.
  */
-export function segmentItemIds(segments: Segment[], linkIds: string[], names: Record<string, string>,
-                               known: (id: string) => boolean): (string | null)[] {
+export function segmentItemIds(segments: Segment[], linkIds: string[], names: Record<string, string>): (string | null)[] {
   const left = [...linkIds];
   return segments.map((segment) => {
     if (segment.kind !== "item") return null;
     const name = segment.text.slice(1, -1); // «<Name>»
-    const at = left.findIndex((id) => names[id] === name && known(id));
+    const at = left.findIndex((id) => names[id] === name);
     return at >= 0 ? left.splice(at, 1)[0] : segment.item_id;
   });
 }

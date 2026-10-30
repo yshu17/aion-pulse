@@ -88,6 +88,39 @@ html.card-mode, html.card-mode body, html.card-mode #root { background: transpar
 .item-card .ic-db-link button:hover { text-decoration: underline; }
 .item-card .ic-db-link button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* The black gold medal follows its Aion Empire item page. */
+.item-card.empire {
+  width: 485px;
+  padding: 12px 10px 14px;
+  border-color: #718797;
+  border-radius: 3px;
+  background:
+    radial-gradient(ellipse at 11% 91%, #293858 0, transparent 43%),
+    radial-gradient(ellipse at 84% 87%, #2b4c58 0, transparent 47%),
+    radial-gradient(circle at 27% 7%, #31507a 0, transparent 17%),
+    #0c1b23;
+  box-shadow: inset 0 0 34px #5b718060;
+  color: #e4e9ea;
+}
+.item-card.empire.in-page { width: min(485px, calc(100vw - 16px)); }
+.item-card .ic-empire-title { display: flex; align-items: flex-start; gap: 8px; padding: 1px 0 16px;
+  cursor: grab; user-select: none; touch-action: none; }
+.item-card .ic-empire-title:active { cursor: grabbing; }
+.item-card .ic-empire-title b { flex: 1; color: #70ec75; font-size: 21px; line-height: 1.3;
+  text-shadow: 1px 2px 2px #000; }
+.item-card .ic-empire-title .ic-x { margin-top: -4px; color: #b6c0c5; }
+.item-card .ic-empire-tab { display: inline-block; margin-bottom: 16px; padding: 3px 10px;
+  border: 1px solid #8fb3ca; border-radius: 3px; background: linear-gradient(#326685, #1a405c);
+  box-shadow: inset 0 1px #ffffff44, 0 1px 3px #0008; font-size: 12px; }
+.item-card .ic-empire-info { display: flex; align-items: flex-start; gap: 11px; }
+.item-card .ic-empire-info > .icon { flex: none; border: 1px solid #8fb3ca; border-radius: 3px; }
+.item-card .ic-empire-info > div { min-width: 0; flex: 1; }
+.item-card .ic-empire-rank { display: flex; gap: 40px; margin: 1px 0 3px; font-size: 12px; }
+.item-card .ic-empire-rank strong { font-weight: 600; }
+.item-card .ic-empire-info p { margin: 0; color: #e9cf86; font-size: 12px; line-height: 1.35; }
+.item-card .ic-empire-rule { width: 82%; margin: 8px 0 8px; border: 0; border-top: 1px solid #8b9398; }
+.item-card .ic-empire-description { margin: 0; font-size: 12px; line-height: 1.4; }
+
 /* an item in a chat message opens its card */
 .seg-item.card-link { cursor: pointer; border-radius: 3px; text-decoration: underline dotted transparent; text-underline-offset: 3px;
   transition: text-decoration-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
