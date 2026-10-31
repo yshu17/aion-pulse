@@ -266,7 +266,30 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   // gathering nodes switched on in «Сбор» (by node id: the same node stays on in the next zone), their spots on screen
   const gather = useMemo(() => gathering.inZone(zoneId, layer), [zoneId, layer]);
   const [gatherShown, setGatherShown] = useState<string[]>([]);
-  const toggleGather = (id: string) => setGatherShown((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]));
+  // the spot the map is focused on (as an NPC's point): ringed, centred when its resource is switched on
+  const [gatherFocus, setGatherFocus] = useState<{ id: string; i: number } | null>(null);
+  const toggleGather = (id: string) => {
+    if (gatherShown.includes(id)) {
+      setGatherShown(gatherShown.filter((i) => i !== id));
+      if (gatherFocus?.id === id) setGatherFocus(null);
+      return;
+    }
+    setGatherShown([...gatherShown, id]);
+    const node = [...gather.essence, ...gather.aether].find((n) => n.id === id);
+    const from = viewRef.current;
+    if (!node || !zone || !size || !from) return;
+    // the spot nearest to the middle of the view (the first one when the map has not moved yet)
+    const cx = from.left + size.w / 2 / from.zoom, cy = from.top + size.h / 2 / from.zoom;
+    let best = 0, bestD = Infinity;
+    node.points.forEach(([gx, gy], i) => {
+      const [ix, iy] = toImage(zone, gx, gy);
+      const d = Math.hypot(ix - cx, iy - cy);
+      if (d < bestD) { best = i; bestD = d; }
+    });
+    setGatherFocus({ id, i: best });
+    const [ix, iy] = toImage(zone, node.points[best][0], node.points[best][1]);
+    flyTo(ix, iy, Math.max(from.zoom, fitZoom(zone, size.w, size.h) * 2));
+  };
   const gatherSpots = useMemo(() => {
     if (!zone || !gatherShown.length) return [];
     return [...gather.essence, ...gather.aether].filter((n) => gatherShown.includes(n.id))
@@ -554,7 +577,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const src = gatherIcon(node.icon);
             const text = `${node.level} – ${node.name}\nклик — копировать ссылку на точку`;
             return (
-              <button key={`${node.id}:${node.layer ?? ""}:${i}`} className="map-gather" style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
+              <button key={`${node.id}:${node.layer ?? ""}:${i}`} className={`map-gather${gatherFocus?.id === node.id && gatherFocus.i === i ? " chosen" : ""}`} style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
                 aria-label={`${node.level} – ${node.name}: копировать ссылку на точку`}
                 onPointerEnter={() => setBubble({ x: sx, y: sy - gatherPx / 2, text })} onPointerLeave={() => setBubble(null)}
                 onClick={() => {
