@@ -53,6 +53,28 @@ REGIONS = {  # client region -> its title and the globe buttons that open it
 ICONS = {"underpass": [776, 81, 29, 30]}  # zones the coloured maps have no highlight for: their marker in the same atlas
 # ... or a sprite of their own (client_extract/worldmap_gate, Codex): drawn at half its px in map units (97×57 → 49×29)
 ICON_SPRITES = {"underpass": ROOT / "client_extract" / "worldmap_gate" / "silenterra_gate_highlight.png"}
+TOWER_BOX = (40, 0, 65, 47)  # the grey tower in that sprite (its base on row 46); the yellow lit ground around it
+TOWER_SCALE = 2  # the user wants the tower twice as tall, the lit ground as it is
+
+
+def taller_tower(gate: Image.Image) -> Image.Image:
+    """The gate sprite with its tower TOWER_SCALE times bigger, standing on the same spot; the canvas grows up and
+    down alike, so the sprite's centre (drawn at the zone's centre) stays where it was."""
+    x0, y0, x1, y1 = TOWER_BOX
+    tower = gate.crop(TOWER_BOX)
+    pixels = tower.load()
+    for y in range(tower.height):  # leave out the lit ground inside the box: strongly coloured pixels
+        for x in range(tower.width):
+            r, g, b, a = pixels[x, y]
+            if a and max(r, g, b) and (max(r, g, b) - min(r, g, b)) / max(r, g, b) > 0.5:
+                pixels[x, y] = (0, 0, 0, 0)
+    big = tower.resize((tower.width * TOWER_SCALE, tower.height * TOWER_SCALE), Image.LANCZOS)
+    grow = max(0, big.height - y1)
+    out = Image.new("RGBA", (gate.width, gate.height + 2 * grow))
+    out.alpha_composite(gate, (0, grow))
+    base_x = (x0 + x1) / 2
+    out.alpha_composite(big, (round(base_x - big.width / 2), grow + y1 - big.height))
+    return out
 ABYSS_LAYERS = {"ab1_1": 1, "ab1_2": 2, "ab1_3": 3}  # the Abyss zones of the client are the layers of Reshanta
 
 
@@ -263,7 +285,8 @@ def main() -> None:
                         sprite = ICON_SPRITES.get(zone["code"])
                         if sprite and sprite.exists():  # the game's own lit gate (worldmap_dragon_1.dds), chosen by the user
                             zone["icon"] = f"zone_{zone['code']}_icon.png"
-                            with Image.open(sprite) as gate:
+                            with Image.open(sprite) as source:
+                                gate = taller_tower(source.convert("RGBA"))
                                 gate.save(OUT / zone["icon"])
                                 zone["icon_size"] = [round(gate.width / 2), round(gate.height / 2)]
                         elif zone["code"] in ICONS:

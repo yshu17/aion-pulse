@@ -51,12 +51,12 @@ button.world-zone-name:active:not(:disabled), button.world-label:active:not(:dis
 .map-count { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; display: grid; place-items: center;
   background: #111; border: 1px solid var(--accent); color: var(--text); font: 700 10px var(--font); }
 .map-pin { position: absolute; z-index: 4; transform: translate(-50%, -50%); display: grid; place-items: center; pointer-events: none; }
-.map-pin .glow { position: absolute; width: 74px; height: 74px; border-radius: 50%;
+.map-pin .glow { position: absolute; width: 37px; height: 37px; border-radius: 50%;
   background: radial-gradient(circle, rgba(74, 150, 255, .55) 0, rgba(74, 150, 255, .22) 45%, transparent 70%); }
 .map-pin { animation: map-blink .5s step-end 6; }
 .map-pin img, .map-pin .cross { position: relative; }
-.map-pin .cross { width: 34px; height: 34px; border-radius: 50%; background: #2f7ae5; color: #fff; font: 700 24px/32px var(--font); text-align: center; }
-.map-pin b { position: absolute; left: 30px; white-space: nowrap; color: #fff; font-size: 13px;
+.map-pin .cross { width: 17px; height: 17px; border-radius: 50%; background: #2f7ae5; color: #fff; font: 700 13px/16px var(--font); text-align: center; }
+.map-pin b { position: absolute; left: 16px; white-space: nowrap; color: #fff; font-size: 13px;
   text-shadow: -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000, 1px 1px 2px #000; }
 .map-bubble { position: absolute; z-index: 6; transform: translate(-50%, calc(-100% - 8px)); padding: 6px 10px; white-space: pre; pointer-events: none;
   background: var(--pop-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--pop-shadow); font-size: 12px; }
@@ -249,7 +249,7 @@ button.map-gather:active:not(:disabled) { transform: translate(-50%, -50%) scale
   background: radial-gradient(circle, rgba(70, 130, 255, .5) 0, rgba(70, 130, 255, .3) 45%, rgba(70, 130, 255, .12) 70%, transparent 100%); }
 .map-area-pin { position: absolute; z-index: 4; transform: translate(-50%, -50%); width: 22px; height: 22px; pointer-events: none; }
 .map-area-pin i { display: block; width: 100%; height: 100%; border-radius: 50%; background: #3fbf6a; border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(0, 0, 0, .45), 0 0 10px #3fbf6a; }
-.map-mark { position: absolute; z-index: 5; transform: translate(-50%, -50%); width: 34px; height: 34px; padding: 0; border: 0; background: transparent; cursor: copy;
+.map-mark { position: absolute; z-index: 5; transform: translate(-50%, -50%); width: 17px; height: 17px; padding: 0; border: 0; background: transparent; cursor: copy;
   filter: drop-shadow(0 0 4px #000) drop-shadow(0 0 8px rgba(74, 150, 255, .9)); animation: map-blink .5s step-end 6; }
 .map-mark img { width: 100%; height: 100%; display: block; }
 button.map-mark:active:not(:disabled) { transform: translate(-50%, -50%) scale(.92); }

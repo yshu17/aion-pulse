@@ -11,7 +11,7 @@ import {
   toGame, View, ZOOM_STEP, zonesOfSide, zoomAt, BIG_TYPES, ICON_SCALE,
 } from "../../core/map/view";
 import { FILTER_GROUPS, SIDES, toImage, Zone } from "../../core/map/zones";
-import { nearestPoint, SpawnPoint, Spawns } from "../../core/map/spawns";
+import { nearestPoint, spawnAreas, SpawnPoint, Spawns } from "../../core/map/spawns";
 import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
 import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconReset, IconSearch, IconTarget } from "../icons";
@@ -25,7 +25,7 @@ import "./map.css";
 
 const DEFAULT_ZONE = "220070000"; // Келькмарос
 const SPLIT_ZOOM = (MAX_ZOOM / ZOOM_STEP) * 0.999; // the last two zoom levels: every point its own icon, no counts
-const PLACE_ICON_PX = 34; // the blue cross of the chat's place, as on the game's map
+const PLACE_ICON_PX = 17; // the blue cross of the chat's place (and your mark), half the game's size
 const FLY_MS = 260;
 const FILTER_ICON: Record<string, string> = { rifts: "tunnel" }; // the group's icon in «Фильтры»: the Silentera tunnel for the rifts
 const ZOOM_MS = 170;
@@ -623,14 +623,13 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const [sx, sy] = toScreen(view, selected.x, selected.y);
             return <div className="map-area-pin" style={{ left: sx, top: sy }} aria-hidden="true"><i /></div>;
           })()}
-          {npcHere && view && size && (() => { // the NPC's spawn area: a blue glow around each of its points, as the game's map
-            const d = SPAWN_RADIUS_M * 2 * Math.abs(zone.kx[0] || 1) * view.zoom;
-            return npcHere.points.map(([gx, gy], i) => {
-              const [sx, sy] = toScreen(view, ...toImage(zone, gx, gy));
-              if (sx < -d || sy < -d || sx > size.w + d || sy > size.h + d) return null;
-              return <div key={`spawn${i}`} className="map-spawn" style={{ left: sx, top: sy, width: d, height: d }} />;
-            });
-          })()}
+          {npcHere && view && size && spawnAreas(npcHere.points, SPAWN_RADIUS_M).map((area, i) => {
+            // the NPC's spawn areas, as the game's map: one blue glow for points close together, its own for a far one
+            const d = area.r * 2 * Math.abs(zone.kx[0] || 1) * view.zoom;
+            const [sx, sy] = toScreen(view, ...toImage(zone, area.x, area.y));
+            if (sx < -d || sy < -d || sx > size.w + d || sy > size.h + d) return null;
+            return <div key={`spawn${i}`} className="map-spawn" style={{ left: sx, top: sy, width: d, height: d }} />;
+          })}
           {view && marks[markKey] && (() => {
             const [sx, sy] = toScreen(view, ...toImage(zone, marks[markKey][0], marks[markKey][1]));
             return (

@@ -88,3 +88,27 @@ export function nearestPoint(points: SpawnPoint[], gx: number, gy: number): Spaw
   }
   return best;
 }
+
+/** A spawn area of the map: a circle in game coordinates around one or several close spawn points. */
+export interface SpawnArea { x: number; y: number; r: number }
+
+/**
+ * The blue spawn areas of an NPC: points closer than two radii join one area (chains of them too), so overlapping
+ * circles become one; an area is centred on its points and reaches a radius past the farthest one.
+ */
+export function spawnAreas(points: SpawnPoint[], radius: number): SpawnArea[] {
+  const group = points.map((_, i) => i);
+  const root = (i: number): number => (group[i] === i ? i : (group[i] = root(group[i])));
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      if (Math.hypot(points[i][0] - points[j][0], points[i][1] - points[j][1]) < radius * 2) group[root(i)] = root(j);
+    }
+  }
+  const members = new Map<number, SpawnPoint[]>();
+  points.forEach((p, i) => members.set(root(i), [...(members.get(root(i)) ?? []), p]));
+  return [...members.values()].map((ps) => {
+    const x = ps.reduce((sum, p) => sum + p[0], 0) / ps.length;
+    const y = ps.reduce((sum, p) => sum + p[1], 0) / ps.length;
+    return { x, y, r: Math.max(...ps.map((p) => Math.hypot(p[0] - x, p[1] - y))) + radius };
+  });
+}

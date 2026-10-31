@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { nearestPoint, Spawns } from "./spawns";
+import { nearestPoint, spawnAreas, Spawns } from "./spawns";
 import { parseZones } from "./zones";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
@@ -55,5 +55,16 @@ describe("NPC and monster points (spawns.json)", () => {
   it("gives an empty index for a missing or broken file", () => {
     expect(Spawns.parse(null).size).toBe(0);
     expect(Spawns.parse("{").size).toBe(0);
+  });
+
+  it("joins spawn points that are close into one area, far ones get their own", () => {
+    const areas = spawnAreas([[0, 0, 0], [100, 0, 0], [50, 80, 0], [2000, 2000, 0]], 110);
+    expect(areas).toHaveLength(2);
+    const [near, far] = areas;
+    expect(near.x).toBeCloseTo(50);
+    expect(near.y).toBeCloseTo(80 / 3);
+    for (const [x, y] of [[0, 0], [100, 0], [50, 80]]) expect(Math.hypot(x - near.x, y - near.y) + 110).toBeLessThanOrEqual(near.r + 1e-9);
+    expect(far).toEqual({ x: 2000, y: 2000, r: 110 });
+    expect(spawnAreas([], 110)).toEqual([]);
   });
 });
