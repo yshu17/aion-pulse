@@ -30,10 +30,10 @@ const FLY_MS = 260;
 const FILTER_ICON: Record<string, string> = { rifts: "tunnel" }; // the group's icon in «Фильтры»: the Silentera tunnel for the rifts
 const ZOOM_MS = 170;
 
-type Selected = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string; r: number } | null;
-type Match = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string; r: number };
-/** The glow of a found area, in picture px around its name: the client keeps no borders for the areas, this is a guess by the name's level. */
-const AREA_RADIUS = { main: 380, zoom: 200 };
+type Selected = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string } | null;
+type Match = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string };
+/** The blue spawn area drawn around each point of a found NPC, in game metres (the client gives no spawn radius). */
+const SPAWN_RADIUS_M = 110;
 const MARKS_KEY = "pulse.map.marks";
 const MARK_NAME = "Метка";
 
@@ -384,10 +384,10 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     const found: Match[] = poi.inZone(zone.map_id, types, side, layer)
       .filter((p) => { const text = normalize(`${p.name} ${poi.typeName(p.type)} ${groupOf(p.type)}`); return words.every((w) => text.includes(w)); })
       .map((p) => ({ kind: "poi" as const, poi: p }));
-    zone.labels.forEach(([x, y, text, kind], i) => {
+    zone.labels.forEach(([x, y, text], i) => {
       const onLayer = zone.label_layers[i];
       if ((onLayer == null || layer === null || onLayer === layer) && words.every((w) => normalize(text).includes(w))) {
-        found.push({ kind: "area", x, y, text: oneLine(text).replace(/\n/g, " "), r: AREA_RADIUS[kind === "main" ? "main" : "zoom"] });
+        found.push({ kind: "area", x, y, text: oneLine(text).replace(/\n/g, " ") });
       }
     });
     return found;
@@ -400,7 +400,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     const m = matches[next];
     const zoom = Math.max(viewRef.current?.zoom ?? 1, 1);
     if (m.kind === "poi") pick(m.poi, true);
-    else { setSelected({ kind: "area", x: m.x, y: m.y, text: m.text, r: m.r }); flyTo(m.x, m.y, zoom); }
+    else { setSelected({ kind: "area", x: m.x, y: m.y, text: m.text }); flyTo(m.x, m.y, zoom); }
   };
   useEffect(() => { // Ctrl+K: to the search field
     const keys = (e: KeyboardEvent) => {
@@ -621,11 +621,15 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           })}
           {view && selected?.kind === "area" && (() => {
             const [sx, sy] = toScreen(view, selected.x, selected.y);
-            const d = selected.r * 2 * view.zoom;
-            return <>
-              <div className="map-area-glow" style={{ left: sx, top: sy, width: d, height: d }} />
-              <div className="map-area-pin" style={{ left: sx, top: sy }} aria-hidden="true"><i /></div>
-            </>;
+            return <div className="map-area-pin" style={{ left: sx, top: sy }} aria-hidden="true"><i /></div>;
+          })()}
+          {npcHere && view && size && (() => { // the NPC's spawn area: a blue glow around each of its points, as the game's map
+            const d = SPAWN_RADIUS_M * 2 * Math.abs(zone.kx[0] || 1) * view.zoom;
+            return npcHere.points.map(([gx, gy], i) => {
+              const [sx, sy] = toScreen(view, ...toImage(zone, gx, gy));
+              if (sx < -d || sy < -d || sx > size.w + d || sy > size.h + d) return null;
+              return <div key={`spawn${i}`} className="map-spawn" style={{ left: sx, top: sy, width: d, height: d }} />;
+            });
           })()}
           {view && marks[markKey] && (() => {
             const [sx, sy] = toScreen(view, ...toImage(zone, marks[markKey][0], marks[markKey][1]));
