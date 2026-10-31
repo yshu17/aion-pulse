@@ -1,10 +1,12 @@
 // The map's data for the screen: zones (data/maps/maps.json + labels.tsv), points (poi.json), their icons (the game's
 // own map and radar sprites, as Pulse draws them) and the zone pictures. The pictures (44 MB) are read from data/maps
 // next to the program, not built into it; the plain browser (the dev page) takes them from the dev server.
+import gatheringJson from "../../../../data/maps/gathering.json?raw";
 import labelsText from "../../../../data/maps/labels.tsv?raw";
 import mapsJson from "../../../../data/maps/maps.json?raw";
 import poiJson from "../../../../data/maps/poi.json?raw";
 import transitionsJson from "../../../../data/maps/transitions.json?raw";
+import { Gathering } from "../../core/map/gathering";
 import { PoiStore } from "../../core/map/poi";
 import { Spawns } from "../../core/map/spawns";
 import { parseZones, toImage, Zone } from "../../core/map/zones";
@@ -28,6 +30,11 @@ const ways = (JSON.parse(transitionsJson) as { ways: Way[] }).ways.filter((w) =>
 /** The entrances that lead into a zone (a dungeon): for the way back out. */
 export const waysInto = (mapId: string) => ways.filter((w) => w.to === mapId && w.entrance);
 export const wayFrom = (mapId: string, name: string) => ways.find((w) => w.from === mapId && w.name === name) ?? null;
+
+/** Gathering nodes (data/maps/gathering.json, from aion-map.vercel.app) and their icons (data/maps/gathering/*.png). */
+export const gathering: Gathering = Gathering.parse(gatheringJson);
+const gatherIcons = import.meta.glob("../../../../data/maps/gathering/*.png", { query: "?url", import: "default", eager: true }) as Record<string, string>;
+export const gatherIcon = (icon: string) => gatherIcons[`../../../../data/maps/gathering/${icon}.png`] ?? null;
 
 // the spatial rifts wear the Silentera tunnel's icon (smaller, see FIXED_SIZE in core/map/view.ts), as in the filter menu
 const ICON_OF: Record<string, string> = { direct_portal: "tunnel.png" };

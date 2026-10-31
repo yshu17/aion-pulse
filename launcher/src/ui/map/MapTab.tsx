@@ -16,7 +16,8 @@ import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
 import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconSearch, IconTarget } from "../icons";
 import type { Boot } from "../useBoot";
-import { loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, waysInto, zones } from "./mapData";
+import { GatherPanel } from "./GatherPanel";
+import { gatherIcon, gathering, loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, waysInto, zones } from "./mapData";
 import type { ChatPlace, MapTarget } from "./placeLink";
 import { regionOf, world, WorldLayer, zoneTitle } from "./WorldLayer";
 import "./map.css";
@@ -261,6 +262,16 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     });
   }, [zone, view, size, layer, iconZoom]);
   const labelPx = Math.max(11, Math.min(20, Math.round((5 + 4 * iconZoom) * 1.33))); // settles with the zoom too
+  // gathering nodes switched on in «Сбор» (by node id: the same node stays on in the next zone), their spots on screen
+  const gather = useMemo(() => gathering.inZone(zoneId, layer), [zoneId, layer]);
+  const [gatherShown, setGatherShown] = useState<string[]>([]);
+  const toggleGather = (id: string) => setGatherShown((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]));
+  const gatherSpots = useMemo(() => {
+    if (!zone || !gatherShown.length) return [];
+    return [...gather.essence, ...gather.aether].filter((n) => gatherShown.includes(n.id))
+      .flatMap((n) => n.points.map(([gx, gy], i) => ({ node: n, i, at: toImage(zone, gx, gy) })));
+  }, [zone, gather, gatherShown]);
+  const gatherPx = Math.max(18, Math.min(28, Math.round(14 + 4 * iconZoom)));
   const [bubble, setBubble] = useState<{ x: number; y: number; text: string } | null>(null);
 
   // --- the right panel -------------------------------------------------------------------------------------------
@@ -536,6 +547,18 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const [sx, sy] = toScreen(view, x, y);
             return <div key={i} className={`map-label ${level}`} style={{ left: sx, top: sy, fontSize: level === "zoom" ? labelPx - 2 : labelPx }}>{oneLine(text)}</div>;
           })}
+          {view && size && gatherSpots.map(({ node, i, at: [ix, iy] }) => {
+            const [sx, sy] = toScreen(view, ix, iy);
+            if (sx < -gatherPx || sy < -gatherPx || sx > size.w + gatherPx || sy > size.h + gatherPx) return null;
+            const src = gatherIcon(node.icon);
+            const text = `${node.level} – ${node.name}`;
+            return (
+              <div key={`${node.id}:${node.layer ?? ""}:${i}`} className="map-gather" style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
+                aria-label={text} onPointerEnter={() => setBubble({ x: sx, y: sy - gatherPx / 2, text })} onPointerLeave={() => setBubble(null)}>
+                {src ? <img src={src} alt="" draggable={false} /> : <i />}
+              </div>
+            );
+          })}
           {view && groups.map(([sx, sy, members]) => {
             const first = members[0];
             const s = iconSize(first.type, iconZoom);
@@ -660,6 +683,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               )}
             </div>
           )}
+          <GatherPanel nodes={gather} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
         </aside>}
       </div>
     </main>

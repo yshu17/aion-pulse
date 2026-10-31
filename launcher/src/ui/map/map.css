@@ -109,6 +109,33 @@ button.world-zone-name:active:not(:disabled), button.world-label:active:not(:dis
 .map-note { margin: 0; font-size: 13px; white-space: pre-line; color: var(--text); }
 .map-hint p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 
+/* «Сбор» (GatherPanel.tsx): gathering nodes under the card, two folding sections; their spots on the map */
+.map-gather { position: absolute; z-index: 1; transform: translate(-50%, -50%); filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000); }
+.map-gather img { width: 100%; height: 100%; display: block; }
+.map-gather > i { display: block; width: 60%; height: 60%; margin: 20%; border-radius: 50%; background: #7fd36b; border: 2px solid #000; }
+.map-gather-panel { margin: 0 18px 16px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.map-gather-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 32px; }
+.map-gather-top h3 { margin: 0; font-size: 18px; }
+.map-gather-top .btn { height: 32px; padding: 0 10px; font-size: 13px; }
+.map-gather-head { width: 100%; height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; cursor: pointer; text-align: left;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text); font-size: 14px; }
+.map-gather-head:hover { border-color: var(--border-control); background: var(--surface-3); }
+.map-gather-head:focus-visible, .map-gather-list button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.map-gather-head b { flex: 1; font-weight: 600; }
+.map-gather-head .muted { font-size: 12px; font-variant-numeric: tabular-nums; }
+.map-gather-on { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--accent); color: #111; font: 700 11px var(--font); }
+.map-gather-list { list-style: none; margin: 2px 0 4px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.map-gather-list button { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 10px; padding: 4px 10px; cursor: pointer; text-align: left;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); font-size: 13px; }
+.map-gather-list button:hover { background: var(--surface-2); }
+.map-gather-list button.on { background: var(--surface-2); border-color: var(--accent); }
+.map-gather-list img, .map-gather-list i { width: 26px; height: 26px; object-fit: contain; flex: none; }
+.map-gather-list .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-gather-list .lvl { color: var(--muted); font-variant-numeric: tabular-nums; }
+.map-gather-list .m { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.map-gather-list .eye { width: 16px; display: grid; place-items: center; color: var(--accent); flex: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .map-poi.chosen { animation: none; transform: translate(-50%, -50%) scale(1.2); }
   .map-pin .glow { animation: none; }
