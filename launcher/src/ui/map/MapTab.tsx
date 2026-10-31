@@ -14,7 +14,7 @@ import { FILTER_GROUPS, SIDES, toImage, Zone } from "../../core/map/zones";
 import { nearestPoint, SpawnPoint, Spawns } from "../../core/map/spawns";
 import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
-import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconSearch, IconTarget } from "../icons";
+import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconReset, IconSearch, IconTarget } from "../icons";
 import type { Boot } from "../useBoot";
 import { posLink } from "../../core/map/gathering";
 import { copyText, GatherPanel } from "./GatherPanel";
@@ -266,12 +266,10 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   // gathering nodes switched on in «Сбор» (by node id: the same node stays on in the next zone), their spots on screen
   const gather = useMemo(() => gathering.inZone(zoneId, layer), [zoneId, layer]);
   const [gatherShown, setGatherShown] = useState<string[]>([]);
-  // the spot the map is focused on (as an NPC's point): ringed, centred when its resource is switched on
-  const [gatherFocus, setGatherFocus] = useState<{ id: string; i: number } | null>(null);
+  // switching a resource on centres the map on its spot nearest to the middle of the view (no blinking: only a focus)
   const toggleGather = (id: string) => {
     if (gatherShown.includes(id)) {
       setGatherShown(gatherShown.filter((i) => i !== id));
-      if (gatherFocus?.id === id) setGatherFocus(null);
       return;
     }
     setGatherShown([...gatherShown, id]);
@@ -286,7 +284,6 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
       const d = Math.hypot(ix - cx, iy - cy);
       if (d < bestD) { best = i; bestD = d; }
     });
-    setGatherFocus({ id, i: best });
     const [ix, iy] = toImage(zone, node.points[best][0], node.points[best][1]);
     flyTo(ix, iy, Math.max(from.zoom, fitZoom(zone, size.w, size.h) * 2));
   };
@@ -419,6 +416,17 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     if (from) animate((t) => ({ zoom: from.zoom * (to.zoom / from.zoom) ** t, left: from.left + (to.left - from.left) * t, top: from.top + (to.top - from.top) * t }), FLY_MS);
   };
 
+  /** «Сбросить»: no picked point, NPC or chat place, and the whole zone in view as it opened. */
+  const resetMap = () => {
+    setSelected(null);
+    setNpcFocus(null);
+    setBubble(null);
+    if (shownPlace) clearPlace();
+    if (zone && size) {
+      const from = viewRef.current, to = fitView(zone, size.w, size.h);
+      if (from) animate((t) => ({ zoom: from.zoom * (to.zoom / from.zoom) ** t, left: from.left + (to.left - from.left) * t, top: from.top + (to.top - from.top) * t }), FLY_MS);
+    }
+  };
   const backToPlace = () => { setSelected(null); centreButton(); };
   /** A way to another zone (a teleport statue of a capital, its temple's way back): that zone, at the point it arrives. */
   /** Back out of a dungeon: the zone of its entrance, the entrance picked. */
@@ -523,6 +531,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           {query.trim() ? <span className="map-found" aria-live="polite">{matches.length ? `${at >= 0 ? at + 1 : "–"} / ${matches.length}` : "нет"}</span>
             : <kbd>Ctrl + K</kbd>}
         </div>
+        <button className="btn" onClick={resetMap} title="Сбросить фокусы и вернуть карту в исходное положение"><IconReset /> Сбросить</button>
         <div className="map-filters" ref={filterBox}>
           <button className={`btn${filters ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={filters} onClick={() => setFilters(!filters)}>
             <IconFilter /> Фильтры{hidden.length > 0 && <span className="map-dot" aria-label="часть меток скрыта" />}
@@ -577,7 +586,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const src = gatherIcon(node.icon);
             const text = `${node.level} – ${node.name}\nклик — копировать ссылку на точку`;
             return (
-              <button key={`${node.id}:${node.layer ?? ""}:${i}`} className={`map-gather${gatherFocus?.id === node.id && gatherFocus.i === i ? " chosen" : ""}`} style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
+              <button key={`${node.id}:${node.layer ?? ""}:${i}`} className="map-gather" style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
                 aria-label={`${node.level} – ${node.name}: копировать ссылку на точку`}
                 onPointerEnter={() => setBubble({ x: sx, y: sy - gatherPx / 2, text })} onPointerLeave={() => setBubble(null)}
                 onClick={() => {
