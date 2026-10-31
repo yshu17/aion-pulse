@@ -44,19 +44,21 @@
 button.map-poi:active:not(:disabled), button.map-npc:active:not(:disabled) { transform: translate(-50%, -50%) scale(1.05); }
 button.world-zone-name:active:not(:disabled), button.world-label:active:not(:disabled) { transform: translate(-50%, -50%) scale(1.02); }
 .map-poi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
-/* every pick (a point, an NPC's point, the chat place, your mark) blinks on and off 6 times in 3 s, then stays */
+/* every pick (a point, an NPC's point, the chat place, your mark) blinks on and off 5 times in about 3 s, then stays */
 @keyframes map-blink { 50% { opacity: 0; } }
 .map-poi.chosen { z-index: 3; transform: translate(-50%, -50%) scale(1.25); filter: drop-shadow(0 0 8px var(--accent));
-  animation: map-blink .5s step-end 6; }
+  animation: map-blink .625s step-end 5; }
 .map-count { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; display: grid; place-items: center;
   background: #111; border: 1px solid var(--accent); color: var(--text); font: 700 10px var(--font); }
 .map-pin { position: absolute; z-index: 4; transform: translate(-50%, -50%); display: grid; place-items: center; pointer-events: none; }
-.map-pin .glow { position: absolute; width: 37px; height: 37px; border-radius: 50%;
+.map-pin .glow { position: absolute; width: 56px; height: 56px; border-radius: 50%;
   background: radial-gradient(circle, rgba(74, 150, 255, .55) 0, rgba(74, 150, 255, .22) 45%, transparent 70%); }
-.map-pin { animation: map-blink .5s step-end 6; }
+.map-pin { animation: map-blink .625s step-end 5; }
 .map-pin img, .map-pin .cross { position: relative; }
-.map-pin .cross { width: 17px; height: 17px; border-radius: 50%; background: #2f7ae5; color: #fff; font: 700 13px/16px var(--font); text-align: center; }
-.map-pin b { position: absolute; left: 16px; white-space: nowrap; color: #fff; font-size: 13px;
+/* the game's cross is a dull blue: lit to sky blue (the chat place and your mark) */
+.map-pin img, .map-mark img { filter: brightness(1.9) saturate(1.7) hue-rotate(-6deg); }
+.map-pin .cross { width: 26px; height: 26px; border-radius: 50%; background: #5ab4ff; color: #fff; font: 700 20px/24px var(--font); text-align: center; }
+.map-pin b { position: absolute; left: 24px; white-space: nowrap; color: #fff; font-size: 13px;
   text-shadow: -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000, 1px 1px 2px #000; }
 .map-bubble { position: absolute; z-index: 6; transform: translate(-50%, calc(-100% - 8px)); padding: 6px 10px; white-space: pre; pointer-events: none;
   background: var(--pop-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--pop-shadow); font-size: 12px; }
@@ -233,7 +235,7 @@ button.map-gather:active:not(:disabled) { transform: translate(-50%, -50%) scale
 .map-npc:hover { transform: translate(-50%, -50%) scale(1.2); }
 .map-npc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .map-npc.chosen { z-index: 4; width: 22px; height: 22px; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), 0 0 10px rgba(229, 72, 77, .9);
-  animation: map-blink .5s step-end 6; }
+  animation: map-blink .625s step-end 5; }
 .map-npc-badge, .map-npc-dot { flex: none; border-radius: 50%; background: #e5484d; border: 2px solid #fff; }
 .map-npc-badge { width: 22px; height: 22px; }
 .map-npc-dot { width: 12px; height: 12px; margin: 0 7px; }
@@ -249,8 +251,8 @@ button.map-gather:active:not(:disabled) { transform: translate(-50%, -50%) scale
   background: radial-gradient(circle, rgba(70, 130, 255, .5) 0, rgba(70, 130, 255, .3) 45%, rgba(70, 130, 255, .12) 70%, transparent 100%); }
 .map-area-pin { position: absolute; z-index: 4; transform: translate(-50%, -50%); width: 22px; height: 22px; pointer-events: none; }
 .map-area-pin i { display: block; width: 100%; height: 100%; border-radius: 50%; background: #3fbf6a; border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(0, 0, 0, .45), 0 0 10px #3fbf6a; }
-.map-mark { position: absolute; z-index: 5; transform: translate(-50%, -50%); width: 17px; height: 17px; padding: 0; border: 0; background: transparent; cursor: copy;
-  filter: drop-shadow(0 0 4px #000) drop-shadow(0 0 8px rgba(74, 150, 255, .9)); animation: map-blink .5s step-end 6; }
+.map-mark { position: absolute; z-index: 5; transform: translate(-50%, -50%); width: 26px; height: 26px; padding: 0; border: 0; background: transparent; cursor: copy;
+  filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 8px rgba(90, 180, 255, .9)); animation: map-blink .625s step-end 5; }
 .map-mark img { width: 100%; height: 100%; display: block; }
 button.map-mark:active:not(:disabled) { transform: translate(-50%, -50%) scale(.92); }
 .map-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

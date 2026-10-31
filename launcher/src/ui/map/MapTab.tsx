@@ -25,7 +25,7 @@ import "./map.css";
 
 const DEFAULT_ZONE = "220070000"; // Келькмарос
 const SPLIT_ZOOM = (MAX_ZOOM / ZOOM_STEP) * 0.999; // the last two zoom levels: every point its own icon, no counts
-const PLACE_ICON_PX = 17; // the blue cross of the chat's place (and your mark), half the game's size
+const PLACE_ICON_PX = 26; // the sky-blue cross of the chat's place (and your mark)
 const FLY_MS = 260;
 const FILTER_ICON: Record<string, string> = { rifts: "tunnel" }; // the group's icon in «Фильтры»: the Silentera tunnel for the rifts
 const ZOOM_MS = 170;
