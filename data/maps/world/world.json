@@ -522,7 +522,11 @@
       267,
       29
      ],
-     "icon": "zone_underpass_icon.png"
+     "icon": "zone_underpass_icon.png",
+     "icon_size": [
+      48,
+      28
+     ]
     }
    ]
   }

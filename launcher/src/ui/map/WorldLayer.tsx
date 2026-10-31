@@ -15,6 +15,7 @@ interface WorldZone {
   code: string; map_id: string | null; layer: number | null; frame: [number, number, number, number];
   highlight: [number, number, number, number] | null; highlight_file: string; label: [number, number, number, number] | null;
   icon?: string; // a zone the coloured map has no highlight for (the Silentera tunnel): the game's marker, lit on hover
+  icon_size?: [number, number]; // its size in map units (44 × 44 without it)
 }
 interface Region { title: string; image: string; size: [number, number]; zones: WorldZone[] }
 export const world = JSON.parse(worldJson) as { globe: { size: [number, number]; parts: GlobePart[] }; regions: Record<string, Region> };
@@ -174,7 +175,7 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
       {r.zones.filter((z) => z.icon && urls[z.icon]).map((z) => {
         const [fx, fy, fw, fh] = z.frame;
         return <img key={`${z.code}-icon`} className={`world-zone-icon${hover === z.code ? " on" : ""}`} src={urls[z.icon!]} alt="" draggable={false}
-          style={{ left: left + (fx + fw / 2) * k, top: top + (fy + fh / 2) * k, width: 44 * k, height: 44 * k }} />;
+          style={{ left: left + (fx + fw / 2) * k, top: top + (fy + fh / 2) * k, width: (z.icon_size?.[0] ?? 44) * k, height: (z.icon_size?.[1] ?? 44) * k }} />;
       })}
       {r.zones.filter((z) => z.map_id).map((z) => {
         const [lx, ly, lw, lh] = z.label ?? z.frame;

@@ -51,6 +51,8 @@ REGIONS = {  # client region -> its title and the globe buttons that open it
     "dragon": ("Внешние земли", ["dragon1", "dragon2"]),
 }
 ICONS = {"underpass": [776, 81, 29, 30]}  # zones the coloured maps have no highlight for: their marker in the same atlas
+# ... or a sprite of their own (client_extract/worldmap_gate, Codex): drawn at half its px in map units (97×57 → 49×29)
+ICON_SPRITES = {"underpass": ROOT / "client_extract" / "worldmap_gate" / "silenterra_gate_highlight.png"}
 ABYSS_LAYERS = {"ab1_1": 1, "ab1_2": 2, "ab1_3": 3}  # the Abyss zones of the client are the layers of Reshanta
 
 
@@ -256,9 +258,15 @@ def main() -> None:
                         piece, box = lights[zone["code"]]
                         zone["highlight"], zone["highlight_file"] = box, f"zone_{zone['code']}.png"
                         enlarge(piece, REGION_SCALE, tmp).save(OUT / zone["highlight_file"])
-                    else:  # no coloured highlight (the Silentera tunnel): the game's swirl marks it, its box opens it
+                    else:  # no coloured highlight (the Silentera tunnel): a game sprite marks it, its box opens it
                         zone["highlight"] = None
-                        if zone["code"] in ICONS:
+                        sprite = ICON_SPRITES.get(zone["code"])
+                        if sprite and sprite.exists():  # the game's own lit gate (worldmap_dragon_1.dds), chosen by the user
+                            zone["icon"] = f"zone_{zone['code']}_icon.png"
+                            with Image.open(sprite) as gate:
+                                gate.save(OUT / zone["icon"])
+                                zone["icon_size"] = [round(gate.width / 2), round(gate.height / 2)]
+                        elif zone["code"] in ICONS:
                             zone["icon"] = f"zone_{zone['code']}_icon.png"
                             enlarge(cut(f"worldmap_{region}.png", ICONS[zone["code"]]), GLOBE_SCALE, tmp).save(OUT / zone["icon"])
                 size = list(OLD_SIZE)

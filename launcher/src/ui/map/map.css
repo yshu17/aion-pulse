@@ -202,9 +202,10 @@ button.map-gather:active:not(:disabled) { transform: translate(-50%, -50%) scale
 .world-layer::before { content: ""; position: absolute; inset: 0; background: rgba(20, 14, 34, .45); pointer-events: none; } /* the sky dimmed, as on the site */
 .world-layer > * { position: relative; }
 .world-layer > .world-region { position: absolute; }
-.world-zone-icon { position: absolute; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 0 4px rgba(80, 200, 255, .6));
+/* the Silentera gate: the game's own lit sprite (yellow already), a warm glow on hover */
+.world-zone-icon { position: absolute; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55));
   transition: transform var(--t) var(--ease-out), filter var(--t) var(--ease-out); }
-.world-zone-icon.on { transform: translate(-50%, -50%) scale(1.25); filter: drop-shadow(0 0 14px rgba(110, 220, 255, .95)) brightness(1.25); }
+.world-zone-icon.on { transform: translate(-50%, -50%) scale(1.12); filter: drop-shadow(0 0 10px rgba(255, 214, 90, .9)) brightness(1.15); }
 @media (prefers-reduced-motion: reduce) { .world-zone-icon { transition: none; } }
 
 /* the search's list: this map's matches and NPCs / monsters of every zone */
