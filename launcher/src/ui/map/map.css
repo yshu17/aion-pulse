@@ -244,3 +244,14 @@ button.map-gather:active:not(:disabled) { transform: translate(-50%, -50%) scale
 /* long names: smaller titles that wrap, as in the game's own cards */
 .map-point-title h2 { font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
 .map-card h2 { overflow-wrap: anywhere; }
+
+/* the glow of a found area and its centre; your own mark (Ctrl + right button) */
+.map-area-glow { position: absolute; z-index: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(70, 130, 255, .5) 0, rgba(70, 130, 255, .3) 45%, rgba(70, 130, 255, .12) 70%, transparent 100%); }
+.map-area-pin { position: absolute; z-index: 4; transform: translate(-50%, -50%); width: 22px; height: 22px; pointer-events: none; }
+.map-area-pin i { display: block; width: 100%; height: 100%; border-radius: 50%; background: #3fbf6a; border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(0, 0, 0, .45), 0 0 10px #3fbf6a; }
+.map-mark { position: absolute; z-index: 5; transform: translate(-50%, -50%); width: 34px; height: 34px; padding: 0; border: 0; background: transparent; cursor: copy;
+  filter: hue-rotate(140deg) saturate(1.6) drop-shadow(0 0 4px #000); }
+.map-mark img { width: 100%; height: 100%; display: block; }
+button.map-mark:active:not(:disabled) { transform: translate(-50%, -50%) scale(.92); }
+.map-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

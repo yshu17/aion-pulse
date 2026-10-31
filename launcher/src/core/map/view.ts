@@ -61,12 +61,15 @@ export function centreOn(view: View, ix: number, iy: number, zone: Zone, width: 
 export const toScreen = (view: View, ix: number, iy: number): [number, number] =>
   [(ix - view.left) * view.zoom, (iy - view.top) * view.zoom];
 
-/** Game coordinates under a screen point (the inverse of toImage), null for a zone without a transform. */
-export function gameAt(view: View, zone: Zone, sx: number, sy: number): [number, number] | null {
+/** Game coordinates of a picture point (the inverse of toImage), null for a zone without a transform. */
+export function toGame(zone: Zone, ix: number, iy: number): [number, number] | null {
   if (!zone.kx[0] || !zone.ky[0]) return null;
-  const ix = view.left + sx / view.zoom;
-  const iy = view.top + sy / view.zoom;
   return [(iy - zone.ky[1]) / zone.ky[0], (ix - zone.kx[1]) / zone.kx[0]];
+}
+
+/** Game coordinates under a screen point, null for a zone without a transform. */
+export function gameAt(view: View, zone: Zone, sx: number, sy: number): [number, number] | null {
+  return toGame(zone, view.left + sx / view.zoom, view.top + sy / view.zoom);
 }
 
 /** Types drawn at one size whatever the zoom: the spatial rifts, as small as the tunnel icon of the filter menu (22 px) +25 %. */

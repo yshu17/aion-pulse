@@ -8,7 +8,7 @@ import { normalize } from "../../core/chat/matcher";
 import { cluster, Poi } from "../../core/map/poi";
 import {
   centreOn, clampView, fitView, fitZoom, gameAt, iconSize, labelLevels, MAX_ZOOM, nearby, Near, shownTypes, toScreen,
-  View, ZOOM_STEP, zonesOfSide, zoomAt, BIG_TYPES, ICON_SCALE,
+  toGame, View, ZOOM_STEP, zonesOfSide, zoomAt, BIG_TYPES, ICON_SCALE,
 } from "../../core/map/view";
 import { FILTER_GROUPS, SIDES, toImage, Zone } from "../../core/map/zones";
 import { nearestPoint, SpawnPoint, Spawns } from "../../core/map/spawns";
@@ -30,8 +30,12 @@ const FLY_MS = 260;
 const FILTER_ICON: Record<string, string> = { rifts: "tunnel" }; // the group's icon in «Фильтры»: the Silentera tunnel for the rifts
 const ZOOM_MS = 170;
 
-type Selected = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string } | null;
-type Match = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string };
+type Selected = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string; r: number } | null;
+type Match = { kind: "poi"; poi: Poi } | { kind: "area"; x: number; y: number; text: string; r: number };
+/** The glow of a found area, in picture px around its name: the client keeps no borders for the areas, this is a guess by the name's level. */
+const AREA_RADIUS = { main: 380, zoom: 200 };
+const MARKS_KEY = "pulse.map.marks";
+const MARK_NAME = "Метка";
 
 /** An area name: the data writes some twice on two lines («Око Арэшурата|Око Арэшурата»), shown once. */
 const oneLine = (text: string) => text.split("\n").filter((line, i, all) => all.indexOf(line) === i).join("\n");
@@ -222,6 +226,26 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     return () => el.removeEventListener("wheel", wheel);
   }, [zoomBy, level]);
 
+  // your own marks (Ctrl + right button): one per zone and layer, kept between runs, copied as the game's place link
+  const [marks, setMarks] = useState<Record<string, [number, number]>>(() => {
+    try { return JSON.parse(localStorage.getItem(MARKS_KEY) ?? "{}"); } catch { return {}; }
+  });
+  const markKey = zone ? `${zone.map_id}:${layer ?? ""}` : "";
+  const saveMarks = (next: Record<string, [number, number]>) => {
+    setMarks(next);
+    try { localStorage.setItem(MARKS_KEY, JSON.stringify(next)); } catch { /* private mode: the mark lives until the window closes */ }
+  };
+  const onContextMenu = (e: React.MouseEvent) => {
+    if (!e.ctrlKey || !zone || !view || level !== "zone") return;
+    e.preventDefault();
+    const [sx, sy] = local(e);
+    const g = gameAt(view, zone, sx, sy);
+    if (!g) return;
+    saveMarks({ ...marks, [markKey]: [Math.round(g[0] * 10) / 10, Math.round(g[1] * 10) / 10] });
+    copyText(posLink(MARK_NAME, zone.map_id, [g[0], g[1]])).then((done) =>
+      setBubble({ x: sx, y: sy - 16, text: done ? "Метка поставлена, ссылка скопирована" : "Метка поставлена" }));
+  };
+
   // --- what is drawn ---------------------------------------------------------------------------------------------
   const points = useMemo(() => (zone ? poi.inZone(zone.map_id, types, side, layer) : []), [zone, types, side, layer]);
   // While a zoom glides, the icons keep their size and their merging of the zoom it started from and only move with
@@ -304,10 +328,14 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   };
   const near: Near[] = useMemo(() => {
     if (selected?.kind === "poi") return nearby(poi, selected.poi.zone, selected.poi.gx, selected.poi.gy, side, layer, selected.poi);
+    if (selected?.kind === "area" && zone) {
+      const g = toGame(zone, selected.x, selected.y);
+      return g ? nearby(poi, zone.map_id, g[0], g[1], side, layer) : [];
+    }
     if (npcHere) { const [gx, gy] = npcHere.points[npcHere.at]; return nearby(poi, npcHere.map_id, gx, gy, side, layer); }
     if (placeHere) return nearby(poi, placeHere.map_id, placeHere.x, placeHere.y, side, layer);
     return [];
-  }, [selected, placeHere, npcHere, side, layer]);
+  }, [selected, zone, placeHere, npcHere, side, layer]);
   const clearPlace = () => { setShownPlace(null); onPlaceCleared(); };
   /** «Показать рядом»: the place and its nearest useful points fill the view. */
   const showNear = () => {
@@ -347,10 +375,10 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     const found: Match[] = poi.inZone(zone.map_id, types, side, layer)
       .filter((p) => { const text = normalize(`${p.name} ${poi.typeName(p.type)} ${groupOf(p.type)}`); return words.every((w) => text.includes(w)); })
       .map((p) => ({ kind: "poi" as const, poi: p }));
-    zone.labels.forEach(([x, y, text], i) => {
+    zone.labels.forEach(([x, y, text, kind], i) => {
       const onLayer = zone.label_layers[i];
       if ((onLayer == null || layer === null || onLayer === layer) && words.every((w) => normalize(text).includes(w))) {
-        found.push({ kind: "area", x, y, text: text.replace(/\n/g, " ") });
+        found.push({ kind: "area", x, y, text: oneLine(text).replace(/\n/g, " "), r: AREA_RADIUS[kind === "main" ? "main" : "zoom"] });
       }
     });
     return found;
@@ -363,7 +391,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     const m = matches[next];
     const zoom = Math.max(viewRef.current?.zoom ?? 1, 1);
     if (m.kind === "poi") pick(m.poi, true);
-    else { setSelected({ kind: "area", x: m.x, y: m.y, text: m.text }); flyTo(m.x, m.y, zoom); }
+    else { setSelected({ kind: "area", x: m.x, y: m.y, text: m.text, r: m.r }); flyTo(m.x, m.y, zoom); }
   };
   useEffect(() => { // Ctrl+K: to the search field
     const keys = (e: KeyboardEvent) => {
@@ -421,6 +449,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     setSelected(null);
     setNpcFocus(null);
     setBubble(null);
+    if (marks[markKey]) { const { [markKey]: _gone, ...rest } = marks; saveMarks(rest); }
     if (shownPlace) clearPlace();
     if (zone && size) {
       const from = viewRef.current, to = fitView(zone, size.w, size.h);
@@ -531,7 +560,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           {query.trim() ? <span className="map-found" aria-live="polite">{matches.length ? `${at >= 0 ? at + 1 : "–"} / ${matches.length}` : "нет"}</span>
             : <kbd>Ctrl + K</kbd>}
         </div>
-        <button className="btn" onClick={resetMap} title="Сбросить фокусы и вернуть карту в исходное положение"><IconReset /> Сбросить</button>
+        <button className="btn" onClick={resetMap} title="Сбросить фокусы и свою метку, вернуть карту в исходное положение"><IconReset /> Сбросить</button>
         <div className="map-filters" ref={filterBox}>
           <button className={`btn${filters ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={filters} onClick={() => setFilters(!filters)}>
             <IconFilter /> Фильтры{hidden.length > 0 && <span className="map-dot" aria-label="часть меток скрыта" />}
@@ -563,7 +592,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
 
       <div className="map-body">
         <div ref={box} className={`map-view${dragging ? " dragging" : ""}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={() => setMouse(null)}>
+          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={() => setMouse(null)} onContextMenu={onContextMenu}>
           <nav className="map-crumbs" aria-label="Где на карте">
             <button className={level === "world" && !region ? "on" : ""} onClick={() => { setLevel("world"); setRegion(null); }}>Атрея</button>
             {crumbRegion && <><i>/</i><button className={level === "world" ? "on" : ""} onClick={() => { setLevel("world"); setRegion(crumbRegion); }}>{world.regions[crumbRegion].title}</button></>}
@@ -580,6 +609,24 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const [sx, sy] = toScreen(view, x, y);
             return <div key={i} className={`map-label ${level}`} style={{ left: sx, top: sy, fontSize: level === "zoom" ? labelPx - 2 : labelPx }}>{oneLine(text)}</div>;
           })}
+          {view && selected?.kind === "area" && (() => {
+            const [sx, sy] = toScreen(view, selected.x, selected.y);
+            const d = selected.r * 2 * view.zoom;
+            return <>
+              <div className="map-area-glow" style={{ left: sx, top: sy, width: d, height: d }} />
+              <div className="map-area-pin" style={{ left: sx, top: sy }} aria-hidden="true"><i /></div>
+            </>;
+          })()}
+          {view && marks[markKey] && (() => {
+            const [sx, sy] = toScreen(view, ...toImage(zone, marks[markKey][0], marks[markKey][1]));
+            return (
+              <button className="map-mark" style={{ left: sx, top: sy }} aria-label="Моя метка: скопировать ссылку"
+                onPointerEnter={() => setBubble({ x: sx, y: sy - 18, text: "Моя метка\nклик — копировать, Ctrl + ПКМ — переставить" })} onPointerLeave={() => setBubble(null)}
+                onClick={() => { if (!drag.current?.moved) copyText(posLink(MARK_NAME, zone.map_id, marks[markKey])).then((ok) => ok && setBubble({ x: sx, y: sy - 18, text: "Ссылка скопирована" })); }}>
+                {PLACE_ICON ? <img src={PLACE_ICON} alt="" draggable={false} /> : <i />}
+              </button>
+            );
+          })()}
           {view && size && gatherSpots.map(({ node, i, at: [ix, iy] }) => {
             const [sx, sy] = toScreen(view, ix, iy);
             if (sx < -gatherPx || sy < -gatherPx || sx > size.w + gatherPx || sy > size.h + gatherPx) return null;
@@ -681,7 +728,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               way={wayFrom(selected.poi.zone, selected.poi.name)} onWay={goWay}
               onClose={() => setSelected(null)} onBack={placeHere ? backToPlace : null} />
           ) : selected?.kind === "area" ? (
-            <PointCard title={selected.text} kind="Район" icon={null} coords={null} note="" near={[]} onNear={() => {}}
+            <PointCard title={selected.text} kind="Район" icon={null} coords={null} note="" near={near} onNear={(p) => pick(p, true)}
               onClose={() => setSelected(null)} onBack={placeHere ? backToPlace : null} />
           ) : npcHere ? (
             <NpcCard npc={npcHere} zone={zone} near={near} onPoint={focusNpcPoint} onNear={(p) => pick(p, true)} onClose={() => setNpcFocus(null)} />

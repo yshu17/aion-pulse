@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { PoiStore } from "./poi";
-import { centreOn, clampView, fitView, gameAt, iconSize, labelLevels, MAX_ZOOM, nearby, shownTypes, toScreen, zoomAt,
+import { centreOn, clampView, fitView, gameAt, iconSize, labelLevels, MAX_ZOOM, nearby, shownTypes, toGame, toScreen, zoomAt,
   zonesOfSide } from "./view";
 import { parseZones, toImage } from "./zones";
 
@@ -60,6 +60,14 @@ describe("map view", () => {
     const [gx, gy] = gameAt(v, zone, sx, sy)!;
     expect(gx).toBeCloseTo(1500);
     expect(gy).toBeCloseTo(2100);
+  });
+
+  it("turns a picture point back to game coordinates (and a zone without a transform to null)", () => {
+    const [ix, iy] = toImage(zone, 1500, 2100);
+    const [gx, gy] = toGame(zone, ix, iy)!;
+    expect(gx).toBeCloseTo(1500);
+    expect(gy).toBeCloseTo(2100);
+    expect(toGame({ ...zone, kx: [0, 0], ky: [0, 0] }, 10, 10)).toBeNull();
   });
 
   it("sizes icons as Pulse: teleporters bigger, fortresses much bigger", () => {
