@@ -16,6 +16,13 @@ export interface GatherNode {
   points: [number, number][]; // game x, y
 }
 
+/** A spot as the game's place link, as the game writes it in the chat: «[pos:Адамантит;0 220040000 1225.0 492.9 0.0]». */
+export const posLink = (name: string, mapId: string, [x, y]: [number, number]) =>
+  `[pos:${name};0 ${mapId} ${x.toFixed(1)} ${y.toFixed(1)} 0.0]`;
+
+/** Every spot of a node as place links, one after another (aion-map.vercel.app's «copy» does the same). */
+export const posLinks = (node: GatherNode, mapId: string) => node.points.map((p) => posLink(node.name, mapId, p)).join(" ");
+
 export class Gathering {
   private constructor(private readonly zones: Record<string, GatherNode[]>) {}
 

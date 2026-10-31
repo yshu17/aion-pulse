@@ -16,7 +16,8 @@ import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
 import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconSearch, IconTarget } from "../icons";
 import type { Boot } from "../useBoot";
-import { GatherPanel } from "./GatherPanel";
+import { posLink } from "../../core/map/gathering";
+import { copyText, GatherPanel } from "./GatherPanel";
 import { gatherIcon, gathering, loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, waysInto, zones } from "./mapData";
 import type { ChatPlace, MapTarget } from "./placeLink";
 import { regionOf, world, WorldLayer, zoneTitle } from "./WorldLayer";
@@ -271,7 +272,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     return [...gather.essence, ...gather.aether].filter((n) => gatherShown.includes(n.id))
       .flatMap((n) => n.points.map(([gx, gy], i) => ({ node: n, i, at: toImage(zone, gx, gy) })));
   }, [zone, gather, gatherShown]);
-  const gatherPx = Math.max(18, Math.min(28, Math.round(14 + 4 * iconZoom)));
+  const gatherPx = Math.round(Math.max(18, Math.min(28, 14 + 4 * iconZoom)) * 1.25);
   const [bubble, setBubble] = useState<{ x: number; y: number; text: string } | null>(null);
 
   // --- the right panel -------------------------------------------------------------------------------------------
@@ -551,12 +552,19 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const [sx, sy] = toScreen(view, ix, iy);
             if (sx < -gatherPx || sy < -gatherPx || sx > size.w + gatherPx || sy > size.h + gatherPx) return null;
             const src = gatherIcon(node.icon);
-            const text = `${node.level} – ${node.name}`;
+            const text = `${node.level} – ${node.name}\nклик — копировать ссылку на точку`;
             return (
-              <div key={`${node.id}:${node.layer ?? ""}:${i}`} className="map-gather" style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
-                aria-label={text} onPointerEnter={() => setBubble({ x: sx, y: sy - gatherPx / 2, text })} onPointerLeave={() => setBubble(null)}>
+              <button key={`${node.id}:${node.layer ?? ""}:${i}`} className="map-gather" style={{ left: sx, top: sy, width: gatherPx, height: gatherPx }}
+                aria-label={`${node.level} – ${node.name}: копировать ссылку на точку`}
+                onPointerEnter={() => setBubble({ x: sx, y: sy - gatherPx / 2, text })} onPointerLeave={() => setBubble(null)}
+                onClick={() => {
+                  if (drag.current?.moved) return;
+                  copyText(posLink(node.name, zone.map_id, node.points[i])).then((done) => {
+                    if (done) setBubble({ x: sx, y: sy - gatherPx / 2, text: `Скопировано: ${node.name}` });
+                  });
+                }}>
                 {src ? <img src={src} alt="" draggable={false} /> : <i />}
-              </div>
+              </button>
             );
           })}
           {view && groups.map(([sx, sy, members]) => {
@@ -683,7 +691,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               )}
             </div>
           )}
-          <GatherPanel nodes={gather} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
+          <GatherPanel nodes={gather} mapId={zone.map_id} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
         </aside>}
       </div>
     </main>

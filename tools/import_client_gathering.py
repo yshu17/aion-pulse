@@ -145,7 +145,9 @@ def save_icons(game: Path, table: bytes, needed: set[str]) -> list[str]:
         icon = wanted.get(filename.casefold())
         if icon and not (dest / f"{icon}.png").exists():
             with Image.open(io.BytesIO(raw)) as image:
-                image.convert("RGBA").save(dest / f"{icon}.png")
+                rgba = image.convert("RGBA")
+                # the client's texture is 64 px with the 40 px icon in its corner: cut to it, as the site's icons
+                rgba.crop(rgba.getchannel("A").getbbox() or (0, 0, *rgba.size)).save(dest / f"{icon}.png")
     return sorted(name for name in needed if not (dest / f"{name}.png").exists())
 
 

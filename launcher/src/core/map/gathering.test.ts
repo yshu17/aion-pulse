@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { Gathering } from "./gathering";
+import { cleanText, placesIn } from "../chat/parser";
+import { Gathering, posLink, posLinks } from "./gathering";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 const data = Gathering.parse(readFileSync(join(ROOT, "data", "maps", "gathering.json"), "utf-8"));
@@ -32,6 +33,14 @@ describe("gathering nodes", () => {
     for (const id of ["210050000", "220070000", "600020000"]) expect(data.inZone(id, null).essence.length).toBeGreaterThan(15);
     const araka = data.inZone("300250000", null).essence;
     expect(araka.map((n) => n.name)).toContain("Сломанный древесный ствол / Причудливый ключ");
+  });
+
+  it("copies spots as the game's place links, which the chat reads back", () => {
+    expect(posLink("Адамантит", "220040000", [1225, 492.9])).toBe("[pos:Адамантит;0 220040000 1225.0 492.9 0.0]");
+    const node = data.inZone("220040000", null).essence.find((n) => n.name === "Адамантит")!;
+    const links = posLinks(node, "220040000");
+    expect(links.split("] [").length).toBe(node.points.length);
+    expect(placesIn(cleanText(links))[0]).toEqual(["Адамантит", ["220040000", node.points[0][0], node.points[0][1]]]);
   });
 
   it("gives nothing for a zone without data or broken JSON", () => {
