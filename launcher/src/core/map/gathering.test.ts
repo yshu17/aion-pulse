@@ -28,6 +28,12 @@ describe("gathering nodes", () => {
     expect(data.inZone("400010000", 2).essence.length).toBe(0);
   });
 
+  it("has the client's zones and dungeons the site lacks (Inggison, Gelkmaros, Araka)", () => {
+    for (const id of ["210050000", "220070000", "600020000"]) expect(data.inZone(id, null).essence.length).toBeGreaterThan(15);
+    const araka = data.inZone("300250000", null).essence;
+    expect(araka.map((n) => n.name)).toContain("Сломанный древесный ствол / Причудливый ключ");
+  });
+
   it("gives nothing for a zone without data or broken JSON", () => {
     expect(data.inZone("300000000", null).essence).toEqual([]);
     expect(Gathering.parse("{").inZone("220040000", null).aether).toEqual([]);

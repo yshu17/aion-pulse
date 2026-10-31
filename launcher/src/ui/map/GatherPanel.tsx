@@ -44,7 +44,7 @@ export function GatherPanel({ nodes, shown, onToggle, onClear }: {
                   return (
                     <li key={`${n.id}:${n.layer ?? ""}`}>
                       <button className={pressed ? "on" : ""} aria-pressed={pressed} onClick={() => onToggle(n.id)}
-                        title={`${n.name_en} · ${plural(n.points.length, "точка", "точки", "точек")}`}>
+                        title={[n.name_en, plural(n.points.length, "точка", "точки", "точек")].filter(Boolean).join(" · ")}>
                         {src ? <img src={src} alt="" /> : <i />}
                         <span className="t"><span className="lvl">{n.level}</span> – {n.name}</span>
                         <span className="m">{n.points.length}</span>
