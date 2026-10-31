@@ -28,9 +28,9 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied }: {
+export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied, onCopyFailed }: {
   nodes: { essence: GatherNode[]; aether: GatherNode[] }; mapId: string; shown: string[]; onToggle(id: string): void; onClear(): void;
-  onCopied(name: string): void;
+  onCopied(name: string): void; onCopyFailed(): void;
 }) {
   const [open, setOpen] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied }
   const copy = (key: string, node: GatherNode) => {
     const i = (next.current[key] ?? 0) % node.points.length;
     copyText(posLink(node.name, mapId, node.points[i])).then((done) => {
-      if (!done) return;
+      if (!done) { onCopyFailed(); return; }
       next.current[key] = i + 1;
       onCopied(node.name);
       setCopied(key);
@@ -80,7 +80,7 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied }
                   return (
                     <li key={key} className={pressed ? "on" : ""}>
                       <button className="map-gather-toggle" aria-pressed={pressed} onClick={() => onToggle(n.id)}
-                        title={[n.name_en, plural(n.points.length, "точка", "точки", "точек")].filter(Boolean).join(" · ")}>
+                        title={[`${n.level} – ${n.name}`, n.name_en, plural(n.points.length, "точка", "точки", "точек")].filter(Boolean).join(" · ")}>
                         {src ? <img src={src} alt="" /> : <i />}
                         <span className="t"><span className="lvl">{n.level}</span> – {n.name}</span>
                         <span className="m">{n.points.length}</span>

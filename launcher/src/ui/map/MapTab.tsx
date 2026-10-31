@@ -436,6 +436,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     if (selected?.kind === "poi" && FILTER_GROUPS[group][1].includes(selected.poi.type) && !hidden.includes(group)) setSelected(null);
   };
   const openZone = (id: string) => {
+    if (!(id in zones)) return; // an unknown zone must never leave the tab without one
     setLevel("zone");
     setNpcFocus(null);
     setZoneId(id);
@@ -635,7 +636,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             return (
               <button key={marks[markKey].join()} className="map-mark" style={{ left: sx, top: sy }} aria-label="Моя метка: скопировать ссылку"
                 onPointerEnter={() => setBubble({ x: sx, y: sy - 18, text: "Моя метка\nклик — копировать, Ctrl + ПКМ — переставить" })} onPointerLeave={() => setBubble(null)}
-                onClick={() => { if (!drag.current?.moved) copyText(posLink(MARK_NAME, zone.map_id, marks[markKey])).then((ok) => ok && notify("Метка скопирована в буфер")); }}>
+                onClick={() => { if (!drag.current?.moved) copyText(posLink(MARK_NAME, zone.map_id, marks[markKey])).then((ok) => notify(ok ? "Метка скопирована в буфер" : "Не удалось скопировать в буфер")); }}>
                 {PLACE_ICON ? <img src={PLACE_ICON} alt="" draggable={false} /> : <i />}
               </button>
             );
@@ -652,7 +653,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
                 onClick={() => {
                   if (drag.current?.moved) return;
                   copyText(posLink(node.name, zone.map_id, node.points[i])).then((done) => {
-                    if (done) notify(`Метка «${node.name}» скопирована в буфер`);
+                    notify(done ? `Метка «${node.name}» скопирована в буфер` : "Не удалось скопировать в буфер");
                   });
                 }}>
                 {src ? <img src={src} alt="" draggable={false} /> : <i />}
@@ -784,7 +785,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               )}
             </div>
           )}
-          <GatherPanel nodes={gather} mapId={zone.map_id} onCopied={(name) => notify(`Метка «${name}» скопирована в буфер`)} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
+          <GatherPanel nodes={gather} mapId={zone.map_id} onCopied={(name) => notify(`Метка «${name}» скопирована в буфер`)} onCopyFailed={() => notify("Не удалось скопировать в буфер")} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
         </aside>}
       </div>
     </main>

@@ -107,7 +107,7 @@ function Globe({ size, onRegion }: { size: { w: number; h: number }; onRegion(re
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
     return opaque(masks[`site/${rims.file}`], (p.x - rims.x) / rims.width, (p.y - rims.y) / rims.height);
   };
-  const scale = Math.min((size.w - 40) / vw, (size.h - TOP - 10) / vh);
+  const scale = Math.max(0, Math.min((size.w - 40) / vw, (size.h - TOP - 10) / vh)); // a squeezed pane gives no negative size
   return (
     <svg ref={svg} className={`world-svg${hover ? " pointing" : ""}`} viewBox={`${vx} ${vy} ${vw} ${vh}`}
       width={vw * scale} height={vh * scale} role="group" aria-label="Атрея"
@@ -138,7 +138,7 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
   const r = world.regions[region];
   const [rw, rh] = r.size;
   // under the breadcrumb (TOP), 20 px from the other edges; at most the pictures' own size (2x)
-  const k = Math.min((size.w - 40) / rw, (size.h - TOP - 20) / rh, 2);
+  const k = Math.max(0.01, Math.min((size.w - 40) / rw, (size.h - TOP - 20) / rh, 2));
   const left = (size.w - rw * k) / 2, top = TOP + (size.h - TOP - 20 - rh * k) / 2;
   const files = useMemo(() => [r.image, ...r.zones.flatMap((z) => [z.highlight_file, z.icon ?? ""]).filter(Boolean)], [r]);
   const urls = usePictures(files);
