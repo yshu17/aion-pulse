@@ -28,8 +28,9 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function GatherPanel({ nodes, mapId, shown, onToggle, onClear }: {
+export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied }: {
   nodes: { essence: GatherNode[]; aether: GatherNode[] }; mapId: string; shown: string[]; onToggle(id: string): void; onClear(): void;
+  onCopied(name: string): void;
 }) {
   const [open, setOpen] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear }: {
     copyText(posLink(node.name, mapId, node.points[i])).then((done) => {
       if (!done) return;
       next.current[key] = i + 1;
+      onCopied(node.name);
       setCopied(key);
       clearTimeout(timer.current);
       timer.current = window.setTimeout(() => setCopied(null), 1500);

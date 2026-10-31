@@ -243,7 +243,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     if (!g) return;
     saveMarks({ ...marks, [markKey]: [Math.round(g[0] * 10) / 10, Math.round(g[1] * 10) / 10] });
     copyText(posLink(MARK_NAME, zone.map_id, [g[0], g[1]])).then((done) =>
-      setBubble({ x: sx, y: sy - 16, text: done ? "Метка поставлена, ссылка скопирована" : "Метка поставлена" }));
+      notify(done ? "Метка поставлена и скопирована в буфер" : "Метка поставлена"));
   };
 
   // --- what is drawn ---------------------------------------------------------------------------------------------
@@ -318,6 +318,15 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   }, [zone, gather, gatherShown]);
   const gatherPx = Math.round(Math.max(18, Math.min(28, 14 + 4 * iconZoom)) * 1.25);
   const [bubble, setBubble] = useState<{ x: number; y: number; text: string } | null>(null);
+  // a short notice at the bottom of the map («Метка скопирована в буфер»)
+  const [notice, setNotice] = useState<{ text: string; n: number } | null>(null);
+  const noticeTimer = useRef(0);
+  const notify = (text: string) => {
+    setNotice((was) => ({ text, n: (was?.n ?? 0) + 1 }));
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 2200);
+  };
+  useEffect(() => () => clearTimeout(noticeTimer.current), []);
 
   // --- the right panel -------------------------------------------------------------------------------------------
   const placeHere = shownPlace && zone && shownPlace.map_id === zone.map_id ? shownPlace : null;
@@ -449,7 +458,8 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     setSelected(null);
     setNpcFocus(null);
     setBubble(null);
-    if (marks[markKey]) { const { [markKey]: _gone, ...rest } = marks; saveMarks(rest); }
+    setGatherShown([]);
+    if (Object.keys(marks).length) saveMarks({});
     if (shownPlace) clearPlace();
     if (zone && size) {
       const from = viewRef.current, to = fitView(zone, size.w, size.h);
@@ -560,7 +570,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           {query.trim() ? <span className="map-found" aria-live="polite">{matches.length ? `${at >= 0 ? at + 1 : "–"} / ${matches.length}` : "нет"}</span>
             : <kbd>Ctrl + K</kbd>}
         </div>
-        <button className="btn" onClick={resetMap} title="Сбросить фокусы и свою метку, вернуть карту в исходное положение"><IconReset /> Сбросить</button>
+        <button className="btn" onClick={resetMap} title="Убрать выбор, метки и сбор с карты, вернуть карту в исходное положение"><IconReset /> Сбросить</button>
         <div className="map-filters" ref={filterBox}>
           <button className={`btn${filters ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={filters} onClick={() => setFilters(!filters)}>
             <IconFilter /> Фильтры{hidden.length > 0 && <span className="map-dot" aria-label="часть меток скрыта" />}
@@ -620,9 +630,9 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           {view && marks[markKey] && (() => {
             const [sx, sy] = toScreen(view, ...toImage(zone, marks[markKey][0], marks[markKey][1]));
             return (
-              <button className="map-mark" style={{ left: sx, top: sy }} aria-label="Моя метка: скопировать ссылку"
+              <button key={marks[markKey].join()} className="map-mark" style={{ left: sx, top: sy }} aria-label="Моя метка: скопировать ссылку"
                 onPointerEnter={() => setBubble({ x: sx, y: sy - 18, text: "Моя метка\nклик — копировать, Ctrl + ПКМ — переставить" })} onPointerLeave={() => setBubble(null)}
-                onClick={() => { if (!drag.current?.moved) copyText(posLink(MARK_NAME, zone.map_id, marks[markKey])).then((ok) => ok && setBubble({ x: sx, y: sy - 18, text: "Ссылка скопирована" })); }}>
+                onClick={() => { if (!drag.current?.moved) copyText(posLink(MARK_NAME, zone.map_id, marks[markKey])).then((ok) => ok && notify("Метка скопирована в буфер")); }}>
                 {PLACE_ICON ? <img src={PLACE_ICON} alt="" draggable={false} /> : <i />}
               </button>
             );
@@ -639,7 +649,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
                 onClick={() => {
                   if (drag.current?.moved) return;
                   copyText(posLink(node.name, zone.map_id, node.points[i])).then((done) => {
-                    if (done) setBubble({ x: sx, y: sy - gatherPx / 2, text: `Скопировано: ${node.name}` });
+                    if (done) notify(`Метка «${node.name}» скопирована в буфер`);
                   });
                 }}>
                 {src ? <img src={src} alt="" draggable={false} /> : <i />}
@@ -687,6 +697,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           )}
           {bubble && !dragging && <div className="map-bubble" style={{ left: bubble.x, top: bubble.y }}>{bubble.text}</div>}
           {placeHere && <div className="map-badge"><i />Выбрана метка из чата</div>}
+          {notice && <div key={notice.n} className="map-notice" role="status">{notice.text}</div>}
           {mouse && <div className="map-coords">x {Math.round(mouse[0])} · y {Math.round(mouse[1])}</div>}
           <div className="map-zoom">
             <button aria-label="Приблизить (или колесо мыши)" title="Приблизить" onClick={() => size && zoomBy(ZOOM_STEP, size.w / 2, size.h / 2)}><IconPlus /></button>
@@ -770,7 +781,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               )}
             </div>
           )}
-          <GatherPanel nodes={gather} mapId={zone.map_id} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
+          <GatherPanel nodes={gather} mapId={zone.map_id} onCopied={(name) => notify(`Метка «${name}» скопирована в буфер`)} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
         </aside>}
       </div>
     </main>
