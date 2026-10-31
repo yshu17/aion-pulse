@@ -1,9 +1,9 @@
 // «Энергокинез» and «Эфирокинез» under the right panel of a zone: the zone's gathering nodes (as aion-map.vercel.app),
-// each section folds; a node switched on shows its spots on the map (MapTab draws them), its copy button puts all its
-// spots on the clipboard as the game's place links, to paste in the chat (as the site).
+// each section folds; a node switched on shows its spots on the map (MapTab draws them), its copy button puts one spot on the
+// clipboard as the game's place link (each click the next one), to paste in the chat.
 import { useEffect, useRef, useState } from "react";
 
-import { posLinks, type GatherNode } from "../../core/map/gathering";
+import { posLink, type GatherNode } from "../../core/map/gathering";
 import { plural } from "../../core/text";
 import { IconCheck, IconChevron, IconCopy, IconEye } from "../icons";
 import { gatherIcon } from "./mapData";
@@ -35,9 +35,12 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear }: {
   const [copied, setCopied] = useState<string | null>(null);
   const timer = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
-  const copy = (key: string, text: string) => {
-    copyText(text).then((done) => {
+  const next = useRef<Record<string, number>>({}); // the spot each row copies next
+  const copy = (key: string, node: GatherNode) => {
+    const i = (next.current[key] ?? 0) % node.points.length;
+    copyText(posLink(node.name, mapId, node.points[i])).then((done) => {
       if (!done) return;
+      next.current[key] = i + 1;
       setCopied(key);
       clearTimeout(timer.current);
       timer.current = window.setTimeout(() => setCopied(null), 1500);
@@ -82,8 +85,8 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear }: {
                         <span className="eye" aria-hidden="true"><IconEye /></span>
                       </button>
                       <button className={`map-gather-copy${copied === key ? " done" : ""}`}
-                        aria-label={`Копировать точки «${n.name}» ссылками для чата игры`} title="Копировать точки ссылками для чата игры"
-                        onClick={() => copy(key, posLinks(n, mapId))}>
+                        aria-label={`Копировать ссылку на точку «${n.name}»`} title="Копировать ссылку на одну точку (каждый клик — следующая)"
+                        onClick={() => copy(key, n)}>
                         {copied === key ? <IconCheck /> : <IconCopy />}
                       </button>
                     </li>
