@@ -42,6 +42,34 @@ describe("gathering nodes", () => {
     expect(placesIn(cleanText(link))[0]).toEqual(["Адамантит", ["220040000", node.points[0][0], node.points[0][1]]]);
   });
 
+  it("finds a resource by name in every zone it grows in, grouped, the closest level first", () => {
+    const hits = data.find("орихалк", 8);
+    expect(hits.length).toBeGreaterThan(0);
+    const hit = hits[0];
+    expect(hit.name).toBe("Орихалк");
+    expect(hit.level).toBe(300);
+    expect(hit.places.map((p) => p.map_id)).toContain("220050000"); // Брустхонин
+    expect(hit.places.every((p) => p.node.name === "Орихалк" && p.node.points.length > 0)).toBe(true);
+    // the words may come in any order and «ё» is «е»; the English name of the site finds too
+    expect(data.find("эфира сгусток", 8).some((h) => h.name === "Сгусток эфира")).toBe(true);
+    expect(data.find("mithril", 8).some((h) => h.name === "Мифрил")).toBe(true);
+    expect(data.find("о", 8)).toEqual([]); // one letter is not a search
+    expect(data.find("нетакогоресурса", 8)).toEqual([]);
+    expect(data.find("с", 3)).toEqual([]);
+    expect(data.find("сгусток", 2).length).toBe(2); // the limit
+  });
+
+  it("puts a name that starts with the query before one that only contains it", () => {
+    const names = data.find("рубин", 8).map((h) => h.name);
+    expect(names.indexOf("Рубин")).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf("Рубин")).toBeLessThan(names.indexOf("Огромный рубин"));
+  });
+
+  it("keeps the Abyss layers of a found resource apart", () => {
+    const hit = data.find("титан", 8).find((h) => h.places.some((p) => p.map_id === "400010000"))!;
+    expect(hit.places.filter((p) => p.map_id === "400010000").every((p) => p.node.layer !== null)).toBe(true);
+  });
+
   it("gives nothing for a zone without data or broken JSON", () => {
     expect(data.inZone("300000000", null).essence).toEqual([]);
     expect(Gathering.parse("{").inZone("220040000", null).aether).toEqual([]);

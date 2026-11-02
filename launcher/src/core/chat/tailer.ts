@@ -115,12 +115,16 @@ export class LogTailer {
     return parts.map((line) => decodeLine(rstripCr(line)));
   }
 
-  /** Complete lines before the current position whose time is >= since, reading backwards in chunks. */
-  readBacklog(since: number, chunkSize = 256 * 1024): string[] {
+  /**
+   * Complete lines before the current position whose time is >= since, reading backwards in chunks. `floor` is the
+   * lowest position it may read (a reader that holds only the tail of a big file): a log so dense that `since` lies
+   * below it gives the lines from the floor on instead of walking back through the whole file.
+   */
+  readBacklog(since: number, chunkSize = 256 * 1024, floor = 0): string[] {
     const end = this.pos;
     let start = end;
-    while (start > 0) {
-      start = Math.max(0, start - chunkSize);
+    while (start > floor) {
+      start = Math.max(floor, start - chunkSize);
       let lines = splitLines(this.reader.read(start, end - start));
       if (start > 0) lines = lines.slice(1); // the first piece may be a partial line
       const first = lines.map(lineTime).find((t) => t !== null);

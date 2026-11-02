@@ -59,11 +59,13 @@ export const DEFAULTS = {
   // the launcher only (not in Pulse): the sound of plain notifications, and whether the match sound repeats while it waits
   notify_sound_path: "",
   sound_loop: true,
+  // the launcher only: the map draws the decorative NPCs (no function, no quest) as small blue dots
+  map_deco: false,
 };
 
 export type Config = typeof DEFAULTS;
 /** Fields Pulse (Python) does not have: the comparisons with Pulse leave them out. */
-export const LAUNCHER_ONLY = ["notify_sound_path", "sound_loop"] as const;
+export const LAUNCHER_ONLY = ["notify_sound_path", "sound_loop", "map_deco"] as const;
 export type ConfigAction = "write_defaults" | "backup_and_write" | null;
 
 export interface ReadResult {

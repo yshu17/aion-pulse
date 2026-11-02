@@ -16,6 +16,7 @@ export type AlertState = "accepted" | "missed";
 export interface Toast {
   note: Notification;
   icon: string | null;
+  shownAt: number; // clock seconds (performance.now) when the toast appeared
 }
 
 /** Where the lines come from: demo lines in a browser, Chat.log in the program, or why there are none. */
@@ -67,9 +68,9 @@ const wallClock = () => {
 };
 const SNOOZE_SEC = 300;
 const PRUNE_EVERY_MS = 20_000; // how often old messages are taken out of the feed
-const MAX_TOASTS = 3;
+export const MAX_TOASTS_LIMIT = 6; // the most the setting «сколько уведомлений видно» allows
 const LOOP_PAUSE_MS = 700; // between the rounds of the sound while a match waits for «Принять»
-const TOAST_SHOWN_SEC = 14;
+export const TOAST_SHOWN_SEC = 14;
 const DEMO_STEP_MS = 3500;
 const MAX_ROWS = 800; // the chat feed keeps the newest rows
 
@@ -90,6 +91,8 @@ export function useWatch(boot: Boot): Watch {
   const play = useMemo(() => makeSound(boot.platform, cfg.sound_path, cfg.sound_volume), [boot.platform, cfg.sound_path, cfg.sound_volume]); // a match
   const chime = useMemo(() => makeSound(boot.platform, cfg.notify_sound_path, cfg.sound_volume), [boot.platform, cfg.notify_sound_path, cfg.sound_volume]); // the other toasts, once
   const quiet = cfg.notify_dnd || cfg.notify_off.includes("chat") || cfg.notify_mute.includes("chat");
+  const maxToasts = useRef(3); // how many toasts are shown at once (the setting), read by the timer below
+  maxToasts.current = Math.min(MAX_TOASTS_LIMIT, Math.max(1, Math.round(cfg.notify_stack)));
 
   const [rows, setRows] = useState<FeedRow[]>([]);
   const alertState = useRef<Record<number, AlertState>>({}); // read by the feed pruning: a waiting match stays
@@ -283,10 +286,12 @@ export function useWatch(boot: Boot): Watch {
       center.tick();
       const alive = openToasts.current.filter((toast) => center.isActive(toast.note) && t - (shownAt.current.get(toast.note.id) ?? t) < TOAST_SHOWN_SEC);
       const out = [...alive];
-      for (let next = out.length < MAX_TOASTS ? center.popNext() : null; next; next = out.length < MAX_TOASTS ? center.popNext() : null) {
-        if (out.some((toast) => toast.note.id === next!.id)) continue;
+      // one new toast a second: they come in one after another, not all at once
+      let next = out.length < maxToasts.current ? center.popNext() : null;
+      while (next && out.some((toast) => toast.note.id === next!.id)) next = center.popNext();
+      if (next) {
         shownAt.current.set(next.id, t);
-        out.push({ note: next, icon: icons.current.get(next.repeat_key ?? next.id) ?? null });
+        out.push({ note: next, icon: icons.current.get(next.repeat_key ?? next.id) ?? null, shownAt: t });
       }
       if (out.length !== openToasts.current.length || out.some((toast, i) => toast !== openToasts.current[i])) showToasts(out);
     }, 1000);

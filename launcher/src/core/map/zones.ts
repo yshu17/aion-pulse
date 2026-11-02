@@ -44,6 +44,7 @@ export interface Zone {
   size: number;
   kx: [number, number];
   ky: [number, number];
+  turn?: number; // the picture is turned this many degrees about its centre (a redrawn picture, e.g. a temple): 0 or none
   labels: Label[];
   layers: [number, string, string][]; // Abyss layer id, display name, picture file
   label_layers: (number | null)[]; // the Abyss layer of each label (same order), null: every layer
@@ -51,8 +52,25 @@ export interface Zone {
   kind: "zone" | "instance"; // an open zone or a dungeon (an instance: the client's game maps of tools/import_missing_maps.py)
 }
 
+/**
+ * A picture point after the picture is turned by `turn` degrees about its centre (PIL's Image.rotate: positive turns
+ * counter-clockwise on screen). The same canvas size, so the centre is size / 2.
+ */
+export function turnPoint(size: number, turn: number, ix: number, iy: number): [number, number] {
+  if (!turn) return [ix, iy];
+  const c = size / 2, t = (turn * Math.PI) / 180, dx = ix - c, dy = iy - c;
+  return [c + dx * Math.cos(t) - dy * Math.sin(t), c + dx * Math.sin(t) + dy * Math.cos(t)];
+}
+
+/** The inverse of turnPoint: the picture point before the turn. */
+export function unturnPoint(size: number, turn: number, px: number, py: number): [number, number] {
+  if (!turn) return [px, py];
+  const c = size / 2, t = (turn * Math.PI) / 180, dx = px - c, dy = py - c;
+  return [c + dx * Math.cos(t) + dy * Math.sin(t), c - dx * Math.sin(t) + dy * Math.cos(t)];
+}
+
 export function toImage(zone: Zone, x: number, y: number): [number, number] {
-  return [zone.kx[0] * y + zone.kx[1], zone.ky[0] * x + zone.ky[1]];
+  return turnPoint(zone.size, zone.turn ?? 0, zone.kx[0] * y + zone.kx[1], zone.ky[0] * x + zone.ky[1]);
 }
 
 function rows(text: string | null): string[][] {
@@ -110,7 +128,11 @@ export function parseZones(mapsJson: string | null, labelsText: string | null, n
       size: Math.trunc(info.size),
       kx,
       ky,
-      labels: (labels[mapId] ?? []).map(([gx, gy, text, level]) => [kx[0] * gy + kx[1], ky[0] * gx + ky[1], text, level]),
+      turn: Number(info.turn ?? 0) || 0,
+      labels: (labels[mapId] ?? []).map(([gx, gy, text, level]) => {
+        const [lx, ly] = turnPoint(Math.trunc(info.size), Number(info.turn ?? 0) || 0, kx[0] * gy + kx[1], ky[0] * gx + ky[1]);
+        return [lx, ly, text, level];
+      }),
       layers: (info.layers ?? []).filter((layer: any) => exists(layer.file))
         .map((layer: any) => [parseInt(String(layer.id), 10), layer.name ?? `Слой ${layer.id}`, layer.file]),
       label_layers: labelLayers[mapId] ?? [],

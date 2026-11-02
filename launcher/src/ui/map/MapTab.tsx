@@ -16,7 +16,7 @@ import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
 import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconReset, IconSearch, IconTarget } from "../icons";
 import type { Boot } from "../useBoot";
-import { posLink } from "../../core/map/gathering";
+import { posLink, type GatherHit, type GatherNode } from "../../core/map/gathering";
 import { copyText, GatherPanel } from "./GatherPanel";
 import { gatherIcon, gathering, loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, waysInto, zones } from "./mapData";
 import type { ChatPlace, MapTarget } from "./placeLink";
@@ -143,14 +143,19 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   };
 
   // NPCs and monsters (data/maps/spawns.json, read on the first search): one NPC's points in one zone at a time
-  const [spawns, setSpawns] = useState<Spawns | null>(null);
-  const needSpawns = () => { if (!spawns) loadSpawns().then(setSpawns); };
+  const [baseSpawns, setBaseSpawns] = useState<Spawns | null>(null);
+  const needSpawns = () => { if (!baseSpawns) loadSpawns().then(setBaseSpawns); };
+  const spawns = baseSpawns;
+  const poiStore = poi;
+  const decoOn = cfg.map_deco;
+  useEffect(() => { if (decoOn && !baseSpawns) loadSpawns().then(setBaseSpawns); }, [decoOn]); // eslint-disable-line react-hooks/exhaustive-deps
+  const decoDots = useMemo(() => (decoOn && spawns && zone ? spawns.decoPoints(zone.map_id) : []), [decoOn, spawns, zone]);
   const [npcFocus, setNpcFocus] = useState<{ npc: string; name: string; map_id: string; points: SpawnPoint[]; at: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const showNpc = async (npc: string, name: string, mapId: string, at?: [number, number]) => {
-    const index = spawns ?? await loadSpawns();
-    setSpawns(index);
-    const points = index.points(npc, mapId);
+    const raw = baseSpawns ?? await loadSpawns();
+    setBaseSpawns(raw);
+    const points = raw.points(npc, mapId);
     if (!points.length || !goToZone(mapId)) return;
     const near = at ? nearestPoint(points, at[0], at[1]) : null;
     const i = near ? points.indexOf(near) : 0;
@@ -247,7 +252,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   };
 
   // --- what is drawn ---------------------------------------------------------------------------------------------
-  const points = useMemo(() => (zone ? poi.inZone(zone.map_id, types, side, layer) : []), [zone, types, side, layer]);
+  const points = useMemo(() => (zone ? poiStore.inZone(zone.map_id, types, side, layer) : []), [zone, types, side, layer, poiStore]);
   // While a zoom glides, the icons keep their size and their merging of the zoom it started from and only move with
   // the map; they merge or split once, when it settles (recounting every frame made them jump).
   const [settled, setSettled] = useState<number | null>(null);
@@ -296,10 +301,14 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
       setGatherShown(gatherShown.filter((i) => i !== id));
       return;
     }
-    setGatherShown([...gatherShown, id]);
     const node = [...gather.essence, ...gather.aether].find((n) => n.id === id);
+    if (node) showGather(node);
+  };
+  /** Switch a resource of this zone on and fly to its spot nearest to the middle of the view. */
+  const showGather = (node: GatherNode) => {
+    setGatherShown((ids) => (ids.includes(node.id) ? ids : [...ids, node.id]));
     const from = viewRef.current;
-    if (!node || !zone || !size || !from) return;
+    if (!zone || !size || !from) return;
     // the spot nearest to the middle of the view (the first one when the map has not moved yet)
     const cx = from.left + size.w / 2 / from.zoom, cy = from.top + size.h / 2 / from.zoom;
     let best = 0, bestD = Infinity;
@@ -336,13 +345,13 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     if (centre) flyTo(p.x, p.y, Math.max(viewRef.current?.zoom ?? 1, 1));
   };
   const near: Near[] = useMemo(() => {
-    if (selected?.kind === "poi") return nearby(poi, selected.poi.zone, selected.poi.gx, selected.poi.gy, side, layer, selected.poi);
+    if (selected?.kind === "poi") return nearby(poiStore, selected.poi.zone, selected.poi.gx, selected.poi.gy, side, layer, selected.poi);
     if (selected?.kind === "area" && zone) {
       const g = toGame(zone, selected.x, selected.y);
-      return g ? nearby(poi, zone.map_id, g[0], g[1], side, layer) : [];
+      return g ? nearby(poiStore, zone.map_id, g[0], g[1], side, layer) : [];
     }
-    if (npcHere) { const [gx, gy] = npcHere.points[npcHere.at]; return nearby(poi, npcHere.map_id, gx, gy, side, layer); }
-    if (placeHere) return nearby(poi, placeHere.map_id, placeHere.x, placeHere.y, side, layer);
+    if (npcHere) { const [gx, gy] = npcHere.points[npcHere.at]; return nearby(poiStore, npcHere.map_id, gx, gy, side, layer); }
+    if (placeHere) return nearby(poiStore, placeHere.map_id, placeHere.x, placeHere.y, side, layer);
     return [];
   }, [selected, zone, placeHere, npcHere, side, layer]);
   const clearPlace = () => { setShownPlace(null); onPlaceCleared(); };
@@ -362,6 +371,24 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   const [query, setQuery] = useState("");
   const searchBox = useRef<HTMLDivElement>(null);
   const npcHits = useMemo(() => (spawns && query.trim().length >= 2 ? spawns.find(query, 8) : []), [spawns, query]);
+  const gatherHits = useMemo(() => gathering.find(query, 8), [query]);
+  // a resource picked in the search: its zone opens, then it is switched on and the map flies to it
+  const pendingGather = useRef<{ map_id: string; layer: number | null; id: string } | null>(null);
+  const showHit = (place: GatherHit["places"][number]) => {
+    if (!goToZone(place.map_id)) return;
+    if (place.layer !== null) setLayer(place.layer);
+    setSelected(null);
+    setNpcFocus(null);
+    setSearchOpen(false);
+    pendingGather.current = { map_id: place.map_id, layer: place.layer, id: place.node.id };
+  };
+  useEffect(() => {
+    const p = pendingGather.current;
+    if (!p || !zone || p.map_id !== zone.map_id || (p.layer !== null && p.layer !== layer) || !size || !view || fittedZone.current !== zone.map_id) return;
+    const node = [...gather.essence, ...gather.aether].find((n) => n.id === p.id);
+    pendingGather.current = null;
+    if (node) showGather(node);
+  });
   useEffect(() => {
     if (!searchOpen) return;
     const outside = (e: PointerEvent) => { if (!searchBox.current?.contains(e.target as Node)) setSearchOpen(false); };
@@ -377,11 +404,11 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   };
   const [at, setAt] = useState(-1);
   const matches: Match[] = useMemo(() => {
-    if (!zone || !query.trim()) return [];
+    if (!zone || level !== "zone" || !query.trim()) return []; // the world map has no points of its own to search
     const words = normalize(query).split(/\s+/).filter(Boolean);
     // a point's name, its type («Привратник») and its group («Телепорты»): «телепорт» finds the teleporters too
     const groupOf = (type: string) => Object.values(FILTER_GROUPS).find(([, kinds]) => kinds.includes(type))?.[0] ?? "";
-    const found: Match[] = poi.inZone(zone.map_id, types, side, layer)
+    const found: Match[] = poiStore.inZone(zone.map_id, types, side, layer)
       .filter((p) => { const text = normalize(`${p.name} ${poi.typeName(p.type)} ${groupOf(p.type)}`); return words.every((w) => text.includes(w)); })
       .map((p) => ({ kind: "poi" as const, poi: p }));
     zone.labels.forEach(([x, y, text], i) => {
@@ -391,10 +418,14 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
       }
     });
     return found;
-  }, [zone, query, types, side, layer]);
+  }, [zone, level, query, types, side, layer]);
   useEffect(() => setAt(-1), [matches]);
   const go = (step: number) => {
-    if (!matches.length) return;
+    if (!matches.length) { // nothing of the map's own: Enter takes the first resource found (this zone's place first)
+      const hit = gatherHits[0];
+      if (hit) showHit(hit.places.find((p) => p.map_id === zoneId && (p.layer === null || p.layer === layer)) ?? hit.places[0]);
+      return;
+    }
     const next = (at + step + matches.length) % matches.length;
     setAt(next);
     const m = matches[next];
@@ -474,7 +505,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     openZone(way.from);
     const z = zones[way.from];
     if (z?.side && z.side !== side) setSide(z.side);
-    const entrance = poi.zone(way.from).find((p) => p.type === "dungeon" && p.name === way.name);
+    const entrance = poiStore.zone(way.from).find((p) => p.type === "dungeon" && p.name === way.name);
     if (entrance) {
       setSelected({ kind: "poi", poi: entrance });
       pendingPlace.current = { map_id: way.from, x: entrance.gx, y: entrance.gy };
@@ -486,7 +517,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     openZone(way.to);
     if (target.side && target.side !== side) setSide(target.side);
     const arrive = way.at
-      ? poi.zone(way.to).filter((p) => p.type === "teleport" || p.type === "portal")
+      ? poiStore.zone(way.to).filter((p) => p.type === "teleport" || p.type === "portal")
         .sort((a, b) => Math.hypot(a.gx - way.at![0], a.gy - way.at![1]) - Math.hypot(b.gx - way.at![0], b.gy - way.at![1]))[0]
       : undefined;
     if (arrive) {
@@ -527,10 +558,9 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             {zone.layers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
         )}
-        {level === "zone" ? <>
         <div className="map-search" ref={searchBox}>
           <IconSearch />
-          <input ref={search} className="field" placeholder="Поиск по карте (места, NPC, монстры…)" value={query} aria-label="Поиск по карте"
+          <input ref={search} className="field" placeholder="Поиск по карте (места, NPC, монстры, сбор…)" value={query} aria-label="Поиск по карте"
             aria-expanded={searchOpen && query.trim().length >= 2} aria-controls="map-results"
             onFocus={() => { needSpawns(); setSearchOpen(true); }}
             onChange={(e) => { setQuery(e.target.value); needSpawns(); setSearchOpen(true); }}
@@ -540,10 +570,34 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             }} />
           {searchOpen && query.trim().length >= 2 && (
             <div className="map-results" id="map-results" aria-label="Найдено">
-              <div className="map-results-head">
+              {level === "zone" && <div className="map-results-head">
                 <span>На этой карте: {matches.length || "нет"}</span>
                 {matches.length > 0 && <span className="muted">Enter — следующее, Shift+Enter — назад</span>}
-              </div>
+              </div>}
+              {gatherHits.length > 0 && <>
+                <div className="map-results-head"><span>Сбор во всех зонах</span></div>
+                {gatherHits.map((hit) => {
+                  // one group per resource: its name on one line, then every place it grows in to choose from
+                  const here = hit.places.find((p) => p.map_id === zoneId && (p.layer === null || p.layer === layer));
+                  const src = gatherIcon(hit.icon);
+                  const placeName = (p: GatherHit["places"][number]) => `${zones[p.map_id]?.name ?? p.map_id}${p.layer !== null ? `, слой ${p.layer}` : ""}`;
+                  return (
+                    <div key={`${hit.level}|${hit.name}`} className="map-result map-gather-group">
+                      <button className="map-result-main map-result-gather" onClick={() => showHit(here ?? hit.places[0])}>
+                        {src ? <img src={src} alt="" /> : <i />}
+                        <b>{hit.level} – {hit.name}</b>
+                        <span className="muted">{hit.kind === "aether" ? "Эфирокинез" : "Энергокинез"}</span>
+                      </button>
+                      <div className="map-result-zones" role="group" aria-label={`Где: ${hit.name}`}>
+                        {hit.places.map((p) => (
+                          <button key={`${p.map_id}:${p.layer ?? ""}`} className={p === here ? "on" : ""} aria-current={p === here}
+                            title={plural(p.node.points.length, "точка", "точки", "точек")} onClick={() => showHit(p)}>{placeName(p)} · {p.node.points.length}</button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>}
               <div className="map-results-head"><span>НПС и монстры во всех зонах</span>{!spawns && <span className="muted">загружаю…</span>}</div>
               {spawns && !npcHits.length && <div className="map-results-empty">Никого с таким именем</div>}
               {npcHits.map((hit) => {
@@ -568,9 +622,10 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               })}
             </div>
           )}
-          {query.trim() ? <span className="map-found" aria-live="polite">{matches.length ? `${at >= 0 ? at + 1 : "–"} / ${matches.length}` : "нет"}</span>
+          {query.trim() ? <span className="map-found" aria-live="polite">{matches.length ? `${at >= 0 ? at + 1 : "–"} / ${matches.length}` : gatherHits.length ? "сбор" : "нет"}</span>
             : <kbd>Ctrl + K</kbd>}
         </div>
+        {level === "zone" && <>
         <button className="btn" onClick={resetMap} title="Убрать выбор, метки и сбор с карты, вернуть карту в исходное положение"><IconReset /> Сбросить</button>
         <div className="map-filters" ref={filterBox}>
           <button className={`btn${filters ? " on" : ""}`} aria-haspopup="dialog" aria-expanded={filters} onClick={() => setFilters(!filters)}>
@@ -595,10 +650,17 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
                   <span>{title}</span>
                 </label>
               ))}
+              <div className="lbl">Не взаимодействуют</div>
+              <label className="check map-check" title="Жители и прочие НПС без функции и без заданий: маленькие голубые точки">
+                <input type="checkbox" checked={cfg.map_deco} onChange={() => boot.save({ map_deco: !cfg.map_deco })} />
+                <span className="box" />
+                <i className="map-deco-sample" aria-hidden="true" />
+                <span>Декоративные НПС</span>
+              </label>
             </div>
           )}
         </div>
-        </> : <div className="map-bar-hint">Выбери часть Атреи, потом зону, или найди зону в списке слева.</div>}
+        </>}
       </div>
 
       <div className="map-body">
@@ -624,7 +686,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             const [sx, sy] = toScreen(view, selected.x, selected.y);
             return <div className="map-area-pin" style={{ left: sx, top: sy }} aria-hidden="true"><i /></div>;
           })()}
-          {npcHere && view && size && spawnAreas(npcHere.points, SPAWN_RADIUS_M).map((area, i) => {
+          {npcHere && view && size && npcHere.points.length > 1 && spawnAreas(npcHere.points, SPAWN_RADIUS_M).map((area, i) => { // one point is a fixed NPC: no area
             // the NPC's spawn areas, as the game's map: one blue glow for points close together, its own for a far one
             const d = area.r * 2 * Math.abs(zone.kx[0] || 1) * view.zoom;
             const [sx, sy] = toScreen(view, ...toImage(zone, area.x, area.y));
@@ -681,6 +743,16 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
                 {src ? <img src={src} alt="" draggable={false} /> : <i />}
                 {members.length > 1 && <b className="map-count">{members.length < 100 ? members.length : "99+"}</b>}
               </button>
+            );
+          })}
+          {view && size && decoDots.map(({ npc, x, y }, i) => {
+            const [sx, sy] = toScreen(view, ...toImage(zone, x, y));
+            if (sx < -10 || sy < -10 || sx > size.w + 10 || sy > size.h + 10) return null;
+            const name = spawns?.names[npc] ?? "";
+            return (
+              <button key={`deco${i}`} className="map-deco" style={{ left: sx, top: sy }} aria-label={`${name} (не взаимодействует)`}
+                onPointerEnter={() => setBubble({ x: sx, y: sy - 8, text: name })} onPointerLeave={() => setBubble(null)}
+                onClick={() => { if (!drag.current?.moved) showNpc(npc, name, zone.map_id, [x, y]); }} />
             );
           })}
           {npcHere && view && npcHere.points.map(([gx, gy], i) => {
@@ -746,7 +818,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
             <PointCard title={selected.text} kind="Район" icon={null} coords={null} note="" near={near} onNear={(p) => pick(p, true)}
               onClose={() => setSelected(null)} onBack={placeHere ? backToPlace : null} />
           ) : npcHere ? (
-            <NpcCard npc={npcHere} zone={zone} near={near} onPoint={focusNpcPoint} onNear={(p) => pick(p, true)} onClose={() => setNpcFocus(null)} />
+            <NpcCard npc={npcHere} zone={zone} spOnly={spawns?.spOnly(npcHere.npc) ?? false} near={near} onPoint={focusNpcPoint} onNear={(p) => pick(p, true)} onClose={() => setNpcFocus(null)} />
           ) : placeHere ? (
             <div className="map-card">
               <div className="map-card-head">
@@ -822,8 +894,8 @@ function PointCard({ title, kind, icon, coords, note, near, onNear, onClose, onB
  * several places), the chosen one centred and ringed on the map. A floor is not known for points of a dungeon with
  * floors (the client gives no height bounds): they are shown on every floor, and the card says so.
  */
-function NpcCard({ npc, zone, near, onPoint, onNear, onClose }: {
-  npc: { name: string; points: SpawnPoint[]; at: number; npc: string }; zone: Zone; near: Near[];
+function NpcCard({ npc, zone, spOnly, near, onPoint, onNear, onClose }: {
+  npc: { name: string; points: SpawnPoint[]; at: number; npc: string }; zone: Zone; spOnly: boolean; near: Near[];
   onPoint(i: number): void; onNear(p: Poi): void; onClose(): void;
 }) {
   const [gx, gy] = npc.points[npc.at];
@@ -839,6 +911,7 @@ function NpcCard({ npc, zone, near, onPoint, onNear, onClose }: {
       </div>
       <div className="muted map-xy">x {Math.round(gx)} · y {Math.round(gy)}</div>
       {zone.layers.length > 1 && <p className="map-note">Этаж в данных клиента не указан: точки показаны на всех этажах.</p>}
+      {spOnly && <p className="map-note">Точки взяты только из расстановки клиента (SP): НПС может появляться не всегда, а по условию (задание, событие, сценарий). Условия не проверены.</p>}
       {npc.points.length > 1 && (
         <>
           <h3 className="map-near-title">Точки в зоне: {npc.points.length}</h3>

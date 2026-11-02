@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
-import { IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
+import { IconBug, IconCheck, IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
+import { reportText } from "./bugReport";
+import { copyText } from "./map/GatherPanel";
 import { closeCardWindow, openCardWindow } from "./cardLink";
 import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
 import { platform } from "./platform";
@@ -13,7 +15,7 @@ import { ChatPlace, MapTarget, OpenMap, OpenPlace } from "./map/placeLink";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
 import { SettingsPanel } from "./SettingsPanel";
-import { enterOverlay, hidePopup, leaveOverlay, onAction, sendState, showPopup } from "./overlayWindow";
+import { enterOverlay, hidePopup, leaveOverlay, onAction, POPUP_HIDE_MS, POPUP_SHOW_MS, sendState, showPopup } from "./overlayWindow";
 import { ScheduleTab } from "./schedule/ScheduleTab";
 import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
@@ -53,12 +55,15 @@ function Screen({ boot }: { boot: Boot }) {
   useEffect(() => {
     if (popupWanted) {
       popupShown.current = true;
-      const timer = setTimeout(showPopup, 250); // after leaveOverlay has hidden the overlay, if that is what just happened
+      const timer = setTimeout(showPopup, POPUP_SHOW_MS); // after leaveOverlay has hidden the overlay, if that is what just happened
       return () => clearTimeout(timer);
     }
     if (popupShown.current) {
       popupShown.current = false;
-      if (!overlay) hidePopup();
+      if (!overlay) { // the last toast fades out first; a new one in that time keeps the window
+        const timer = setTimeout(hidePopup, POPUP_HIDE_MS);
+        return () => clearTimeout(timer);
+      }
     }
   }, [popupWanted, overlay]);
 
@@ -66,7 +71,7 @@ function Screen({ boot }: { boot: Boot }) {
     if (!overlay && !popupWanted) return;
     sendState({
       watching: watch.watching, problem: problem ? watch.source.text : "", counters: watch.counters,
-      toasts: watch.toasts.map((t) => ({ id: t.note.id, title: t.note.title, text: t.note.text, icon: t.icon,
+      toasts: watch.toasts.map((t) => ({ id: t.note.id, title: t.note.title, text: t.note.text, icon: t.icon, elapsed: performance.now() / 1000 - t.shownAt,
         accept: t.note.actions.some((a) => a.id === "accept"), retry: t.note.actions.some((a) => a.id === "retry") })),
       schedule: overlaySchedule(schedule.visible, schedule.now),
       game: watch.game,
@@ -97,7 +102,7 @@ function Screen({ boot }: { boot: Boot }) {
     return () => { off.then((unlisten) => unlisten()); };
   }, [boot.platform]);
   const [tab, setTab] = useState("Чат");
-  const [feedMode, setFeedMode] = useState<FeedMode>("matches");
+  const [feedMode, setFeedMode] = useState<FeedMode>("all");
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
   const [mapHome, setMapHome] = useState(0); // «Карта» pressed again: back to Atreia
@@ -121,6 +126,7 @@ function Screen({ boot }: { boot: Boot }) {
     return () => window.removeEventListener("keydown", esc);
   }, []);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [reported, setReported] = useState(false); // the bug button: the report went to the clipboard
   const [found, reacted, missed] = watch.counters;
   const cfg = boot.config;
   const modeText = MODES.find(([value]) => value === cfg.search_mode)?.[1] ?? "слово или предмет";
@@ -141,6 +147,9 @@ function Screen({ boot }: { boot: Boot }) {
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
           aria-label="В накладку" onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay /><span className="label">В накладку</span></button>
+        <button className="btn icon-only" aria-label="Сообщить о ошибке" title="Сообщить о ошибке: данные для отчёта копируются в буфер обмена"
+          onClick={() => { copyText(reportText({ tab, watching: watch.watching, chatLog: boot.chatLog })).then(() => { setReported(true); setTimeout(() => setReported(false), 2500); }); }}>
+          {reported ? <IconCheck /> : <IconBug />}</button>
         <button className={`btn${settings ? " active" : ""}`} aria-label="Настройки" title="Настройки" aria-expanded={settings}
           onClick={() => setSettings(true)}><IconSettings /><span className="label">Настройки</span></button>
       </header>
@@ -183,7 +192,7 @@ function Screen({ boot }: { boot: Boot }) {
                 </label>
               )}
               <div className="segmented" role="radiogroup" aria-label="Что показывать">
-                {([["matches", "Совпадения"], ["all", "Весь чат"]] as [FeedMode, string][]).map(([value, label]) => (
+                {([["all", "Весь чат"], ["matches", "Совпадения"]] as [FeedMode, string][]).map(([value, label]) => (
                   <button key={value} role="radio" aria-checked={feedMode === value} className={feedMode === value ? "on" : ""}
                     onClick={() => setFeedMode(value)}>{feedMode === value && <Glide group="seg-feed" />}<span>{label}</span></button>
                 ))}
@@ -228,6 +237,7 @@ function Screen({ boot }: { boot: Boot }) {
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
+      <div className="credit" aria-hidden="true">Developed by Sexbomb, special for Aion Empire</div>
     </div>
   );
 }

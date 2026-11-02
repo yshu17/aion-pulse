@@ -57,6 +57,27 @@ describe("NPC and monster points (spawns.json)", () => {
     expect(Spawns.parse("{").size).toBe(0);
   });
 
+  it("knows the NPCs the client names only by spawn points (SP): they may appear on a condition", () => {
+    const small = Spawns.parse(JSON.stringify({ names: { "1": "Обычный", "2": "Только SP" }, sp_only: ["2"],
+      zones: { "220070000": [["1", 1, 1, 0], ["2", 5, 5, 0]] } }));
+    expect(small.spOnly("2")).toBe(true);
+    expect(small.spOnly("1")).toBe(false);
+    expect(Spawns.parse(null).spOnly("2")).toBe(false); // an older file without the list
+    expect(spawns.spOnly("nobody")).toBe(false);
+    const found = spawns.find("королева ньютиона", 3);
+    expect(found.length).toBeGreaterThan(0);
+  });
+
+  it("lists the decorative NPCs of a zone (the small blue dots), each point with its NPC", () => {
+    const small = Spawns.parse(JSON.stringify({ names: { "1": "Житель", "2": "Страж" }, deco: ["1"],
+      zones: { "220070000": [["1", 10, 20, 0], ["2", 30, 40, 0], ["1", 50, 60, 0]], "220040000": [["1", 1, 1, 0]] } }));
+    expect(small.isDeco("1")).toBe(true);
+    expect(small.isDeco("2")).toBe(false);
+    expect(small.decoPoints("220070000")).toEqual([{ npc: "1", x: 10, y: 20 }, { npc: "1", x: 50, y: 60 }]);
+    expect(small.decoPoints("999")).toEqual([]);
+    expect(Spawns.parse(null).decoPoints("220070000")).toEqual([]); // an older file without the list
+  });
+
   it("joins spawn points that are close into one area, far ones get their own", () => {
     const areas = spawnAreas([[0, 0, 0], [100, 0, 0], [50, 80, 0], [2000, 2000, 0]], 110);
     expect(areas).toHaveLength(2);

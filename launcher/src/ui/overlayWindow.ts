@@ -23,6 +23,7 @@ export interface OverlayToast {
   icon: string | null;
   accept: boolean;
   retry: boolean; // «Проверить снова» (the game is not running)
+  elapsed: number; // seconds since the toast appeared, read once when it is shown
 }
 
 /** One schedule event on the overlay: times are MSK «HH:MM», `left` is «ещё 38 мин» / «через 2 ч». */
@@ -100,6 +101,9 @@ export async function enterOverlay(): Promise<void> {
  * The program window stays; the overlay shows only the notifications, over the game (the window may be under it). They
  * come from the bottom-right corner of the screen, not from where the strip was last time.
  */
+export const POPUP_SHOW_MS = 250; // the popup is shown this long after its first toast (after leaveOverlay has hidden the overlay)
+export const POPUP_HIDE_MS = 420; // the popup is hidden this long after its last toast: the toast's fade-out is seen to the end
+
 export async function showPopup(): Promise<void> {
   await showOverlayWindow(cornerAnchor);
 }

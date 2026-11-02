@@ -100,19 +100,36 @@ def main() -> None:
     # the NPC / monster index: every zone with a picture
     with_picture = set(index)
     names: dict[str, str] = {}
+    general: set[str] = set()  # named NPCs of the general kind with no function (merchant, teleport, kisk …)
     with gzip.open(GAME / "npcs.json.gz", "rt", encoding="utf-8") as f:
         for record in json.load(f)["records"]:
             if record.get("name"):
                 names[str(record["id"])] = record["name"]
+                if str(record.get("ui") or "").lower().startswith("general") and not record.get("function"):
+                    general.add(str(record["id"]))
+    quest_npcs: set[str] = set()  # who gives or takes a quest is not decorative
+    with gzip.open(GAME / "quests.json.gz", "rt", encoding="utf-8") as f:
+        for quest in json.load(f)["records"]:
+            for key in ("giver", "ender"):
+                if quest.get(key):
+                    quest_npcs.add(str(quest[key]))
     points: dict[str, set[tuple[str, float, float, float]]] = defaultdict(set)
+    static: set[str] = set()  # NPCs with a point of the game's data or of the client's world files (not only an SP point)
     with gzip.open(GAME / "npc_points.json.gz", "rt", encoding="utf-8") as f:
         for map_id, npc, x, y, z, _zone in json.load(f)["rows"]:
+            static.add(str(npc))
             if map_id in with_picture and str(npc) in names:
                 points[map_id].add((str(npc), round(x, 1), round(y, 1), round(z or 0)))
-    for row in rows("mob_spawns.tsv") + rows("world_npcs.tsv"):
-        npc = row["npc_id"]
-        if row["map_id"] in picked and npc in names:
-            points[row["map_id"]].add((npc, round(float(row["game_x"]), 1), round(float(row["game_y"]), 1), round(float(row["game_z"] or 0))))
+    sp_ids: set[str] = set()
+    for source in ("mob_spawns.tsv", "world_npcs.tsv"):
+        for row in rows(source):
+            npc = row["npc_id"]
+            if source == "world_npcs.tsv":
+                static.add(npc)
+            elif npc:
+                sp_ids.add(npc)
+            if row["map_id"] in picked and npc in names:
+                points[row["map_id"]].add((npc, round(float(row["game_x"]), 1), round(float(row["game_y"]), 1), round(float(row["game_z"] or 0))))
     # the named points of the map layers (teleport statues, merchants, quest givers …): an id of their own per name
     poi = json.loads((MAPS / "poi.json").read_text(encoding="utf-8"))
     for map_id, zone_points in poi.get("zones", {}).items():
@@ -122,11 +139,16 @@ def main() -> None:
                 names[key] = p["name"]
                 points[map_id].add((key, round(p["gx"], 1), round(p["gy"], 1), 0))
     used = {p[0] for zone in points.values() for p in zone}
-    spawns = {"names": {npc: names[npc] for npc in sorted(used)},
+    # known only by the client's spawn points: they may appear on a condition (a quest, an event); not checked here
+    sp_only = sorted(npc for npc in used if npc in sp_ids and npc not in static)
+    # decorative NPCs: the map can draw them as small blue dots (a switch in its filters); the game's data has no flag for
+    # «can be talked to», this is the general kind without a function and without a quest
+    deco = sorted(npc for npc in used if npc in general and npc not in quest_npcs)
+    spawns = {"names": {npc: names[npc] for npc in sorted(used)}, "sp_only": sp_only, "deco": deco,
               "zones": {map_id: sorted([list(p) for p in zone]) for map_id, zone in sorted(points.items())}}
     (MAPS / "spawns.json").write_text(json.dumps(spawns, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"zones: {len(picked)} imported ({len(index)} in all); points: {sum(len(z) for z in points.values())} "
-          f"of {len(used)} NPCs in {len(points)} zones; area names: {len(added) - 1}")
+          f"of {len(used)} NPCs in {len(points)} zones; only by SP points: {len(sp_only)}; decorative: {len(deco)}; area names: {len(added) - 1}")
 
 
 if __name__ == "__main__":

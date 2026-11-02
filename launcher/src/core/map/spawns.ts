@@ -2,7 +2,7 @@
  * Where NPCs and monsters stand: data/maps/spawns.json (tools/import_missing_maps.py) — the client's spawn points of
  * every zone the map has a picture for, by NPC id. Pure: the caller passes the file's text.
  *
- * The map draws none of them by itself (tens of thousands): a search finds an NPC by name, then only its points in
+ * `sp_only` lists the NPCs that have no point but the client's SP ones. The map draws none of them by itself (tens of thousands): a search finds an NPC by name, then only its points in
  * the chosen zone are shown.
  */
 
@@ -21,8 +21,19 @@ export interface SpawnFound {
 export class Spawns {
   private byNpc = new Map<string, Map<string, SpawnPoint[]>>();
   private search_: { npc: string; text: string }[] = [];
+  private spOnly_: Set<string>;
+  private deco_: Set<string>;
+  private decoByZone = new Map<string, { npc: string; x: number; y: number }[]>();
 
-  constructor(public names: Record<string, string>, zones: Record<string, [string, number, number, number][]>) {
+  constructor(
+    public names: Record<string, string>,
+    private rawZones: Record<string, [string, number, number, number][]>,
+    rawSpOnly: string[] = [],
+    rawDeco: string[] = [],
+  ) {
+    this.deco_ = new Set(rawDeco);
+    const zones = rawZones;
+    this.spOnly_ = new Set(rawSpOnly);
     for (const [mapId, points] of Object.entries(zones)) {
       for (const [npc, x, y, z] of points) {
         let at = this.byNpc.get(npc);
@@ -39,7 +50,7 @@ export class Spawns {
   static parse(text: string | null): Spawns {
     try {
       const data = text ? JSON.parse(text) : null;
-      return new Spawns(data?.names ?? {}, data?.zones ?? {});
+      return new Spawns(data?.names ?? {}, data?.zones ?? {}, data?.sp_only ?? [], data?.deco ?? []);
     } catch {
       return new Spawns({}, {});
     }
@@ -70,6 +81,34 @@ export class Spawns {
   /** The points of an NPC in a zone. */
   points(npc: string, mapId: string): SpawnPoint[] {
     return this.byNpc.get(npc)?.get(mapId) ?? [];
+  }
+
+  /**
+   * Is this NPC known only by the client's spawn points (SP) and by no static point of the game's data? Such an NPC may
+   * appear on a condition (a quest, an event, a script): an SP point alone does not say so, the conditions are not checked.
+   */
+  spOnly(npc: string): boolean {
+    return this.spOnly_.has(npc);
+  }
+
+  /**
+   * Is this NPC decorative: a named NPC of the general kind with no function (no merchant, teleport, kisk …) that gives and
+   * takes no quest. Tools/import_missing_maps.py decides it from the game's data; the game's data has no flag for «can be
+   * talked to», so a few talking NPCs may be in it.
+   */
+  isDeco(npc: string): boolean {
+    return this.deco_.has(npc);
+  }
+
+  /** Every point of the decorative NPCs of a zone (the small blue dots of the map), with the NPC of each. */
+  decoPoints(mapId: string): { npc: string; x: number; y: number }[] {
+    let list = this.decoByZone.get(mapId);
+    if (!list) {
+      list = [];
+      for (const [npc, x, y] of this.rawZones[mapId] ?? []) if (this.deco_.has(npc)) list.push({ npc, x, y });
+      this.decoByZone.set(mapId, list);
+    }
+    return list;
   }
 
   /** Is there an NPC of this id with a point in this zone? */

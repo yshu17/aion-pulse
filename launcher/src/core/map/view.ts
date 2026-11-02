@@ -8,7 +8,7 @@
 
 import { pyHypot } from "../py";
 import { Poi, PoiStore } from "./poi";
-import { FILTER_GROUPS, QUEST_TYPES, SHOWN_TYPES, Zone } from "./zones";
+import { FILTER_GROUPS, QUEST_TYPES, SHOWN_TYPES, unturnPoint, Zone } from "./zones";
 
 export interface View { zoom: number; left: number; top: number }
 
@@ -64,7 +64,8 @@ export const toScreen = (view: View, ix: number, iy: number): [number, number] =
 /** Game coordinates of a picture point (the inverse of toImage), null for a zone without a transform. */
 export function toGame(zone: Zone, ix: number, iy: number): [number, number] | null {
   if (!zone.kx[0] || !zone.ky[0]) return null;
-  return [(iy - zone.ky[1]) / zone.ky[0], (ix - zone.kx[1]) / zone.kx[0]];
+  const [ux, uy] = unturnPoint(zone.size, zone.turn ?? 0, ix, iy);
+  return [(uy - zone.ky[1]) / zone.ky[0], (ux - zone.kx[1]) / zone.kx[0]];
 }
 
 /** Game coordinates under a screen point, null for a zone without a transform. */

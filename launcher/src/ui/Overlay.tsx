@@ -5,8 +5,12 @@ import { Icon } from "./Icon";
 import { AnimatePresence, m } from "motion/react";
 
 import { FADE } from "./fx";
-import { Presence, useLeaving } from "./motion";
-import { IconClose, IconExpand, IconSettings } from "./icons";
+import { Presence } from "./motion";
+import { IconCheck, IconClose, IconExpand, IconSettings } from "./icons";
+import { TOAST_ENTER, TOAST_EXIT, TOAST_FROM, TOAST_LAYOUT, ToastTime } from "./Toasts";
+import { POPUP_SHOW_MS } from "./overlayWindow";
+
+const POPUP_SHOW_S = (POPUP_SHOW_MS + 100) / 1000; // the first toast of a hidden popup starts its ease-in when the window is up
 import { anchorOf, chooseSide, Side, windowOrigin } from "./overlayPlacement";
 import { clipWindow, loadLook, onPlace, onState, onWindowMoved, OverlayEvent, OverlayLook, OverlayState, placeWindow, Point, saveAnchor, saveLook, sendAction, setKeepGameFocus, startDrag, windowPosition, workArea } from "./overlayWindow";
 
@@ -16,6 +20,7 @@ const SETTLE_MS = 250; // the strip stays this long after the last move before t
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const NO_TOASTS: OverlayState["toasts"] = [];
 const WIDTH_CSS = 380; // the overlay window's width (overlayWindow.ts)
+const SHRINK_MS = 900; // a toast gone: the window shrinks this long after, when the others have settled (TOAST_LAYOUT)
 const CARD_OUT_MS = 320; // the card fades out this long before the clip shrinks (kit.css)
 const HOVER_MS = 1500; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
@@ -157,9 +162,18 @@ export function Overlay() {
   useEffect(() => {
     const el = root.current;
     if (!el) return;
-    const observer = new ResizeObserver(() => place());
+    // growing: the window grows at once (a new toast must fit); shrinking (a toast gone): the window waits until the others
+    // have glided to their places, so it does not jump under them; the clip follows the toasts meanwhile
+    let shrink: ReturnType<typeof setTimeout> | undefined;
+    let last = el.getBoundingClientRect().height;
+    const observer = new ResizeObserver(() => {
+      const height = el.getBoundingClientRect().height;
+      clearTimeout(shrink);
+      if (height < last - 1) shrink = setTimeout(() => { last = el.getBoundingClientRect().height; place(); }, SHRINK_MS);
+      else { last = height; place(); }
+    });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); clearTimeout(shrink); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { // a game can take the top place among always-on-top windows: put the overlay above it again
@@ -193,8 +207,18 @@ export function Overlay() {
     return () => clearTimeout(timer);
   }, [several, turn, look.turnSec]);
 
-  const toasts = useLeaving(state?.toasts ?? NO_TOASTS, (t) => t.id);
+  const toasts = state?.toasts ?? NO_TOASTS;
   const popup = state?.popup === true; // only the notifications: the program window is open
+  // the popup window is shown a moment after its first toast arrives (App.tsx): that toast waits, so its ease-in is seen
+  const enterDelay = useRef(new Map<number, number>());
+  const wasEmpty = useRef(true);
+  for (const t of toasts) if (!enterDelay.current.has(t.id)) enterDelay.current.set(t.id, popup && wasEmpty.current ? POPUP_SHOW_S : 0);
+  useEffect(() => {
+    wasEmpty.current = toasts.length === 0;
+    const ids = new Set(toasts.map((t) => t.id));
+    for (const id of [...enterDelay.current.keys()]) if (!ids.has(id)) enterDelay.current.delete(id);
+  }, [toasts]);
+  const from = edge === "left" ? -TOAST_FROM : TOAST_FROM;
   const live = state?.watching && !state.problem;
   // the strip shows the state only by the dot; the words are in its hint and in the card shown on hover
   const status = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу за чатом";
@@ -276,21 +300,31 @@ export function Overlay() {
       </Presence>
       </>
       )}
-      {toasts.map(({ item: toast, leaving }) => (
-        <div key={toast.id} className={`toast${leaving ? " leaving" : ""}`}>
+      <AnimatePresence initial={false}>
+      {toasts.map((toast) => (
+        // the slot moves (Motion); the card inside keeps the overlay's own see-through look and its hover (app.css)
+        <m.div key={toast.id} className="ov-toast-slot" layout
+          initial={{ opacity: 0, x: from, scale: 0.96 }}
+          animate={{ opacity: 1, x: 0, scale: 1, transition: { ...TOAST_ENTER, delay: enterDelay.current.get(toast.id) ?? 0 } }}
+          exit={{ opacity: 0, x: from * 0.6, scale: 0.98, pointerEvents: "none", transition: TOAST_EXIT }} transition={{ layout: TOAST_LAYOUT }}
+          onAnimationComplete={clip} onLayoutAnimationComplete={clip}>
+        <div className="toast motion">
           {toast.icon && <Icon name={toast.icon} size={40} />}
           <div className="toast-body">
             <div className="toast-title"><b>{toast.title}</b>
               <button className="x" aria-label="Закрыть" onClick={() => sendAction({ kind: "dismiss", id: toast.id })}><IconClose /></button></div>
             <div className="muted toast-text">{toast.text}</div>
             <div className="toast-actions">
-              {toast.accept && <button className="btn primary" onClick={() => sendAction({ kind: "accept", id: toast.id })}>Принять</button>}
-              {toast.retry && <button className="btn primary" onClick={() => sendAction({ kind: "retry", id: toast.id })}>Проверить снова</button>}
+              <button className="btn primary" onClick={() => sendAction({ kind: "accept", id: toast.id })}><IconCheck />Принять</button>
+              {toast.retry && <button className="btn" onClick={() => sendAction({ kind: "retry", id: toast.id })}>Проверить снова</button>}
               {!toast.retry && <button className="btn" onClick={() => sendAction({ kind: "snooze", id: toast.id })}>Через 5 мин</button>}
             </div>
           </div>
+          <ToastTime elapsed={toast.elapsed} />
         </div>
+        </m.div>
       ))}
+      </AnimatePresence>
       {/* the hover card: drawn in advance, hidden by the clip and its opacity until the mouse rests on the strip */}
       {!popup && (
         <div ref={cardEl} className={`ov-card${shown ? " shown" : ""}`} role="tooltip" aria-hidden={!shown}>

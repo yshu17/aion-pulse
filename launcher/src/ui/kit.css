@@ -72,7 +72,7 @@ button, .btn, .inp, input, select, textarea, .tab, .sch-chip, .sch-ribbon .ev, .
 button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97); }
 @keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes pop-out { to { opacity: 0; transform: translateY(-4px) scale(.98); } }
-@keyframes toast-in { from { opacity: 0; transform: translateX(16px); } }
+@keyframes toast-in { from { opacity: 0; transform: translateX(32px) scale(.96); } }
 @keyframes toast-out { to { opacity: 0; transform: translateX(16px); } }
 @keyframes tab-in { from { opacity: 0; transform: translateY(4px); } }
 @keyframes fade-out { to { opacity: 0; } }
@@ -80,7 +80,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 @keyframes undo-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @keyframes undo-out { to { opacity: 0; transform: translate(-50%, 8px); } }
 .sch-undo { animation: undo-in var(--t) var(--ease-out); } /* it is centred by a transform: its own keyframes keep that */
-.toast { animation: toast-in var(--t-slow) var(--ease-out); }
+.toast { animation: toast-in 480ms cubic-bezier(.22, 1, .36, 1) both; } /* a toast eases in slowly, as in Toasts.tsx */
 .toast.motion { animation: none; } /* Motion moves these itself (Toasts.tsx) */
 main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 /* leaving: the wrapper of a closing layer adds no box; what is inside fades the way it came */
@@ -112,7 +112,7 @@ main.chat, main.sch, main.soon { animation: tab-in var(--t) var(--ease-out); }
 /* Motion moves these itself (SettingsPanel, Drawer, Feed): no CSS keyframes on top of it */
 .panel, .sch-drawer, .scrim, .msg.motion, .msg.loud.motion:not(.old) { animation: none; }
 /* the overlay on the left half of the screen: its notifications come from the left edge and go back to it */
-@keyframes toast-in-left { from { opacity: 0; transform: translateX(-16px); } }
+@keyframes toast-in-left { from { opacity: 0; transform: translateX(-32px) scale(.96); } }
 @keyframes toast-out-left { to { opacity: 0; transform: translateX(-16px); } }
 .overlay.edge-left .toast { animation-name: toast-in-left; }
 .overlay.edge-left .toast.leaving { animation-name: toast-out-left; }

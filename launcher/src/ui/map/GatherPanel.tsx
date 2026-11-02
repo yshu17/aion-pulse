@@ -34,6 +34,15 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied, 
 }) {
   const [open, setOpen] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
+  // a resource switched on elsewhere (the search) opens its section, so the lit row is in view
+  const seen = useRef<string[]>([]);
+  useEffect(() => {
+    const added = shown.filter((id) => !seen.current.includes(id));
+    seen.current = shown;
+    if (!added.length) return;
+    const kinds = SECTIONS.map(([kind]) => kind).filter((kind) => nodes[kind].some((n) => added.includes(n.id)));
+    if (kinds.length) setOpen((was) => [...new Set([...was, ...kinds])]);
+  }, [shown, nodes]);
   const timer = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   const next = useRef<Record<string, number>>({}); // the spot each row copies next

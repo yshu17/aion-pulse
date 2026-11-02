@@ -14,8 +14,10 @@ import { mapNames } from "../data";
 import { platform } from "../platform";
 
 export const zones: Record<string, Zone> = parseZones(mapsJson, labelsText, mapNames, () => true);
-export const poi: PoiStore = PoiStore.load(poiJson).projected(
-  Object.fromEntries(Object.entries(zones).map(([id, zone]) => [id, (gx: number, gy: number) => toImage(zone, gx, gy)])));
+/** Game coordinates to the pixels of each zone's picture. */
+export const transforms: Record<string, (gx: number, gy: number) => [number, number]> =
+  Object.fromEntries(Object.entries(zones).map(([id, zone]) => [id, (gx: number, gy: number) => toImage(zone, gx, gy)]));
+export const poi: PoiStore = PoiStore.load(poiJson).projected(transforms);
 
 const icons = import.meta.glob("../../../../data/maps/icons/*.png", { query: "?url", import: "default", eager: true }) as Record<string, string>;
 

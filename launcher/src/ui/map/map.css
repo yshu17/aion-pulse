@@ -259,3 +259,20 @@ button.map-mark:active:not(:disabled) { transform: translate(-50%, -50%) scale(.
 .map-notice { position: absolute; left: 50%; bottom: 16px; z-index: 8; transform: translateX(-50%); padding: 7px 14px; border-radius: 9px;
   background: rgba(14, 16, 20, .9); border: 1px solid var(--border); color: var(--text); font-size: 13px; white-space: nowrap; pointer-events: none;
   box-shadow: var(--pop-shadow); animation: pop-in var(--t) var(--ease-out); }
+
+/* a gathering resource in the search results */
+.map-result-gather { flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; }
+.map-result-gather img, .map-result-gather i { width: 30px; height: 30px; object-fit: contain; flex: none; }
+.map-result-gather b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-result-gather .muted { margin-left: auto; flex: none; white-space: nowrap; }
+.map-gather-group .map-result-zones { padding: 0 8px 6px 48px; } /* under the name, past the icon */
+.map-result-zones button.on { color: var(--text); border-color: var(--accent); }
+
+/* decorative NPCs: small blue dots, drawn under the icons */
+.map-deco { position: absolute; z-index: 1; width: 8px; height: 8px; padding: 0; transform: translate(-50%, -50%); border-radius: 50%; border: 1px solid rgba(255, 255, 255, .85);
+  background: #4aa8ff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); cursor: pointer; }
+.map-deco:hover { transform: translate(-50%, -50%) scale(1.6); z-index: 2; }
+button.map-deco:active:not(:disabled) { transform: translate(-50%, -50%) scale(1.4); }
+.map-deco:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.map-deco-sample { flex: none; width: 10px; height: 10px; margin: 0 8px; border-radius: 50%; background: #4aa8ff; border: 1px solid rgba(255, 255, 255, .85); }
+.map-near img { width: 26px; height: 26px; object-fit: contain; flex: none; }

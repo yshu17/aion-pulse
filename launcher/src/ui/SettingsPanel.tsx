@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Config } from "../core/settings/config";
 import { IconCheck, IconClose } from "./icons";
 import type { Boot } from "./useBoot";
+import { MAX_TOASTS_LIMIT } from "./useWatch";
 
 const MEDIA = "C:\\Windows\\Media\\"; // the Windows sounds to choose from
 const DEMO_SOUNDS = ["Alarm01.wav", "Windows Ding.wav", "Windows Exclamation.wav", "Windows Notify.wav"]; // the plain browser has no files
@@ -173,6 +174,8 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
             </div>
             <Toggle on={cfg.notify_dnd} label="Не беспокоить" hint="без звука и всплывающих уведомлений"
               onChange={(on) => save({ notify_dnd: on })} />
+            <Seconds value={cfg.notify_stack} label="Уведомлений на экране" hint="сколько тостов видно сразу: остальные ждут очереди и появляются по одному" min={1} max={MAX_TOASTS_LIMIT} unit="шт."
+              onChange={(v) => save({ notify_stack: v })} />
             <div className="lbl"><span id="lead-all">Напоминать о событиях и откатах за</span></div>
             <div className="segmented" role="radiogroup" aria-labelledby="lead-all">
               {LEADS.map((minutes) => (
@@ -205,6 +208,7 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
                 ? `Не найден: ${boot.chatLog}. Проверь папку игры.` : logState === "checking" ? "Проверяю…" : "В браузере файлов нет: демо-чат"}
             </div>
           </section>
+
         </div>
       </m.aside>
     </>

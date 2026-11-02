@@ -62,7 +62,7 @@ export class AsyncLogFeed {
         if (this.historyPending) {
           const start = Math.max(0, size - HISTORY_BYTES);
           this.reader.load(size, [[start, await this.file.read(start, size - start)]]);
-          history = tailer.readBacklog(this.clock() - this.historyMin * 60_000);
+          history = tailer.readBacklog(this.clock() - this.historyMin * 60_000, undefined, start); // only the fetched tail: a dense log has more than this in `historyMin`
           this.historyPending = false;
         }
         this.tailer = tailer;

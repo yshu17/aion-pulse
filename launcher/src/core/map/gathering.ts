@@ -20,6 +20,17 @@ export interface GatherNode {
 export const posLink = (name: string, mapId: string, [x, y]: [number, number]) =>
   `[pos:${name};${mapId} ${x.toFixed(1)} ${y.toFixed(1)} 0.0 0]`;
 
+/** A resource found by name: where it grows (a zone, an Abyss layer) with the node of that place. */
+export interface GatherHit {
+  name: string;
+  level: number;
+  icon: string;
+  kind: "essence" | "aether";
+  places: { map_id: string; layer: number | null; node: GatherNode }[];
+}
+
+const fold = (text: string) => text.toLowerCase().replace(/ё/g, "е");
+
 export class Gathering {
   private constructor(private readonly zones: Record<string, GatherNode[]>) {}
 
@@ -37,5 +48,27 @@ export class Gathering {
     const nodes = (this.zones[mapId] ?? []).filter((n) => n.layer === null || layer === null || n.layer === layer)
       .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, "ru"));
     return { essence: nodes.filter((n) => n.kind === "essence"), aether: nodes.filter((n) => n.kind === "aether") };
+  }
+
+  /**
+   * Resources whose name (Russian or the site's English) has every word of the query, in any order; the same name and
+   * level of all zones is one hit. Names starting with the first word come first, then by level and name. A query shorter than two letters finds nothing.
+   */
+  find(query: string, limit: number): GatherHit[] {
+    const words = fold(query).split(/\s+/).filter(Boolean);
+    if (!words.length || words.join("").length < 2) return [];
+    const hits = new Map<string, GatherHit>();
+    for (const [map_id, nodes] of Object.entries(this.zones)) {
+      for (const node of nodes) {
+        const text = `${fold(node.name)} ${fold(node.name_en)}`;
+        if (!words.every((w) => text.includes(w))) continue;
+        const key = `${node.level}|${node.name}`;
+        const hit = hits.get(key) ?? { name: node.name, level: node.level, icon: node.icon, kind: node.kind, places: [] };
+        hit.places.push({ map_id, layer: node.layer, node });
+        hits.set(key, hit);
+      }
+    }
+    const starts = (hit: GatherHit) => (fold(hit.name).startsWith(words[0]) ? 0 : 1); // «Рубин» before «Огромный рубин»
+    return [...hits.values()].sort((a, b) => starts(a) - starts(b) || a.level - b.level || a.name.localeCompare(b.name, "ru")).slice(0, limit);
   }
 }

@@ -29,6 +29,8 @@ const SPACES_RE = / {2,}/g;
 
 export const LINK_OPEN = "⟪";
 export const LINK_CLOSE = "⟫";
+/** An item as the game writes it in the chat, pasted into it: «[item:166000103]» shows the item's name and card. */
+export const itemLink = (id: string) => `[item:${id}]`;
 export const POS_SEP = "¦"; // a place link keeps «map x y» after this mark
 
 export interface ChatMessage {
