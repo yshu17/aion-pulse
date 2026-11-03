@@ -6,7 +6,9 @@ import type { WatchItem } from "../core/items/catalog";
 import { watchItems } from "./data";
 import { Icon } from "./Icon";
 import { IconCheck, IconChevron, IconClose, IconCopy, IconEye } from "./icons";
+import { m } from "motion/react";
 import { useOpenItem } from "./ItemCard";
+import { row as rowIn } from "./fx";
 
 const SHOWN_PER_GROUP = 80;
 const OPEN_AT_START = "Рудра и Фланас"; // the other groups start folded: the list is long
@@ -162,8 +164,8 @@ const ItemsList = memo(function ItemsList({ browser, version, query, searchFolde
             {picked.slice(0, limit).map(row)}
           </div>
         )}
-        {groups.map(([category, list]) => (
-          <div key={category} className="group">
+        {groups.map(([category, list], index) => (
+          <m.div key={category} className="group" {...rowIn(index, 8)}>
             <div className="group-head" onClick={() => fold(category)} role="button" tabIndex={0} aria-expanded={open(category)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fold(category); } }}>
               <IconChevron open={open(category)} />
@@ -178,7 +180,7 @@ const ItemsList = memo(function ItemsList({ browser, version, query, searchFolde
             {open(category) && list.length > limit && (
               <div className="muted more">Показаны {limit} из {list.length} — {searching ? "уточни поиск" : "найди предмет поиском"}</div>)}
             {open(category) && list.slice(0, limit).map(row)}
-          </div>
+          </m.div>
         ))}
       </div>
     </>

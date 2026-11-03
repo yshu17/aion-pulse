@@ -133,3 +133,9 @@ main.chat, main.sch, main.soon, main.bst, main.map-page { animation: tab-in var(
 .overlay > .ov-card.shown { pointer-events: auto; opacity: var(--ov-opacity, .9); transform: none;
   transition: opacity 520ms cubic-bezier(.4, 0, .2, 1), transform 520ms cubic-bezier(.4, 0, .2, 1); }
 .overlay:hover > .ov-card.shown { opacity: 1; }
+
+/* press feedback for every plain button and tab: a small give under the finger, a quick return */
+.btn, .tab, .chip { transition: background .12s, color .12s, border-color .12s, transform var(--t-fast) var(--ease-out), box-shadow var(--t) var(--ease-out); }
+.btn:active:not(:disabled), .tab:active, .chip:active { transform: scale(.97); }
+.btn.primary:hover:not(:disabled) { box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent); }
+@media (prefers-reduced-motion: reduce) { .btn, .tab, .chip { transition: none; } .btn:active:not(:disabled), .tab:active, .chip:active { transform: none; } }

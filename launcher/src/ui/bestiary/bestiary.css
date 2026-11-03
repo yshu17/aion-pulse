@@ -15,7 +15,11 @@
 .bst-chip { height: 30px; padding: 0 15px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer;
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
 .bst-chip:hover { color: var(--text); }
-.bst-chip.on { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.bst-chip { position: relative; }
+.bst-chip > span { position: relative; }
+.bst-chip.on { color: var(--accent-text); font-weight: 600; }
+/* the highlight of the chosen chip / tab glides to the next one (fx.tsx Glide, a shared layout) */
+.bst-glide { position: absolute; inset: 0; border-radius: inherit; background: var(--accent); }
 .bst-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bst-level, .bst-sort { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
 .bst-level select { width: 120px; }
@@ -32,7 +36,9 @@
 .bst-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 7px 10px; border: 0; border-left: 3px solid var(--rank, transparent); border-radius: 4px 10px 10px 4px;
   background: none; color: var(--text); text-align: left; cursor: pointer; transition: background var(--t-fast) var(--ease-out); }
 .bst-row:hover { background: var(--surface-2); }
-.bst-row.on { background: color-mix(in srgb, var(--rank, var(--accent)) 16%, transparent); }
+.bst-row { position: relative; }
+.bst-row > * { position: relative; }
+.bst-row-pill { position: absolute !important; inset: 0; border-radius: 4px 10px 10px 4px; background: color-mix(in srgb, var(--rank, var(--accent)) 16%, transparent); }
 .bst-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .bst-row-pic { width: 42px; height: 42px; flex: none; border-radius: 50%; object-fit: cover; }
 .bst-row-pic.blank, .bst-good-pic.blank { display: block; background: var(--surface-2); }
@@ -90,8 +96,11 @@
 .bst-tabs { display: flex; gap: 6px; }
 .bst-tabs button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border: 1px solid transparent; border-radius: 10px; background: none;
   color: var(--muted); font-size: 14px; cursor: pointer; transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
-.bst-tabs button:hover { color: var(--text); background: var(--surface-2); }
-.bst-tabs button.on { color: var(--text); background: var(--surface-2); border-color: var(--border-control); }
+.bst-tabs button:hover { color: var(--text); }
+.bst-tabs button { position: relative; }
+.bst-tabs button > * { position: relative; }
+.bst-tabs button.on { color: var(--text); }
+.bst-tabs .bst-glide { position: absolute; background: var(--surface-2); border: 1px solid var(--border-control); border-radius: 10px; }
 .bst-tabs button i { min-width: 22px; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-style: normal; font-size: 11px; font-variant-numeric: tabular-nums; text-align: center; }
 .bst-tabs button.on i { background: var(--accent); color: var(--accent-text); font-weight: 700; }
 .bst-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -150,3 +159,12 @@
 .bst-card .bst-skel.line { margin-left: 2px; }
 @keyframes bst-sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .bst-skel { animation: none; } }
+
+/* press and hover feedback: things answer the pointer, softly */
+.bst-chip:active, .bst-row:active, .bst-tabs button:active, .bst-place:active { transform: scale(.975); }
+.bst-tile, .bst-good, .bst-place { transition: transform var(--t) var(--ease-out), border-color var(--t) var(--ease-out); }
+.bst-tile:hover, .bst-good:hover { transform: translateY(-2px); border-color: var(--border-control); }
+.bst-go { transition: transform var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), box-shadow var(--t) var(--ease-out); }
+.bst-go:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+.bst-go:active:not(:disabled) { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) { .bst-tile, .bst-good, .bst-place, .bst-go { transition: none; } .bst-tile:hover, .bst-good:hover { transform: none; } }

@@ -11,6 +11,8 @@ import type { Row } from "../../core/bestiary/store";
 import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
+import { CountUp, Glide, reveal, row, SPRING } from "../fx";
+import { m } from "motion/react";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
 import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
@@ -93,7 +95,7 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
         <div className="bst-chips" role="radiogroup" aria-label="Класс">
           {RANK_CHIPS.map(([label, value]) => (
             <button key={label} type="button" role="radio" aria-checked={rank === value} className={`bst-chip${rank === value ? " on" : ""}`}
-              onClick={() => setRank(value)}>{label}</button>
+              onClick={() => setRank(value)}>{rank === value && <Glide group="bst-rank" className="bst-glide" />}<span>{label}</span></button>
           ))}
         </div>
         <span className="spacer" />
@@ -133,15 +135,16 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
 const Rows = memo(function Rows({ rows, selected, onSelect }: { rows: Row[]; selected: string | null; onSelect(id: string): void }) {
   return (
     <ul className="bst-rows">
-      {rows.map((row) => {
-        const id = String(row.id);
+      {rows.map((item, index) => {
+        const id = String(item.id);
         return (
-          <li key={id}>
-            <button className={`bst-row r${rankTier(row.rank)}${id === selected ? " on" : ""}`} aria-current={id === selected} onClick={() => onSelect(id)}>
-              <Pic path={row.icon_asset} className="bst-row-pic" />
-              <span className="bst-row-text"><b>{row.name}</b><span>{rowSubtitle(row)}</span></span>
+          <m.li key={id} {...row(index)}>
+            <button className={`bst-row r${rankTier(item.rank)}${id === selected ? " on" : ""}`} aria-current={id === selected} onClick={() => onSelect(id)}>
+              {id === selected && <m.span layoutId="bst-row-pill" className="bst-row-pill" transition={SPRING} aria-hidden />}
+              <Pic path={item.icon_asset} className="bst-row-pic" />
+              <span className="bst-row-text"><b>{item.name}</b><span>{rowSubtitle(item)}</span></span>
             </button>
-          </li>
+          </m.li>
         );
       })}
     </ul>
@@ -196,7 +199,7 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
 
   return (
     <div className={`bst-card r${rankTier(detail.rank)}`}>
-      <section className="bst-hero">
+      <m.section className="bst-hero" {...reveal(0)}>
         <div className="bst-hero-main">
           <div className="bst-pills">
             {detail.kind && <span className="bst-pill kind">{detail.kind}</span>}
@@ -209,32 +212,34 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
           <HpBar detail={detail} />
         </div>
         {picture && place ? <MiniMap zone={picture} gx={place.gx} gy={place.gy} /> : <div className="bst-map none">Места на карте нет</div>}
-      </section>
+      </m.section>
 
-      {text && <p className="bst-desc">{text}</p>}
+      {text && <m.p className="bst-desc" {...reveal(1)}>{text}</m.p>}
       {key.length > 0 && (
-        <div className="bst-tiles">
-          {key.map(([name, value]) => <div key={name} className="bst-tile"><span>{name}</span><b>{value}</b></div>)}
-        </div>
+        <m.div className="bst-tiles" {...reveal(2)}>
+          {key.map(([name, value]) => <div key={name} className="bst-tile"><span>{name}</span><b>{/^[\d\s]+$/.test(value) ? <CountUp value={Number(value.replace(/\s/g, ""))} format={(n) => statText(String(n))} /> : value}</b></div>)}
+        </m.div>
       )}
       {rest.length > 0 && (
-        <dl className="bst-facts">
+        <m.dl className="bst-facts" {...reveal(3)}>
           {rest.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}
-        </dl>
+        </m.dl>
       )}
       {!key.length && <p className="bst-note">Числовой профиль (ХП, опыт, ДП) для этого NPC не загружен.</p>}
 
-      <div className="bst-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === "drops"} className={tab === "drops" ? "on" : ""} onClick={() => setTab("drops")}>Добыча<i>{dropsCount}</i></button>
-        <button role="tab" aria-selected={tab === "places"} className={tab === "places" ? "on" : ""} onClick={() => setTab("places")}>Локации<i>{placesCount}</i></button>
-        {sells && <button role="tab" aria-selected={tab === "stock"} className={tab === "stock" ? "on" : ""} onClick={() => setTab("stock")}>Товары<i>{detail.stock.length}</i></button>}
-      </div>
+      <m.div className="bst-tabs" role="tablist" {...reveal(4)}>
+        {([["drops", "Добыча", dropsCount], ["places", "Локации", placesCount], ...(sells ? [["stock", "Товары", detail.stock.length]] : [])] as [TabName, string, number][]).map(([name, label, count]) => (
+          <button key={name} role="tab" aria-selected={tab === name} className={tab === name ? "on" : ""} onClick={() => setTab(name)}>
+            {tab === name && <Glide group="bst-tab" className="bst-glide" />}<span>{label}</span><i>{count}</i>
+          </button>
+        ))}
+      </m.div>
       {tab === "places" ? <Places client={client} detail={detail} zone={zone} onZone={setZone} /> : <Goods key={tab} detail={detail} kind={tab} />}
 
-      <div className="bst-foot">
+      <m.div className="bst-foot" {...reveal(6)}>
         <span className="bst-note">{detail.kb_status === "loaded" ? "Данные KB + файлы клиента" : "Данные клиента; подробный профиль KB не загружен"}</span>
         <button className="btn primary bst-go" disabled={!place || !openMap} onClick={showOnMap}><IconPin />Показать на карте</button>
-      </div>
+      </m.div>
     </div>
   );
 });
@@ -277,14 +282,14 @@ function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
           aria-label={sells ? "Поиск по товарам" : "Поиск по добыче"} onChange={(e) => setQ(e.target.value)} />
       </div>
       <ul className="bst-goods">
-        {list.slice(0, GOODS_SHOWN).map(([i, item]) => (
-          <li key={i} className={`bst-good ${rarityClass(item.rarity)}`}>
+        {list.slice(0, GOODS_SHOWN).map(([i, item], at) => (
+          <m.li key={i} className={`bst-good ${rarityClass(item.rarity)}`} {...row(at, 8)}>
             <Pic path={item.icon_asset ?? item.icon} className="bst-good-pic" />
             <span className="bst-good-text">
               <b>{item.name}</b>
               <span>{[item.group, sells ? item.trade_mode : RARITY[item.rarity as string]].filter(Boolean).join(" · ")}</span>
             </span>
-          </li>
+          </m.li>
         ))}
       </ul>
       <p className="bst-note">{note}</p>
