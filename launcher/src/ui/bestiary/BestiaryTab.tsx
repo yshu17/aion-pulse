@@ -1,13 +1,16 @@
 // The «NPC / Бестиарий» tab: the bestiary's NPCs and monsters (data/bestiary/npcs.sqlite) — a search with the class
-// chips and the level, the found list on the left, the chosen NPC's card on the right (goods or drops, its zone on a small
-// map, «Показать на карте»). The data is read by core/bestiary/store.ts; what is shown of it by core/bestiary/view.ts.
+// chips and the level, the found list on the left, the chosen NPC's card on the right as Pulse shows it: the HP artwork,
+// the numbers (HP, DP, abyss rank, XP, points…), and the tabs «Добыча», «Локации» and «Товары». The data is read by
+// core/bestiary/store.ts; what is shown of it by core/bestiary/card.ts and view.ts.
 import { memo, useEffect, useMemo, useState } from "react";
 
-import { dropsNote, filterDrops, filterStock, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
+import { dropsNote, filterDrops, filterStock, overviewRows, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
+import { statText } from "../../core/bestiary/labels";
 import type { BestiaryStore, Row } from "../../core/bestiary/store";
-import { iconPath, LEVELS, levelRange, mainPlace, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "../../core/bestiary/view";
+import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
-import { IconCart, IconClose, IconNavigate, IconPin, IconSearch, IconShield, IconUser } from "../icons";
+import { mapNames } from "../data";
+import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
 import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary } from "./bestiaryDb";
@@ -15,7 +18,7 @@ import "./bestiary.css";
 
 const PAGE = 150; // rows per search; «Показать ещё» adds the next ones
 const TYPE_MS = 140; // the list searches this long after the last change: fast typing runs one search
-const GOODS_SHOWN = 120; // the card draws at most this many goods (a merchant may sell hundreds): the search narrows them
+const GOODS_SHOWN = 120; // the card draws at most this many goods or drops (a merchant may sell hundreds): the search narrows them
 
 /** A picture of data/bestiary/icons, or an empty tile while it loads or when it is missing. */
 function Pic({ path, className }: { path: string | null | undefined; className: string }) {
@@ -29,22 +32,11 @@ function Pic({ path, className }: { path: string | null | undefined; className: 
   return url ? <img className={className} src={url} alt="" draggable={false} /> : <span className={`${className} blank`} aria-hidden="true" />;
 }
 
-function Banner() {
-  return (
-    <header className="bst-banner">
-      <h1>Бестиарий</h1>
-      <p>Каталог NPC Aion: боссы, элитные и уникальные существа</p>
-    </header>
-  );
-}
-
 export function BestiaryTab() {
   const [store, setStore] = useState<BestiaryStore | null | undefined>(undefined); // undefined: still opening
   useEffect(() => { openBestiary().then(setStore); }, []);
-  if (store === undefined) return <main className="bst"><Banner /><div className="bst-state" role="status">Загружаю базу бестиария…</div></main>;
-  if (store === null) {
-    return <main className="bst"><Banner /><div className="bst-state" role="status">База бестиария не найдена: нет папки data/bestiary.</div></main>;
-  }
+  if (store === undefined) return <main className="bst"><div className="bst-state" role="status">Загружаю базу бестиария…</div></main>;
+  if (store === null) return <main className="bst"><div className="bst-state" role="status">База бестиария не найдена: нет папки data/bestiary.</div></main>;
   return <Bestiary store={store} />;
 }
 
@@ -74,7 +66,6 @@ function Bestiary({ store }: { store: BestiaryStore }) {
 
   return (
     <main className="bst">
-      <Banner />
       <div className="bst-bar">
         <div className="bst-search">
           <IconSearch />
@@ -112,7 +103,7 @@ function Bestiary({ store }: { store: BestiaryStore }) {
           {!rows.length && <div className="bst-empty">Никого не нашлось: проверь слово или сними фильтр класса и уровня.</div>}
         </section>
         <section className="bst-detail" aria-label="Карточка NPC">
-          {detail ? <Card key={String(detail.id)} detail={detail} /> : <div className="bst-empty">Выбери NPC в списке.</div>}
+          {detail ? <Card key={String(detail.id)} store={store} detail={detail} /> : <div className="bst-empty">Выбери NPC в списке.</div>}
         </section>
       </div>
     </main>
@@ -138,18 +129,18 @@ const Rows = memo(function Rows({ rows, selected, onSelect }: { rows: Row[]; sel
   );
 });
 
-function Card({ detail }: { detail: Detail }) {
+type TabName = "drops" | "places" | "stock";
+
+function Card({ store, detail }: { store: BestiaryStore; detail: Detail }) {
   const openMap = useOpenMap();
-  const [q, setQ] = useState("");
-  const place = mainPlace(detail);
-  const zone = place ? zones[place.map_id] : undefined;
-  const role = roleLabel(detail.role);
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
-  const goods = sells ? filterStock(detail, q) : filterDrops(detail, q);
-  const total = (sells ? detail.stock : detail.drops ?? []).length;
-  const note = sells ? stockNote(goods.length, total) : dropsNote(goods.length, detail);
-  const where = zone?.name ?? (detail.zone_names as string | undefined) ?? "";
-  const service = (detail.description as string | undefined) || (detail.category === "monster" ? "" : role);
+  const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
+  const [zone, setZone] = useState<string | null>(() => mainPlace(detail)?.map_id ?? null); // the zone the map and the button show
+  const place = zone ? placeAt(detail, zone) : null;
+  const picture = place ? zones[place.map_id] : undefined;
+  const text = overviewText(detail);
+  const side = detail.faction === "Другие" ? detail.race : detail.faction;
+  const role = roleLabel(detail.role);
   const showOnMap = async () => {
     if (!place || !openMap) return;
     const id = String(detail.id);
@@ -160,52 +151,122 @@ function Card({ detail }: { detail: Detail }) {
 
   return (
     <div className="bst-card">
-      <div className="bst-top">
-        <div className="bst-portrait">
-          <Pic path={detail.icon_asset} className="bst-portrait-pic" />
-          {(role || detail.kind) && <span className="bst-tag">{role || detail.kind}</span>}
-        </div>
-        <div className="bst-info">
+      <div className="bst-head">
+        <div className="bst-head-main">
           <h2>{detail.name}</h2>
           {detail.title && <p className="bst-title">{detail.title}</p>}
-          <div className="bst-badges">
-            {detail.level !== "" && detail.level !== null && detail.level !== undefined && <span className="bst-badge level">Ур. {detail.level}</span>}
-            {role && <span className="bst-badge role"><IconCart />{role}</span>}
-            {detail.rank && <span className="bst-badge"><IconUser />{detail.rank}</span>}
+          <HpBar detail={detail} />
+          <div className="bst-chips-row">
+            {detail.kind && <span className="bst-kind">{String(detail.kind).toUpperCase()}</span>}
+            {side && <span className="bst-side">{String(side).toUpperCase()}</span>}
+            {detail.rank && <span className="bst-rank">{String(detail.rank).toUpperCase()}</span>}
+            {role && role !== detail.kind && <span className="bst-kind">{role.toUpperCase()}</span>}
           </div>
-          <dl className="bst-facts">
-            <div><dt><IconShield />Сторона</dt><dd>{detail.faction || detail.race || "Не указана"}</dd></div>
-            <div><dt><IconPin />Локация</dt><dd>{where || "Не указана"}{place && place.count > 1 ? ` · точек ${place.count}` : ""}</dd></div>
-            {service && <div><dt><IconCart />Услуги</dt><dd>{service}</dd></div>}
-            {!service && detail.kind && <div><dt><IconUser />Вид</dt><dd>{detail.kind}</dd></div>}
-          </dl>
         </div>
-        {zone && place ? <MiniMap zone={zone} gx={place.gx} gy={place.gy} /> : <div className="bst-map none">Места на карте нет</div>}
+        {picture && place ? <MiniMap zone={picture} gx={place.gx} gy={place.gy} /> : <div className="bst-map none">Места на карте нет</div>}
       </div>
 
-      <div className="bst-goods-head">
-        <h3>{sells ? "Товары" : "Добыча"}</h3>
-        <div className="bst-search small">
-          <IconSearch />
-          <input className="field" placeholder={sells ? "Поиск по товарам в ассортименте…" : "Поиск по добыче…"} value={q}
-            aria-label={sells ? "Поиск по товарам" : "Поиск по добыче"} onChange={(e) => setQ(e.target.value)} />
-        </div>
+      {text && <p className="bst-desc">{text}</p>}
+      <dl className="bst-stats">
+        {overviewRows(detail).map(([name, value]) => (
+          <div key={name}><dt>{name.toUpperCase()}</dt><dd>{statText(value)}</dd></div>
+        ))}
+      </dl>
+      {!detail.stats || !Object.keys(detail.stats).length ? <p className="bst-note">Числовой профиль (ХП, опыт, ДП) для этого NPC не загружен.</p> : null}
+
+      <div className="bst-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "drops"} className={tab === "drops" ? "on" : ""} onClick={() => setTab("drops")}>Добыча</button>
+        <button role="tab" aria-selected={tab === "places"} className={tab === "places" ? "on" : ""} onClick={() => setTab("places")}>Локации</button>
+        {sells && <button role="tab" aria-selected={tab === "stock"} className={tab === "stock" ? "on" : ""} onClick={() => setTab("stock")}>Товары</button>}
+      </div>
+      {tab === "places" ? <Places store={store} detail={detail} zone={zone} onZone={setZone} /> : <Goods key={tab} detail={detail} kind={tab} />}
+
+      <div className="bst-foot">
+        <span className="bst-note">{detail.kb_status === "loaded" ? "Данные KB + файлы клиента" : "Данные клиента; подробный профиль KB не загружен"}</span>
+        <button className="btn primary bst-go" disabled={!place || !openMap} onClick={showOnMap}><IconPin />Показать на карте</button>
+      </div>
+    </div>
+  );
+}
+
+/** The HP artwork as Pulse draws it: the rank's bar of the sprite, the emblem in a circle, the level at its left. */
+function HpBar({ detail }: { detail: Detail }) {
+  const bar = hpFrame(detail);
+  const [sprite, setSprite] = useState<string | null>(null);
+  useEffect(() => { let alive = true; bestiaryIcon("npc/hp-bars.png").then((got) => { if (alive) setSprite(got); }); return () => { alive = false; }; }, []);
+  const level = detail.level || "?";
+  if (!bar) return <p className="bst-hp-none">Уровень {detail.level || "—"} · Ранг не указан</p>;
+  const [x0, y0, x1, y1] = bar.frame;
+  return (
+    <div className="bst-hp-row">
+      <div className="bst-hp" role="img" aria-label={`Уровень ${level}`} style={{ width: x1 - x0, height: y1 - y0,
+        backgroundImage: sprite ? `url(${sprite})` : undefined, backgroundPosition: `${-x0}px ${-y0}px` }}>
+        <span className="bst-hp-icon" style={{ left: bar.iconLeft, top: bar.iconTop }}><Pic path={detail.icon_asset || "ui/monster.png"} className="bst-hp-pic" /></span>
+        <span className="bst-hp-level" style={{ top: bar.iconTop + 20 }}>{level}</span>
+      </div>
+      <div className="bst-hp-text">
+        <b>Уровень {detail.level || "—"}</b>
+        <span>Макс. ХП: {statText(detail.stats?.["Макс. ХП"] ?? "—")}</span>
+      </div>
+    </div>
+  );
+}
+
+/** The NPC's drops («Добыча») or goods («Товары») with the search box and a note under. */
+function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
+  const [q, setQ] = useState(() => "");
+  const sells = kind === "stock";
+  const list = sells ? filterStock(detail, q) : filterDrops(detail, q);
+  const total = ((sells ? detail.stock : detail.drops) ?? []).length;
+  const note = sells ? stockNote(list.length, total) : dropsNote(list.length, detail);
+  return (
+    <div className="bst-panel" role="tabpanel">
+      <div className="bst-search small">
+        <IconSearch />
+        <input className="field" placeholder={sells ? "Поиск по товарам в ассортименте…" : "Поиск по добыче…"} value={q}
+          aria-label={sells ? "Поиск по товарам" : "Поиск по добыче"} onChange={(e) => setQ(e.target.value)} />
       </div>
       <ul className="bst-goods">
-        {goods.slice(0, GOODS_SHOWN).map(([i, item]) => (
+        {list.slice(0, GOODS_SHOWN).map(([i, item]) => (
           <li key={i} className="bst-good">
             <Pic path={item.icon_asset ?? item.icon} className="bst-good-pic" />
             <span className="bst-good-text">
               <b className={rarityClass(item.rarity)}>{item.name}</b>
-              <span>{item.group || RARITY[item.rarity as string] || ""}</span>
+              <span>{[item.group, sells ? item.trade_mode : RARITY[item.rarity as string]].filter(Boolean).join(" · ")}</span>
             </span>
           </li>
         ))}
       </ul>
       <p className="bst-note">{note}</p>
-      <div className="bst-actions">
-        <button className="btn primary bst-go" disabled={!place || !openMap} onClick={showOnMap}><IconPin />Показать на карте</button>
-      </div>
+    </div>
+  );
+}
+
+/** The zones the NPC stands in with their points, and the approximate areas under each; a zone chosen here is shown on the map. */
+function Places({ store, detail, zone, onZone }: { store: BestiaryStore; detail: Detail; zone: string | null; onZone(id: string): void }) {
+  const ids = [...new Set<string>((detail.points ?? []).map((p: Detail) => String(p.map_id)))];
+  const names = Object.fromEntries(ids.map((id) => [id, zones[id]?.name ?? mapNames[id] ?? id]));
+  const counts = placeCounts(detail, names);
+  const areas = useMemo(() => store.areas(String(detail.id)), [store, detail.id]);
+  if (!counts.length) {
+    return <div className="bst-panel" role="tabpanel"><p className="bst-note">Точки появления в файлах клиента не найдены.</p></div>;
+  }
+  return (
+    <div className="bst-panel" role="tabpanel">
+      <ul className="bst-places">
+        {counts.map(([id, count]) => (
+          <li key={id}>
+            <button className={`bst-place${id === zone ? " on" : ""}`} aria-current={id === zone} onClick={() => onZone(id)}>
+              <IconPin /><span>{names[id]}</span><b>{count}</b>
+            </button>
+            {areas.filter((a) => String(a.map_id) === id).map((a) => {
+              const named = (a.names as string[]).filter((n) => !n.includes("�"));
+              return <div key={a.area_id} className="bst-area"><span>≈ {named.length ? named.slice(0, 2).join(", ") : "Область появления"}</span><b>{a.point_count}</b></div>;
+            })}
+          </li>
+        ))}
+      </ul>
+      <p className="bst-note">Области приблизительны; точки взяты из файлов клиента.</p>
     </div>
   );
 }

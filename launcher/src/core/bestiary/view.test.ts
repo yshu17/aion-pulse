@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { iconPath, LEVELS, levelRange, mainPlace, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "./view";
+import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "./view";
 
 describe("bestiary screen helpers", () => {
   it("turns a level choice into the store's bounds, «Любой» into none", () => {
@@ -50,5 +50,19 @@ describe("bestiary screen helpers", () => {
     expect(roleLabel("teleport")).toBe("Телепорт");
     expect(roleLabel("")).toBe("");
     expect(roleLabel("unknown_role")).toBe("");
+  });
+  it("takes the HP artwork of the card from the sprite by the NPC's rank, as Pulse does", () => {
+    expect(hpFrame({ hp_bar: 3 })).toEqual({ rank: 3, frame: [5, 205, 333, 296], iconTop: 28, iconLeft: 27 });
+    expect(hpFrame({ rank: "Элитный" })).toEqual({ rank: 2, frame: [26, 98, 310, 188], iconTop: 25, iconLeft: 24 });
+    expect(hpFrame({ rank: "Легендарный" })?.rank).toBe(4);
+    expect(hpFrame({ hp_bar: 9 })?.rank).toBe(1); // an unknown bar falls back to the plain one
+    expect(hpFrame({ rank: "" })).toBeNull();
+    expect(hpFrame({})).toBeNull();
+  });
+
+  it("finds the first point of a chosen zone, null when the NPC has none there", () => {
+    const detail = { points: [{ map_id: "1", gx: 5, gy: 6 }, { map_id: "2", gx: 7, gy: 8 }, { map_id: "2", gx: 9, gy: 10 }] };
+    expect(placeAt(detail, "2")).toEqual({ map_id: "2", count: 2, gx: 7, gy: 8 });
+    expect(placeAt(detail, "3")).toBeNull();
   });
 });

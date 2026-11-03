@@ -2,13 +2,6 @@
 .bst { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
 .bst-state, .bst-empty { padding: 28px; color: var(--muted); text-align: center; }
 
-/* the banner: the title with the orange bar, on a dark glow of the theme (no picture in the data) */
-.bst-banner { flex: none; padding: 22px 26px; border: 1px solid var(--border); border-radius: var(--card-radius);
-  background: radial-gradient(120% 160% at 85% 0%, rgba(255, 140, 26, .16), transparent 55%),
-    radial-gradient(80% 140% at 60% 100%, rgba(111, 155, 255, .10), transparent 60%), var(--surface); }
-.bst-banner h1 { margin: 0; padding-left: 14px; border-left: 4px solid var(--accent); font-size: 34px; font-weight: 700; line-height: 1.1; }
-.bst-banner p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
-
 /* the bar: search, the class chips, the level */
 .bst-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 14px; border: 1px solid var(--border);
   border-radius: var(--card-radius); background: var(--surface); }
@@ -45,28 +38,38 @@
 .bst-row-text span { font-size: 12px; color: var(--muted); }
 .bst-more { flex: none; margin: 6px 12px 12px; }
 
-/* the NPC's card */
+/* the NPC's card, as Pulse shows it: the header with the HP artwork, the numbers, the tabs */
 .bst-detail { overflow: auto; scrollbar-width: thin; }
 .bst-card { padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 100%; }
-.bst-top { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr) minmax(180px, 260px); gap: 18px; align-items: start; }
-.bst-portrait { position: relative; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: grid; place-items: center;
-  background: radial-gradient(70% 70% at 50% 40%, rgba(255, 140, 26, .14), transparent 70%), var(--surface-2); }
-.bst-portrait-pic { width: 62%; height: 62%; object-fit: contain; border-radius: 10px; filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .5)); }
-.bst-portrait-pic.blank { display: block; background: var(--surface-3); }
-.bst-tag { position: absolute; left: 10px; bottom: 10px; padding: 3px 10px; border: 1px solid var(--border-control); border-radius: 999px;
-  background: rgba(0, 0, 0, .55); font-size: 12px; }
-.bst-info { min-width: 0; }
-.bst-info h2 { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.2; }
+.bst-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 250px); gap: 18px; align-items: start; }
+.bst-head-main { min-width: 0; }
+.bst-head-main h2 { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .bst-title { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-.bst-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
-.bst-badge { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--border-control);
-  border-radius: 8px; font-size: 13px; }
-.bst-badge.level { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-.bst-badge.role { border-color: rgba(229, 72, 77, .6); color: #ff8a8d; background: rgba(229, 72, 77, .08); }
-.bst-facts { margin: 0; }
-.bst-facts > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.bst-facts dt { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-.bst-facts dd { margin: 0; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.bst-hp-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; }
+.bst-hp { position: relative; flex: none; background-repeat: no-repeat; }
+.bst-hp-icon { position: absolute; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
+.bst-hp-pic { width: 100%; height: 100%; display: block; object-fit: cover; }
+.bst-hp-pic.blank { background: var(--surface-3); }
+.bst-hp-level { position: absolute; left: 14px; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; }
+.bst-hp-text { display: flex; flex-direction: column; gap: 6px; }
+.bst-hp-text b { font-size: 15px; }
+.bst-hp-text span, .bst-hp-none { color: var(--muted); font-size: 13px; }
+.bst-hp-none { margin: 10px 0 0; font-weight: 600; }
+.bst-chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.bst-kind, .bst-side, .bst-rank { padding: 4px 9px; border-radius: 6px; background: var(--surface-2); font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+.bst-kind { color: var(--place); } .bst-side { color: var(--danger); } .bst-rank { color: var(--accent); }
+.bst-desc { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; line-height: 1.45; white-space: pre-line; }
+.bst-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; margin: 0; }
+.bst-stats > div { padding: 9px 12px; background: var(--surface-2); min-width: 0; }
+.bst-stats dt { color: var(--muted); font-size: 11px; letter-spacing: .06em; }
+.bst-stats dd { margin: 3px 0 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.bst-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.bst-tabs button { height: 36px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font-size: 14px; cursor: pointer; }
+.bst-tabs button:hover { color: var(--text); }
+.bst-tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+.bst-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bst-panel { display: flex; flex-direction: column; gap: 10px; }
+.bst-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .bst-map { position: relative; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface-2); }
 .bst-map .pic { position: absolute; max-width: none; pointer-events: none; }
 .bst-map .mark { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 6px #000); }
@@ -75,10 +78,17 @@
   text-shadow: 0 1px 2px #000, 0 0 8px #000; }
 .bst-map.none { display: grid; place-items: center; color: var(--muted); font-size: 13px; }
 
+/* the zones of the NPC and their approximate areas */
+.bst-places { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.bst-place { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid transparent; border-radius: 10px;
+  background: var(--surface-2); color: var(--text); font-size: 14px; text-align: left; cursor: pointer; }
+.bst-place span { flex: 1; min-width: 0; }
+.bst-place:hover { border-color: var(--border-control); }
+.bst-place.on { border-color: var(--accent); background: var(--accent-subtle); }
+.bst-place:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bst-area { display: flex; justify-content: space-between; gap: 10px; padding: 3px 12px 3px 40px; color: var(--muted); font-size: 12px; }
 /* goods or drops */
-.bst-goods-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 4px; }
-.bst-goods-head h3 { margin: 0; padding-left: 12px; border-left: 4px solid var(--accent); font-size: 20px; font-weight: 700; }
-.bst-search.small { flex: 0 1 52%; }
+.bst-search.small { flex: none; width: 100%; max-width: 420px; }
 .bst-goods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .bst-good { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); min-width: 0; }
 .bst-good-pic { width: 42px; height: 42px; flex: none; border-radius: 8px; object-fit: cover; }
@@ -91,12 +101,11 @@
 .bst-good-text .g-epic { color: var(--grade-epic); } .bst-good-text .g-mythic { color: var(--grade-mythic); }
 .bst-good-text .g-junk { color: var(--muted); }
 .bst-note { margin: 0; color: var(--muted); font-size: 12px; }
-.bst-actions { margin-top: auto; display: flex; justify-content: flex-end; }
 .bst-go { height: 44px; padding: 0 22px; font-size: 15px; font-weight: 700; }
 
 @media (max-width: 1240px) {
-  .bst-top { grid-template-columns: minmax(150px, 200px) minmax(0, 1fr); }
-  .bst-map { grid-column: 1 / -1; aspect-ratio: auto; height: 200px; }
-  .bst-goods { grid-template-columns: minmax(0, 1fr); }
+  .bst-head { grid-template-columns: minmax(0, 1fr); }
+  .bst-map { aspect-ratio: auto; height: 180px; }
+  .bst-goods, .bst-stats { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { .bst-chip, .bst-row { transition: none; } }

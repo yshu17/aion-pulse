@@ -4,7 +4,8 @@
  *   LEVELS / levelRange(label)   the «Уровень» choices and their bounds for BestiaryStore.search
  *   RANK_CHIPS                   the class chips: [label, rank of the database]
  *   rowSubtitle(row)             «Ур. 55 · Торговец · Обычный» under a list row's name
- *   mainPlace(detail)            the zone with the most points and its first point (the mini map, «Показать на карте»)
+ *   mainPlace(detail) / placeAt(detail, zone)   the zone with the most points / a chosen zone, and the first point there
+ *   hpFrame(detail)              the HP artwork of the card (rank-specific part of the sprite)
  *   iconPath(asset)              a picture's path inside the bestiary's icon folder (data/bestiary/icons)
  *   rarityClass(rarity)          the colour class of an item's name
  *   roleLabel(role)              the NPC's service in Russian (merchant -> «Торговец»)
@@ -31,15 +32,36 @@ export function rowSubtitle(row: Detail): string {
   return [level, row.kind, row.rank].filter((part) => part).join(" · ");
 }
 
-export function mainPlace(detail: Detail): { map_id: string; count: number; gx: number; gy: number } | null {
-  const points: Detail[] = Array.isArray(detail.points) ? detail.points : [];
+export type Place = { map_id: string; count: number; gx: number; gy: number };
+
+/** The NPC's first point in a zone and how many it has there; null when it has none. */
+export function placeAt(detail: Detail, mapId: string): Place | null {
+  const here: Detail[] = (Array.isArray(detail.points) ? detail.points : []).filter((point: Detail) => String(point.map_id) === mapId);
+  return here.length ? { map_id: mapId, count: here.length, gx: Number(here[0].gx), gy: Number(here[0].gy) } : null;
+}
+
+/** The zone with the most points of the NPC (the first of equals) and its first point. */
+export function mainPlace(detail: Detail): Place | null {
   const counts = new Map<string, number>();
-  for (const point of points) counts.set(String(point.map_id), (counts.get(String(point.map_id)) ?? 0) + 1);
+  for (const point of (Array.isArray(detail.points) ? detail.points : []) as Detail[]) counts.set(String(point.map_id), (counts.get(String(point.map_id)) ?? 0) + 1);
   let best: [string, number] | null = null;
   for (const entry of counts) if (!best || entry[1] > best[1]) best = entry;
-  if (!best) return null;
-  const first = points.find((point) => String(point.map_id) === best![0])!;
-  return { map_id: best[0], count: best[1], gx: Number(first.gx), gy: Number(first.gy) };
+  return best ? placeAt(detail, best[0]) : null;
+}
+
+const HP_FRAMES: Record<number, [number, number, number, number]> = { 1: [25, 0, 297, 79], 2: [26, 98, 310, 188], 3: [5, 205, 333, 296], 4: [0, 322, 336, 420] };
+const HP_ICON_TOP: Record<number, number> = { 1: 22, 2: 25, 3: 28, 4: 25 };
+const HP_OF_RANK: Record<string, number> = { "Обычный": 1, "Элитный": 2, "Героический": 3, "Легендарный": 4 };
+
+/**
+ * The HP artwork of an NPC's card: the rank-specific bar of the sprite npc/hp-bars.png (not a live HP), as Pulse draws it.
+ * `frame` is [x0, y0, x1, y1] in the sprite; the emblem goes in a circle at (iconLeft, iconTop), the level at its left.
+ */
+export function hpFrame(detail: Detail): { rank: number; frame: [number, number, number, number]; iconTop: number; iconLeft: number } | null {
+  const asked = detail.hp_bar || HP_OF_RANK[detail.rank as string];
+  if (!asked) return null;
+  const rank = asked in HP_FRAMES ? Number(asked) : 1;
+  return { rank, frame: HP_FRAMES[rank], iconTop: HP_ICON_TOP[rank], iconLeft: rank === 2 ? 24 : 27 };
 }
 
 export function iconPath(asset: string | null | undefined): string | null {
