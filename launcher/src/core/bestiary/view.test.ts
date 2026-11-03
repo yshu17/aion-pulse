@@ -55,7 +55,8 @@ describe("bestiary screen helpers", () => {
     expect(hpFrame({ hp_bar: 3 })).toEqual({ rank: 3, frame: [5, 205, 333, 296], iconTop: 27, iconLeft: 30, levelTop: 46, levelLeft: 17 });
     expect(hpFrame({ rank: "Элитный" })).toEqual({ rank: 2, frame: [26, 98, 310, 188], iconTop: 26, iconLeft: 30, levelTop: 45, levelLeft: 17 });
     expect(hpFrame({ hp_bar: 1 })).toEqual({ rank: 1, frame: [25, 0, 297, 79], iconTop: 22, iconLeft: 30, levelTop: 41, levelLeft: 19 });
-    expect(hpFrame({ hp_bar: 4 })?.levelTop).toBe(46);
+    expect(hpFrame({ hp_bar: 4 })?.levelTop).toBe(44);
+    expect(hpFrame({ hp_bar: 4 })?.iconLeft).toBe(24);
     expect(hpFrame({ rank: "Легендарный" })?.rank).toBe(4);
     expect(hpFrame({ hp_bar: 9 })?.rank).toBe(1); // an unknown bar falls back to the plain one
     expect(hpFrame({ rank: "" })).toBeNull();
