@@ -8,6 +8,10 @@ $launcher = Join-Path $root "launcher"
 $built = Join-Path $launcher "src-tauri\target\release\tauri-app.exe"
 $target = Join-Path $root "local\Pulse+Release"
 
+# the one game database first (data/pulse.db, docs/ADR-002-pulse-db.md): every tab reads it, the build packs it
+& python (Join-Path $root "tools\build_pulse_db.py")
+if ($LASTEXITCODE -ne 0) { throw "build_pulse_db failed: $LASTEXITCODE" }
+
 Push-Location $launcher
 try {
     & npx tauri build --no-bundle
