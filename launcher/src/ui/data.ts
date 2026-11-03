@@ -1,17 +1,18 @@
-// The program's data for the screens: the items from the game database (pulse.db, core/db/items.ts), map and quest
-// names from data/, and a demo chat that stands in for Chat.log until Tauri reads the real file.
+// The program's data for the screens: the items and quests from the game database (pulse.db, core/db/items.ts and
+// game.ts), map names from data/, and a demo chat that stands in for Chat.log until Tauri reads the real file.
 import { useEffect, useState } from "react";
 
 import mapNamesText from "../../../data/map_names.tsv?raw";
-import questNamesText from "../../../data/quest_names.tsv?raw";
+import { questNames as readQuestNames } from "../core/db/game";
 import { itemCatalog } from "../core/db/items";
-import { parseLinkNames, isListed, WatchItem } from "../core/items/catalog";
+import { parseNames, isListed, WatchItem } from "../core/items/catalog";
 import { pulseDb } from "./db/pulseDb";
 
-export const [mapNames, questNames] = parseLinkNames(mapNamesText, questNamesText);
+export const mapNames = parseNames(mapNamesText);
 
-// The item data: empty until loadItems() has read the database (the windows wait for it, useItems). The bindings are
-// live: a screen that reads them after the load sees the database's data.
+// The item and quest data: empty until loadItems() has read the database (the windows wait for it, useItems). The
+// bindings are live: a screen that reads them after the load sees the database's data.
+export let questNames: Record<string, string> = {};
 export let itemNames: Record<string, string> = {};
 /** Every item with a card (a description). */
 export let catalog: WatchItem[] = [];
@@ -30,7 +31,8 @@ export function loadItems(): Promise<string> {
   loading ??= (async () => {
     const all = await pulseDb();
     if (!all) return "Нет базы игры data/pulse.db: предметы не загружены.";
-    const items = await itemCatalog(all);
+    const [items, quests] = await Promise.all([itemCatalog(all), readQuestNames(all)]);
+    questNames = quests;
     itemNames = items.names;
     catalog = items.catalog;
     watchItems = catalog.filter(isListed);

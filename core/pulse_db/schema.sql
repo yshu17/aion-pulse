@@ -112,3 +112,65 @@ CREATE TABLE npc_area (
   center_x REAL, center_y REAL, names TEXT NOT NULL, polygon TEXT NOT NULL  -- JSON lists
 );
 CREATE INDEX npc_area_npc ON npc_area (npc_id);
+
+-- stage 4: the game data's quests, recipes and vendors (core/game_data, data/game). The client's drop list is not a
+-- table of its own: it is a part of the bestiary's (npc.drops / item.dropped_by hold every one of its 1.4 million links).
+
+-- every quest: the game data's, and the names of chat links (quest_names.tsv) for the rest
+CREATE TABLE quest (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,
+  min_level INTEGER,
+  max_level INTEGER,             -- 0: no upper limit
+  race TEXT,                     -- «pc_light», «pc_dark» or both, comma-separated
+  category TEXT,                 -- «quest | Элтнен»
+  repeatable INTEGER,
+  giver TEXT,                    -- the NPC that gives it (npc.id), NULL when not known
+  ender TEXT,                    -- the NPC that takes it back
+  rewards TEXT                   -- JSON [{type, group, item, amount}]
+);
+CREATE INDEX quest_giver ON quest (giver);
+CREATE INDEX quest_ender ON quest (ender);
+CREATE INDEX quest_name_key ON quest (name_key);
+
+-- the crafting recipes and their parts, in the recipe's order
+CREATE TABLE recipe (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,
+  product INTEGER,               -- item.id of what it makes
+  count INTEGER,                 -- how many it makes
+  profession TEXT,               -- weaponsmith | armorsmith | tailoring | handiwork | alchemy | cooking | convert
+  level INTEGER,
+  race TEXT,
+  combo TEXT                     -- JSON list of the item ids a critical success may make instead
+);
+CREATE INDEX recipe_product ON recipe (product);
+CREATE TABLE recipe_part (
+  recipe_id INTEGER NOT NULL,
+  ord INTEGER NOT NULL,
+  item_id INTEGER NOT NULL,
+  count INTEGER NOT NULL,
+  PRIMARY KEY (recipe_id, ord)
+);
+CREATE INDEX recipe_part_item ON recipe_part (item_id);
+
+-- what an NPC trades by the client's lists (the bestiary's goods with groups and names are npc_stock)
+CREATE TABLE vendor_item (
+  npc_id TEXT NOT NULL,
+  item_id INTEGER NOT NULL,
+  kind TEXT NOT NULL             -- trade_info | abyss_trade_info | extra_currency_trade_info | trade_in_trade_info | coupon_trade_info
+);
+CREATE INDEX vendor_item_npc ON vendor_item (npc_id);
+CREATE INDEX vendor_item_item ON vendor_item (item_id);
+
+-- the titles: empty until the client's titles are exported (meta «title» says «not built»)
+CREATE TABLE title (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,
+  description TEXT,
+  race TEXT,
+  stats TEXT                     -- JSON
+);

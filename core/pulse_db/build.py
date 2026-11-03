@@ -10,6 +10,8 @@ sort_key, profile JSON …), ``npc_stock``, ``npc_zone``, ``npc_region``, ``npc_
 count of an NPC is the one table's, so the list, the card and the map show the same number.
 Stage 3, ``item``: every item once — the catalog of cards (its fields win), the descriptions, the bestiary's drops
 (packed lists ``npc.drops`` / ``item.dropped_by``) and the names of chat links.
+Stage 4, the game data's ``quest`` (with the chat links' quest names), ``recipe`` / ``recipe_part`` and ``vendor_item``;
+``title`` stays empty until the titles are exported. The client's drop list is a part of the bestiary's, so no table.
 The schema is core/pulse_db/schema.sql; ``PRAGMA user_version`` is SCHEMA_VERSION. The same input gives the same rows.
 """
 
@@ -26,7 +28,7 @@ from pathlib import Path
 
 from core.bestiary.bestiary_store import BestiaryStore
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 SCHEMA = Path(__file__).with_name("schema.sql")
 # what of a bestiary card has a table or a column of its own; the rest goes into npc.profile
 CARD_COLUMNS = {"id", "name", "internal_name", "category", "role", "title", "description", "race", "faction", "kind", "rank",
@@ -42,6 +44,11 @@ class Sources:
     item_names: Path | None = None  # data/item_names.tsv: id<TAB>name of chat links
     catalog: Path | None = None     # data/watch_items.csv: the items with a card
     specs: Path | None = None       # data/item_specs.json.gz: the cards' descriptions
+    items: Path | None = None       # data/game/items.json.gz: the client's own item list
+    quests: Path | None = None      # data/game/quests.json.gz
+    quest_names: Path | None = None  # data/quest_names.tsv: id<TAB>name of chat links
+    recipes: Path | None = None     # data/game/recipes.json.gz
+    vendors: Path | None = None     # data/game/vendors.json.gz
 
 
 ITEM_FIELDS = ("id", "name", "level", "category", "grade", "kind", "icon", "drop_icon", "catalog_ord", "spec")
@@ -70,6 +77,8 @@ def _items(sources: Sources, drops: dict[str, tuple]) -> dict[int, dict]:
         item(item_id, spec=spec if isinstance(spec, str) else json.dumps(spec, ensure_ascii=False, separators=(",", ":")))
     for item_id, (name, rarity, icon) in sorted(drops.items()):
         item(item_id, name=name, grade=rarity, drop_icon=icon)
+    for r in _read_json(sources.items).get("records", []) if sources.items else []:  # the client's list (icons as data/icons)
+        item(r.get("id"), name=r.get("name"), level=_level(r.get("level")), grade=r.get("grade"), icon=(r.get("icon") or "").lower())
     if sources.item_names and sources.item_names.is_file():
         for line in sources.item_names.read_text(encoding="utf-8").splitlines():
             item_id, tab, name = line.partition("\t")
@@ -161,6 +170,59 @@ class _Points:
 NPC_FIELDS = ("id", "name", "kind", "rank", "level", "race", "faction", "role", "icon", "deco", "sp_only", "source", "listed",
               "category", "internal_name", "title", "description", "search_text", "zone_names", "hp_bar", "has_profile",
               "service", "drop_count", "drops", "profile")
+
+
+def _int(value) -> int | None:
+    text = str(value if value is not None else "").strip()
+    return int(text) if text.lstrip("-").isdigit() else None
+
+
+def _quests(sources: Sources) -> list[tuple]:
+    """The game data's quests, then the chat links' names of the others; rows in id order."""
+    rows: dict[int, tuple] = {}
+    for r in _read_json(sources.quests).get("records", []) if sources.quests else []:
+        quest_id = _int(r.get("id"))
+        if quest_id is None:
+            continue
+        name = r.get("name") or ""
+        race = r.get("race")
+        rows[quest_id] = (quest_id, name, name_key(name), _int(r.get("min_level")), _int(r.get("max_level")),
+                          ",".join(race) if isinstance(race, list) else race, r.get("category") or None,
+                          int(bool(r.get("repeatable"))), r.get("giver"), r.get("ender"),
+                          json.dumps(r.get("rewards") or [], ensure_ascii=False, separators=(",", ":")))
+    if sources.quest_names and sources.quest_names.is_file():
+        for line in sources.quest_names.read_text(encoding="utf-8").splitlines():
+            quest_id, tab, name = line.partition("\t")
+            if tab and _int(quest_id) is not None and int(quest_id) not in rows:
+                rows[int(quest_id)] = (int(quest_id), name.strip(), name_key(name.strip()), None, None, None, None, None, None, None, None)
+    return [rows[key] for key in sorted(rows)]
+
+
+def _recipes(sources: Sources) -> tuple[list[tuple], list[tuple]]:
+    """The recipes and their parts (in the recipe's order)."""
+    recipes, parts = [], []
+    for r in _read_json(sources.recipes).get("records", []) if sources.recipes else []:
+        recipe_id = _int(r.get("id"))
+        if recipe_id is None:
+            continue
+        name = r.get("name") or ""
+        combo = [_int(i) for i in r.get("combo") or [] if _int(i) is not None]
+        recipes.append((recipe_id, name, name_key(name), _int(r.get("product")), _int(r.get("count")), r.get("profession"),
+                        _int(r.get("level")), r.get("race"), json.dumps(combo) if combo else None))
+        for ord_, (item_id, count) in enumerate(r.get("ingredients") or []):
+            if _int(item_id) is not None:
+                parts.append((recipe_id, ord_, _int(item_id), _int(count) or 0))
+    return sorted(recipes), sorted(parts)
+
+
+def _vendors(sources: Sources) -> list[tuple]:
+    """(npc, item, list) once each, from the game data's columns."""
+    data = _read_json(sources.vendors) if sources.vendors else {}
+    columns = data.get("columns", [])
+    if not columns:
+        return []
+    npc, item, kind = columns.index("npc"), columns.index("item"), columns.index("kind")
+    return sorted({(str(row[npc]), _int(row[item]), row[kind] or "") for row in data.get("rows", []) if _int(row[item]) is not None})
 
 
 def build(sources: Sources, out: Path) -> dict:
@@ -295,12 +357,22 @@ def build(sources: Sources, out: Path) -> dict:
          for i, r in sorted(items.items())])
     db.executemany("INSERT INTO npc_stock (npc_id, ord, item_id, name, name_key, rarity, level, icon, grp, trade_mode) "
                    "VALUES (?,?,?,?,?,?,?,?,?,?)", stock)
+    quests = _quests(sources)
+    recipes, parts = _recipes(sources)
+    vendors = _vendors(sources)
+    db.executemany("INSERT INTO quest (id, name, name_key, min_level, max_level, race, category, repeatable, giver, ender, rewards) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?,?)", quests)
+    db.executemany("INSERT INTO recipe (id, name, name_key, product, count, profession, level, race, combo) VALUES (?,?,?,?,?,?,?,?,?)",
+                   recipes)
+    db.executemany("INSERT INTO recipe_part (recipe_id, ord, item_id, count) VALUES (?,?,?,?)", parts)
+    db.executemany("INSERT INTO vendor_item (npc_id, item_id, kind) VALUES (?,?,?)", vendors)
     db.executemany("INSERT INTO npc_zone (npc_id, map_id, name) VALUES (?,?,?)", places["npc_zone"])
     db.executemany("INSERT INTO npc_region (npc_id, map_id, name) VALUES (?,?,?)", places["npc_region"])
     db.executemany("INSERT INTO npc_area (npc_id, map_id, area_id, point_count, center_x, center_y, names, polygon) "
                    "VALUES (?,?,?,?,?,?,?,?)", places["npc_area"])
     db.executemany("INSERT INTO meta (key, value) VALUES (?, ?)", [
-        ("schema", str(SCHEMA_VERSION)), ("spec_dict", dictionary), ("stage", "3: npc + points, the bestiary's cards, every item (names, catalog, descriptions)")])
+        ("schema", str(SCHEMA_VERSION)), ("spec_dict", dictionary), ("title", "not built"),
+        ("stage", "4: npc + points, the bestiary's cards, every item, quests, recipes, vendors")])
     db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     db.commit()
     db.execute("VACUUM")
@@ -311,4 +383,5 @@ def build(sources: Sources, out: Path) -> dict:
         raise PermissionError(f"{out} is in use (close Pulse+ first); the new database is left in {fresh}") from error
     return {"npcs": len(npcs), "aliases": len(aliases), "points": len(points.rows), "listed": sum(r["listed"] for r in npcs.values()),
             "drops": sum(len(v) for v in dropped_by.values()), "stock": len(stock), "items": len(items),
-            "catalog": sum(r["catalog_ord"] is not None for r in items.values())}
+            "catalog": sum(r["catalog_ord"] is not None for r in items.values()), "quests": len(quests), "recipes": len(recipes),
+            "vendor_items": len(vendors)}

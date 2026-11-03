@@ -159,6 +159,57 @@ def test_holds_every_item_once_names_cards_and_descriptions(tmp_path):
     assert report["catalog"] == 2 and report["items"] == len(rows)
 
 
+def game_sources(tmp_path) -> Sources:
+    """The item sources and the game data's quests, recipes and vendors (data/game, core/game_data's sections)."""
+    base = item_sources(tmp_path)
+
+    def section(name: str, body: dict) -> Path:
+        path = tmp_path / f"{name}.json.gz"
+        with gzip.open(path, "wt", encoding="utf-8") as out:
+            json.dump({"schema": 1, "section": name, **body}, out, ensure_ascii=False)
+        return path
+
+    quests = section("quests", {"records": [
+        {"id": "1101", "name": "Ёлочный сбор", "min_level": 1, "max_level": 0, "race": ["pc_light"], "category": "quest | Элтнен",
+         "repeatable": False, "giver": "100", "ender": None, "rewards": [{"type": "item", "group": "g", "item": "901", "amount": 1}]},
+        {"id": "1102", "name": "Без выдающего", "min_level": 10, "max_level": 20, "race": ["pc_light", "pc_dark"], "category": "",
+         "repeatable": True, "giver": None, "ender": "100", "rewards": []}]})
+    (tmp_path / "quest_names.tsv").write_text("1101\tСтарое имя\n1200\tТолько в ссылках\n", encoding="utf-8")
+    recipes = section("recipes", {"records": [
+        {"id": "155000078", "name": "Древний меч", "product": "901", "count": 1, "profession": "weaponsmith", "level": 10,
+         "race": "pc_light", "ingredients": [["902", 3], ["907", 5]], "combo": ["100200209"], "source": "client"}]})
+    vendors = section("vendors", {"columns": ["npc", "item", "price", "currency", "limit", "kind"],
+                                  "rows": [["400", "902", None, None, None, "trade_info"], ["400", "901", None, None, None, "abyss_trade_info"]]})
+    items = section("items", {"records": [  # the client's own list: its fields fill what the catalog and the bestiary lack
+        {"id": "901", "name": "Клиентское имя", "level": 50, "icon": "Icon_Item_Other", "grade": "legend"},
+        {"id": "903", "name": "Туника наемника", "level": 1, "icon": "Icon_Item_Cl_Torso_C01", "grade": None}]})
+    return Sources(**{**base.__dict__, "items": items, "quests": quests, "quest_names": tmp_path / "quest_names.tsv", "recipes": recipes, "vendors": vendors})
+
+
+def test_holds_quests_recipes_vendors_and_an_empty_title_table(tmp_path):
+    out = tmp_path / "pulse.db"
+    report = build(game_sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    db.row_factory = sqlite3.Row
+    quests = {r["id"]: dict(r) for r in db.execute("SELECT * FROM quest")}
+    assert quests[1101] | {"rewards": None} == {"id": 1101, "name": "Ёлочный сбор", "name_key": "елочный сбор", "min_level": 1,
+        "max_level": 0, "race": "pc_light", "category": "quest | Элтнен", "repeatable": 0, "giver": "100", "ender": None, "rewards": None}
+    assert json.loads(quests[1101]["rewards"])[0]["item"] == "901" and quests[1102]["race"] == "pc_light,pc_dark"
+    assert (quests[1200]["name"], quests[1200]["min_level"]) == ("Только в ссылках", None)  # a chat link's name only
+    recipe = dict(db.execute("SELECT * FROM recipe").fetchone())
+    assert recipe == {"id": 155000078, "name": "Древний меч", "name_key": "древний меч", "product": 901, "count": 1,
+                      "profession": "weaponsmith", "level": 10, "race": "pc_light", "combo": "[100200209]"}
+    assert [tuple(r) for r in db.execute("SELECT ord, item_id, count FROM recipe_part ORDER BY ord")] == [(0, 902, 3), (1, 907, 5)]
+    assert [tuple(r) for r in db.execute("SELECT npc_id, item_id, kind FROM vendor_item ORDER BY item_id")] == [
+        ("400", 901, "abyss_trade_info"), ("400", 902, "trade_info")]
+    assert db.execute("SELECT count(*) FROM title").fetchone()[0] == 0  # no export of the titles yet
+    assert db.execute("SELECT value FROM meta WHERE key = 'title'").fetchone()[0] == "not built"
+    assert (report["quests"], report["recipes"], report["vendor_items"]) == (3, 1, 2)
+    items = {r["id"]: dict(r) for r in db.execute("SELECT id, name, level, grade, icon FROM item WHERE id IN (901, 903)")}
+    assert items[901] == {"id": 901, "name": "Меч, древний", "level": 55, "grade": "unique", "icon": "icon_item_sword"}  # the catalog's
+    assert items[903] == {"id": 903, "name": "Туника наемника", "level": 1, "grade": None, "icon": "icon_item_cl_torso_c01"}
+
+
 def test_packs_id_lists_both_ways():
     assert pack_ids([166000103]).hex() == "e7eb934f"
     assert unpack_ids(pack_ids([100, 105, 106], delta=True), delta=True) == [100, 105, 106]
