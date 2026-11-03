@@ -163,7 +163,7 @@ function RegionMap({ size, region, onZone }: { size: { w: number; h: number }; r
       onPointerMove={(e) => { const z = zoneAt(e); const code = z?.map_id ? z.code : null; if (code !== last.current) { last.current = code; setHover(code); } }}
       onPointerLeave={() => { last.current = null; setHover(null); }}
       onClick={(e) => { const z = zoneAt(e); if (z?.map_id) onZone(z); }}>
-      {urls[r.image] && <img className="world-region-map" src={urls[r.image]} alt="" draggable={false}
+      {urls[r.image] && <img key={urls[r.image]} className="world-region-map" src={urls[r.image]} alt="" draggable={false}
         style={{ left, top, width: rw * k, height: rh * k }} />}
       {r.zones.map((z) => {
         const [hx, hy, hw, hh] = z.highlight ?? z.frame;

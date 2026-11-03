@@ -674,7 +674,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
           {level === "world" ? (size && <WorldLayer size={size} region={region} onRegion={setRegion}
             onZone={(z) => { if (!z.map_id) return; openZone(z.map_id); if (z.layer !== null) setLayer(z.layer); }} />) : <>
           {picture && view && (
-            <img className="map-picture" src={picture} alt="" draggable={false}
+            <img key={picture} className="map-picture" src={picture} alt="" draggable={false}
               style={{ width: zone.size, height: zone.size, transform: `translate(${-view.left * view.zoom}px, ${-view.top * view.zoom}px) scale(${view.zoom})` }} />
           )}
           {pictureMissing && <div className="map-empty">Картинки этой зоны нет в data/maps.</div>}
