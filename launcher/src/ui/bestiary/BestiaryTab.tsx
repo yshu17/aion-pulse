@@ -1,19 +1,20 @@
 // The «NPC / Бестиарий» tab: the bestiary's NPCs and monsters (data/bestiary/npcs.sqlite) — a search with the class
 // chips and the level, the found list on the left, the chosen NPC's card on the right as Pulse shows it: the HP artwork,
 // the numbers (HP, DP, abyss rank, XP, points…), and the tabs «Добыча», «Локации» and «Товары». The data is read by
-// core/bestiary/store.ts; what is shown of it by core/bestiary/card.ts and view.ts.
-import { memo, useEffect, useMemo, useState } from "react";
+// core/bestiary/store.ts in a worker (bestiaryDb.ts): the tab is drawn at once with placeholders, the search box works from
+// the first moment, and the answers come in when ready; what is shown of them by core/bestiary/card.ts and view.ts.
+import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { statText } from "../../core/bestiary/labels";
-import type { BestiaryStore, Row } from "../../core/bestiary/store";
+import type { Row } from "../../core/bestiary/store";
 import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
 import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
-import { bestiaryIcon, openBestiary } from "./bestiaryDb";
+import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import "./bestiary.css";
 
 const PAGE = 150; // rows per search; «Показать ещё» adds the next ones
@@ -29,40 +30,56 @@ function Pic({ path, className }: { path: string | null | undefined; className: 
     bestiaryIcon(iconPath(path)).then((got) => { if (alive) setUrl(got); });
     return () => { alive = false; };
   }, [path]);
-  return url ? <img className={className} src={url} alt="" draggable={false} /> : <span className={`${className} blank`} aria-hidden="true" />;
+  return url ? <img className={className} src={url} alt="" draggable={false} decoding="async" loading="lazy" /> : <span className={`${className} blank`} aria-hidden="true" />;
 }
 
 export function BestiaryTab() {
-  const [store, setStore] = useState<BestiaryStore | null | undefined>(undefined); // undefined: still opening
-  useEffect(() => { openBestiary().then(setStore); }, []);
-  if (store === undefined) return <main className="bst"><div className="bst-state" role="status">Загружаю базу бестиария…</div></main>;
-  if (store === null) return <main className="bst"><div className="bst-state" role="status">База бестиария не найдена: нет папки data/bestiary.</div></main>;
-  return <Bestiary store={store} />;
+  const [client, setClient] = useState<BestiaryClient | null | undefined>(undefined); // undefined: still opening
+  useEffect(() => { openBestiary().then(setClient); }, []);
+  return <Bestiary client={client} />;
 }
 
-function Bestiary({ store }: { store: BestiaryStore }) {
+function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const [query, setQuery] = useState("");
   const [rank, setRank] = useState("");
   const [level, setLevel] = useState(LEVELS[0]);
   const [order, setOrder] = useState("level_desc");
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
+  const [searching, setSearching] = useState(true); // the first answer has not come yet
   const [selected, setSelected] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Row | null>(null);
+  const asked = useRef(0); // the newest search: an older answer arriving late is dropped
   const options = useMemo(() => ({ text: query, rank, order, limit: PAGE, ...levelRange(level) }), [query, rank, order, level]);
   useEffect(() => {
+    if (!client) return;
+    const seq = ++asked.current;
     const timer = setTimeout(() => {
-      const [found, count] = store.search(options);
-      setRows(found);
-      setTotal(count);
-      setSelected((now) => (now && found.some((r) => String(r.id) === now) ? now : found.length ? String(found[0].id) : null));
+      client.search(options).then((answer) => {
+        if (!answer || seq !== asked.current) return;
+        const [found, count] = answer;
+        startTransition(() => { // the list redraws when the page is free: the search box stays quick
+          setRows(found);
+          setTotal(count);
+          setSearching(false);
+          setSelected((now) => (now && found.some((r) => String(r.id) === now) ? now : found.length ? String(found[0].id) : null));
+        });
+      }).catch(() => setSearching(false));
     }, TYPE_MS);
     return () => clearTimeout(timer);
-  }, [store, options]);
+  }, [client, options]);
   const more = () => {
-    const [next] = store.search({ ...options, offset: rows.length });
-    setRows((list) => [...list, ...next]);
+    client?.search({ ...options, offset: rows.length }).then((answer) => {
+      if (answer) startTransition(() => setRows((list) => [...list, ...answer[0]]));
+    });
   };
-  const detail = useMemo(() => (selected ? store.detail(selected) : null), [store, selected]);
+  useEffect(() => {
+    if (!client || !selected) { setDetail(null); return; }
+    let alive = true;
+    client.detail(selected).then((got) => { if (alive) startTransition(() => setDetail(got)); }).catch(() => {});
+    return () => { alive = false; };
+  }, [client, selected]);
+  const loading = client === undefined || (client !== null && searching);
 
   return (
     <main className="bst">
@@ -90,7 +107,7 @@ function Bestiary({ store }: { store: BestiaryStore }) {
       <div className="bst-body">
         <section className="bst-list" aria-label="Найденные NPC">
           <div className="bst-list-head">
-            <span>Найдено: <b>{total}</b> NPC</span>
+            <span>Найдено: <b>{loading ? "…" : total}</b> NPC</span>
             <label className="bst-sort">
               <span>Сортировка:</span>
               <select className="field" value={order} onChange={(e) => setOrder(e.target.value)}>
@@ -98,12 +115,14 @@ function Bestiary({ store }: { store: BestiaryStore }) {
               </select>
             </label>
           </div>
-          <Rows rows={rows} selected={selected} onSelect={setSelected} />
-          {rows.length < total && <button className="btn bst-more" onClick={more}>Показать ещё ({total - rows.length})</button>}
-          {!rows.length && <div className="bst-empty">Никого не нашлось: проверь слово или сними фильтр класса и уровня.</div>}
+          {loading ? <RowsSkeleton /> : <Rows rows={rows} selected={selected} onSelect={setSelected} />}
+          {!loading && rows.length < total && <button className="btn bst-more" onClick={more}>Показать ещё ({total - rows.length})</button>}
+          {client === null && <div className="bst-empty">База бестиария не найдена: нет папки data/bestiary.</div>}
+          {!loading && client && !rows.length && <div className="bst-empty">Никого не нашлось: проверь слово или сними фильтр класса и уровня.</div>}
         </section>
         <section className="bst-detail" aria-label="Карточка NPC">
-          {detail ? <Card key={String(detail.id)} store={store} detail={detail} /> : <div className="bst-empty">Выбери NPC в списке.</div>}
+          {detail && client ? <Card key={String(detail.id)} client={client} detail={detail} />
+            : loading || (selected && client) ? <CardSkeleton /> : <div className="bst-empty">Выбери NPC в списке.</div>}
         </section>
       </div>
     </main>
@@ -129,9 +148,31 @@ const Rows = memo(function Rows({ rows, selected, onSelect }: { rows: Row[]; sel
   );
 });
 
+/** The list while the base opens or the first search runs: grey rows in the list's own shape. */
+function RowsSkeleton() {
+  return (
+    <ul className="bst-rows" aria-busy="true" aria-label="Загружаю список">
+      {Array.from({ length: 10 }, (_, i) => (
+        <li key={i} className="bst-row skel"><span className="bst-skel circle" /><span className="bst-row-text"><span className="bst-skel line" /><span className="bst-skel line short" /></span></li>
+      ))}
+    </ul>
+  );
+}
+
+/** The card while its data comes: the hero, the four tiles and the facts as grey blocks. */
+function CardSkeleton() {
+  return (
+    <div className="bst-card" aria-busy="true" aria-label="Загружаю карточку">
+      <div className="bst-hero"><div className="bst-hero-main"><span className="bst-skel line short" /><span className="bst-skel line title" /><span className="bst-skel bar" /></div><span className="bst-skel map" /></div>
+      <div className="bst-tiles">{Array.from({ length: 4 }, (_, i) => <span key={i} className="bst-skel tile" />)}</div>
+      <span className="bst-skel line" /><span className="bst-skel line" /><span className="bst-skel line short" />
+    </div>
+  );
+}
+
 type TabName = "drops" | "places" | "stock";
 
-function Card({ store, detail }: { store: BestiaryStore; detail: Detail }) {
+const Card = memo(function Card({ client, detail }: { client: BestiaryClient; detail: Detail }) {
   const openMap = useOpenMap();
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
@@ -188,7 +229,7 @@ function Card({ store, detail }: { store: BestiaryStore; detail: Detail }) {
         <button role="tab" aria-selected={tab === "places"} className={tab === "places" ? "on" : ""} onClick={() => setTab("places")}>Локации<i>{placesCount}</i></button>
         {sells && <button role="tab" aria-selected={tab === "stock"} className={tab === "stock" ? "on" : ""} onClick={() => setTab("stock")}>Товары<i>{detail.stock.length}</i></button>}
       </div>
-      {tab === "places" ? <Places store={store} detail={detail} zone={zone} onZone={setZone} /> : <Goods key={tab} detail={detail} kind={tab} />}
+      {tab === "places" ? <Places client={client} detail={detail} zone={zone} onZone={setZone} /> : <Goods key={tab} detail={detail} kind={tab} />}
 
       <div className="bst-foot">
         <span className="bst-note">{detail.kb_status === "loaded" ? "Данные KB + файлы клиента" : "Данные клиента; подробный профиль KB не загружен"}</span>
@@ -196,7 +237,7 @@ function Card({ store, detail }: { store: BestiaryStore; detail: Detail }) {
       </div>
     </div>
   );
-}
+});
 
 /** The HP artwork as Pulse draws it: the rank's bar of the sprite, the emblem in a circle, the level at its left. */
 function HpBar({ detail }: { detail: Detail }) {
@@ -252,11 +293,16 @@ function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
 }
 
 /** The zones the NPC stands in with their points, and the approximate areas under each; a zone chosen here is shown on the map. */
-function Places({ store, detail, zone, onZone }: { store: BestiaryStore; detail: Detail; zone: string | null; onZone(id: string): void }) {
+function Places({ client, detail, zone, onZone }: { client: BestiaryClient; detail: Detail; zone: string | null; onZone(id: string): void }) {
   const ids = [...new Set<string>((detail.points ?? []).map((p: Detail) => String(p.map_id)))];
   const names = Object.fromEntries(ids.map((id) => [id, zones[id]?.name ?? mapNames[id] ?? id]));
   const counts = placeCounts(detail, names);
-  const areas = useMemo(() => store.areas(String(detail.id)), [store, detail.id]);
+  const [areas, setAreas] = useState<Row[]>([]);
+  useEffect(() => {
+    let alive = true;
+    client.areas(String(detail.id)).then((got) => { if (alive) setAreas(got); }).catch(() => {});
+    return () => { alive = false; };
+  }, [client, detail.id]);
   if (!counts.length) {
     return <div className="bst-panel" role="tabpanel"><p className="bst-note">Точки появления в файлах клиента не найдены.</p></div>;
   }

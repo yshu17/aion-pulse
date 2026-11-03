@@ -1,10 +1,7 @@
-// The bestiary's database (data/bestiary/npcs.sqlite, tools/copy_bestiary_data.py) opened in the page with sql.js, and
-// its pictures (data/bestiary/icons). Read once, when the tab first needs them: about 45 MB go into memory.
-import initSqlJs from "sql.js";
-import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
-import { inflate as pakoInflate } from "pako";
-
-import { BestiaryStore, type Db, type Inflate } from "../../core/bestiary/store";
+// The bestiary's database (data/bestiary/npcs.sqlite, tools/copy_bestiary_data.py) and its pictures (data/bestiary/icons).
+// The file's bytes are read here (the program's file command is not in a worker) and handed to bestiaryWorker.ts, which
+// opens them with sql.js and answers every search there: the page's thread only draws, typing never waits for the data.
+import type { Row, SearchOptions } from "../../core/bestiary/store";
 import { platform } from "../platform";
 
 const CHUNK = 16 * 1024 * 1024; // one read of the program's file command
@@ -31,43 +28,56 @@ async function readFile(path: string): Promise<Uint8Array> {
   return bytes;
 }
 
-async function databaseBytes(): Promise<Uint8Array | null> {
+async function databaseBytes(): Promise<ArrayBuffer | null> {
   if (platform === null) {
     const load = devDb["../../../../data/bestiary/npcs.sqlite"];
-    return load ? new Uint8Array(await (await fetch(await load())).arrayBuffer()) : null;
+    return load ? (await fetch(await load())).arrayBuffer() : null;
   }
   const dir = await bestiaryDir();
-  return dir ? readFile(`${dir}\\npcs.sqlite`) : null;
+  return dir ? (await readFile(`${dir}\\npcs.sqlite`)).buffer as ArrayBuffer : null;
 }
 
-const inflate: Inflate = (data, dictionary) => pakoInflate(data, dictionary ? { dictionary } : {});
+/** The bestiary as the tab sees it: every call answers later; a search overtaken by a newer one answers null. */
+export interface BestiaryClient {
+  search(options: SearchOptions): Promise<[Row[], number] | null>;
+  detail(npc: string): Promise<Row | null>;
+  areas(npc: string): Promise<Row[]>;
+}
 
-let store: Promise<BestiaryStore | null> | null = null;
+function connect(worker: Worker): (message: Record<string, unknown>, transfer?: Transferable[]) => Promise<any> {
+  let next = 1;
+  const calls = new Map<number, { resolve(value: unknown): void; reject(error: Error): void }>();
+  worker.onmessage = (event: MessageEvent<{ id: number; result?: unknown; error?: string; stale?: boolean }>) => {
+    const { id, result, error, stale } = event.data;
+    const call = calls.get(id);
+    if (!call) return;
+    calls.delete(id);
+    if (error) call.reject(new Error(error));
+    else call.resolve(stale ? null : result);
+  };
+  return (message, transfer = []) => new Promise((resolve, reject) => {
+    const id = next++;
+    calls.set(id, { resolve, reject });
+    worker.postMessage({ ...message, id }, transfer);
+  });
+}
 
-/** The store, opened once; null when the database is not there (a build without data/bestiary). */
-export function openBestiary(): Promise<BestiaryStore | null> {
-  store ??= (async () => {
-    const [SQL, bytes] = await Promise.all([initSqlJs({ locateFile: () => wasmUrl }), databaseBytes()]);
+let client: Promise<BestiaryClient | null> | null = null;
+
+/** The bestiary, opened once in its worker; null when the database is not there (a build without data/bestiary). */
+export function openBestiary(): Promise<BestiaryClient | null> {
+  client ??= (async () => {
+    const bytes = await databaseBytes();
     if (!bytes) return null;
-    const sql = new SQL.Database(bytes);
-    const db: Db = {
-      all: (query, params = []) => {
-        const statement = sql.prepare(query);
-        try {
-          statement.bind(params as any);
-          const rows: Record<string, any>[] = [];
-          while (statement.step()) rows.push(statement.getAsObject());
-          return rows;
-        } finally {
-          statement.free();
-        }
-      },
-      run: (query, params = []) => { sql.run(query, params as any); },
-      func: (name, fn) => { sql.create_function(name, fn as any); },
-    };
-    return new BestiaryStore(db, inflate);
-  })().catch((error) => { console.error("bestiary", error); store = null; return null; });
-  return store;
+    const call = connect(new Worker(new URL("./bestiaryWorker.ts", import.meta.url), { type: "module" }));
+    await call({ op: "open", bytes }, [bytes]); // the bytes move to the worker, no copy
+    return {
+      search: (options) => call({ op: "search", options }),
+      detail: (npc) => call({ op: "detail", npc }),
+      areas: (npc) => call({ op: "areas", npc }),
+    } satisfies BestiaryClient;
+  })().catch((error) => { console.error("bestiary", error); client = null; return null; });
+  return client;
 }
 
 const icons = new Map<string, Promise<string | null>>();
