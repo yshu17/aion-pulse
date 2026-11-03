@@ -14,7 +14,7 @@ import { mapNames } from "../data";
 import { CountUp, Glide, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
-import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
+import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import "./bestiary.css";
@@ -188,9 +188,9 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
   const showOnMap = async () => {
     if (!place || !openMap) return;
     const id = String(detail.id);
-    const spawns = await loadSpawns();
-    if (spawns.points(id, place.map_id).length) openMap({ type: "npc", npc: id, name: detail.name, map_id: place.map_id, at: [place.gx, place.gy] });
-    else openMap({ type: "place", map_id: place.map_id, x: place.gx, y: place.gy, label: detail.name, note: "", nick: "", time: "", text: "" });
+    // the bestiary's own points go with the request: the map draws them when spawns.json has none under this id
+    const points = (detail.points ?? []).filter((p: Detail) => String(p.map_id) === place.map_id).map((p: Detail) => [Number(p.gx), Number(p.gy), Number(p.gz ?? 0)] as [number, number, number]);
+    openMap({ type: "npc", npc: id, name: detail.name, map_id: place.map_id, at: [place.gx, place.gy], points });
   };
 
   const { key, rest } = statGroups(detail);

@@ -152,10 +152,11 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   const decoDots = useMemo(() => (decoOn && spawns && zone ? spawns.decoPoints(zone.map_id) : []), [decoOn, spawns, zone]);
   const [npcFocus, setNpcFocus] = useState<{ npc: string; name: string; map_id: string; points: SpawnPoint[]; at: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const showNpc = async (npc: string, name: string, mapId: string, at?: [number, number]) => {
+  const showNpc = async (npc: string, name: string, mapId: string, at?: [number, number], extra: SpawnPoint[] = []) => {
     const raw = baseSpawns ?? await loadSpawns();
     setBaseSpawns(raw);
-    const points = raw.points(npc, mapId);
+    const known = raw.points(npc, mapId);
+    const points = known.length ? known : extra;
     if (!points.length || !goToZone(mapId)) return;
     const near = at ? nearestPoint(points, at[0], at[1]) : null;
     const i = near ? points.indexOf(near) : 0;
@@ -167,7 +168,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
 
   useEffect(() => {
     if (!target) return;
-    if (target.type === "npc") { showNpc(target.npc, target.name, target.map_id, target.at); return; }
+    if (target.type === "npc") { showNpc(target.npc, target.name, target.map_id, target.at, target.points); return; }
     setShownPlace(target);
     setSelected(null);
     setNpcFocus(null);

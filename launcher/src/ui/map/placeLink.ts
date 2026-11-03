@@ -15,9 +15,10 @@ export interface ChatPlace extends Place {
  * What the «Карта» tab is asked to show — one way in for the chat and for the cards of the program:
  *   place  a «Место» link of the chat: its card is «Место из чата»
  *   npc    an NPC or a monster by its id (data/maps/spawns.json) in a zone: all its points there, `at` (game x, y) picks
- *          the one to centre on (the nearest point), else the first
+ *          the one to centre on (the nearest point), else the first; `points` (game x, y, z) are the caller's own points of the NPC in
+ *          that zone, drawn when spawns.json has none under this id (the bestiary's duplicate records of one name keep their places that way)
  */
-export type MapTarget = ({ type: "place" } & ChatPlace) | { type: "npc"; npc: string; name: string; map_id: string; at?: [number, number] };
+export type MapTarget = ({ type: "place" } & ChatPlace) | { type: "npc"; npc: string; name: string; map_id: string; at?: [number, number]; points?: [number, number, number][] };
 
 /** Opens something on the map (the «Карта» tab). */
 export const OpenMap = createContext<((target: MapTarget) => void) | null>(null);
