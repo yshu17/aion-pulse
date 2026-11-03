@@ -53,7 +53,7 @@ describe("bestiary screen helpers", () => {
   });
   it("takes the HP artwork of the card from the sprite by the NPC's rank, as Pulse does", () => {
     expect(hpFrame({ hp_bar: 3 })).toEqual({ rank: 3, frame: [5, 205, 333, 296], iconTop: 25, iconLeft: 27, levelTop: 42, levelLeft: 14 });
-    expect(hpFrame({ rank: "Элитный" })).toEqual({ rank: 2, frame: [26, 98, 310, 188], iconTop: 26, iconLeft: 27, levelTop: 45, levelLeft: 17 });
+    expect(hpFrame({ rank: "Элитный" })).toEqual({ rank: 2, frame: [26, 98, 310, 188], iconTop: 26, iconLeft: 28, levelTop: 45, levelLeft: 17 });
     expect(hpFrame({ hp_bar: 1 })).toEqual({ rank: 1, frame: [25, 0, 297, 79], iconTop: 22, iconLeft: 30, levelTop: 41, levelLeft: 19 });
     expect(hpFrame({ hp_bar: 4 })?.levelTop).toBe(46);
     expect(hpFrame({ rank: "Легендарный" })?.rank).toBe(4);
