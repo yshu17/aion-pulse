@@ -1,0 +1,93 @@
+"""Checks for core/pulse_db: one game database (data/pulse.db) built from the map's, the game data's and the bestiary's files."""
+
+import gzip
+import json
+import sqlite3
+import zlib
+
+from core.bestiary.bestiary_store import DETAIL_DICT
+from core.pulse_db.build import SCHEMA_VERSION, Sources, build
+
+
+def pack(detail: dict) -> bytes:
+    packer = zlib.compressobj(zdict=DETAIL_DICT)
+    return packer.compress(json.dumps(detail, ensure_ascii=False).encode("utf-8")) + packer.flush()
+
+
+def sources(tmp_path) -> Sources:
+    spawns = {
+        "names": {"100": "Лесной руфиллин", "poi:Теграк": "Теграк", "300": "Житель"},
+        "zones": {"220050000": [["100", 653.2, 1692.4, 10.0], ["100", 700.0, 1700.0, 10.0]],
+                  "220070000": [["poi:Теграк", 1769.1, 1765.7, 0.0], ["300", 5.0, 6.0, 0.0]]},
+        "sp_only": ["100"], "deco": ["300"],
+    }
+    (tmp_path / "spawns.json").write_text(json.dumps(spawns, ensure_ascii=False), encoding="utf-8")
+    points = {"schema": 1, "section": "npc_points", "columns": ["map", "npc", "x", "y", "z", "zone"],
+              "rows": [["220050000", "100", 653.0, 1692.0, 10.0, "x"],  # the same place as the map's: one point
+                       ["220050000", "100", 900.0, 900.0, 10.0, "x"]]}
+    with gzip.open(tmp_path / "npc_points.json.gz", "wt", encoding="utf-8") as out:
+        json.dump(points, out)
+    npcs = {"schema": 1, "section": "npcs", "records": [
+        {"id": "100", "name": "Лесной руфиллин", "function": None, "ui": "general", "tribe": "Beast", "race": None, "source": "client"},
+        {"id": "400", "name": "Ёжик", "function": "Merchant", "ui": "general", "tribe": "General", "race": "pc_light", "source": "client"},
+    ]}
+    with gzip.open(tmp_path / "npcs.json.gz", "wt", encoding="utf-8") as out:
+        json.dump(npcs, out)
+    db = sqlite3.connect(tmp_path / "bestiary.sqlite")
+    db.execute("CREATE TABLE npc (id TEXT PRIMARY KEY, name TEXT, kind TEXT, race TEXT, faction TEXT, rank TEXT, level TEXT, "
+               "role TEXT, icon_asset TEXT, detail BLOB)")
+    rows = [
+        ("100", "Лесной руфиллин", "Монстр", "Зверь", "Другие", "Обычный", "49", "", "npc/a.jpg",
+         pack({"points": [{"map_id": "220050000", "gx": 1000.0, "gy": 1000.0, "gz": 1.0}]})),
+        ("799323", "Теграк", "Стражник", "Асмодианин", "Асмодиане", "Легендарный", "60", "", "", pack({"points": []})),
+    ]
+    db.executemany("INSERT INTO npc VALUES (?,?,?,?,?,?,?,?,?,?)", rows)
+    db.commit()
+    db.close()
+    return Sources(spawns=tmp_path / "spawns.json", npc_points=tmp_path / "npc_points.json.gz", npcs=tmp_path / "npcs.json.gz",
+                   bestiary=tmp_path / "bestiary.sqlite")
+
+
+def test_builds_one_npc_table_from_every_source(tmp_path):
+    out = tmp_path / "pulse.db"
+    report = build(sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
+    rows = {r[0]: r for r in db.execute("SELECT id, name, name_key, rank, level, deco, sp_only, role, source FROM npc")}
+    assert rows["100"][1:7] == ("Лесной руфиллин", "лесной руфиллин", "Обычный", 49, 0, 1)  # the bestiary's fields, the map's flags
+    assert rows["300"][5] == 1  # decorative, known only by the map
+    assert rows["400"][2] == "ежик" and rows["400"][7] == "merchant"  # «ё» folded; the client's function as the role
+    assert rows["poi:Теграк"][8] == "map"
+    assert report["npcs"] == len(rows)
+
+
+def test_merges_the_three_point_sets_without_doubles(tmp_path):
+    out = tmp_path / "pulse.db"
+    report = build(sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    points = db.execute("SELECT x, y, source FROM npc_point WHERE npc_id = '100' ORDER BY x").fetchall()
+    # the map's two, the game data's new one (the other is the map's place to a unit), the bestiary's own
+    assert points == [(653.2, 1692.4, "map"), (700.0, 1700.0, "map"), (900.0, 900.0, "client"), (1000.0, 1000.0, "bestiary")]
+    assert report["points"] == db.execute("SELECT count(*) FROM npc_point").fetchone()[0]
+    orphans = db.execute("SELECT count(*) FROM npc_point WHERE npc_id NOT IN (SELECT id FROM npc)").fetchone()[0]
+    assert orphans == 0
+
+
+def test_links_a_map_marker_to_the_npc_of_its_name(tmp_path):
+    out = tmp_path / "pulse.db"
+    build(sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    assert db.execute("SELECT npc_id FROM npc_alias WHERE alias = 'poi:Теграк'").fetchall() == [("799323",)]
+    # the bestiary's Теграк has no point of its own; through the alias it has the map's one
+    points = db.execute("SELECT map_id, x, y FROM npc_point WHERE npc_id = ?1 OR npc_id IN (SELECT alias FROM npc_alias WHERE npc_id = ?1)",
+                        ("799323",)).fetchall()
+    assert points == [("220070000", 1769.1, 1765.7)]
+
+
+def test_same_input_gives_the_same_database_rows(tmp_path):
+    first, second = tmp_path / "a.db", tmp_path / "b.db"
+    src = sources(tmp_path)
+    build(src, first)
+    build(src, second)
+    dump = lambda path: list(sqlite3.connect(path).iterdump())  # noqa: E731
+    assert dump(first) == dump(second)

@@ -293,6 +293,87 @@ async fn game_drops(by: String, id: i64) -> Result<Vec<Drop>, String> {
     tauri::async_runtime::spawn_blocking(move || query_drops(&path, &by, id)).await.map_err(|e| e.to_string())?
 }
 
+/// The one game database of Pulse+ (docs/ADR-002-pulse-db.md): `data/pulse.db`, built by tools/build_pulse_db.py.
+const PULSE_DB: &str = "pulse.db";
+const DB_ROWS: usize = 250_000; // the biggest answer a screen asks for (all the points of the map's index: ~70 000)
+
+/// Where pulse.db is: `PULSE_DB` (a file, for tests), else `data/pulse.db` next to the program or in a folder above it.
+fn pulse_db_path() -> Option<PathBuf> {
+    if let Ok(file) = std::env::var("PULSE_DB") {
+        return Some(PathBuf::from(file));
+    }
+    let exe = std::env::current_exe().ok()?;
+    exe.ancestors().skip(1).map(|dir| dir.join("data").join(PULSE_DB)).find(|path| path.is_file())
+}
+
+/// One answer of the database, by columns: names once, then the rows (smaller than an object per row).
+#[derive(serde::Serialize, Debug, PartialEq)]
+struct DbAnswer {
+    columns: Vec<String>,
+    rows: Vec<Vec<serde_json::Value>>,
+}
+
+/// The connection, opened once and only for reading; the queries of the screens run one at a time on it.
+static PULSE: std::sync::Mutex<Option<rusqlite::Connection>> = std::sync::Mutex::new(None);
+
+fn to_sql(value: &serde_json::Value) -> rusqlite::types::Value {
+    use rusqlite::types::Value;
+    match value {
+        serde_json::Value::Null => Value::Null,
+        serde_json::Value::Bool(b) => Value::Integer(*b as i64),
+        serde_json::Value::Number(n) => n.as_i64().map(Value::Integer).unwrap_or_else(|| Value::Real(n.as_f64().unwrap_or(0.0))),
+        serde_json::Value::String(s) => Value::Text(s.clone()),
+        other => Value::Text(other.to_string()),
+    }
+}
+
+/// Run a reading query on an open database; anything that would write is refused.
+fn query_db(db: &rusqlite::Connection, sql: &str, params: &[serde_json::Value]) -> Result<DbAnswer, String> {
+    use rusqlite::types::ValueRef;
+    let mut statement = db.prepare(sql).map_err(|e| e.to_string())?;
+    if !statement.readonly() {
+        return Err("EPERM: pulse.db is read only".into());
+    }
+    let columns: Vec<String> = statement.column_names().iter().map(|c| c.to_string()).collect();
+    let values: Vec<rusqlite::types::Value> = params.iter().map(to_sql).collect();
+    let mut rows = statement.query(rusqlite::params_from_iter(values.iter())).map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        if out.len() >= DB_ROWS {
+            return Err(format!("E2BIG: more than {DB_ROWS} rows"));
+        }
+        let mut cells = Vec::with_capacity(columns.len());
+        for i in 0..columns.len() {
+            cells.push(match row.get_ref(i).map_err(|e| e.to_string())? {
+                ValueRef::Null => serde_json::Value::Null,
+                ValueRef::Integer(n) => serde_json::Value::from(n),
+                ValueRef::Real(f) => serde_json::Value::from(f),
+                ValueRef::Text(t) => serde_json::Value::from(String::from_utf8_lossy(t).into_owned()),
+                ValueRef::Blob(b) => serde_json::Value::from(b.to_vec()),
+            });
+        }
+        out.push(cells);
+    }
+    Ok(DbAnswer { columns, rows: out })
+}
+
+/// A reading query on pulse.db for the screens' repositories (launcher/src/core/db); `ENOENT` when there is no database.
+#[tauri::command]
+async fn db_query(sql: String, params: Vec<serde_json::Value>) -> Result<DbAnswer, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut held = PULSE.lock().map_err(|e| e.to_string())?;
+        if held.is_none() {
+            let path = pulse_db_path().filter(|path| path.is_file()).ok_or_else(|| format!("ENOENT: {PULSE_DB}"))?;
+            let db = rusqlite::Connection::open_with_flags(&path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX)
+                .map_err(|e| e.to_string())?;
+            *held = Some(db);
+        }
+        query_db(held.as_ref().unwrap(), &sql, &params)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Move and resize the overlay window in one step (physical pixels). Two separate calls (position, then size) show one
 /// frame with the content in the wrong place while the window grows upwards: the strip jumps.
 #[tauri::command]
@@ -374,15 +455,27 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, game_drops, overlay_bounds, overlay_clip])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, game_drops, db_query, overlay_bounds, overlay_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside, query_drops, Drop};
+    use super::{allowed_url, has_game, inside, query_db, query_drops, Drop};
     use std::path::Path;
+
+    #[test]
+    fn answers_reading_queries_on_the_game_database_and_refuses_writes() {
+        let db = rusqlite::Connection::open_in_memory().unwrap();
+        db.execute_batch("CREATE TABLE npc (id TEXT, name TEXT, level INTEGER); INSERT INTO npc VALUES ('1', 'Теграк', 60), ('2', 'Гера', NULL);").unwrap();
+        let answer = query_db(&db, "SELECT id, name, level FROM npc WHERE id = ?1", &[serde_json::json!("1")]).unwrap();
+        assert_eq!(answer.columns, vec!["id", "name", "level"]);
+        assert_eq!(answer.rows, vec![vec![serde_json::json!("1"), serde_json::json!("Теграк"), serde_json::json!(60)]]);
+        assert_eq!(query_db(&db, "SELECT level FROM npc WHERE id = '2'", &[]).unwrap().rows, vec![vec![serde_json::Value::Null]]);
+        assert!(query_db(&db, "DELETE FROM npc", &[]).unwrap_err().starts_with("EPERM"));
+        assert!(query_db(&db, "INSERT INTO npc VALUES ('3', 'x', 1)", &[]).is_err());
+    }
 
     #[test]
     fn finds_the_game_process_whatever_the_case() {

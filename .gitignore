@@ -58,3 +58,6 @@ data/game/drops.sqlite
 
 # the bestiary database and pictures (tools/copy_bestiary_data.py): shipped in the build, too big for git
 data/bestiary/
+
+# the one game database (tools/build_pulse_db.py, docs/ADR-002-pulse-db.md): built from data/, shipped in the build
+data/pulse.db

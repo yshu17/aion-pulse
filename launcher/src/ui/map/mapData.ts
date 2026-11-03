@@ -8,7 +8,9 @@ import poiJson from "../../../../data/maps/poi.json?raw";
 import transitionsJson from "../../../../data/maps/transitions.json?raw";
 import { Gathering } from "../../core/map/gathering";
 import { PoiStore } from "../../core/map/poi";
+import { spawnIndex } from "../../core/db/npcPoints";
 import { Spawns } from "../../core/map/spawns";
+import { pulseDb } from "../db/pulseDb";
 import { parseZones, toImage, Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
 import { platform } from "../platform";
@@ -51,6 +53,9 @@ let spawns: Promise<Spawns> | null = null;
 
 export function loadSpawns(): Promise<Spawns> {
   spawns ??= (async () => {
+    // the one game database first (data/pulse.db): the bestiary reads the same points; spawns.json is the old way
+    const db = await pulseDb();
+    if (db) return Spawns.parse(JSON.stringify(await spawnIndex(db)));
     if (platform === null) {
       const load = devSpawns["../../../../data/maps/spawns.json"];
       return Spawns.parse(load ? await (await fetch(await load())).text() : null);

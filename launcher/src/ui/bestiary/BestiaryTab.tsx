@@ -14,6 +14,8 @@ import { mapNames } from "../data";
 import { CountUp, Glide, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
+import { pointsOf } from "../../core/db/npcPoints";
+import { pulseDb } from "../db/pulseDb";
 import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
@@ -177,14 +179,20 @@ type TabName = "drops" | "places" | "stock";
 
 const Card = memo(function Card({ client, detail: base }: { client: BestiaryClient; detail: Detail }) {
   const openMap = useOpenMap();
-  // the places of the NPC are the bestiary's and the map's together: what the map knows of it (its id, its «poi:Name» twin) is added
-  const [mapZones, setMapZones] = useState<{ map_id: string; points: [number, number, number][] }[]>([]);
+  // the NPC's places come from the one game database (pulse.db, npc_point), the table the map reads too; without it
+  // (an old build) the bestiary's own points and the map's file are put together here
+  const [points, setPoints] = useState<Detail[] | null>(null);
   useEffect(() => {
     let alive = true;
-    loadSpawns().then((spawns) => { if (alive) setMapZones([...spawns.zonesOf(String(base.id)), ...spawns.zonesOf(`poi:${base.name}`)]); }).catch(() => {});
+    pulseDb().then(async (all) => {
+      const found = all
+        ? (await pointsOf(all, String(base.id))).map((p) => ({ map_id: p.map_id, gx: p.x, gy: p.y, gz: p.z, source: p.source }))
+        : await loadSpawns().then((spawns) => mergePoints(base.points ?? [], [...spawns.zonesOf(String(base.id)), ...spawns.zonesOf(`poi:${base.name}`)]));
+      if (alive) setPoints(found);
+    }).catch(() => {});
     return () => { alive = false; };
-  }, [base.id, base.name]);
-  const detail: Detail = useMemo(() => ({ ...base, points: mergePoints(base.points ?? [], mapZones) }), [base, mapZones]);
+  }, [base.id, base.name, base.points]);
+  const detail: Detail = useMemo(() => ({ ...base, points: points ?? base.points ?? [] }), [base, points]);
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
   const [chosen, setZone] = useState<string | null>(null); // the zone the user picked in «Локации»; else the one with the most points
