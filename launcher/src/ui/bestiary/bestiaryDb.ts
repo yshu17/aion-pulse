@@ -1,15 +1,13 @@
-// The bestiary's database (data/bestiary/npcs.sqlite, tools/copy_bestiary_data.py) and its pictures (data/bestiary/icons).
-// The file's bytes are read here (the program's file command is not in a worker) and handed to bestiaryWorker.ts, which
-// opens them with sql.js and answers every search there: the page's thread only draws, typing never waits for the data.
+// The bestiary's data for the tab: the one game database pulse.db (core/db/bestiary.ts; the program reads it with Rust,
+// the dev page with sql.js, ui/db/pulseDb.ts) and the pictures of data/bestiary/icons.
+import { areas, detail, search } from "../../core/db/bestiary";
 import type { Row, SearchOptions } from "../../core/bestiary/store";
+import { pulseDb } from "../db/pulseDb";
 import { platform } from "../platform";
 
 const CHUNK = 16 * 1024 * 1024; // one read of the program's file command
 
-// the dev page only: the files come from the dev server (these lists are dropped from the program's build)
-const devDb = import.meta.env.DEV
-  ? import.meta.glob("../../../../data/bestiary/npcs.sqlite", { query: "?url", import: "default" }) as Record<string, () => Promise<string>>
-  : {};
+// the dev page only: the pictures come from the dev server (this list is dropped from the program's build)
 const devIcons = import.meta.env.DEV
   ? import.meta.glob("../../../../data/bestiary/icons/**/*.{png,jpg}", { query: "?url", import: "default" }) as Record<string, () => Promise<string>>
   : {};
@@ -28,55 +26,22 @@ async function readFile(path: string): Promise<Uint8Array> {
   return bytes;
 }
 
-async function databaseBytes(): Promise<ArrayBuffer | null> {
-  if (platform === null) {
-    const load = devDb["../../../../data/bestiary/npcs.sqlite"];
-    return load ? (await fetch(await load())).arrayBuffer() : null;
-  }
-  const dir = await bestiaryDir();
-  return dir ? (await readFile(`${dir}\\npcs.sqlite`)).buffer as ArrayBuffer : null;
-}
-
-/** The bestiary as the tab sees it: every call answers later; a search overtaken by a newer one answers null. */
+/** The bestiary as the tab sees it: every call answers later (the tab drops answers a newer search has overtaken). */
 export interface BestiaryClient {
   search(options: SearchOptions): Promise<[Row[], number] | null>;
   detail(npc: string): Promise<Row | null>;
   areas(npc: string): Promise<Row[]>;
 }
 
-function connect(worker: Worker): (message: Record<string, unknown>, transfer?: Transferable[]) => Promise<any> {
-  let next = 1;
-  const calls = new Map<number, { resolve(value: unknown): void; reject(error: Error): void }>();
-  worker.onmessage = (event: MessageEvent<{ id: number; result?: unknown; error?: string; stale?: boolean }>) => {
-    const { id, result, error, stale } = event.data;
-    const call = calls.get(id);
-    if (!call) return;
-    calls.delete(id);
-    if (error) call.reject(new Error(error));
-    else call.resolve(stale ? null : result);
-  };
-  return (message, transfer = []) => new Promise((resolve, reject) => {
-    const id = next++;
-    calls.set(id, { resolve, reject });
-    worker.postMessage({ ...message, id }, transfer);
-  });
-}
-
 let client: Promise<BestiaryClient | null> | null = null;
 
-/** The bestiary, opened once in its worker; null when the database is not there (a build without data/bestiary). */
+/** The bestiary over pulse.db, opened once; null when there is no database (a build without data/pulse.db). */
 export function openBestiary(): Promise<BestiaryClient | null> {
-  client ??= (async () => {
-    const bytes = await databaseBytes();
-    if (!bytes) return null;
-    const call = connect(new Worker(new URL("./bestiaryWorker.ts", import.meta.url), { type: "module" }));
-    await call({ op: "open", bytes }, [bytes]); // the bytes move to the worker, no copy
-    return {
-      search: (options) => call({ op: "search", options }),
-      detail: (npc) => call({ op: "detail", npc }),
-      areas: (npc) => call({ op: "areas", npc }),
-    } satisfies BestiaryClient;
-  })().catch((error) => { console.error("bestiary", error); client = null; return null; });
+  client ??= pulseDb().then((all) => all && {
+    search: (options) => search(all, options),
+    detail: (npc) => detail(all, npc),
+    areas: (npc) => areas(all, npc),
+  } satisfies BestiaryClient);
   return client;
 }
 

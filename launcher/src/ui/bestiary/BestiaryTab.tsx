@@ -1,22 +1,21 @@
 // The «NPC / Бестиарий» tab: the bestiary's NPCs and monsters (data/bestiary/npcs.sqlite) — a search with the class
 // chips and the level, the found list on the left, the chosen NPC's card on the right as Pulse shows it: the HP artwork,
 // the numbers (HP, DP, abyss rank, XP, points…), and the tabs «Добыча», «Локации» and «Товары». The data is read by
-// core/bestiary/store.ts in a worker (bestiaryDb.ts): the tab is drawn at once with placeholders, the search box works from
-// the first moment, and the answers come in when ready; what is shown of them by core/bestiary/card.ts and view.ts.
+// pulse.db, the one game database (core/db/bestiary.ts, read by the program's Rust; bestiaryDb.ts): the tab is drawn at once
+// with placeholders, the search box works from the first moment, the answers come in when ready; what is shown of them by
+// core/bestiary/card.ts and view.ts.
 import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { statText } from "../../core/bestiary/labels";
 import type { Row } from "../../core/bestiary/store";
-import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, mergePoints, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
+import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
 import { CountUp, Glide, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
-import { pointsOf } from "../../core/db/npcPoints";
-import { pulseDb } from "../db/pulseDb";
-import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
+import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import "./bestiary.css";
@@ -177,22 +176,9 @@ function CardSkeleton() {
 
 type TabName = "drops" | "places" | "stock";
 
-const Card = memo(function Card({ client, detail: base }: { client: BestiaryClient; detail: Detail }) {
+// the card's points are pulse.db's npc_point (core/db/bestiary.ts detail): the table the map reads too
+const Card = memo(function Card({ client, detail }: { client: BestiaryClient; detail: Detail }) {
   const openMap = useOpenMap();
-  // the NPC's places come from the one game database (pulse.db, npc_point), the table the map reads too; without it
-  // (an old build) the bestiary's own points and the map's file are put together here
-  const [points, setPoints] = useState<Detail[] | null>(null);
-  useEffect(() => {
-    let alive = true;
-    pulseDb().then(async (all) => {
-      const found = all
-        ? (await pointsOf(all, String(base.id))).map((p) => ({ map_id: p.map_id, gx: p.x, gy: p.y, gz: p.z, source: p.source }))
-        : await loadSpawns().then((spawns) => mergePoints(base.points ?? [], [...spawns.zonesOf(String(base.id)), ...spawns.zonesOf(`poi:${base.name}`)]));
-      if (alive) setPoints(found);
-    }).catch(() => {});
-    return () => { alive = false; };
-  }, [base.id, base.name, base.points]);
-  const detail: Detail = useMemo(() => ({ ...base, points: points ?? base.points ?? [] }), [base, points]);
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
   const [chosen, setZone] = useState<string | null>(null); // the zone the user picked in «Локации»; else the one with the most points

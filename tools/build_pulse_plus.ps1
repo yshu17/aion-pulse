@@ -8,6 +8,9 @@ $launcher = Join-Path $root "launcher"
 $built = Join-Path $launcher "src-tauri\target\release\tauri-app.exe"
 $target = Join-Path $root "local\Pulse+Release"
 
+# a running copy of this build holds data/pulse.db open: it is closed first (it is replaced below anyway)
+Get-CimInstance Win32_Process -Filter "Name='Pulse+Local.exe'" | Where-Object { $_.ExecutablePath -like "$target\*" } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
 # the one game database first (data/pulse.db, docs/ADR-002-pulse-db.md): every tab reads it, the build packs it
 & python (Join-Path $root "tools\build_pulse_db.py")
 if ($LASTEXITCODE -ne 0) { throw "build_pulse_db failed: $LASTEXITCODE" }

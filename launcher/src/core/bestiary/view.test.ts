@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hpFrame, iconPath, mergePoints, rankTier, statGroups, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "./view";
+import { hpFrame, iconPath, rankTier, statGroups, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "./view";
 
 describe("bestiary screen helpers", () => {
   it("turns a level choice into the store's bounds, «Любой» into none", () => {
@@ -75,17 +75,6 @@ describe("bestiary screen helpers", () => {
     expect(key).toEqual([["Макс. ХП", "11 578"], ["DP", "50"], ["Опыт", "34 623"], ["Ранг Бездны", "Солдат, ранг 9"]]);
     expect(rest).toEqual([["Точек появления", "96 / 1 локаций"], ["Принадлежность", "Другие"], ["Вид", "Зверь"]]); // level and rank are in the header
     expect(statGroups({ level: 5, rank: "Обычный" }).key).toEqual([]);
-  });
-
-  it("adds the map's points to the bestiary's own, without doubles (the same place to a unit)", () => {
-    const own = [{ map_id: "1", gx: 1782.2, gy: 2800.3, gz: 5 }];
-    const map = [{ map_id: "1", points: [[1782, 2800, 5], [10, 20, 0]] as [number, number, number][] }, { map_id: "2", points: [[7, 8, 1]] as [number, number, number][] }];
-    const merged = mergePoints(own, map);
-    expect(merged).toHaveLength(3);
-    expect(merged[0]).toBe(own[0]);
-    expect(merged.slice(1).map((p) => [p.map_id, p.gx, p.gy, p.gz])).toEqual([["1", 10, 20, 0], ["2", 7, 8, 1]]);
-    expect(mergePoints([], map)).toHaveLength(3);
-    expect(mergePoints(own, [])).toEqual(own);
   });
 
   it("gives a rank its tier 1…4 for the colour, 0 when unknown", () => {

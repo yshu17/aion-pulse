@@ -2,11 +2,15 @@
 
 import gzip
 import json
+import shutil
 import sqlite3
 import zlib
+from pathlib import Path
 
 from core.bestiary.bestiary_store import DETAIL_DICT
-from core.pulse_db.build import SCHEMA_VERSION, Sources, build
+from core.pulse_db.build import SCHEMA_VERSION, Sources, build, pack_ids, unpack_ids
+
+FIXTURE = Path(__file__).parent / "golden" / "bestiary_fixture.sqlite"  # a small real bestiary (15 NPCs, drops, goods, areas)
 
 
 def pack(detail: dict) -> bytes:
@@ -33,15 +37,16 @@ def sources(tmp_path) -> Sources:
     ]}
     with gzip.open(tmp_path / "npcs.json.gz", "wt", encoding="utf-8") as out:
         json.dump(npcs, out)
+    shutil.copy(FIXTURE, tmp_path / "bestiary.sqlite")  # the real schema; two NPCs of the test are added to it
     db = sqlite3.connect(tmp_path / "bestiary.sqlite")
-    db.execute("CREATE TABLE npc (id TEXT PRIMARY KEY, name TEXT, kind TEXT, race TEXT, faction TEXT, rank TEXT, level TEXT, "
-               "role TEXT, icon_asset TEXT, detail BLOB)")
     rows = [
-        ("100", "Лесной руфиллин", "Монстр", "Зверь", "Другие", "Обычный", "49", "", "npc/a.jpg",
-         pack({"points": [{"map_id": "220050000", "gx": 1000.0, "gy": 1000.0, "gz": 1.0}]})),
-        ("799323", "Теграк", "Стражник", "Асмодианин", "Асмодиане", "Легендарный", "60", "", "", pack({"points": []})),
+        ("100", "Лесной руфиллин", "лесной руфиллин 100", "monster", "", "Монстр", "Зверь", "Другие", "Обычный", "49", "npc/a.jpg", "", 1, 0, 1,
+         pack({"id": "100", "name": "Лесной руфиллин", "points": [{"map_id": "220050000", "gx": 1000.0, "gy": 1000.0, "gz": 1.0}]}), 0),
+        ("799323", "Теграк", "теграк 799323", "npc", "", "Стражник", "Асмодианин", "Асмодиане", "Легендарный", "60", "", "", 0, 0, 1,
+         pack({"id": "799323", "name": "Теграк", "points": []}), 0),
     ]
-    db.executemany("INSERT INTO npc VALUES (?,?,?,?,?,?,?,?,?,?)", rows)
+    db.executemany("INSERT INTO npc (id, name, search_text, category, role, kind, race, faction, rank, level, icon_asset, zone_names, "
+                   "point_count, drop_count, has_profile, detail, service) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
     db.commit()
     db.close()
     return Sources(spawns=tmp_path / "spawns.json", npc_points=tmp_path / "npc_points.json.gz", npcs=tmp_path / "npcs.json.gz",
@@ -91,3 +96,34 @@ def test_same_input_gives_the_same_database_rows(tmp_path):
     build(src, second)
     dump = lambda path: list(sqlite3.connect(path).iterdump())  # noqa: E731
     assert dump(first) == dump(second)
+
+
+def test_holds_the_bestiary_cards_as_tables_goods_drops_and_areas(tmp_path):
+    out = tmp_path / "pulse.db"
+    build(sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    db.row_factory = sqlite3.Row
+    fixture = sqlite3.connect(FIXTURE)
+    listed = db.execute("SELECT count(*) FROM npc WHERE listed = 1").fetchone()[0]
+    assert listed == fixture.execute("SELECT count(*) FROM npc").fetchone()[0] + 2  # every bestiary record, the client-only ones not
+    ids = unpack_ids(db.execute("SELECT drops FROM npc WHERE id = '210065'").fetchone()[0])
+    drops = [db.execute("SELECT name, rarity FROM item WHERE id = ?", (i,)).fetchone() for i in ids]
+    assert len(drops) == 2 and drops[0]["rarity"] == "junk"
+    assert 210065 in unpack_ids(db.execute("SELECT dropped_by FROM item WHERE id = ?", (ids[0],)).fetchone()[0], delta=True)
+    goods = db.execute("SELECT name, grp FROM npc_stock WHERE npc_id = '220000' ORDER BY ord").fetchall()
+    assert len(goods) == 3 and goods[0]["grp"]
+    row = db.execute("SELECT category, sort_key, drop_count, profile FROM npc WHERE id = '210065'").fetchone()
+    assert row["category"] == "monster" and row["drop_count"] == 2 and row["sort_key"] == row["sort_key"].casefold()
+    assert isinstance(json.loads(row["profile"]), dict)
+    areas = fixture.execute("SELECT count(*) FROM npc_area").fetchone()[0]
+    assert db.execute("SELECT count(*) FROM npc_area").fetchone()[0] == areas
+    # the point count of the list is the one table's: the bestiary's own point and the map's two of NPC 100
+    assert db.execute("SELECT point_count FROM npc WHERE id = '100'").fetchone()[0] == 4
+    assert db.execute("SELECT point_count FROM npc WHERE id = '799323'").fetchone()[0] == 1  # through the map's marker
+
+
+def test_packs_id_lists_both_ways():
+    assert pack_ids([166000103]).hex() == "e7eb934f"
+    assert unpack_ids(pack_ids([100, 105, 106], delta=True), delta=True) == [100, 105, 106]
+    assert unpack_ids(pack_ids([5, 1, 300])) == [5, 1, 300]  # the card's order kept
+    assert unpack_ids(None) == []
