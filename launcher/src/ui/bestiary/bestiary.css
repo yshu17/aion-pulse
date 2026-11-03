@@ -1,111 +1,136 @@
-/* The «NPC / Бестиарий» tab (BestiaryTab.tsx): the banner, the bar of filters, the list and the NPC's card. */
-.bst { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
+/* The «NPC / Бестиарий» tab (BestiaryTab.tsx): the bar of filters, the list and the NPC's card.
+   The card takes its colour from the NPC's rank (--rank): grey plain, blue elite, violet heroic, orange legendary. */
+.bst { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
 .bst-state, .bst-empty { padding: 28px; color: var(--muted); text-align: center; }
+.r0 { --rank: var(--muted); } .r1 { --rank: #8c919c; } .r2 { --rank: #6f9bff; } .r3 { --rank: #b58cff; } .r4 { --rank: var(--accent); }
 
 /* the bar: search, the class chips, the level */
-.bst-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 14px; border: 1px solid var(--border);
+.bst-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: var(--card-radius); background: var(--surface); }
 .bst-search { position: relative; flex: 0 1 440px; min-width: 220px; }
 .bst-search > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .bst-search .field { width: 100%; padding-left: 38px; }
 .bst-search .x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
-.bst-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.bst-chip { height: 32px; padding: 0 16px; border: 1px solid var(--border-control); border-radius: 999px; background: transparent;
-  color: var(--text); font-size: 13px; cursor: pointer; transition: border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out); }
-.bst-chip:hover { border-color: var(--muted); }
-.bst-chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+.bst-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 3px; border-radius: 999px; background: var(--surface-2); }
+.bst-chip { height: 30px; padding: 0 15px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.bst-chip:hover { color: var(--text); }
+.bst-chip.on { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .bst-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bst-level, .bst-sort { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
 .bst-level select { width: 120px; }
 
 /* the list and the card side by side */
-.bst-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 14px; }
+.bst-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 12px; }
 .bst-list, .bst-detail { min-height: 0; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface); }
 .bst-list { display: flex; flex-direction: column; }
 .bst-list-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px;
   border-bottom: 1px solid var(--border); font-size: 13px; }
-.bst-sort select { width: 150px; }
+.bst-list-head > span { white-space: nowrap; }
+.bst-sort select { width: 128px; }
 .bst-rows { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 6px; list-style: none; scrollbar-width: thin; }
-.bst-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 7px 10px; border: 1px solid transparent; border-radius: 10px;
+.bst-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 7px 10px; border: 0; border-left: 3px solid var(--rank, transparent); border-radius: 4px 10px 10px 4px;
   background: none; color: var(--text); text-align: left; cursor: pointer; transition: background var(--t-fast) var(--ease-out); }
 .bst-row:hover { background: var(--surface-2); }
-.bst-row.on { border-color: var(--accent); background: var(--accent-subtle); }
+.bst-row.on { background: color-mix(in srgb, var(--rank, var(--accent)) 16%, transparent); }
 .bst-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.bst-row-pic { width: 44px; height: 44px; flex: none; border-radius: 8px; object-fit: cover; }
+.bst-row-pic { width: 42px; height: 42px; flex: none; border-radius: 50%; object-fit: cover; }
 .bst-row-pic.blank, .bst-good-pic.blank { display: block; background: var(--surface-2); }
 .bst-row-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .bst-row-text b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bst-row-text span { font-size: 12px; color: var(--muted); }
 .bst-more { flex: none; margin: 6px 12px 12px; }
 
-/* the NPC's card, as Pulse shows it: the header with the HP artwork, the numbers, the tabs */
+/* the NPC's card: scrolls inside, the action stays at the bottom */
 .bst-detail { overflow: auto; scrollbar-width: thin; }
-.bst-card { padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 100%; }
-.bst-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 250px); gap: 18px; align-items: start; }
-.bst-head-main { min-width: 0; }
-.bst-head-main h2 { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
-.bst-title { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-.bst-hp-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; }
-.bst-hp { position: relative; flex: none; background-repeat: no-repeat; }
+.bst-card { min-height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 0; }
+.bst-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 260px); gap: 18px; align-items: stretch; padding: 18px; border: 1px solid var(--border);
+  border-radius: 16px; background: radial-gradient(90% 140% at 0% 0%, color-mix(in srgb, var(--rank) 20%, transparent), transparent 62%), var(--surface-2); }
+.bst-hero-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.bst-hero h2 { margin: 6px 0 0; font-size: 28px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.bst-title { margin: 0; color: var(--muted); font-size: 13px; }
+.bst-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.bst-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(255, 255, 255, .06); font-size: 12px; font-weight: 600; }
+.bst-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.bst-pill.kind { color: var(--place); } .bst-pill.side { color: #ff8a8d; } .bst-pill.rank { color: var(--rank); }
+
+/* the HP artwork of Pulse, lit by the rank's colour */
+.bst-hp-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 8px; }
+.bst-hp { position: relative; flex: none; background-repeat: no-repeat; filter: drop-shadow(0 0 14px color-mix(in srgb, var(--rank) 45%, transparent)); }
 .bst-hp-icon { position: absolute; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
 .bst-hp-pic { width: 100%; height: 100%; display: block; object-fit: cover; }
 .bst-hp-pic.blank { background: var(--surface-3); }
 .bst-hp-level { position: absolute; left: 14px; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; }
-.bst-hp-text { display: flex; flex-direction: column; gap: 6px; }
-.bst-hp-text b { font-size: 15px; }
+.bst-hp-text { display: flex; flex-direction: column; gap: 4px; }
+.bst-hp-text b { font-size: 16px; }
 .bst-hp-text span, .bst-hp-none { color: var(--muted); font-size: 13px; }
-.bst-hp-none { margin: 10px 0 0; font-weight: 600; }
-.bst-chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.bst-kind, .bst-side, .bst-rank { padding: 4px 9px; border-radius: 6px; background: var(--surface-2); font-size: 12px; font-weight: 600; letter-spacing: .02em; }
-.bst-kind { color: var(--place); } .bst-side { color: var(--danger); } .bst-rank { color: var(--accent); }
-.bst-desc { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; line-height: 1.45; white-space: pre-line; }
-.bst-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; margin: 0; }
-.bst-stats > div { padding: 9px 12px; background: var(--surface-2); min-width: 0; }
-.bst-stats dt { color: var(--muted); font-size: 11px; letter-spacing: .06em; }
-.bst-stats dd { margin: 3px 0 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-.bst-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
-.bst-tabs button { height: 36px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font-size: 14px; cursor: pointer; }
-.bst-tabs button:hover { color: var(--text); }
-.bst-tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
-.bst-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.bst-panel { display: flex; flex-direction: column; gap: 10px; }
-.bst-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.bst-map { position: relative; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.bst-hp-none { margin: 8px 0 0; font-weight: 600; }
+
+.bst-map { position: relative; min-height: 150px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
 .bst-map .pic { position: absolute; max-width: none; pointer-events: none; }
 .bst-map .mark { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 6px #000); }
 .bst-map .mark.dot { display: grid; place-items: center; color: var(--accent); }
-.bst-map-name { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-weight: 600; font-size: 14px;
-  text-shadow: 0 1px 2px #000, 0 0 8px #000; }
+.bst-map-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 10px 8px; text-align: center; font-weight: 600; font-size: 14px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .7)); text-shadow: 0 1px 2px #000; }
 .bst-map.none { display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+
+.bst-desc { margin: 0; color: #c6c9d0; font-size: 13px; line-height: 1.5; white-space: pre-line; }
+
+/* the four key numbers as tiles, the rest of the facts as a quiet list */
+.bst-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.bst-tile { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.bst-tile span { color: var(--muted); font-size: 12px; }
+.bst-tile b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+.bst-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; margin: 0; }
+.bst-facts > div { display: flex; justify-content: space-between; gap: 14px; padding: 9px 2px; border-bottom: 1px solid var(--border); min-width: 0; }
+.bst-facts dt { color: var(--muted); font-size: 13px; flex: none; }
+.bst-facts dd { margin: 0; font-size: 13px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+
+/* tabs with counts */
+.bst-tabs { display: flex; gap: 6px; }
+.bst-tabs button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border: 1px solid transparent; border-radius: 10px; background: none;
+  color: var(--muted); font-size: 14px; cursor: pointer; transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.bst-tabs button:hover { color: var(--text); background: var(--surface-2); }
+.bst-tabs button.on { color: var(--text); background: var(--surface-2); border-color: var(--border-control); }
+.bst-tabs button i { min-width: 22px; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-style: normal; font-size: 11px; font-variant-numeric: tabular-nums; text-align: center; }
+.bst-tabs button.on i { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+.bst-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bst-panel { display: flex; flex-direction: column; gap: 10px; }
+
+/* goods or drops: each with its rarity's colour on the edge and in the name */
+.bst-search.small { flex: none; width: 100%; max-width: 420px; }
+.bst-goods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bst-good { --rc: var(--border-control); display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 12px; border: 1px solid var(--border);
+  border-left: 3px solid var(--rc); border-radius: 4px 10px 10px 4px; background: var(--surface-2); }
+.bst-good.g-common { --rc: var(--grade-common); } .bst-good.g-rare { --rc: var(--grade-rare); } .bst-good.g-legend { --rc: var(--grade-legend); }
+.bst-good.g-unique { --rc: var(--grade-unique); } .bst-good.g-epic { --rc: var(--grade-epic); } .bst-good.g-mythic { --rc: var(--grade-mythic); }
+.bst-good.g-junk { --rc: var(--muted); }
+.bst-good-pic { width: 40px; height: 40px; flex: none; border-radius: 8px; object-fit: cover; }
+.bst-good-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bst-good-text b { color: var(--rc); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bst-good.g-junk .bst-good-text b { color: var(--text); }
+.bst-good-text span { font-size: 12px; color: var(--muted); }
+.bst-note { margin: 0; color: var(--muted); font-size: 12px; }
 
 /* the zones of the NPC and their approximate areas */
 .bst-places { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.bst-place { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid transparent; border-radius: 10px;
+.bst-place { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid transparent; border-radius: 10px;
   background: var(--surface-2); color: var(--text); font-size: 14px; text-align: left; cursor: pointer; }
 .bst-place span { flex: 1; min-width: 0; }
 .bst-place:hover { border-color: var(--border-control); }
 .bst-place.on { border-color: var(--accent); background: var(--accent-subtle); }
 .bst-place:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bst-area { display: flex; justify-content: space-between; gap: 10px; padding: 3px 12px 3px 40px; color: var(--muted); font-size: 12px; }
-/* goods or drops */
-.bst-search.small { flex: none; width: 100%; max-width: 420px; }
-.bst-goods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
-.bst-good { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); min-width: 0; }
-.bst-good-pic { width: 42px; height: 42px; flex: none; border-radius: 8px; object-fit: cover; }
-.bst-good-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.bst-good-text b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bst-good-text span { font-size: 12px; color: var(--muted); }
-/* an item's name in its rarity's colour (core/bestiary/view.ts rarityClass); junk is plain grey */
-.bst-good-text .g-common { color: var(--grade-common); } .bst-good-text .g-rare { color: var(--grade-rare); }
-.bst-good-text .g-legend { color: var(--grade-legend); } .bst-good-text .g-unique { color: var(--grade-unique); }
-.bst-good-text .g-epic { color: var(--grade-epic); } .bst-good-text .g-mythic { color: var(--grade-mythic); }
-.bst-good-text .g-junk { color: var(--muted); }
-.bst-note { margin: 0; color: var(--muted); font-size: 12px; }
-.bst-go { height: 44px; padding: 0 22px; font-size: 15px; font-weight: 700; }
+
+/* the action stays in sight while the card scrolls */
+.bst-foot { position: sticky; bottom: 0; margin: auto -16px 0; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border-top: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); }
+.bst-go { height: 42px; padding: 0 22px; font-size: 15px; font-weight: 700; }
 
 @media (max-width: 1240px) {
-  .bst-head { grid-template-columns: minmax(0, 1fr); }
-  .bst-map { aspect-ratio: auto; height: 180px; }
-  .bst-goods, .bst-stats { grid-template-columns: minmax(0, 1fr); }
+  .bst-hero { grid-template-columns: minmax(0, 1fr); }
+  .bst-map { min-height: 160px; }
+  .bst-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bst-goods, .bst-facts { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .bst-chip, .bst-row { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bst-chip, .bst-row, .bst-tabs button { transition: none; } }

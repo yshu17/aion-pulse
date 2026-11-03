@@ -4,10 +4,10 @@
 // core/bestiary/store.ts; what is shown of it by core/bestiary/card.ts and view.ts.
 import { memo, useEffect, useMemo, useState } from "react";
 
-import { dropsNote, filterDrops, filterStock, overviewRows, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
+import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { statText } from "../../core/bestiary/labels";
 import type { BestiaryStore, Row } from "../../core/bestiary/store";
-import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "../../core/bestiary/view";
+import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
@@ -118,7 +118,7 @@ const Rows = memo(function Rows({ rows, selected, onSelect }: { rows: Row[]; sel
         const id = String(row.id);
         return (
           <li key={id}>
-            <button className={`bst-row${id === selected ? " on" : ""}`} aria-current={id === selected} onClick={() => onSelect(id)}>
+            <button className={`bst-row r${rankTier(row.rank)}${id === selected ? " on" : ""}`} aria-current={id === selected} onClick={() => onSelect(id)}>
               <Pic path={row.icon_asset} className="bst-row-pic" />
               <span className="bst-row-text"><b>{row.name}</b><span>{rowSubtitle(row)}</span></span>
             </button>
@@ -149,35 +149,44 @@ function Card({ store, detail }: { store: BestiaryStore; detail: Detail }) {
     else openMap({ type: "place", map_id: place.map_id, x: place.gx, y: place.gy, label: detail.name, note: "", nick: "", time: "", text: "" });
   };
 
+  const { key, rest } = statGroups(detail);
+  const dropsCount = (detail.drops ?? []).length;
+  const placesCount = new Set((detail.points ?? []).map((p: Detail) => String(p.map_id))).size;
+
   return (
-    <div className="bst-card">
-      <div className="bst-head">
-        <div className="bst-head-main">
+    <div className={`bst-card r${rankTier(detail.rank)}`}>
+      <section className="bst-hero">
+        <div className="bst-hero-main">
+          <div className="bst-pills">
+            {detail.kind && <span className="bst-pill kind">{detail.kind}</span>}
+            {side && <span className="bst-pill side">{side}</span>}
+            {detail.rank && <span className="bst-pill rank">{detail.rank}</span>}
+            {role && role !== detail.kind && <span className="bst-pill kind">{role}</span>}
+          </div>
           <h2>{detail.name}</h2>
           {detail.title && <p className="bst-title">{detail.title}</p>}
           <HpBar detail={detail} />
-          <div className="bst-chips-row">
-            {detail.kind && <span className="bst-kind">{String(detail.kind).toUpperCase()}</span>}
-            {side && <span className="bst-side">{String(side).toUpperCase()}</span>}
-            {detail.rank && <span className="bst-rank">{String(detail.rank).toUpperCase()}</span>}
-            {role && role !== detail.kind && <span className="bst-kind">{role.toUpperCase()}</span>}
-          </div>
         </div>
         {picture && place ? <MiniMap zone={picture} gx={place.gx} gy={place.gy} /> : <div className="bst-map none">Места на карте нет</div>}
-      </div>
+      </section>
 
       {text && <p className="bst-desc">{text}</p>}
-      <dl className="bst-stats">
-        {overviewRows(detail).map(([name, value]) => (
-          <div key={name}><dt>{name.toUpperCase()}</dt><dd>{statText(value)}</dd></div>
-        ))}
-      </dl>
-      {!detail.stats || !Object.keys(detail.stats).length ? <p className="bst-note">Числовой профиль (ХП, опыт, ДП) для этого NPC не загружен.</p> : null}
+      {key.length > 0 && (
+        <div className="bst-tiles">
+          {key.map(([name, value]) => <div key={name} className="bst-tile"><span>{name}</span><b>{value}</b></div>)}
+        </div>
+      )}
+      {rest.length > 0 && (
+        <dl className="bst-facts">
+          {rest.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}
+        </dl>
+      )}
+      {!key.length && <p className="bst-note">Числовой профиль (ХП, опыт, ДП) для этого NPC не загружен.</p>}
 
       <div className="bst-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === "drops"} className={tab === "drops" ? "on" : ""} onClick={() => setTab("drops")}>Добыча</button>
-        <button role="tab" aria-selected={tab === "places"} className={tab === "places" ? "on" : ""} onClick={() => setTab("places")}>Локации</button>
-        {sells && <button role="tab" aria-selected={tab === "stock"} className={tab === "stock" ? "on" : ""} onClick={() => setTab("stock")}>Товары</button>}
+        <button role="tab" aria-selected={tab === "drops"} className={tab === "drops" ? "on" : ""} onClick={() => setTab("drops")}>Добыча<i>{dropsCount}</i></button>
+        <button role="tab" aria-selected={tab === "places"} className={tab === "places" ? "on" : ""} onClick={() => setTab("places")}>Локации<i>{placesCount}</i></button>
+        {sells && <button role="tab" aria-selected={tab === "stock"} className={tab === "stock" ? "on" : ""} onClick={() => setTab("stock")}>Товары<i>{detail.stock.length}</i></button>}
       </div>
       {tab === "places" ? <Places store={store} detail={detail} zone={zone} onZone={setZone} /> : <Goods key={tab} detail={detail} kind={tab} />}
 
@@ -228,10 +237,10 @@ function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
       </div>
       <ul className="bst-goods">
         {list.slice(0, GOODS_SHOWN).map(([i, item]) => (
-          <li key={i} className="bst-good">
+          <li key={i} className={`bst-good ${rarityClass(item.rarity)}`}>
             <Pic path={item.icon_asset ?? item.icon} className="bst-good-pic" />
             <span className="bst-good-text">
-              <b className={rarityClass(item.rarity)}>{item.name}</b>
+              <b>{item.name}</b>
               <span>{[item.group, sells ? item.trade_mode : RARITY[item.rarity as string]].filter(Boolean).join(" · ")}</span>
             </span>
           </li>

@@ -6,12 +6,14 @@
  *   rowSubtitle(row)             «Ур. 55 · Торговец · Обычный» under a list row's name
  *   mainPlace(detail) / placeAt(detail, zone)   the zone with the most points / a chosen zone, and the first point there
  *   hpFrame(detail)              the HP artwork of the card (rank-specific part of the sprite)
+ *   statGroups(detail) / rankTier(rank)   the card's four key numbers and the other facts / a rank's tier 1…4
  *   iconPath(asset)              a picture's path inside the bestiary's icon folder (data/bestiary/icons)
  *   rarityClass(rarity)          the colour class of an item's name
  *   roleLabel(role)              the NPC's service in Russian (merchant -> «Торговец»)
  */
 
-import type { Detail } from "./card";
+import { overviewRows, type Detail } from "./card";
+import { statText } from "./labels";
 
 export const LEVELS = ["Любой", "1–10", "11–20", "21–30", "31–40", "41–50", "51–55", "56+"];
 
@@ -62,6 +64,20 @@ export function hpFrame(detail: Detail): { rank: number; frame: [number, number,
   if (!asked) return null;
   const rank = asked in HP_FRAMES ? Number(asked) : 1;
   return { rank, frame: HP_FRAMES[rank], iconTop: HP_ICON_TOP[rank], iconLeft: rank === 2 ? 24 : 27 };
+}
+
+const KEY_STATS = ["Макс. ХП", "DP", "Опыт", "Ранг Бездны"];
+
+/** The card's numbers: the key tiles (HP, DP, XP, abyss rank, as many as the NPC has) and the other facts; level and rank are in the header. */
+export function statGroups(detail: Detail): { key: [string, string][]; rest: [string, string][] } {
+  const rows = overviewRows(detail).filter(([name]) => name !== "Уровень" && name !== "Ранг").map(([name, value]) => [name, statText(value)] as [string, string]);
+  const key = KEY_STATS.flatMap((name) => rows.filter(([row]) => row === name));
+  return { key, rest: rows.filter(([name]) => !KEY_STATS.includes(name)) };
+}
+
+/** The tier of a rank, 1 plain … 4 legendary: the card's colour; 0 when the rank is not known. */
+export function rankTier(rank: string | null | undefined): number {
+  return (rank && HP_OF_RANK[rank]) || 0;
 }
 
 export function iconPath(asset: string | null | undefined): string | null {

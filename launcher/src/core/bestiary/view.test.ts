@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "./view";
+import { hpFrame, iconPath, rankTier, statGroups, LEVELS, levelRange, mainPlace, placeAt, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle } from "./view";
 
 describe("bestiary screen helpers", () => {
   it("turns a level choice into the store's bounds, «Любой» into none", () => {
@@ -64,5 +64,20 @@ describe("bestiary screen helpers", () => {
     const detail = { points: [{ map_id: "1", gx: 5, gy: 6 }, { map_id: "2", gx: 7, gy: 8 }, { map_id: "2", gx: 9, gy: 10 }] };
     expect(placeAt(detail, "2")).toEqual({ map_id: "2", count: 2, gx: 7, gy: 8 });
     expect(placeAt(detail, "3")).toBeNull();
+  });
+  it("splits the card's numbers into the four key tiles and the rest of the facts (big numbers grouped as in Pulse)", () => {
+    const detail = { level: 49, rank: "Обычный", faction: "Другие", race: "Зверь",
+      stats: { "Макс. ХП": "11578", "Опыт": "34623", "DP": "50", "Ранг Бездны": "Солдат, ранг 9", "Точек появления": "96 / 1 локаций" } };
+    const { key, rest } = statGroups(detail);
+    expect(key).toEqual([["Макс. ХП", "11 578"], ["DP", "50"], ["Опыт", "34 623"], ["Ранг Бездны", "Солдат, ранг 9"]]);
+    expect(rest).toEqual([["Точек появления", "96 / 1 локаций"], ["Принадлежность", "Другие"], ["Вид", "Зверь"]]); // level and rank are in the header
+    expect(statGroups({ level: 5, rank: "Обычный" }).key).toEqual([]);
+  });
+
+  it("gives a rank its tier 1…4 for the colour, 0 when unknown", () => {
+    expect(rankTier("Обычный")).toBe(1);
+    expect(rankTier("Легендарный")).toBe(4);
+    expect(rankTier("")).toBe(0);
+    expect(rankTier(undefined)).toBe(0);
   });
 });
