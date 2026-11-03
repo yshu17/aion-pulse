@@ -55,3 +55,6 @@ tests/test_ui_snapshots.py
 TODO_NEXT.md
 # the drops of data/game: 47 MB, rebuilt by tools/build_game_data.py
 data/game/drops.sqlite
+
+# the bestiary database and pictures (tools/copy_bestiary_data.py): shipped in the build, too big for git
+data/bestiary/

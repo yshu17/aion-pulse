@@ -1,0 +1,102 @@
+/* The «NPC / Бестиарий» tab (BestiaryTab.tsx): the banner, the bar of filters, the list and the NPC's card. */
+.bst { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
+.bst-state, .bst-empty { padding: 28px; color: var(--muted); text-align: center; }
+
+/* the banner: the title with the orange bar, on a dark glow of the theme (no picture in the data) */
+.bst-banner { flex: none; padding: 22px 26px; border: 1px solid var(--border); border-radius: var(--card-radius);
+  background: radial-gradient(120% 160% at 85% 0%, rgba(255, 140, 26, .16), transparent 55%),
+    radial-gradient(80% 140% at 60% 100%, rgba(111, 155, 255, .10), transparent 60%), var(--surface); }
+.bst-banner h1 { margin: 0; padding-left: 14px; border-left: 4px solid var(--accent); font-size: 34px; font-weight: 700; line-height: 1.1; }
+.bst-banner p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+
+/* the bar: search, the class chips, the level */
+.bst-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--card-radius); background: var(--surface); }
+.bst-search { position: relative; flex: 0 1 440px; min-width: 220px; }
+.bst-search > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.bst-search .field { width: 100%; padding-left: 38px; }
+.bst-search .x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+.bst-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.bst-chip { height: 32px; padding: 0 16px; border: 1px solid var(--border-control); border-radius: 999px; background: transparent;
+  color: var(--text); font-size: 13px; cursor: pointer; transition: border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out); }
+.bst-chip:hover { border-color: var(--muted); }
+.bst-chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+.bst-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bst-level, .bst-sort { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.bst-level select { width: 120px; }
+
+/* the list and the card side by side */
+.bst-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 14px; }
+.bst-list, .bst-detail { min-height: 0; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface); }
+.bst-list { display: flex; flex-direction: column; }
+.bst-list-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px;
+  border-bottom: 1px solid var(--border); font-size: 13px; }
+.bst-sort select { width: 150px; }
+.bst-rows { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 6px; list-style: none; scrollbar-width: thin; }
+.bst-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 7px 10px; border: 1px solid transparent; border-radius: 10px;
+  background: none; color: var(--text); text-align: left; cursor: pointer; transition: background var(--t-fast) var(--ease-out); }
+.bst-row:hover { background: var(--surface-2); }
+.bst-row.on { border-color: var(--accent); background: var(--accent-subtle); }
+.bst-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bst-row-pic { width: 44px; height: 44px; flex: none; border-radius: 8px; object-fit: cover; }
+.bst-row-pic.blank, .bst-good-pic.blank { display: block; background: var(--surface-2); }
+.bst-row-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bst-row-text b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bst-row-text span { font-size: 12px; color: var(--muted); }
+.bst-more { flex: none; margin: 6px 12px 12px; }
+
+/* the NPC's card */
+.bst-detail { overflow: auto; scrollbar-width: thin; }
+.bst-card { padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 100%; }
+.bst-top { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr) minmax(180px, 260px); gap: 18px; align-items: start; }
+.bst-portrait { position: relative; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: grid; place-items: center;
+  background: radial-gradient(70% 70% at 50% 40%, rgba(255, 140, 26, .14), transparent 70%), var(--surface-2); }
+.bst-portrait-pic { width: 62%; height: 62%; object-fit: contain; border-radius: 10px; filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .5)); }
+.bst-portrait-pic.blank { display: block; background: var(--surface-3); }
+.bst-tag { position: absolute; left: 10px; bottom: 10px; padding: 3px 10px; border: 1px solid var(--border-control); border-radius: 999px;
+  background: rgba(0, 0, 0, .55); font-size: 12px; }
+.bst-info { min-width: 0; }
+.bst-info h2 { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.2; }
+.bst-title { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.bst-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+.bst-badge { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--border-control);
+  border-radius: 8px; font-size: 13px; }
+.bst-badge.level { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.bst-badge.role { border-color: rgba(229, 72, 77, .6); color: #ff8a8d; background: rgba(229, 72, 77, .08); }
+.bst-facts { margin: 0; }
+.bst-facts > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.bst-facts dt { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.bst-facts dd { margin: 0; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.bst-map { position: relative; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.bst-map .pic { position: absolute; max-width: none; pointer-events: none; }
+.bst-map .mark { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 6px #000); }
+.bst-map .mark.dot { display: grid; place-items: center; color: var(--accent); }
+.bst-map-name { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-weight: 600; font-size: 14px;
+  text-shadow: 0 1px 2px #000, 0 0 8px #000; }
+.bst-map.none { display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+
+/* goods or drops */
+.bst-goods-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 4px; }
+.bst-goods-head h3 { margin: 0; padding-left: 12px; border-left: 4px solid var(--accent); font-size: 20px; font-weight: 700; }
+.bst-search.small { flex: 0 1 52%; }
+.bst-goods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.bst-good { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); min-width: 0; }
+.bst-good-pic { width: 42px; height: 42px; flex: none; border-radius: 8px; object-fit: cover; }
+.bst-good-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bst-good-text b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bst-good-text span { font-size: 12px; color: var(--muted); }
+/* an item's name in its rarity's colour (core/bestiary/view.ts rarityClass); junk is plain grey */
+.bst-good-text .g-common { color: var(--grade-common); } .bst-good-text .g-rare { color: var(--grade-rare); }
+.bst-good-text .g-legend { color: var(--grade-legend); } .bst-good-text .g-unique { color: var(--grade-unique); }
+.bst-good-text .g-epic { color: var(--grade-epic); } .bst-good-text .g-mythic { color: var(--grade-mythic); }
+.bst-good-text .g-junk { color: var(--muted); }
+.bst-note { margin: 0; color: var(--muted); font-size: 12px; }
+.bst-actions { margin-top: auto; display: flex; justify-content: flex-end; }
+.bst-go { height: 44px; padding: 0 22px; font-size: 15px; font-weight: 700; }
+
+@media (max-width: 1240px) {
+  .bst-top { grid-template-columns: minmax(150px, 200px) minmax(0, 1fr); }
+  .bst-map { grid-column: 1 / -1; aspect-ratio: auto; height: 200px; }
+  .bst-goods { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .bst-chip, .bst-row { transition: none; } }

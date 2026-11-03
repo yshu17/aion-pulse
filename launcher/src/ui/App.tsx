@@ -11,6 +11,7 @@ import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
 import { platform } from "./platform";
 import { ItemsPanel } from "./ItemsPanel";
 import { MapTab } from "./map/MapTab";
+import { BestiaryTab } from "./bestiary/BestiaryTab";
 import { ChatPlace, MapTarget, OpenMap, OpenPlace } from "./map/placeLink";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
@@ -227,6 +228,10 @@ function Screen({ boot }: { boot: Boot }) {
       ) : tab === "Карта" ? (
         <OpenMap.Provider value={openMap}>
           <MapTab boot={boot} target={mapTarget} home={mapHome} onPlaceCleared={() => setMapTarget(null)} />
+        </OpenMap.Provider>
+      ) : tab === "NPC / Бестиарий" ? (
+        <OpenMap.Provider value={openMap}>
+          <BestiaryTab />
         </OpenMap.Provider>
       ) : tab === "Расписание" ? (
         <ScheduleTab schedule={schedule} />
