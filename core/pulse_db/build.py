@@ -6,23 +6,27 @@ Stage 1, the NPCs and all their points: ``npc`` (every id any source knows, the 
 flags), ``npc_alias`` (a marker of the map «poi:Имя» → the NPCs of that name) and ``npc_point`` (the map's points, then
 the game data's, then the bestiary's own; a place already there to a unit is not added again).
 Stage 2, the bestiary's cards as tables: ``npc`` gets the card's columns (listed, category, title, search_text,
-sort_key, profile JSON …), ``item``, ``npc_drop``, ``npc_stock``, ``npc_zone``, ``npc_region``, ``npc_area``. The point
+sort_key, profile JSON …), ``npc_stock``, ``npc_zone``, ``npc_region``, ``npc_area``. The point
 count of an NPC is the one table's, so the list, the card and the map show the same number.
+Stage 3, ``item``: every item once — the catalog of cards (its fields win), the descriptions, the bestiary's drops
+(packed lists ``npc.drops`` / ``item.dropped_by``) and the names of chat links.
 The schema is core/pulse_db/schema.sql; ``PRAGMA user_version`` is SCHEMA_VERSION. The same input gives the same rows.
 """
 
 from __future__ import annotations
 
+import csv
 import gzip
 import json
 import os
 import sqlite3
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 
 from core.bestiary.bestiary_store import BestiaryStore
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 SCHEMA = Path(__file__).with_name("schema.sql")
 # what of a bestiary card has a table or a column of its own; the rest goes into npc.profile
 CARD_COLUMNS = {"id", "name", "internal_name", "category", "role", "title", "description", "race", "faction", "kind", "rank",
@@ -35,6 +39,43 @@ class Sources:
     npc_points: Path   # data/game/npc_points.json.gz
     npcs: Path         # data/game/npcs.json.gz
     bestiary: Path     # local/bestiary/npcs.sqlite (tools/build_bestiary_index.py)
+    item_names: Path | None = None  # data/item_names.tsv: id<TAB>name of chat links
+    catalog: Path | None = None     # data/watch_items.csv: the items with a card
+    specs: Path | None = None       # data/item_specs.json.gz: the cards' descriptions
+
+
+ITEM_FIELDS = ("id", "name", "level", "category", "grade", "kind", "icon", "drop_icon", "catalog_ord", "spec")
+
+
+def _items(sources: Sources, drops: dict[str, tuple]) -> dict[int, dict]:
+    """Every item once: the catalog's fields first, then the bestiary's, then the chat links' names."""
+    items: dict[int, dict] = {}
+
+    def item(item_id, **fields) -> None:
+        text = str(item_id or "").strip()
+        if not text.isdigit():
+            return
+        row = items.setdefault(int(text), {key: None for key in ITEM_FIELDS} | {"id": int(text), "name": ""})
+        for key, value in fields.items():
+            if value not in (None, "") and row[key] in (None, ""):
+                row[key] = value
+
+    if sources.catalog and sources.catalog.is_file():
+        with sources.catalog.open(encoding="utf-8-sig", newline="") as stream:
+            for ord_, r in enumerate(csv.DictReader(stream)):
+                item(r.get("id"), name=r.get("name"), level=_level(r.get("level")), category=r.get("category") or "Прочее",
+                     grade=r.get("grade"), kind=r.get("kind"), icon=r.get("icon"), catalog_ord=ord_)
+    specs = _read_json(sources.specs) if sources.specs else {}
+    for item_id, spec in specs.items():
+        item(item_id, spec=spec if isinstance(spec, str) else json.dumps(spec, ensure_ascii=False, separators=(",", ":")))
+    for item_id, (name, rarity, icon) in sorted(drops.items()):
+        item(item_id, name=name, grade=rarity, drop_icon=icon)
+    if sources.item_names and sources.item_names.is_file():
+        for line in sources.item_names.read_text(encoding="utf-8").splitlines():
+            item_id, tab, name = line.partition("\t")
+            if tab:
+                item(item_id, name=name.strip())
+    return items
 
 
 def pack_ids(ids, delta: bool = False) -> bytes:
@@ -62,6 +103,26 @@ def unpack_ids(blob: bytes | None, delta: bool = False) -> list[int]:
         out.append(previous)
         value = shift = 0
     return out
+
+
+SPEC_DICT_SIZE = 32 * 1024  # zlib's window: the dictionary of item.spec (19 MB of JSON → 3.4 MB)
+
+
+def spec_dict(specs: list[bytes]) -> bytes:
+    """The descriptions' shared dictionary: every 50th one (in id order) to 32 KB; the same specs give the same bytes."""
+    return b"".join(specs[::50])[-SPEC_DICT_SIZE:]
+
+
+def pack_spec(text: str, dictionary: bytes) -> bytes:
+    packer = zlib.compressobj(9, zdict=dictionary)
+    return packer.compress(text.encode("utf-8")) + packer.flush()
+
+
+def unpack_spec(blob: bytes | None, dictionary: bytes) -> dict | None:
+    if blob is None:
+        return None
+    unpacker = zlib.decompressobj(zdict=dictionary)
+    return json.loads(unpacker.decompress(blob) + unpacker.flush())
 
 
 def name_key(name: str) -> str:
@@ -120,7 +181,7 @@ def build(sources: Sources, out: Path) -> dict:
 
     points = _Points()
     details: dict[str, dict] = {}
-    items: dict[str, tuple] = {}
+    drop_items: dict[str, tuple] = {}  # the bestiary's own data of a dropped item: name, rarity, picture
     dropped_by: dict[str, set[int]] = {}
     stock: list[tuple] = []
     places: dict[str, list[tuple]] = {"npc_zone": [], "npc_region": [], "npc_area": []}
@@ -144,7 +205,7 @@ def build(sources: Sources, out: Path) -> dict:
                 item_id = str(item.get("item_id") or "")
                 if not item_id.isdigit() or not npc_id.isdigit():
                     continue
-                items.setdefault(item_id, (item_id, item.get("name") or "", name_key(item.get("name") or ""), item.get("rarity"), item.get("icon")))
+                drop_items.setdefault(item_id, (item.get("name") or "", item.get("rarity"), item.get("icon")))
                 ids.append(int(item_id))
                 dropped_by.setdefault(item_id, set()).add(int(npc_id))
             if ids:
@@ -155,7 +216,7 @@ def build(sources: Sources, out: Path) -> dict:
                               item.get("icon_asset"), item.get("group"), item.get("trade_mode")))
         for item_id, name, rarity, icon in db.execute("SELECT item_id, name, rarity, icon FROM item ORDER BY item_id"):
             if str(item_id).isdigit():
-                items.setdefault(str(item_id), (str(item_id), name or "", name_key(name or ""), rarity, icon))
+                drop_items.setdefault(str(item_id), (name or "", rarity, icon))
         for table, columns in (("npc_zone", "npc_id, map_id, name"), ("npc_region", "npc_id, map_id, name"),
                                ("npc_area", "npc_id, map_id, area_id, point_count, center_x, center_y, names, polygon")):
             places[table] = [tuple(row) for row in db.execute(f"SELECT {columns} FROM {table} ORDER BY {columns}")]
@@ -224,9 +285,14 @@ def build(sources: Sources, out: Path) -> dict:
         "profile) VALUES (" + ",".join("?" * 28) + ")", rows)
     db.executemany("INSERT INTO npc_alias (alias, npc_id) VALUES (?, ?)", aliases)
     db.executemany("INSERT INTO npc_point (npc_id, map_id, x, y, z, source) VALUES (?,?,?,?,?,?)", points.rows)
-    db.executemany("INSERT INTO item (id, name, name_key, rarity, icon, dropped_by) VALUES (?,?,?,?,?,?)",
-                   sorted((int(i), *rest, pack_ids(sorted(dropped_by[i]), delta=True) if i in dropped_by else None)
-                          for i, *rest in items.values()))
+    items = _items(sources, drop_items)
+    dictionary = spec_dict([r["spec"].encode("utf-8") for _, r in sorted(items.items()) if r["spec"]])
+    db.executemany(
+        "INSERT INTO item (id, name, name_key, level, category, grade, kind, icon, drop_icon, catalog_ord, spec, dropped_by) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        [(i, r["name"], name_key(r["name"]), r["level"], r["category"], r["grade"], r["kind"], r["icon"], r["drop_icon"],
+          r["catalog_ord"], pack_spec(r["spec"], dictionary) if r["spec"] else None, pack_ids(sorted(dropped_by[str(i)]), delta=True) if str(i) in dropped_by else None)
+         for i, r in sorted(items.items())])
     db.executemany("INSERT INTO npc_stock (npc_id, ord, item_id, name, name_key, rarity, level, icon, grp, trade_mode) "
                    "VALUES (?,?,?,?,?,?,?,?,?,?)", stock)
     db.executemany("INSERT INTO npc_zone (npc_id, map_id, name) VALUES (?,?,?)", places["npc_zone"])
@@ -234,7 +300,7 @@ def build(sources: Sources, out: Path) -> dict:
     db.executemany("INSERT INTO npc_area (npc_id, map_id, area_id, point_count, center_x, center_y, names, polygon) "
                    "VALUES (?,?,?,?,?,?,?,?)", places["npc_area"])
     db.executemany("INSERT INTO meta (key, value) VALUES (?, ?)", [
-        ("schema", str(SCHEMA_VERSION)), ("stage", "2: npc + points, the bestiary's cards (item, npc_drop, npc_stock, areas)")])
+        ("schema", str(SCHEMA_VERSION)), ("spec_dict", dictionary), ("stage", "3: npc + points, the bestiary's cards, every item (names, catalog, descriptions)")])
     db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     db.commit()
     db.execute("VACUUM")
@@ -244,4 +310,5 @@ def build(sources: Sources, out: Path) -> dict:
     except PermissionError as error:  # Windows: a running Pulse+ holds the old file open
         raise PermissionError(f"{out} is in use (close Pulse+ first); the new database is left in {fresh}") from error
     return {"npcs": len(npcs), "aliases": len(aliases), "points": len(points.rows), "listed": sum(r["listed"] for r in npcs.values()),
-            "drops": sum(len(v) for v in dropped_by.values()), "stock": len(stock), "items": len(items)}
+            "drops": sum(len(v) for v in dropped_by.values()), "stock": len(stock), "items": len(items),
+            "catalog": sum(r["catalog_ord"] is not None for r in items.values())}

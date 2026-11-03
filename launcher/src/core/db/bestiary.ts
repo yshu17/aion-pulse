@@ -115,7 +115,7 @@ export async function detail(all: All, npcId: string): Promise<Row | null> {
   const dropIds = unpackIds(row.drops); // in the card's order
   const [stock, items, points] = await Promise.all([
     all("SELECT item_id, name, rarity, level, icon, grp, trade_mode FROM npc_stock WHERE npc_id = ? ORDER BY ord", [row.id]),
-    dropIds.length ? all("SELECT id, name, rarity, icon FROM item WHERE id IN (SELECT value FROM json_each(?))", [JSON.stringify(dropIds)]) : Promise.resolve([]),
+    dropIds.length ? all("SELECT id, name, grade AS rarity, drop_icon AS icon FROM item WHERE id IN (SELECT value FROM json_each(?))", [JSON.stringify(dropIds)]) : Promise.resolve([]),
     pointsOf(all, row.id),
   ]);
   const byId = new Map(items.map((item) => [Number(item.id), item]));

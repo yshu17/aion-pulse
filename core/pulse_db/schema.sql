@@ -5,7 +5,7 @@
 
 CREATE TABLE meta (
   key TEXT PRIMARY KEY,
-  value TEXT NOT NULL
+  value NOT NULL                 -- text; «spec_dict» is a BLOB, the dictionary of item.spec
 );
 
 -- every NPC and monster any source knows; a marker of the map's own («poi:Имя») is an NPC of source «map»
@@ -63,16 +63,24 @@ CREATE TABLE npc_point (
 CREATE INDEX npc_point_npc ON npc_point (npc_id);
 CREATE INDEX npc_point_map ON npc_point (map_id);
 
--- items as the bestiary knows them (stage 3 adds the rest of the item data)
+-- every item any source knows, once (stage 3): the names of chat links (item_names.tsv), the catalog of item cards
+-- (watch_items.csv, its fields win), their descriptions (item_specs.json.gz) and the bestiary's drops
 CREATE TABLE item (
   id INTEGER PRIMARY KEY,        -- the client's item id (a number: the drop links below stay small)
   name TEXT NOT NULL,
   name_key TEXT NOT NULL,
-  rarity TEXT,                   -- junk | common | rare | legend | unique | epic | mythic
-  icon TEXT,                     -- a picture of data/bestiary/icons/items
+  level INTEGER,
+  category TEXT,                 -- the list's group: «Лата», «Оружие» … «Припасы», «Прочее»
+  grade TEXT,                    -- junk | common | rare | legend | unique | epic | mythic
+  kind TEXT,                     -- finer type for the filter: «Меч», «Кольца»
+  icon TEXT,                     -- a picture of data/icons (without «.png»), the catalog's
+  drop_icon TEXT,                -- a picture of data/bestiary/icons/items, the bestiary's
+  catalog_ord INTEGER,           -- the place in the catalog (it has a card); NULL: only a name
+  spec BLOB,                     -- the card's description, JSON {name, grade, blocks}, deflated with meta «spec_dict»
   dropped_by BLOB                -- the NPC ids that drop it, sorted, packed as steps (see below)
 );
 CREATE INDEX item_name_key ON item (name_key);
+CREATE INDEX item_catalog ON item (catalog_ord) WHERE catalog_ord IS NOT NULL;
 
 -- The drops are 2.5 million NPC → item links read on exactly two paths: an NPC's card (npc.drops) and the NPCs found by
 -- a dropped item (item.dropped_by). They are kept as packed id lists there (~14 MB) rather than as a link table with its

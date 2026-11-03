@@ -6,6 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 import { CardOpen, onCardClose, onCardOpen } from "./cardLink";
 import { CardBody, OFFSET, useEsc, useSpec } from "./ItemCard";
+import { useItems } from "./data";
 
 const MARGIN = 8; // from the edges of the work area, CSS pixels
 
@@ -21,7 +22,8 @@ export function CardWindow() {
     return () => { off.forEach((p) => p.then((stop) => stop())); };
   }, [close]);
   useEsc(close);
-  return open ? <Placed key={open.n} open={open} onClose={close} /> : null;
+  const items = useItems(); // the card's title and grade come from the catalog
+  return open && items.ready ? <Placed key={open.n} open={open} onClose={close} /> : null;
 }
 
 /** One opening of the card: placed by its click, then kept on the screen when the description makes it taller. */

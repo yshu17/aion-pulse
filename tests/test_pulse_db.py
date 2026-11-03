@@ -8,7 +8,7 @@ import zlib
 from pathlib import Path
 
 from core.bestiary.bestiary_store import DETAIL_DICT
-from core.pulse_db.build import SCHEMA_VERSION, Sources, build, pack_ids, unpack_ids
+from core.pulse_db.build import SCHEMA_VERSION, Sources, build, pack_ids, unpack_ids, unpack_spec
 
 FIXTURE = Path(__file__).parent / "golden" / "bestiary_fixture.sqlite"  # a small real bestiary (15 NPCs, drops, goods, areas)
 
@@ -107,8 +107,8 @@ def test_holds_the_bestiary_cards_as_tables_goods_drops_and_areas(tmp_path):
     listed = db.execute("SELECT count(*) FROM npc WHERE listed = 1").fetchone()[0]
     assert listed == fixture.execute("SELECT count(*) FROM npc").fetchone()[0] + 2  # every bestiary record, the client-only ones not
     ids = unpack_ids(db.execute("SELECT drops FROM npc WHERE id = '210065'").fetchone()[0])
-    drops = [db.execute("SELECT name, rarity FROM item WHERE id = ?", (i,)).fetchone() for i in ids]
-    assert len(drops) == 2 and drops[0]["rarity"] == "junk"
+    drops = [db.execute("SELECT name, grade FROM item WHERE id = ?", (i,)).fetchone() for i in ids]
+    assert len(drops) == 2 and drops[0]["grade"] == "junk"
     assert 210065 in unpack_ids(db.execute("SELECT dropped_by FROM item WHERE id = ?", (ids[0],)).fetchone()[0], delta=True)
     goods = db.execute("SELECT name, grp FROM npc_stock WHERE npc_id = '220000' ORDER BY ord").fetchall()
     assert len(goods) == 3 and goods[0]["grp"]
@@ -120,6 +120,43 @@ def test_holds_the_bestiary_cards_as_tables_goods_drops_and_areas(tmp_path):
     # the point count of the list is the one table's: the bestiary's own point and the map's two of NPC 100
     assert db.execute("SELECT point_count FROM npc WHERE id = '100'").fetchone()[0] == 4
     assert db.execute("SELECT point_count FROM npc WHERE id = '799323'").fetchone()[0] == 1  # through the map's marker
+
+
+def item_sources(tmp_path) -> Sources:
+    """The bestiary's sources and the three item files: chat link names, the catalog of item cards, their descriptions."""
+    base = sources(tmp_path)
+    # ids clear of the bestiary fixture's items (1-5)
+    (tmp_path / "item_names.tsv").write_text("901\tСтарое имя\n902\tЗелье жизни\n907\tТолько в ссылках\nmeta\tне id\n", encoding="utf-8")
+    (tmp_path / "watch_items.csv").write_text(
+        "﻿id,name,level,category,grade,icon,kind\n"
+        "902,Зелье жизни,1,Припасы,common,icon_item_potion,\n"
+        "901,\"Меч, древний\",55,Оружие,unique,icon_item_sword,Меч\n", encoding="utf-8")
+    with gzip.open(tmp_path / "item_specs.json.gz", "wt", encoding="utf-8") as out:
+        json.dump({"901": {"name": "Меч, древний", "grade": "unique", "blocks": [{"kind": "hr"}]},
+                   "902": json.dumps({"name": "Зелье жизни", "grade": "common", "blocks": []})}, out)  # values may be JSON text
+    return Sources(spawns=base.spawns, npc_points=base.npc_points, npcs=base.npcs, bestiary=base.bestiary,
+                   item_names=tmp_path / "item_names.tsv", catalog=tmp_path / "watch_items.csv", specs=tmp_path / "item_specs.json.gz")
+
+
+def test_holds_every_item_once_names_cards_and_descriptions(tmp_path):
+    out = tmp_path / "pulse.db"
+    report = build(item_sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    db.row_factory = sqlite3.Row
+    rows = {r["id"]: r for r in db.execute("SELECT * FROM item")}
+    # the catalog's fields win over the older name list; its order is kept for the «Что искать» list
+    assert dict(rows[901]) | {"spec": None, "dropped_by": None} == {
+        "id": 901, "name": "Меч, древний", "name_key": "меч, древний", "level": 55, "category": "Оружие", "grade": "unique",
+        "kind": "Меч", "icon": "icon_item_sword", "drop_icon": None, "catalog_ord": 1, "spec": None, "dropped_by": None}
+    dictionary = db.execute("SELECT value FROM meta WHERE key = 'spec_dict'").fetchone()[0]  # the descriptions are deflated with it
+    assert unpack_spec(rows[901]["spec"], dictionary)["blocks"] == [{"kind": "hr"}]
+    assert unpack_spec(rows[902]["spec"], dictionary)["name"] == "Зелье жизни"
+    assert rows[902]["catalog_ord"] == 0
+    assert (rows[907]["name"], rows[907]["catalog_ord"], rows[907]["spec"]) == ("Только в ссылках", None, None)  # a chat link's name only
+    # the bestiary's drops are the same rows: its picture and grade where the catalog has none
+    drop = db.execute("SELECT grade, drop_icon, dropped_by FROM item WHERE dropped_by IS NOT NULL LIMIT 1").fetchone()
+    assert drop["grade"] and drop["drop_icon"]
+    assert report["catalog"] == 2 and report["items"] == len(rows)
 
 
 def test_packs_id_lists_both_ways():

@@ -24,7 +24,8 @@ function sample(): All {
       ('400', 'Служебный', 'служебный', NULL, NULL, NULL, NULL, NULL, '', '', 'bestiary', 1, 'npc',
        NULL, NULL, 'служебный 400', 'служебный', '', NULL, 0, 1, 0, 0, '{}'),
       ('poi:Аргус', 'Аргус', 'аргус', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'map', 0, NULL, NULL, NULL, 'аргус poi:Аргус', 'аргус', '', NULL, 0, 0, 1, 0, NULL);
-    INSERT INTO item VALUES (1, 'Сверкающие когти', 'сверкающие когти', 'common', 'icon_item_claw.png', X'64'); -- dropped by NPC 100
+    INSERT INTO item (id, name, name_key, grade, drop_icon, dropped_by)
+      VALUES (1, 'Сверкающие когти', 'сверкающие когти', 'common', 'icon_item_claw.png', X'64'); -- dropped by NPC 100
     UPDATE npc SET drops = X'01' WHERE id = '100'; -- drops item 1
     INSERT INTO npc_stock VALUES ('200', 0, '9', 'Зелье жизни', 'зелье жизни', 'common', '1', 'client/potion.png', 'Бакалея', 'Покупка');
     INSERT INTO npc_zone VALUES ('100', '220050000', 'Брустхонин');

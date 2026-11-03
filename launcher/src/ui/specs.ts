@@ -1,33 +1,21 @@
-// An item's description for its card, from the worker that holds data/item_specs.json.gz (started on the first card).
+// An item's description for its card, from the game database (pulse.db item.spec, core/db/items.ts).
+import { itemSpecs } from "../core/db/items";
 import type { Spec } from "../core/items/specs";
+import { pulseDb } from "./db/pulseDb";
 
 export type SpecAnswer = { spec: Spec | null; error?: string };
 
-let worker: Worker | null = null;
-let asks = 0;
-const waiting = new Map<number, (answer: SpecAnswer) => void>();
+let reader: Promise<((id: string) => Promise<Spec | null>) | null> | null = null;
 
-function start(): Worker {
-  const started = new Worker(new URL("./specWorker.ts", import.meta.url), { type: "module" });
-  started.onmessage = (event: MessageEvent<{ ask: number } & SpecAnswer>) => {
-    const { ask, ...answer } = event.data;
-    waiting.get(ask)?.(answer);
-    waiting.delete(ask);
-  };
-  started.onerror = (event) => { // the worker itself failed: every open question gets an answer, the next one starts anew
-    for (const answer of waiting.values()) answer({ spec: null, error: event.message || "worker" });
-    waiting.clear();
-    worker = null;
-  };
-  return started;
-}
-
-/** The description of an item, or null (with the error when the file could not be read). */
-export function itemSpec(id: string): Promise<SpecAnswer> {
-  worker ??= start();
-  const ask = ++asks;
-  return new Promise((resolve) => {
-    waiting.set(ask, resolve);
-    worker!.postMessage({ ask, id });
-  });
+/** The description of an item, or null (with the error when the database could not be read). */
+export async function itemSpec(id: string): Promise<SpecAnswer> {
+  reader ??= pulseDb().then((all) => all && itemSpecs(all));
+  try {
+    const read = await reader;
+    if (!read) return { spec: null, error: "нет базы игры data/pulse.db" };
+    return { spec: await read(id) };
+  } catch (error) {
+    reader = null; // the next card tries again
+    return { spec: null, error: String(error) };
+  }
 }

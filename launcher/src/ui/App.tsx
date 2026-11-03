@@ -22,6 +22,7 @@ import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { Boot, useBoot } from "./useBoot";
+import { useItems } from "./data";
 import { useWatch } from "./useWatch";
 
 const TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
@@ -29,12 +30,16 @@ const MODES: [string, string][] = [["or", "Слово или предмет"], [
 
 export default function App() {
   const boot = useBoot();
-  if (!boot.ready) return <div className="window loading"><span className="muted">Загружаю настройки…</span></div>;
-  return <Screen boot={boot} />;
+  const items = useItems(); // read alongside the settings
+  if (!boot.ready || !items.ready) {
+    return <div className="window loading"><span className="muted">{boot.ready ? "Загружаю предметы…" : "Загружаю настройки…"}</span></div>;
+  }
+  return <Screen boot={boot} itemsProblem={items.problem} />;
 }
 
 
-function Screen({ boot }: { boot: Boot }) {
+function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
+  const notice = boot.notice || itemsProblem;
   const watch = useWatch(boot);
   const schedule = useSchedule(boot, watch.notify); // reminders come on every tab
   const problem = watch.source.kind === "missing" || watch.source.kind === "error";
@@ -212,7 +217,7 @@ function Screen({ boot }: { boot: Boot }) {
                 <span>Игра не запущена: слежение остановлено. Запусти Aion и нажми «Старт» или проверь снова.</span>
                 <button className="btn" onClick={() => watch.checkGame().then((r) => { if (r !== false) watch.setWatching(true); })}>Проверить снова</button>
               </div>)}
-            {(problem || boot.notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : boot.notice}</div>}
+            {(problem || notice) && <div className={`banner${problem ? " warn" : ""}`}>{problem ? watch.source.text : notice}</div>}
             <OpenItem.Provider value={openCard}>
               <OpenPlace.Provider value={openPlace}>
               <Feed rows={watch.rows} mode={feedMode} system={watch.system} reactSec={cfg.react_sec}
