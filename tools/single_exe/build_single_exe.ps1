@@ -1,4 +1,4 @@
-# Builds one file: Pulse+.exe = Launcher.cs + payload.zip (the RELEASE Pulse+Local.exe and the data folder).
+# Builds one file: Pulse+.exe = Launcher.cs + payload.zip (the RELEASE Pulse+Local.exe and the data folder without the sources of pulse.db).
 # Usage: powershell -ExecutionPolicy Bypass -File tools\single_exe\build_single_exe.ps1
 param(
     [string]$App = "$PSScriptRoot\..\..\local\Pulse+Release\Pulse+Local.exe",  # the build for the users, without the developer tools
@@ -22,6 +22,11 @@ New-Item -ItemType Directory -Path "$stage\pkg" | Out-Null
 try {
     Copy-Item $app "$stage\pkg\Pulse+Local.exe"
     Copy-Item $data "$stage\pkg\data" -Recurse
+    # the sources of data/pulse.db are not needed by the program (every tab reads the database): they stay out of the package
+    foreach ($source in @("game", "bestiary\npcs.sqlite", "item_names.tsv", "watch_items.csv", "item_specs.json.gz", "quest_names.tsv")) {
+        Remove-Item (Join-Path "$stage\pkg\data" $source) -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    if (-not (Test-Path "$stage\pkg\data\pulse.db")) { throw "data\pulse.db is missing: run tools\build_pulse_db.py first" }
 
     # the zip with forward slashes in its entries (Compress-Archive of Windows PowerShell 5.1 writes backslashes)
     $zip = "$stage\payload.zip"
