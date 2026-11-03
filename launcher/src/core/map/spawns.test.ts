@@ -68,6 +68,14 @@ describe("NPC and monster points (spawns.json)", () => {
     expect(found.length).toBeGreaterThan(0);
   });
 
+  it("lists every zone an NPC stands in with its points, also for a pseudo NPC of the map («poi:Name»)", () => {
+    const small = Spawns.parse(JSON.stringify({ names: { "1": "Житель", "poi:Теграк": "Теграк" },
+      zones: { "220070000": [["1", 10, 20, 0], ["poi:Теграк", 1819.6, 1977.1, 0]], "220040000": [["1", 1, 1, 0]] } }));
+    expect(small.zonesOf("1")).toEqual([{ map_id: "220040000", points: [[1, 1, 0]] }, { map_id: "220070000", points: [[10, 20, 0]] }]); // zones in id order
+    expect(small.zonesOf("poi:Теграк")).toEqual([{ map_id: "220070000", points: [[1819.6, 1977.1, 0]] }]);
+    expect(small.zonesOf("nobody")).toEqual([]);
+  });
+
   it("lists the decorative NPCs of a zone (the small blue dots), each point with its NPC", () => {
     const small = Spawns.parse(JSON.stringify({ names: { "1": "Житель", "2": "Страж" }, deco: ["1"],
       zones: { "220070000": [["1", 10, 20, 0], ["2", 30, 40, 0], ["1", 50, 60, 0]], "220040000": [["1", 1, 1, 0]] } }));

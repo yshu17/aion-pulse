@@ -56,6 +56,11 @@ export class Spawns {
     }
   }
 
+  /** Every zone an NPC stands in with its points; any id counts, also a pseudo NPC of the map («poi:Name»). Empty for an unknown one. */
+  zonesOf(npc: string): { map_id: string; points: SpawnPoint[] }[] {
+    return [...(this.byNpc.get(npc) ?? [])].map(([map_id, points]) => ({ map_id, points }));
+  }
+
   get size(): number {
     return this.byNpc.size;
   }

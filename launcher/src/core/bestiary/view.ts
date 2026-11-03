@@ -4,6 +4,7 @@
  *   LEVELS / levelRange(label)   the «Уровень» choices and their bounds for BestiaryStore.search
  *   RANK_CHIPS                   the class chips: [label, rank of the database]
  *   rowSubtitle(row)             «Ур. 55 · Торговец · Обычный» under a list row's name
+ *   mergePoints(own, map)        the bestiary's points plus the map's (spawns.json) without doubles
  *   mainPlace(detail) / placeAt(detail, zone)   the zone with the most points / a chosen zone, and the first point there
  *   hpFrame(detail)              the HP artwork of the card (rank-specific part of the sprite)
  *   statGroups(detail) / rankTier(rank)   the card's four key numbers and the other facts / a rank's tier 1…4
@@ -32,6 +33,27 @@ export const RANK_CHIPS: [string, string][] = [
 export function rowSubtitle(row: Detail): string {
   const level = row.level === "" || row.level === null || row.level === undefined ? "" : `Ур. ${row.level}`;
   return [level, row.kind, row.rank].filter((part) => part).join(" · ");
+}
+
+const pointKey = (mapId: unknown, x: unknown, y: unknown) => `${mapId}:${Math.round(Number(x))}:${Math.round(Number(y))}`;
+
+/**
+ * The NPC's points for its card: the bestiary's own, then the points the map knows (spawns.json: the NPC's id and its
+ * «poi:Name» twin) that the bestiary has not (the same place to a unit counts as the same point). The map's ones come
+ * as `{ map_id, gx, gy, gz, source: "map" }`, as the bestiary's own.
+ */
+export function mergePoints(own: Detail[], map: { map_id: string; points: [number, number, number][] }[]): Detail[] {
+  const merged = [...own];
+  const seen = new Set(own.map((p) => pointKey(p.map_id, p.gx, p.gy)));
+  for (const zone of map) {
+    for (const [x, y, z] of zone.points) {
+      const key = pointKey(zone.map_id, x, y);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push({ map_id: zone.map_id, gx: x, gy: y, gz: z, source: "map" });
+    }
+  }
+  return merged;
 }
 
 export type Place = { map_id: string; count: number; gx: number; gy: number };

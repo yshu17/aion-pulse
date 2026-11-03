@@ -8,13 +8,13 @@ import { memo, startTransition, useEffect, useMemo, useRef, useState } from "rea
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { statText } from "../../core/bestiary/labels";
 import type { Row } from "../../core/bestiary/store";
-import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
+import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, mergePoints, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { mapNames } from "../data";
 import { CountUp, Glide, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
-import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
+import { loadSpawns, pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import "./bestiary.css";
@@ -175,11 +175,20 @@ function CardSkeleton() {
 
 type TabName = "drops" | "places" | "stock";
 
-const Card = memo(function Card({ client, detail }: { client: BestiaryClient; detail: Detail }) {
+const Card = memo(function Card({ client, detail: base }: { client: BestiaryClient; detail: Detail }) {
   const openMap = useOpenMap();
+  // the places of the NPC are the bestiary's and the map's together: what the map knows of it (its id, its «poi:Name» twin) is added
+  const [mapZones, setMapZones] = useState<{ map_id: string; points: [number, number, number][] }[]>([]);
+  useEffect(() => {
+    let alive = true;
+    loadSpawns().then((spawns) => { if (alive) setMapZones([...spawns.zonesOf(String(base.id)), ...spawns.zonesOf(`poi:${base.name}`)]); }).catch(() => {});
+    return () => { alive = false; };
+  }, [base.id, base.name]);
+  const detail: Detail = useMemo(() => ({ ...base, points: mergePoints(base.points ?? [], mapZones) }), [base, mapZones]);
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
-  const [zone, setZone] = useState<string | null>(() => mainPlace(detail)?.map_id ?? null); // the zone the map and the button show
+  const [chosen, setZone] = useState<string | null>(null); // the zone the user picked in «Локации»; else the one with the most points
+  const zone = chosen ?? mainPlace(detail)?.map_id ?? null; // the zone the map and the button show
   const place = zone ? placeAt(detail, zone) : null;
   const picture = place ? zones[place.map_id] : undefined;
   const text = overviewText(detail);
@@ -188,7 +197,7 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
   const showOnMap = async () => {
     if (!place || !openMap) return;
     const id = String(detail.id);
-    // the bestiary's own points go with the request: the map draws them when spawns.json has none under this id
+    // the card's points go with the request: the map draws them when spawns.json has none under this id
     const points = (detail.points ?? []).filter((p: Detail) => String(p.map_id) === place.map_id).map((p: Detail) => [Number(p.gx), Number(p.gy), Number(p.gz ?? 0)] as [number, number, number]);
     openMap({ type: "npc", npc: id, name: detail.name, map_id: place.map_id, at: [place.gx, place.gy], points });
   };
