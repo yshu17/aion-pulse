@@ -211,7 +211,7 @@ function HpBar({ detail }: { detail: Detail }) {
       <div className="bst-hp" role="img" aria-label={`Уровень ${level}`} style={{ width: x1 - x0, height: y1 - y0,
         backgroundImage: sprite ? `url(${sprite})` : undefined, backgroundPosition: `${-x0}px ${-y0}px` }}>
         <span className="bst-hp-icon" style={{ left: bar.iconLeft, top: bar.iconTop }}><Pic path={detail.icon_asset || "ui/monster.png"} className="bst-hp-pic" /></span>
-        <span className="bst-hp-level" style={{ top: bar.levelTop }}>{level}</span>
+        <span className="bst-hp-level" style={{ left: bar.levelLeft, top: bar.levelTop }}>{level}</span>
       </div>
       <div className="bst-hp-text">
         <b>Уровень {detail.level || "—"}</b>
