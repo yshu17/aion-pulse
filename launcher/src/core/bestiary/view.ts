@@ -52,18 +52,21 @@ export function mainPlace(detail: Detail): Place | null {
 }
 
 const HP_FRAMES: Record<number, [number, number, number, number]> = { 1: [25, 0, 297, 79], 2: [26, 98, 310, 188], 3: [5, 205, 333, 296], 4: [0, 322, 336, 420] };
-const HP_ICON_TOP: Record<number, number> = { 1: 22, 2: 25, 3: 28, 4: 25 };
+// the emblem and the level, centred by eye on each rank's socket (checked on the sprite at 3x)
+const HP_ICON_TOP: Record<number, number> = { 1: 22, 2: 25, 3: 25, 4: 25 };
+const HP_ICON_LEFT: Record<number, number> = { 1: 25, 2: 24, 3: 27, 4: 27 };
+const HP_LEVEL_TOP: Record<number, number> = { 1: 41, 2: 44, 3: 42, 4: 46 };
 const HP_OF_RANK: Record<string, number> = { "Обычный": 1, "Элитный": 2, "Героический": 3, "Легендарный": 4 };
 
 /**
  * The HP artwork of an NPC's card: the rank-specific bar of the sprite npc/hp-bars.png (not a live HP), as Pulse draws it.
  * `frame` is [x0, y0, x1, y1] in the sprite; the emblem goes in a circle at (iconLeft, iconTop), the level at its left.
  */
-export function hpFrame(detail: Detail): { rank: number; frame: [number, number, number, number]; iconTop: number; iconLeft: number } | null {
+export function hpFrame(detail: Detail): { rank: number; frame: [number, number, number, number]; iconTop: number; iconLeft: number; levelTop: number } | null {
   const asked = detail.hp_bar || HP_OF_RANK[detail.rank as string];
   if (!asked) return null;
   const rank = asked in HP_FRAMES ? Number(asked) : 1;
-  return { rank, frame: HP_FRAMES[rank], iconTop: HP_ICON_TOP[rank], iconLeft: rank === 2 ? 24 : 27 };
+  return { rank, frame: HP_FRAMES[rank], iconTop: HP_ICON_TOP[rank], iconLeft: HP_ICON_LEFT[rank], levelTop: HP_LEVEL_TOP[rank] };
 }
 
 const KEY_STATS = ["Макс. ХП", "DP", "Опыт", "Ранг Бездны"];
