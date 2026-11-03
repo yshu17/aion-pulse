@@ -53,10 +53,10 @@ export function mainPlace(detail: Detail): Place | null {
 
 const HP_FRAMES: Record<number, [number, number, number, number]> = { 1: [25, 0, 297, 79], 2: [26, 98, 310, 188], 3: [5, 205, 333, 296], 4: [0, 322, 336, 420] };
 // the emblem and the level, centred by eye on each rank's socket (checked on the sprite at 3x)
-const HP_ICON_TOP: Record<number, number> = { 1: 22, 2: 26, 3: 25, 4: 25 };
-const HP_ICON_LEFT: Record<number, number> = { 1: 30, 2: 30, 3: 27, 4: 27 };
-const HP_LEVEL_TOP: Record<number, number> = { 1: 41, 2: 45, 3: 42, 4: 46 };
-const HP_LEVEL_LEFT: Record<number, number> = { 1: 19, 2: 17, 3: 14, 4: 14 };
+const HP_ICON_TOP: Record<number, number> = { 1: 22, 2: 26, 3: 27, 4: 25 };
+const HP_ICON_LEFT: Record<number, number> = { 1: 30, 2: 30, 3: 29, 4: 27 };
+const HP_LEVEL_TOP: Record<number, number> = { 1: 41, 2: 45, 3: 45, 4: 46 };
+const HP_LEVEL_LEFT: Record<number, number> = { 1: 19, 2: 17, 3: 17, 4: 14 };
 const HP_OF_RANK: Record<string, number> = { "Обычный": 1, "Элитный": 2, "Героический": 3, "Легендарный": 4 };
 
 /**
