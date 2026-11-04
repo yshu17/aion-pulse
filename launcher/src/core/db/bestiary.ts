@@ -114,7 +114,7 @@ export async function detail(all: All, npcId: string): Promise<Row | null> {
   if (!row) return null;
   const dropIds = unpackIds(row.drops); // in the card's order
   const [stock, items, points] = await Promise.all([
-    all("SELECT item_id, name, rarity, level, icon, grp, trade_mode FROM npc_stock WHERE npc_id = ? ORDER BY ord", [row.id]),
+    all("SELECT s.item_id, s.name, s.rarity, s.level, s.icon, s.grp, s.trade_mode, i.icon AS catalog_icon FROM npc_stock s LEFT JOIN item i ON i.id = CAST(s.item_id AS INTEGER) WHERE s.npc_id = ? ORDER BY s.ord", [row.id]),
     dropIds.length ? all("SELECT id, name, grade AS rarity, drop_icon AS icon, icon AS catalog_icon FROM item WHERE id IN (SELECT value FROM json_each(?))", [JSON.stringify(dropIds)]) : Promise.resolve([]),
     pointsOf(all, row.id),
   ]);
@@ -126,7 +126,7 @@ export async function detail(all: All, npcId: string): Promise<Row | null> {
     id: row.id, name: row.name, internal_name: row.internal_name ?? "", category: row.category ?? "", role: row.role ?? "",
     title: row.title ?? "", description: row.description ?? "", race: row.race ?? "", faction: row.faction ?? "", kind: row.kind ?? "",
     rank: row.rank ?? "", level: row.level ?? "", hp_bar: row.hp_bar, icon_asset: row.icon ?? "",
-    stock: stock.map((s) => ({ item_id: s.item_id, name: s.name, rarity: s.rarity, level: s.level, icon_asset: s.icon, group: s.grp, trade_mode: s.trade_mode })),
+    stock: stock.map((s) => ({ item_id: s.item_id, name: s.name, rarity: s.rarity, level: s.level, icon_asset: s.icon, catalog_icon: s.catalog_icon, group: s.grp, trade_mode: s.trade_mode })),
     drops: drops.map((d) => ({ item_id: String(d.id), name: d.name, rarity: d.rarity, icon: d.icon, catalog_icon: d.catalog_icon })),
     points: points.map((p) => ({ map_id: p.map_id, gx: p.x, gy: p.y, gz: p.z, source: p.source })),
   };

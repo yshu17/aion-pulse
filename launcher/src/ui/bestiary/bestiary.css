@@ -160,8 +160,9 @@
 @keyframes bst-sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .bst-skel { animation: none; } }
 
-/* press and hover feedback: things answer the pointer, softly */
-.bst-chip:active, .bst-row:active, .bst-tabs button:active, .bst-place:active { transform: scale(.975); }
+/* press and hover feedback: things answer the pointer, softly. Not on the chips, tabs and rows: their sliding pill is a child of the
+   pressed button, and a scaled parent would make it grow from the middle instead of gliding from the old tab. */
+.bst-place:active { transform: scale(.975); }
 .bst-tile, .bst-good, .bst-place { transition: transform var(--t) var(--ease-out), border-color var(--t) var(--ease-out); }
 .bst-tile:hover, .bst-good:hover { transform: translateY(-2px); border-color: var(--border-control); }
 .bst-go { transition: transform var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), box-shadow var(--t) var(--ease-out); }

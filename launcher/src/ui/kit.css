@@ -137,5 +137,8 @@ main.chat, main.sch, main.soon, main.bst, main.map-page { animation: tab-in var(
 /* press feedback for every plain button and tab: a small give under the finger, a quick return */
 .btn, .tab, .chip { transition: background .12s, color .12s, border-color .12s, transform var(--t-fast) var(--ease-out), box-shadow var(--t) var(--ease-out); }
 .btn:active:not(:disabled), .tab:active, .chip:active { transform: scale(.97); }
+/* a button that carries the sliding pill (Glide: tabs, segmented controls, chips) is not scaled: the pill is its child, and a scaled
+   parent makes the pill grow from the middle of the pressed button instead of gliding from the old one */
+button:has(> .seg-pill, > .bst-glide, > .tab-line, > .map-glide):active:not(:disabled) { transform: none; }
 .btn.primary:hover:not(:disabled) { box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent); }
 @media (prefers-reduced-motion: reduce) { .btn, .tab, .chip { transition: none; } .btn:active:not(:disabled), .tab:active, .chip:active { transform: none; } }
