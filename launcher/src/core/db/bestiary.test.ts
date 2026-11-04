@@ -24,8 +24,8 @@ function sample(): All {
       ('400', 'Служебный', 'служебный', NULL, NULL, NULL, NULL, NULL, '', '', 'bestiary', 1, 'npc',
        NULL, NULL, 'служебный 400', 'служебный', '', NULL, 0, 1, 0, 0, '{}'),
       ('poi:Аргус', 'Аргус', 'аргус', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'map', 0, NULL, NULL, NULL, 'аргус poi:Аргус', 'аргус', '', NULL, 0, 0, 1, 0, NULL);
-    INSERT INTO item (id, name, name_key, grade, drop_icon, dropped_by)
-      VALUES (1, 'Сверкающие когти', 'сверкающие когти', 'common', 'icon_item_claw.png', X'64'); -- dropped by NPC 100
+    INSERT INTO item (id, name, name_key, grade, icon, drop_icon, dropped_by)
+      VALUES (1, 'Сверкающие когти', 'сверкающие когти', 'common', 'icon_item_claw', 'icon_item_claw.png', X'64'); -- dropped by NPC 100
     UPDATE npc SET drops = X'01' WHERE id = '100'; -- drops item 1
     INSERT INTO npc_stock VALUES ('200', 0, '9', 'Зелье жизни', 'зелье жизни', 'common', '1', 'client/potion.png', 'Бакалея', 'Покупка');
     INSERT INTO npc_zone VALUES ('100', '220050000', 'Брустхонин');
@@ -62,7 +62,7 @@ describe("the bestiary from pulse.db", () => {
     const card = await detail(all, "100");
     expect(card).toMatchObject({ id: "100", name: "Лесной руфиллин", rank: "Обычный", level: 49, hp_bar: 1, category: "monster",
       icon_asset: "npc/m.jpg", stats: { "Макс. ХП": "11578" }, kb_status: "loaded", stock: [] });
-    expect(card!.drops).toEqual([{ item_id: "1", name: "Сверкающие когти", rarity: "common", icon: "icon_item_claw.png" }]);
+    expect(card!.drops).toEqual([{ item_id: "1", name: "Сверкающие когти", rarity: "common", icon: "icon_item_claw.png", catalog_icon: "icon_item_claw" }]);
     expect(card!.points.map((p: any) => [p.map_id, p.gx, p.gy, p.source])).toEqual([["220050000", 653.2, 1692.4, "map"], ["220050000", 1000, 1000, "bestiary"]]);
     const shop = await detail(all, "200");
     expect(shop!.stock).toEqual([{ item_id: "9", name: "Зелье жизни", rarity: "common", level: "1", icon_asset: "client/potion.png", group: "Бакалея", trade_mode: "Покупка" }]);

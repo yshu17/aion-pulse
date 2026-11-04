@@ -11,7 +11,7 @@ import { statText } from "../../core/bestiary/labels";
 import type { Row } from "../../core/bestiary/store";
 import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
-import { mapNames } from "../data";
+import { iconUrl, mapNames } from "../data";
 import { CountUp, Glide, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
 import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
@@ -24,15 +24,19 @@ const PAGE = 150; // rows per search; «Показать ещё» adds the next 
 const TYPE_MS = 140; // the list searches this long after the last change: fast typing runs one search
 const GOODS_SHOWN = 120; // the card draws at most this many goods or drops (a merchant may sell hundreds): the search narrows them
 
-/** A picture of data/bestiary/icons, or an empty tile while it loads or when it is missing. */
-function Pic({ path, className }: { path: string | null | undefined; className: string }) {
+/**
+ * A picture of data/bestiary/icons, or an empty tile while it loads or when it is missing. `game` is an item's game icon
+ * (data/icons, full-size, the same as the chat and the item list): it is shown first, the bestiary's own picture (a small
+ * icon on the site's grey frame) only when the game has none.
+ */
+function Pic({ path, game, className }: { path: string | null | undefined; game?: string | null; className: string }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
     setUrl(null);
-    bestiaryIcon(iconPath(path)).then((got) => { if (alive) setUrl(got); });
+    (async () => (game ? await iconUrl(game) : null) ?? bestiaryIcon(iconPath(path)))().then((got) => { if (alive) setUrl(got); });
     return () => { alive = false; };
-  }, [path]);
+  }, [path, game]);
   return url ? <img className={className} src={url} alt="" draggable={false} decoding="async" loading="lazy" /> : <span className={`${className} blank`} aria-hidden="true" />;
 }
 
@@ -287,7 +291,7 @@ function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
       <ul className="bst-goods">
         {list.slice(0, GOODS_SHOWN).map(([i, item], at) => (
           <m.li key={i} className={`bst-good ${rarityClass(item.rarity)}`} {...row(at, 8)}>
-            <Pic path={item.icon_asset ?? item.icon} className="bst-good-pic" />
+            <Pic path={item.icon_asset ?? item.icon} game={item.catalog_icon} className="bst-good-pic" />
             <span className="bst-good-text">
               <b>{item.name}</b>
               <span>{[item.group, sells ? item.trade_mode : RARITY[item.rarity as string]].filter(Boolean).join(" · ")}</span>
