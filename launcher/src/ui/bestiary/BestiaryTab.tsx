@@ -4,7 +4,7 @@
 // pulse.db, the one game database (core/db/bestiary.ts, read by the program's Rust; bestiaryDb.ts): the tab is drawn at once
 // with placeholders, the search box works from the first moment, the answers come in when ready; what is shown of them by
 // core/bestiary/card.ts and view.ts.
-import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { memo, startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { statText } from "../../core/bestiary/labels";
@@ -185,6 +185,14 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
   const openMap = useOpenMap();
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
+  // The pill under the chosen tab slides along the bar by its own position and width. (A shared-layout pill, Glide, follows the
+  // tab on the screen: when the shorter list of the other tab scrolls the card, the bar moves and the pill jumped up and down.)
+  const bar = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
+  useLayoutEffect(() => {
+    const on = bar.current?.querySelector<HTMLElement>("button.on");
+    if (on) setPill({ x: on.offsetLeft, w: on.offsetWidth });
+  }, [tab, sells]);
   const [chosen, setZone] = useState<string | null>(null); // the zone the user picked in «Локации»; else the one with the most points
   const zone = chosen ?? mainPlace(detail)?.map_id ?? null; // the zone the map and the button show
   const place = zone ? placeAt(detail, zone) : null;
@@ -234,10 +242,11 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
       )}
       {!key.length && <p className="bst-note">Числовой профиль (ХП, опыт, ДП) для этого NPC не загружен.</p>}
 
-      <m.div className="bst-tabs" role="tablist" {...reveal(4)}>
+      <m.div className="bst-tabs" role="tablist" ref={bar} {...reveal(4)}>
+        {pill && <m.span className="bst-glide" aria-hidden initial={false} animate={{ x: pill.x, width: pill.w }} transition={SPRING} />}
         {([["drops", "Добыча", dropsCount], ["places", "Локации", placesCount], ...(sells ? [["stock", "Товары", detail.stock.length]] : [])] as [TabName, string, number][]).map(([name, label, count]) => (
           <button key={name} role="tab" aria-selected={tab === name} className={tab === name ? "on" : ""} onClick={() => setTab(name)}>
-            {tab === name && <Glide group="bst-tab" className="bst-glide" />}<span>{label}</span><i>{count}</i>
+            <span>{label}</span><i>{count}</i>
           </button>
         ))}
       </m.div>
