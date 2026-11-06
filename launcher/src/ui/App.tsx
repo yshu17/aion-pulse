@@ -1,5 +1,5 @@
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
@@ -25,8 +25,15 @@ import { Boot, useBoot } from "./useBoot";
 import { useItems } from "./data";
 import { useWatch } from "./useWatch";
 
+/** The tabs that have a screen; the others say «будет следующей». */
+const LIVE_TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание"];
 const TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
 const MODES: [string, string][] = [["or", "Слово или предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово и предмет"]];
+
+/** One tab's place: all the opened tabs lie one on another, only the chosen one is seen (a hidden one keeps its size and scroll). */
+function Pane({ on, children }: { on: boolean; children: ReactNode }) {
+  return <div className={`pane${on ? " on" : ""}`} aria-hidden={!on}>{children}</div>;
+}
 
 export default function App() {
   const boot = useBoot();
@@ -108,6 +115,11 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
     return () => { off.then((unlisten) => unlisten()); };
   }, [boot.platform]);
   const [tab, setTab] = useState("Чат");
+  // A tab that has been opened stays alive under the others (hidden, same size): its chosen NPC, search, zone, scroll and
+  // fields are what the user left when coming back. A tab not opened yet is not drawn at all.
+  const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(["Чат"]));
+  useEffect(() => { setSeen((old) => (old.has(tab) ? old : new Set(old).add(tab))); }, [tab]);
+  const alive = (name: string) => tab === name || seen.has(name);
   const [feedMode, setFeedMode] = useState<FeedMode>("all");
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
@@ -160,7 +172,8 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
           onClick={() => setSettings(true)}><IconSettings /><span className="label">Настройки</span></button>
       </header>
 
-      {tab === "Чат" ? (
+      <div className="panes">
+      <Pane on={tab === "Чат"}>
         <main className="chat">
           <div className="chat-head">
             <div className="head">
@@ -230,19 +243,24 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
           </OpenItem.Provider>
           </div>
         </main>
-      ) : tab === "Карта" ? (
-        <OpenMap.Provider value={openMap}>
-          <MapTab boot={boot} target={mapTarget} home={mapHome} onPlaceCleared={() => setMapTarget(null)} />
-        </OpenMap.Provider>
-      ) : tab === "NPC / Бестиарий" ? (
-        <OpenMap.Provider value={openMap}>
-          <BestiaryTab />
-        </OpenMap.Provider>
-      ) : tab === "Расписание" ? (
-        <ScheduleTab schedule={schedule} />
-      ) : (
-        <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>
+      </Pane>
+      {alive("Карта") && (
+        <Pane on={tab === "Карта"}>
+          <OpenMap.Provider value={openMap}>
+            <MapTab boot={boot} target={mapTarget} home={mapHome} onPlaceCleared={() => setMapTarget(null)} />
+          </OpenMap.Provider>
+        </Pane>
       )}
+      {alive("NPC / Бестиарий") && (
+        <Pane on={tab === "NPC / Бестиарий"}>
+          <OpenMap.Provider value={openMap}>
+            <BestiaryTab />
+          </OpenMap.Provider>
+        </Pane>
+      )}
+      {alive("Расписание") && <Pane on={tab === "Расписание"}><ScheduleTab schedule={schedule} /></Pane>}
+      {!LIVE_TABS.includes(tab) && <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>}
+      </div>
       <AnimatePresence>{card && tab === "Чат" && <ItemCard key="item-card" card={card} onClose={closeCard} />}</AnimatePresence>
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}

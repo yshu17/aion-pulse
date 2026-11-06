@@ -82,7 +82,11 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 .sch-undo { animation: undo-in var(--t) var(--ease-out); } /* it is centred by a transform: its own keyframes keep that */
 .toast { animation: toast-in 480ms cubic-bezier(.22, 1, .36, 1) both; } /* a toast eases in slowly, as in Toasts.tsx */
 .toast.motion { animation: none; } /* Motion moves these itself (Toasts.tsx) */
-main.chat, main.sch, main.soon, main.bst, main.map-page { animation: tab-in var(--t) var(--ease-out); } /* every tab comes in the same way */
+/* every tab comes in the same way: when it is opened and each time it is chosen again (the pane gets «on») */
+.pane.on > main, main.soon { animation: tab-in var(--t) var(--ease-out); }
+.panes { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.pane { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
+.pane:not(.on) { visibility: hidden; pointer-events: none; }
 /* what loads appears softly instead of popping in: the window after its settings, pictures as they arrive (items, the
    bestiary's emblems and goods, the zone and region maps), the bestiary's list and card after their placeholders */
 @keyframes appear { from { opacity: 0; } }
