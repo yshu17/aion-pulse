@@ -180,6 +180,9 @@ function CardSkeleton() {
 
 type TabName = "drops" | "places" | "stock";
 
+/** The colour of a number in the stats line: HP red, experience dark blue, DP dark orange. */
+const STAT_TONE: Record<string, string> = { "Макс. ХП": "hp", "Опыт": "xp", "DP": "dp" };
+
 // the card's points are pulse.db's npc_point (core/db/bestiary.ts detail): the table the map reads too
 const Card = memo(function Card({ client, detail }: { client: BestiaryClient; detail: Detail }) {
   const openMap = useOpenMap();
@@ -197,7 +200,8 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
   const zone = chosen ?? mainPlace(detail)?.map_id ?? null; // the zone the map and the button show
   const place = zone ? placeAt(detail, zone) : null;
   const picture = place ? zones[place.map_id] : undefined;
-  const text = overviewText(detail);
+  // the overview without the title: the title is already under the name
+  const desc = overviewText(detail).split("\n").filter((line) => line !== detail.title).join("\n").trim();
   const side = detail.faction === "Другие" ? detail.race : detail.faction;
   const role = roleLabel(detail.role);
   const showOnMap = async () => {
@@ -226,13 +230,21 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
           {detail.title && <p className="bst-title">{detail.title}</p>}
           <HpBar detail={detail} />
         </div>
-        {picture && place ? <MiniMap zone={picture} gx={place.gx} gy={place.gy} /> : <div className="bst-map none">Места на карте нет</div>}
+        <div className="bst-where">
+          {picture && place ? <MiniMap zone={picture} gx={place.gx} gy={place.gy} /> : <div className="bst-map none">Места на карте нет</div>}
+          <button className="bst-where-go" disabled={!place || !openMap} onClick={showOnMap}><IconPin />Показать на карте</button>
+        </div>
       </m.section>
 
-      {text && <m.p className="bst-desc" {...reveal(1)}>{text}</m.p>}
+      {desc && <m.p className="bst-desc" {...reveal(1)}>{desc}</m.p>}
       {key.length > 0 && (
-        <m.div className="bst-tiles" {...reveal(2)}>
-          {key.map(([name, value]) => <div key={name} className="bst-tile"><span>{name}</span><b>{/^[\d\s]+$/.test(value) ? <CountUp value={Number(value.replace(/\s/g, ""))} format={(n) => statText(String(n))} /> : value}</b></div>)}
+        <m.div className="bst-stats" {...reveal(2)}>
+          {key.map(([name, value]) => (
+            <div key={name} className={`bst-stat ${STAT_TONE[name] ?? ""}`}>
+              <span>{name}</span>
+              <b>{/^[\d\s]+$/.test(value) ? <CountUp value={Number(value.replace(/\s/g, ""))} format={(n) => statText(String(n))} /> : value}</b>
+            </div>
+          ))}
         </m.div>
       )}
       {rest.length > 0 && (
@@ -254,7 +266,6 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
 
       <m.div className="bst-foot" {...reveal(6)}>
         <span className="bst-note">{detail.kb_status === "loaded" ? "Данные KB + файлы клиента" : "Данные клиента; подробный профиль KB не загружен"}</span>
-        <button className="btn primary bst-go" disabled={!place || !openMap} onClick={showOnMap}><IconPin />Показать на карте</button>
       </m.div>
     </div>
   );
@@ -274,10 +285,6 @@ function HpBar({ detail }: { detail: Detail }) {
         backgroundImage: sprite ? `url(${sprite})` : undefined, backgroundPosition: `${-x0}px ${-y0}px` }}>
         <span className="bst-hp-icon" style={{ left: bar.iconLeft, top: bar.iconTop }}><Pic path={detail.icon_asset || "ui/monster.png"} className="bst-hp-pic" /></span>
         <span className="bst-hp-level" style={{ left: bar.levelLeft, top: bar.levelTop }}>{level}</span>
-      </div>
-      <div className="bst-hp-text">
-        <b>Уровень {detail.level || "—"}</b>
-        <span>Макс. ХП: {statText(detail.stats?.["Макс. ХП"] ?? "—")}</span>
       </div>
     </div>
   );
@@ -348,13 +355,16 @@ function Places({ client, detail, zone, onZone }: { client: BestiaryClient; deta
 }
 
 /** The NPC's zone around its point, the place marked in the middle, as the «Место из чата» card of the map. */
+/** How much of the zone's picture the mini map shows: its pixels at this scale, so more of the place around is seen. */
+const MAP_SCALE = 0.45;
+
 function MiniMap({ zone, gx, gy }: { zone: Zone; gx: number; gy: number }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { let alive = true; pictureUrl(zone.file).then((got) => { if (alive) setUrl(got); }); return () => { alive = false; }; }, [zone.file]);
   const [x, y] = toImage(zone, gx, gy);
   return (
     <div className="bst-map" aria-label={`На карте: ${zone.name}`}>
-      {url && <img className="pic" src={url} alt="" draggable={false} style={{ width: zone.size, height: zone.size, left: `calc(50% - ${x}px)`, top: `calc(50% - ${y}px)` }} />}
+      {url && <img className="pic" src={url} alt="" draggable={false} style={{ width: zone.size * MAP_SCALE, height: zone.size * MAP_SCALE, left: `calc(50% - ${x * MAP_SCALE}px)`, top: `calc(50% - ${y * MAP_SCALE}px)` }} />}
       {PLACE_ICON ? <img className="mark" src={PLACE_ICON} alt="" /> : <span className="mark dot"><IconNavigate /></span>}
       <span className="bst-map-name">{zone.name}</span>
     </div>

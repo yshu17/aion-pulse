@@ -72,9 +72,16 @@
 .bst-hp-text span, .bst-hp-none { color: var(--muted); font-size: 13px; }
 .bst-hp-none { margin: 8px 0 0; font-weight: 600; }
 
-.bst-map { position: relative; min-height: 150px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+/* the mini map and its action as one block: the picture above, «Показать на карте» under it inside the same frame */
+.bst-where { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.bst-where-go { display: flex; align-items: center; justify-content: center; gap: 8px; height: 38px; flex: none; border: 0; border-top: 1px solid var(--border);
+  background: var(--accent); color: var(--accent-text); font-size: 14px; font-weight: 700; cursor: pointer; transition: background var(--t-fast) var(--ease-out); }
+.bst-where-go:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 86%, #fff); }
+.bst-where-go:disabled { background: var(--surface-2); color: var(--muted); cursor: default; }
+.bst-where-go:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+.bst-map { position: relative; flex: 1; min-height: 120px; overflow: hidden; background: var(--surface); }
 .bst-map .pic { position: absolute; max-width: none; pointer-events: none; }
-.bst-map .mark { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 6px #000); }
+.bst-map .mark { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 4px #000); }
 .bst-map .mark.dot { display: grid; place-items: center; color: var(--accent); }
 .bst-map-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 10px 8px; text-align: center; font-weight: 600; font-size: 14px;
   background: linear-gradient(transparent, rgba(0, 0, 0, .7)); text-shadow: 0 1px 2px #000; }
@@ -83,6 +90,14 @@
 .bst-desc { margin: 0; color: #c6c9d0; font-size: 13px; line-height: 1.5; white-space: pre-line; }
 
 /* the four key numbers as tiles, the rest of the facts as a quiet list */
+/* the key numbers in one line with dividers; HP, experience and DP keep their colours */
+.bst-stats { display: flex; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.bst-stat { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 10px 14px; }
+.bst-stat:first-child { padding-left: 2px; }
+.bst-stat + .bst-stat { border-left: 1px solid var(--border); }
+.bst-stat > span { color: var(--muted); font-size: 12px; }
+.bst-stat b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+.bst-stat.hp b { color: #ff5a52; } .bst-stat.xp b { color: #3d9be0; } .bst-stat.dp b { color: #e0832c; }
 .bst-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .bst-tile { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
 .bst-tile span { color: var(--muted); font-size: 12px; }
@@ -138,7 +153,9 @@
 
 @media (max-width: 1240px) {
   .bst-hero { grid-template-columns: minmax(0, 1fr); }
-  .bst-map { min-height: 160px; }
+  .bst-map { min-height: 150px; }
+  .bst-stats { flex-wrap: wrap; } .bst-stat { flex-basis: 45%; }
+  .bst-stat:nth-child(odd) { border-left: 0; padding-left: 2px; } .bst-stat:nth-child(n + 3) { border-top: 1px solid var(--border); }
   .bst-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bst-goods, .bst-facts { grid-template-columns: minmax(0, 1fr); }
 }
