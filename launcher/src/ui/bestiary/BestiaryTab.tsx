@@ -9,12 +9,12 @@ import { memo, startTransition, useEffect, useLayoutEffect, useMemo, useRef, use
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { FACTIONS, statText } from "../../core/bestiary/labels";
 import type { Row } from "../../core/bestiary/store";
-import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
+import { GROUP_CHIPS, hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, ROLE_CHIPS, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { iconUrl, mapNames } from "../data";
 import { CountUp, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
-import { IconClose, IconFlag, IconNavigate, IconPin, IconRank, IconReset, IconSearch, IconSort, IconStairs } from "../icons";
+import { IconClose, IconFlag, IconGroup, IconNavigate, IconPin, IconRank, IconReset, IconRole, IconSearch, IconSort, IconStairs } from "../icons";
 import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
@@ -52,6 +52,8 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const [rank, setRank] = useState("");
   const [level, setLevel] = useState(LEVELS[0]);
   const [faction, setFaction] = useState(""); // the side: Элийцы, Асмодиане, Балауры, Другие; "" all
+  const [group, setGroup] = useState(""); // monsters or NPCs
+  const [role, setRole] = useState(""); // the service of an NPC: merchant, teleport …
   const [order, setOrder] = useState("level_desc");
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
@@ -59,7 +61,7 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
   const asked = useRef(0); // the newest search: an older answer arriving late is dropped
-  const options = useMemo(() => ({ text: query, rank, race: faction, order, limit: PAGE, ...levelRange(level) }), [query, rank, faction, order, level]);
+  const options = useMemo(() => ({ text: query, rank, race: faction, category: group, role, order, limit: PAGE, ...levelRange(level) }), [query, rank, faction, group, role, order, level]);
   useEffect(() => {
     if (!client) return;
     const seq = ++asked.current;
@@ -91,7 +93,9 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const loading = client === undefined || (client !== null && searching);
   const rankLabel = rank ? RANK_CHIPS.find(([, value]) => value === rank)?.[0] ?? "" : "";
   const levelOn = level !== LEVELS[0];
-  const filters = (rank !== "" ? 1 : 0) + (faction !== "" ? 1 : 0) + (levelOn ? 1 : 0);
+  const groupLabel = group ? GROUP_CHIPS.find(([, value]) => value === group)?.[0] ?? "" : "";
+  const roleName = role ? ROLE_CHIPS.find(([, value]) => value === role)?.[0] ?? "" : "";
+  const filters = (rank !== "" ? 1 : 0) + (faction !== "" ? 1 : 0) + (group !== "" ? 1 : 0) + (role !== "" ? 1 : 0) + (levelOn ? 1 : 0);
   const sortLabel = Object.entries(SORTS).find(([, value]) => value === order)?.[0] ?? "Сортировка";
 
   return (
@@ -107,10 +111,14 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
           options={RANK_CHIPS.map(([label, value]) => [label, value])} value={rank} onPick={setRank} />
         <PickMenu id="faction" label="Раса" icon={<IconFlag />} text={faction ? `Раса: ${faction}` : "Раса"} lit={faction !== ""}
           options={[["Все", ""], ...FACTIONS.map((name): [string, string] => [name, name])]} value={faction} onPick={setFaction} />
+        <PickMenu id="group" label="Группа" icon={<IconGroup />} text={groupLabel ? `Группа: ${groupLabel}` : "Группа"} lit={group !== ""}
+          options={GROUP_CHIPS} value={group} onPick={setGroup} />
+        <PickMenu id="role" label="Роль" icon={<IconRole />} text={roleName ? `Роль: ${roleName}` : "Роль"} lit={role !== ""}
+          options={ROLE_CHIPS} value={role} onPick={setRole} />
         <PickMenu id="level" label="Уровень" icon={<IconStairs />} text={levelOn ? `Ур. ${level}` : "Уровень"} lit={levelOn}
           options={LEVELS.map((choice) => [choice, choice])} value={level} onPick={setLevel} />
         {filters > 0 && (
-          <button type="button" className="bst-reset" onClick={() => { setRank(""); setFaction(""); setLevel(LEVELS[0]); }}><IconReset />Сбросить</button>
+          <button type="button" className="bst-reset" onClick={() => { setRank(""); setFaction(""); setGroup(""); setRole(""); setLevel(LEVELS[0]); }}><IconReset />Сбросить</button>
         )}
       </div>
       <div className="bst-body">

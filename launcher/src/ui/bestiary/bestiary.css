@@ -7,7 +7,7 @@
 /* the bar: search, the filter pills (class, level) and the tags of the filters that are on */
 .bst-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: var(--card-radius); background: var(--surface); }
-.bst-search { position: relative; flex: 0 1 440px; min-width: 220px; }
+.bst-search { position: relative; flex: 0 1 264px; min-width: 180px; } /* the search is 40% shorter: the pills need the room */
 .bst-search > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .bst-search .field { width: 100%; padding-left: 38px; }
 .bst-search .x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }

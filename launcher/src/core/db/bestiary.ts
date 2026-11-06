@@ -28,7 +28,7 @@ const like = (text: string) => `%${text.replace(/\\/g, "\\\\").replace(/%/g, "\\
 const marks = (n: number) => Array.from({ length: n }, () => "?").join(",");
 
 export async function search(all: All, options: SearchOptions = {}): Promise<[Row[], number]> {
-  const { text = "", category = "", race = "", rank = "", map_id = "", offset = 0, limit = 150, min_level = null,
+  const { text = "", category = "", race = "", rank = "", role = "", map_id = "", offset = 0, limit = 150, min_level = null,
     max_level = null, region = "", order = "", hide_low = false } = options;
   const clauses = ["n.listed = 1", "n.service = ?"];
   const params: unknown[] = [category === "service" ? 1 : 0];
@@ -71,6 +71,10 @@ export async function search(all: All, options: SearchOptions = {}): Promise<[Ro
   if (rank) {
     clauses.push("n.rank = ?");
     params.push(rank);
+  }
+  if (role) {
+    clauses.push("n.role = ?");
+    params.push(role);
   }
   if (map_id) {
     clauses.push("EXISTS (SELECT 1 FROM npc_zone z WHERE z.npc_id = n.id AND z.map_id = ?)");

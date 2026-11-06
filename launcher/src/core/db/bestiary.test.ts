@@ -56,6 +56,11 @@ describe("the bestiary from pulse.db", () => {
     const [dropped] = await search(all, { text: "когти" });
     expect(dropped.map((r) => [r.id, r.dropped])).toEqual([["100", "Сверкающие когти"]]);
     expect((await search(all, { category: "service" }))[0].map((r) => r.id)).toEqual(["400"]);
+    // the group and the role: monsters or NPCs, and the service of an NPC
+    expect((await search(all, { category: "monster" }))[0].map((r) => r.id).sort()).toEqual(["100", "300"]);
+    expect((await search(all, { category: "npc" }))[0].map((r) => r.id)).toEqual(["200"]);
+    expect((await search(all, { role: "merchant" }))[0].map((r) => r.id)).toEqual(["200"]);
+    expect((await search(all, { role: "teleport" }))[0]).toEqual([]);
   });
 
   it("gives the card as before: its fields, the profile, goods, drops and the one table's points", async () => {

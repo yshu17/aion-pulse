@@ -88,6 +88,7 @@ export interface SearchOptions {
   category?: string;
   race?: string;
   rank?: string;
+  role?: string; // the service of an NPC (pulse.db's role): merchant, teleport, warehouse …
   map_id?: string;
   offset?: number;
   limit?: number;

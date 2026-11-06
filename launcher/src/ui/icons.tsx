@@ -41,6 +41,12 @@ export const IconSettings = () => (
 export const IconSort = () => <Svg size={14} tone={VIOLET}><path d="M8 5v14M4 15l4 4 4-4M16 19V5M12 9l4-4 4 4" /></Svg>;
 export const IconStairs = () => <Svg size={14} tone={AMBER} fill="M4 20h4v-4h4v-4h4V8h4v12H4z"><path d="M4 20h4v-4h4v-4h4V8h4V4" /></Svg>;
 export const IconFlag = () => <Svg size={14} tone={RED} fill="M5 4h11l-2.5 4L16 12H5z"><path d="M5 21V4M5 4h11l-2.5 4L16 12H5" /></Svg>;
+export const IconGroup = () => (
+  <Svg size={14} tone={TEAL} fill="M9 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"><circle cx="9" cy="8" r="3" /><path d="M3 20c.6-3.2 3-5 6-5s5.4 1.8 6 5" /><path d="M16 5.3a3 3 0 0 1 0 5.4M18 15.5c1.8.6 2.8 2.2 3 4.5" /></Svg>
+);
+export const IconRole = () => (
+  <Svg size={14} tone={ORANGE} fill="M4 4h8l8 8-8 8-8-8z"><path d="M4 4h8l8 8-8 8-8-8z" /><circle cx="8.5" cy="8.5" r="1.2" /></Svg>
+);
 export const IconRank = () => <Svg size={14} tone={BLUE} fill="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /></Svg>;
 export const IconShield = () => <Svg size={18} tone={BLUE} fill="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /></Svg>;
 export const IconPin = () => <Svg size={18} tone={GREEN} fill="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></Svg>;

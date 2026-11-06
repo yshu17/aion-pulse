@@ -98,6 +98,14 @@ const ROLES: Record<string, string> = {
   warehouse: "Склад", stigma_master: "Мастер стигм", postbox: "Почта",
 };
 
+/** The group filter: monsters or NPCs. */
+export const GROUP_CHIPS: [string, string][] = [["Все", ""], ["Монстры", "monster"], ["NPC", "npc"]];
+/** The role filter: the services an NPC has in the data (pulse.db's role). */
+export const ROLE_CHIPS: [string, string][] = [
+  ["Все", ""], ["Торговец", "merchant"], ["Телепорт", "teleport"], ["Склад", "warehouse"], ["Кибелиск", "bindstone"],
+  ["Лавочник", "vendor"], ["Мастер стигм", "stigma_master"], ["Почта", "postbox"],
+];
+
 export function roleLabel(role: string | null | undefined): string {
   return (role && ROLES[role]) || "";
 }
