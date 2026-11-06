@@ -14,7 +14,7 @@ import { toImage, type Zone } from "../../core/map/zones";
 import { iconUrl, mapNames } from "../data";
 import { CountUp, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
-import { IconClose, IconFlag, IconNavigate, IconPin, IconRank, IconSearch, IconSort, IconStairs } from "../icons";
+import { IconClose, IconFlag, IconNavigate, IconPin, IconRank, IconReset, IconSearch, IconSort, IconStairs } from "../icons";
 import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
@@ -110,13 +110,7 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
         <PickMenu id="level" label="Уровень" icon={<IconStairs />} text={levelOn ? `Ур. ${level}` : "Уровень"} lit={levelOn}
           options={LEVELS.map((choice) => [choice, choice])} value={level} onPick={setLevel} />
         {filters > 0 && (
-          <div className="bst-tags" aria-label="Включённые фильтры">
-            <span className="bst-tags-n">Фильтры: {filters}</span>
-            {rank !== "" && <button type="button" className="bst-tag" onClick={() => setRank("")} aria-label={`Снять фильтр: ${rankLabel}`}>{rankLabel}<IconClose /></button>}
-            {faction !== "" && <button type="button" className="bst-tag" onClick={() => setFaction("")} aria-label={`Снять фильтр: ${faction}`}>{faction}<IconClose /></button>}
-            {levelOn && <button type="button" className="bst-tag" onClick={() => setLevel(LEVELS[0])} aria-label={`Снять фильтр: уровень ${level}`}>Ур. {level}<IconClose /></button>}
-            <button type="button" className="bst-reset" onClick={() => { setRank(""); setFaction(""); setLevel(LEVELS[0]); }}>Сбросить</button>
-          </div>
+          <button type="button" className="bst-reset" onClick={() => { setRank(""); setFaction(""); setLevel(LEVELS[0]); }}><IconReset />Сбросить</button>
         )}
       </div>
       <div className="bst-body">
