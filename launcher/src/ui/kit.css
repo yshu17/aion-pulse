@@ -87,6 +87,8 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 .panes { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
 .pane { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
 .pane:not(.on) { visibility: hidden; pointer-events: none; }
+/* duotone icons (icons.tsx) keep one colour on a filled button: the text colour of the button */
+.btn.primary, .bst-where-go, .toast .btn.primary, .btn.danger { --duo-flat: currentColor; }
 /* what loads appears softly instead of popping in: the window after its settings, pictures as they arrive (items, the
    bestiary's emblems and goods, the zone and region maps), the bestiary's list and card after their placeholders */
 @keyframes appear { from { opacity: 0; } }
