@@ -4,34 +4,51 @@
 .bst-state, .bst-empty { padding: 28px; color: var(--muted); text-align: center; }
 .r0 { --rank: var(--muted); } .r1 { --rank: #8c919c; } .r2 { --rank: #6f9bff; } .r3 { --rank: #b58cff; } .r4 { --rank: var(--accent); }
 
-/* the bar: search, the class chips, the level */
+/* the bar: search, the filter pills (class, level) and the tags of the filters that are on */
 .bst-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: var(--card-radius); background: var(--surface); }
 .bst-search { position: relative; flex: 0 1 440px; min-width: 220px; }
 .bst-search > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .bst-search .field { width: 100%; padding-left: 38px; }
 .bst-search .x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
-.bst-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 3px; border-radius: 999px; background: var(--surface-2); }
-.bst-chip { height: 30px; padding: 0 15px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer;
-  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
-.bst-chip:hover { color: var(--text); }
-.bst-chip { position: relative; }
-.bst-chip > span { position: relative; }
-.bst-chip.on { color: var(--accent-text); font-weight: 600; }
-/* the highlight of the chosen chip / tab glides to the next one (fx.tsx Glide, a shared layout) */
+/* the highlight of the chosen tab slides to the next one */
 .bst-glide { position: absolute; inset: 0; border-radius: inherit; background: var(--accent); }
-.bst-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.bst-level, .bst-sort { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-.bst-level select { width: 120px; }
+
+/* the filter pills and their menus (PickMenu.tsx): class and level in the bar, the sort in the list head */
+.bst-menu { position: relative; flex: none; }
+.bst-flt { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 10px 0 12px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface-2); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap;
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.bst-flt:hover, .bst-flt.open { border-color: var(--border-control); }
+.bst-flt.lit { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+.bst-flt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bst-flt-chev { display: inline-flex; transform: rotate(90deg); transition: transform var(--t-fast) var(--ease-out); }
+.bst-flt-chev.open { transform: rotate(-90deg); }
+.bst-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; min-width: 100%; margin: 0; padding: 6px; list-style: none; max-height: 320px; overflow: auto;
+  background: var(--surface-3); border: 1px solid var(--border-control); border-radius: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, .6); animation: arrive .15s ease-out; }
+.bst-pop.right { left: auto; right: 0; }
+.bst-pop li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 10px; border-radius: 8px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.bst-pop li.cur { background: var(--pop-hover); }
+.bst-pop li.on { color: var(--accent); font-weight: 600; }
+.presence.leaving > .bst-pop { animation: pop-out var(--t-leave) var(--ease-in) forwards; }
+.bst-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; animation: arrive .15s ease-out; }
+.bst-tags-n { color: var(--muted); font-size: 12px; margin-right: 2px; }
+.bst-tag { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px 0 10px; border: 0; border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-size: 12px; cursor: pointer; transition: background var(--t-fast) var(--ease-out); }
+.bst-tag:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.bst-reset { border: 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 0 4px; }
+.bst-reset:hover { color: var(--text); }
+.bst-tag:focus-visible, .bst-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bst-count { color: var(--muted); font-size: 13px; }
+.bst-count b { color: var(--text); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; margin-right: 2px; }
 
 /* the list and the card side by side */
 .bst-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 12px; }
 .bst-list, .bst-detail { min-height: 0; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface); }
 .bst-list { display: flex; flex-direction: column; }
-.bst-list-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px;
+.bst-list-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px 10px 14px;
   border-bottom: 1px solid var(--border); font-size: 13px; }
 .bst-list-head > span { white-space: nowrap; }
-.bst-sort select { width: 128px; }
 .bst-rows { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 6px; list-style: none; scrollbar-width: thin; }
 .bst-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 7px 10px; border: 0; border-left: 3px solid var(--rank, transparent); border-radius: 4px 10px 10px 4px;
   background: none; color: var(--text); text-align: left; cursor: pointer; transition: background var(--t-fast) var(--ease-out); }
@@ -159,7 +176,7 @@
   .bst-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bst-goods, .bst-facts { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .bst-chip, .bst-row, .bst-tabs button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bst-row, .bst-tabs button, .bst-flt { transition: none; } .bst-pop, .bst-tags { animation: none; } }
 
 /* placeholders while the base opens or an answer comes (BestiaryTab.tsx RowsSkeleton, CardSkeleton): a soft sweep of light */
 .bst-skel { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 45%, var(--surface-2) 90%);
@@ -177,7 +194,7 @@
 @keyframes bst-sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .bst-skel { animation: none; } }
 
-/* press and hover feedback: things answer the pointer, softly. Not on the chips, tabs and rows: their sliding pill is a child of the
+/* press and hover feedback: things answer the pointer, softly. Not on the tabs and rows: their sliding pill is a child of the
    pressed button, and a scaled parent would make it grow from the middle instead of gliding from the old tab. */
 .bst-place:active { transform: scale(.975); }
 .bst-tile, .bst-good, .bst-place { transition: transform var(--t) var(--ease-out), border-color var(--t) var(--ease-out); }

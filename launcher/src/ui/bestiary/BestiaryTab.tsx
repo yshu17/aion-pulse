@@ -12,12 +12,13 @@ import type { Row } from "../../core/bestiary/store";
 import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { iconUrl, mapNames } from "../data";
-import { CountUp, Glide, reveal, row, SPRING } from "../fx";
+import { CountUp, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
-import { IconClose, IconNavigate, IconPin, IconSearch } from "../icons";
+import { IconClose, IconNavigate, IconPin, IconRank, IconSearch, IconSort, IconStairs } from "../icons";
 import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
+import { PickMenu } from "./PickMenu";
 import "./bestiary.css";
 
 const PAGE = 150; // rows per search; «Показать ещё» adds the next ones
@@ -87,6 +88,10 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
     return () => { alive = false; };
   }, [client, selected]);
   const loading = client === undefined || (client !== null && searching);
+  const rankLabel = rank ? RANK_CHIPS.find(([, value]) => value === rank)?.[0] ?? "" : "";
+  const levelOn = level !== LEVELS[0];
+  const filters = (rank !== "" ? 1 : 0) + (levelOn ? 1 : 0);
+  const sortLabel = Object.entries(SORTS).find(([, value]) => value === order)?.[0] ?? "Сортировка";
 
   return (
     <main className="bst">
@@ -97,30 +102,24 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
             onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") setQuery(""); }} />
           {query && <button className="x" aria-label="Очистить поиск" onClick={() => setQuery("")}><IconClose /></button>}
         </div>
-        <div className="bst-chips" role="radiogroup" aria-label="Класс">
-          {RANK_CHIPS.map(([label, value]) => (
-            <button key={label} type="button" role="radio" aria-checked={rank === value} className={`bst-chip${rank === value ? " on" : ""}`}
-              onClick={() => setRank(value)}>{rank === value && <Glide group="bst-rank" className="bst-glide" />}<span>{label}</span></button>
-          ))}
-        </div>
-        <span className="spacer" />
-        <label className="bst-level">
-          <span>Уровень</span>
-          <select className="field" value={level} onChange={(e) => setLevel(e.target.value)}>
-            {LEVELS.map((choice) => <option key={choice}>{choice}</option>)}
-          </select>
-        </label>
+        <PickMenu id="rank" label="Класс" icon={<IconRank />} text={rankLabel ? `Класс: ${rankLabel}` : "Класс"} lit={rank !== ""}
+          options={RANK_CHIPS.map(([label, value]) => [label, value])} value={rank} onPick={setRank} />
+        <PickMenu id="level" label="Уровень" icon={<IconStairs />} text={levelOn ? `Ур. ${level}` : "Уровень"} lit={levelOn}
+          options={LEVELS.map((choice) => [choice, choice])} value={level} onPick={setLevel} />
+        {filters > 0 && (
+          <div className="bst-tags" aria-label="Включённые фильтры">
+            <span className="bst-tags-n">Фильтры: {filters}</span>
+            {rank !== "" && <button type="button" className="bst-tag" onClick={() => setRank("")} aria-label={`Снять фильтр: ${rankLabel}`}>{rankLabel}<IconClose /></button>}
+            {levelOn && <button type="button" className="bst-tag" onClick={() => setLevel(LEVELS[0])} aria-label={`Снять фильтр: уровень ${level}`}>Ур. {level}<IconClose /></button>}
+            <button type="button" className="bst-reset" onClick={() => { setRank(""); setLevel(LEVELS[0]); }}>Сбросить</button>
+          </div>
+        )}
       </div>
       <div className="bst-body">
         <section className="bst-list" aria-label="Найденные NPC">
           <div className="bst-list-head">
-            <span>Найдено: <b>{loading ? "…" : total}</b> NPC</span>
-            <label className="bst-sort">
-              <span>Сортировка:</span>
-              <select className="field" value={order} onChange={(e) => setOrder(e.target.value)}>
-                {Object.entries(SORTS).map(([label, value]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-            </label>
+            <span className="bst-count" aria-live="polite"><b>{loading ? "…" : total.toLocaleString("ru-RU")}</b> NPC</span>
+            <PickMenu id="sort" label="Сортировка" icon={<IconSort />} text={sortLabel} right options={Object.entries(SORTS)} value={order} onPick={setOrder} />
           </div>
           {loading ? <RowsSkeleton /> : <Rows rows={rows} selected={selected} onSelect={setSelected} />}
           {!loading && rows.length < total && <button className="btn bst-more" onClick={more}>Показать ещё ({total - rows.length})</button>}
