@@ -1,77 +1,117 @@
-<h1 align="center">⚡ Pulse</h1>
+<h1 align="center">⚡ Pulse+</h1>
 
 <p align="center">
-  <b>Помощник для Aion Empire: следит за чатом и зовёт, когда найдено то, что нужно тебе</b>
+  <b>Помощник для Aion Empire: чат, карта, бестиарий и расписание в одном окне</b><br>
+  <sub>Зовёт, когда в чате ищут то, что нужно тебе, и знает, где найти любого NPC</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/yshu17/aion-pulse/releases/latest">
-    <img src="https://img.shields.io/badge/%D1%81%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Pulse.exe-ff8c1a?style=for-the-badge&logo=github&logoColor=white" alt="Скачать Pulse.exe">
+  <a href="https://github.com/yshu17/aion-pulse/releases">
+    <img src="https://img.shields.io/badge/%D1%80%D0%B5%D0%BB%D0%B8%D0%B7%D1%8B-Pulse%2B.exe-ff8c1a?style=for-the-badge&logo=github&logoColor=white" alt="Релизы Pulse+">
   </a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/v/release/yshu17/aion-pulse?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F&color=ff8c1a" alt="Версия">
-  <img src="https://img.shields.io/github/downloads/yshu17/aion-pulse/total?label=%D1%81%D0%BA%D0%B0%D1%87%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&color=ff8c1a" alt="Скачиваний">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4?logo=windows&logoColor=white" alt="Windows">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri&logoColor=white" alt="Tauri 2">
+  <img src="https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white" alt="React 19">
+  <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white" alt="Rust">
 </p>
 
 <p align="center">
-  <a href="README_FULL.md">📖 Полная версия</a> ·
   <a href="https://github.com/yshu17/aion-pulse/releases">📦 Релизы</a> ·
-  <a href="README_FULL.md#%EF%B8%8F-configjson">⚙️ config.json</a>
+  <a href="README_FULL.md">📖 Прежняя версия (Python)</a>
 </p>
 
 <p align="center">
-  <img src="screenshots/01-matches.png" alt="Pulse — вкладка «Поиск»" width="95%">
+  <img src="screenshots/pp-1-chat.png" alt="Pulse+ — вкладка «Чат»" width="95%">
 </p>
 
-## ✨ Возможности
+## ✨ Что внутри
 
-- 🔔 **Поиск** — сигнал, когда в «Поиске группы» появилось ключевое слово или ссылка на отмеченный предмет
-- 🎒 **Что искать** — 11 тыс. предметов с 45-го уровня: иконки, цвет по качеству, фильтры и подсказки с характеристиками
-- 💬 **Весь чат** — все каналы в одном окне, ссылки на предметы, места и задания читаются названиями
-- 🗺️ **Карта** — оригинальные карты игры с меню «Метки»: привратники, склады, торговцы, NPC с заданиями, подземелья
-- 📅 **Расписание** — события сервера в твоём времени, напоминания и свои события
-- 🔄 **Обновления** — Pulse сам видит новую версию, ставит её после твоего «да» и проверяет контрольную сумму
-- 🛡️ **Безопасно** — Pulse только читает `Chat.log`; клиент, память игры и ввод не трогаются
+- 🔔 **Чат** — сигнал, когда в «Поиске группы» появилось ключевое слово или ссылка на отмеченный предмет; весь чат в одном окне, ссылки на предметы, места и задания читаются названиями
+- 🎒 **Что искать** — каталог предметов с иконками, цветом по качеству, фильтрами и подсказками с характеристиками
+- 🗺️ **Карта** — оригинальные карты игры, поиск по местам, NPC, монстрам и сбору (`Ctrl + K`), метки привратников, складов, торговцев, подземелий
+- 👤 **NPC** — 15 489 NPC и монстров: фильтры по классу, расе, группе, роли и уровню; карточка с добычей, товарами, локациями и кнопкой «Показать на карте»
+- 📅 **Расписание** — события сервера в твоём времени, откаты, напоминания и свои события
+- 🗃️ **База данных** — предметы, оружие, броня, украшения, задания и рецепты из клиента игры; остальные разделы добавляются
+- 🪟 **В накладку** — окно прячется, поверх игры остаются полоса и уведомления
+- 🧭 **Вкладки помнят выбор** — ушёл с карты в чат и вернулся: всё на месте
 
 ## 🚀 Быстрый старт
 
-1. Скачай [Pulse.exe](https://github.com/yshu17/aion-pulse/releases/latest) и запусти.
+1. Скачай `Pulse+.exe` со страницы [Релизы](https://github.com/yshu17/aion-pulse/releases) и запусти. Установка не нужна.
 2. В `system.cfg` игры включи лог чата: `g_chatlog = "1"`.
 3. В **Настройки** укажи **Папку игры** (`Aion Empire`).
 4. Введи **Ключевые слова** или отметь предметы в **Что искать**.
-5. Нажми **Start** — статус сменится на «● Слежу».
+5. Нажми **Старт**. Статус сменится на «Слежу».
+
+> Нужен Windows 10 или 11 с WebView2 (есть в системе по умолчанию).
 
 ## 📸 Скриншоты
 
-| 🎒 Что искать | 💬 Весь чат |
+| 👤 NPC | 🗺️ Карта |
 |:---:|:---:|
-| <img src="screenshots/02-items.png" alt="Что искать"> | <img src="screenshots/06-chat.png" alt="Весь чат"> |
-| **🗺️ Карта** | **📅 Расписание** |
-| <img src="screenshots/03-map.png" alt="Карта"> | <img src="screenshots/04-schedule.png" alt="Расписание"> |
+| <img src="screenshots/pp-3-npc.png" alt="NPC"> | <img src="screenshots/pp-2-map.png" alt="Карта"> |
+| **📅 Расписание** | **🗃️ База данных** |
+| <img src="screenshots/pp-4-schedule.png" alt="Расписание"> | <img src="screenshots/pp-5-menu.png" alt="Меню «База данных»"> |
+
+## 🛡️ Безопасность
+
+Pulse+ только читает `Chat.log`. Он не трогает клиент игры, её память и ввод. Окно проверяет, запущена ли игра, и больше ничего с ней не делает.
 
 ## 🧭 Скоро
 
-В программе уже стоят вкладки-заготовки, они наполнятся в следующих версиях:
+В меню уже стоят разделы-заготовки, они наполнятся в следующих версиях:
 
 - 🔨 **Крафт** — из чего создаётся предмет, профессия и уровень мастерства
 - 🛡️ **Броня** — подбор комплекта и сравнение характеристик
 - ✨ **Стигмы** — сборка стигм персонажа
-- 📚 **Гайды** — классы, подземелья, боссы и события сервера
+- 📚 **Книги умений, Титулы, Питомцы** — разделы базы данных
+- 📖 **Гайды** — классы, подземелья, боссы и события сервера
 
 ## 🛠️ Из исходников
 
+Нужны Node.js 20+, Rust (stable), Python 3.10+ и Windows с WebView2.
+
+```powershell
+git clone https://github.com/yshu17/aion-pulse.git
+cd aion-pulse
+cd launcher; npm install; cd ..
+powershell -ExecutionPolicy Bypass -File tools\build_pulse_plus.ps1
 ```
-pip install -r requirements.txt
-python main.py
+
+Скрипт собирает базу `data/pulse.db` из файлов `data/` (её читают все вкладки), затем программу. Готовый `Pulse+Local.exe` лежит в `local\Pulse+Release`. Один файл для раздачи делает `tools\single_exe\build_single_exe.ps1`.
+
+Разработка и проверки:
+
+```powershell
+cd launcher
+npx tauri dev      # окно программы с горячей перезагрузкой
+npm run dev        # только страница в браузере, http://localhost:1420
+npm test           # тесты интерфейса и ядра
+npx tsc --noEmit -p .
+cd ..
+python -m pytest   # тесты сборки базы и данных
 ```
+
+## 🗂️ Устройство
+
+| Папка | Что там |
+|---|---|
+| `launcher/` | программа: Tauri 2 (Rust) + React + TypeScript |
+| `launcher/src/core/` | ядро без интерфейса: вкладки, поиск, запросы к базе, расписание |
+| `core/pulse_db/` | сборка одной базы `data/pulse.db` из данных игры |
+| `data/` | иконки, карты, данные игры |
+| `tools/` | сборка, выгрузка данных из клиента, упаковка в один exe |
+| `watcher/` | прежняя версия на Python и Tkinter |
+
+## ♻️ Прежняя версия
+
+Первая версия Pulse (Python и Tkinter, релизы 1.x) осталась в ветке [`feat/chat-watcher`](https://github.com/yshu17/aion-pulse/tree/feat/chat-watcher) и в старых релизах. Её описание: [README_FULL.md](README_FULL.md).
 
 ---
 
 <p align="center">
-  Режимы оповещения, фильтры, карта, обновления, <code>config.json</code>, данные и разработка —
-  в <a href="README_FULL.md"><b>📖 полной версии</b></a>.
+  Developed by Sexbomb, special for Aion Empire
 </p>
