@@ -483,7 +483,10 @@ async fn update_install(app: AppHandle, url: String, size: u64, sha256: String) 
         Ok(_) => launcher,
         Err(_) => fresh,
     };
-    std::process::Command::new(&target).arg("--wait").arg(std::process::id().to_string()).spawn().map_err(|e| e.to_string())?;
+    // started in its own folder: the app folder (this program's) is replaced by it and must not be its current folder
+    let folder = target.parent().map(Path::to_path_buf).unwrap_or_else(std::env::temp_dir);
+    std::process::Command::new(&target).arg("--wait").arg(std::process::id().to_string()).current_dir(folder)
+        .spawn().map_err(|e| e.to_string())?;
     app.exit(0);
     Ok(())
 }

@@ -23,6 +23,9 @@ static class Program
         string exe = Path.Combine(app, Exe);
         try
         {
+            // started by an update from the old app, this process inherits its current folder, the app folder that is
+            // replaced below: Windows does not delete a folder that a process stands in
+            Environment.CurrentDirectory = Path.GetDirectoryName(Application.ExecutablePath);
             WaitFor(args);
             bool current = File.Exists(exe) && File.Exists(Path.Combine(app, "build.txt"))
                 && File.ReadAllText(Path.Combine(app, "build.txt")).Trim() == Build;
