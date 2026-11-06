@@ -24,6 +24,10 @@ export interface Platform {
   httpFetch(url: string, method: "GET" | "HEAD"): Promise<[string, Record<string, string>]>;
   /** An address in the default browser. */
   openUrl(url: string): Promise<void>;
+  /** This program's version and whether it can install an update itself (started from Pulse+.exe). */
+  updateStatus(): Promise<{ version: string; can_install: boolean }>;
+  /** Download, check and install a new Pulse+.exe; the program then restarts (progress: «update-progress» events). */
+  updateInstall(url: string, size: number, sha256: string): Promise<void>;
 }
 
 /** Rust errors are texts; «ENOENT: …» becomes an error with that code, as the log reader of the core expects. */
@@ -54,6 +58,8 @@ const tauri: Platform = {
   readRange: async (path, position, length) => new Uint8Array(await call<ArrayBuffer>("read_range", { path, position, length })),
   httpFetch: (url, method) => call("http_fetch", { url, method }),
   openUrl: async (url) => { const { openUrl } = await import("@tauri-apps/plugin-opener"); await openUrl(url); },
+  updateStatus: () => call("update_status"),
+  updateInstall: (url, size, sha256) => call("update_install", { url, size, sha256 }),
 };
 
 export const platform: Platform | null = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window ? tauri : null;

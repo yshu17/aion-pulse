@@ -22,6 +22,7 @@ import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { TopTabs } from "./TopTabs";
+import { UpdateButton } from "./UpdateButton";
 import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
 import { useItems } from "./data";
@@ -156,6 +157,7 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
         <span className="brand">Pulse<i>+</i></span>
         <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); setTab(id); }} />
         <span className="spacer" />
+        <UpdateButton />
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
           aria-label="В накладку" onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay /><span className="label">В накладку</span></button>

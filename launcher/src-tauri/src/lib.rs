@@ -381,6 +381,113 @@ fn overlay_clip(app: AppHandle, x: i32, y: i32, width: i32, height: i32) -> Resu
     }
 }
 
+/// The single file that started this copy: tools/single_exe/Launcher.cs puts its path in `PULSE_LAUNCHER`. None for
+/// the developer's build (started directly), which never updates itself.
+fn launcher_path() -> Option<PathBuf> {
+    std::env::var_os("PULSE_LAUNCHER").map(PathBuf::from).filter(|path| path.is_file())
+}
+
+#[derive(serde::Serialize)]
+struct UpdateStatus {
+    version: String,
+    can_install: bool,
+}
+
+/// This program's version and whether it can install an update itself (it was started from Pulse+.exe).
+#[tauri::command]
+fn update_status(app: AppHandle) -> UpdateStatus {
+    UpdateStatus { version: app.package_info().version.to_string(), can_install: launcher_path().is_some() }
+}
+
+/// The only place an update is downloaded from: a file of this project's GitHub releases.
+const RELEASE_FILES: &str = "https://github.com/yshu17/aion-pulse/releases/download/";
+
+fn update_url_ok(url: &str) -> bool {
+    url.strip_prefix(RELEASE_FILES)
+        .is_some_and(|rest| !rest.is_empty() && !rest.contains("..") && !rest.contains(['?', '#', '@', '\\']))
+}
+
+#[derive(Clone, serde::Serialize)]
+struct UpdateProgress {
+    done: u64,
+    total: u64,
+}
+
+/// Download the new Pulse+.exe (progress in «update-progress» events), check its size and its SHA-256 against the
+/// release notes, put it in place of the Pulse+.exe that started this copy and start it: it waits for this program to
+/// close, unpacks the new build and starts it. This program closes. Nothing is replaced when a check fails.
+#[tauri::command]
+async fn update_install(app: AppHandle, url: String, size: u64, sha256: String) -> Result<(), String> {
+    if !update_url_ok(&url) {
+        return Err(format!("EACCES: not a file of the Pulse+ releases: {url}"));
+    }
+    let want = sha256.to_ascii_lowercase();
+    if want.len() != 64 || !want.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("no SHA256 in the release notes".into());
+    }
+    let launcher = launcher_path().ok_or("this copy was not started from Pulse+.exe: take the update from the release page")?;
+    let dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?.join("update");
+    let events = app.clone();
+    let fresh = tauri::async_runtime::spawn_blocking(move || -> Result<PathBuf, String> {
+        use sha2::{Digest, Sha256};
+        use std::io::Write;
+        fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let part = dir.join("Pulse+.exe.part");
+        let done_path = dir.join("Pulse+.exe");
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(std::time::Duration::from_secs(15))
+            .timeout_read(std::time::Duration::from_secs(60))
+            .build();
+        let response = agent.get(&url).set("User-Agent", "Pulse+").call().map_err(|e| e.to_string())?;
+        let total = response.header("Content-Length").and_then(|v| v.parse().ok()).unwrap_or(size);
+        let mut reader = response.into_reader();
+        let mut file = File::create(&part).map_err(|e| e.to_string())?;
+        let mut hasher = Sha256::new();
+        let mut buffer = vec![0u8; 256 * 1024];
+        let (mut done, mut shown) = (0u64, 0u64);
+        loop {
+            let n = reader.read(&mut buffer).map_err(|e| e.to_string())?;
+            if n == 0 {
+                break;
+            }
+            file.write_all(&buffer[..n]).map_err(|e| e.to_string())?;
+            hasher.update(&buffer[..n]);
+            done += n as u64;
+            if done - shown >= 1 << 20 {
+                shown = done;
+                let _ = events.emit("update-progress", UpdateProgress { done, total });
+            }
+        }
+        file.sync_all().map_err(|e| e.to_string())?;
+        drop(file);
+        let _ = events.emit("update-progress", UpdateProgress { done, total: done });
+        let problem = if size > 0 && done != size {
+            Some("download is incomplete")
+        } else if format!("{:x}", hasher.finalize()) != want {
+            Some("SHA-256 does not match the release notes")
+        } else {
+            None
+        };
+        if let Some(problem) = problem {
+            let _ = fs::remove_file(&part);
+            return Err(problem.into());
+        }
+        fs::rename(&part, &done_path).map_err(|e| e.to_string())?;
+        Ok(done_path)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    // the new file takes the place of the one the user starts (that one is not running: it only started this copy);
+    // when that place cannot be written (a protected folder), the new file runs from the update folder
+    let target = match fs::copy(&fresh, &launcher) {
+        Ok(_) => launcher,
+        Err(_) => fresh,
+    };
+    std::process::Command::new(&target).arg("--wait").arg(std::process::id().to_string()).spawn().map_err(|e| e.to_string())?;
+    app.exit(0);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -405,15 +512,26 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, db_query, overlay_bounds, overlay_clip])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, db_query, overlay_bounds, overlay_clip, update_status, update_install])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside, query_db};
+    use super::{allowed_url, has_game, inside, query_db, update_url_ok};
     use std::path::Path;
+
+    #[test]
+    fn downloads_updates_only_from_the_project_releases() {
+        assert!(update_url_ok("https://github.com/yshu17/aion-pulse/releases/download/v2.1.0/Pulse+.exe"));
+        assert!(!update_url_ok("https://github.com/yshu17/aion-pulse/releases/download/"));
+        assert!(!update_url_ok("https://github.com/someone/aion-pulse/releases/download/v2.1.0/Pulse+.exe"));
+        assert!(!update_url_ok("http://github.com/yshu17/aion-pulse/releases/download/v2.1.0/Pulse+.exe"));
+        assert!(!update_url_ok("https://github.com/yshu17/aion-pulse/releases/download/../../evil/x.exe"));
+        assert!(!update_url_ok("https://github.com/yshu17/aion-pulse/releases/download/v2/x.exe?redirect=evil"));
+        assert!(!update_url_ok("https://github.com.evil.net/yshu17/aion-pulse/releases/download/v2/x.exe"));
+    }
 
     #[test]
     fn answers_reading_queries_on_the_game_database_and_refuses_writes() {

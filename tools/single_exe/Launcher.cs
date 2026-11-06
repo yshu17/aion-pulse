@@ -16,17 +16,21 @@ static class Program
     const string Exe = "Pulse+Local.exe";
 
     [STAThread]
-    static int Main()
+    static int Main(string[] args)
     {
         string root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PulsePlus");
         string app = Path.Combine(root, "app");
         string exe = Path.Combine(app, Exe);
         try
         {
+            WaitFor(args);
             bool current = File.Exists(exe) && File.Exists(Path.Combine(app, "build.txt"))
                 && File.ReadAllText(Path.Combine(app, "build.txt")).Trim() == Build;
             if (!current) Unpack(root, app);
-            Process.Start(new ProcessStartInfo(exe) { WorkingDirectory = app, UseShellExecute = false });
+            ProcessStartInfo start = new ProcessStartInfo(exe) { WorkingDirectory = app, UseShellExecute = false };
+            // the app updates itself by replacing this file: it needs to know where it is
+            start.EnvironmentVariables["PULSE_LAUNCHER"] = Application.ExecutablePath;
+            Process.Start(start);
             return 0;
         }
         catch (Exception e)
@@ -52,8 +56,40 @@ static class Program
         ZipFile.ExtractToDirectory(zip, files);
         File.Delete(zip);
         File.WriteAllText(Path.Combine(files, "build.txt"), Build);
-        if (Directory.Exists(app)) Directory.Delete(app, true); // an older build; fails if that copy is still running
+        DeleteDir(app); // an older build; fails if that copy is still running
         Directory.Move(files, app);
         Directory.Delete(work, true);
+    }
+
+    // «--wait <pid>»: an update started this file from the old copy of the app; that copy must be gone before its
+    // folder is replaced (at most 30 s)
+    static void WaitFor(string[] args)
+    {
+        int i = Array.IndexOf(args, "--wait");
+        int pid;
+        if (i < 0 || i + 1 >= args.Length || !int.TryParse(args[i + 1], out pid)) return;
+        try
+        {
+            using (Process old = Process.GetProcessById(pid)) old.WaitForExit(30000);
+        }
+        catch (ArgumentException) { } // already gone
+    }
+
+    // the folder of a program that has just closed may stay locked for a moment: a few tries, then the error
+    static void DeleteDir(string dir)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                if (Directory.Exists(dir)) Directory.Delete(dir, true);
+                return;
+            }
+            catch (Exception)
+            {
+                if (attempt >= 20) throw;
+                System.Threading.Thread.Sleep(500);
+            }
+        }
     }
 }

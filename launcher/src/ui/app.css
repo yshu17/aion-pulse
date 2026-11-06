@@ -359,6 +359,22 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
 .tab-menu-item em.later { color: #6d7280; }
 .tab-menu-item:active { transform: none; }
 @media (prefers-reduced-motion: reduce) { .tab-chev { transition: none; } .tab-menu { animation: none; } }
+
+/* the update button and its card (UpdateButton.tsx) */
+.update { position: relative; flex: none; }
+.update-btn { border-color: var(--accent); color: var(--accent); gap: 8px; }
+.update-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(255, 140, 26, .8); }
+.update-pop { position: absolute; top: calc(100% + 4px); right: 0; z-index: 60; width: 340px; padding: var(--pad-pop); display: grid; gap: 10px;
+  background: var(--pop-bg); border: 1px solid var(--pop-border); border-radius: var(--r-pop); box-shadow: var(--pop-shadow); animation: arrive var(--t) var(--ease-out); }
+.presence.leaving > .update-pop { animation: pop-out var(--t-leave) var(--ease-in) forwards; }
+.update-pop p { margin: 0; font-size: 13px; line-height: 1.45; }
+.update-pop .r { display: flex; gap: 8px; flex-wrap: wrap; }
+.update-pop .btn { margin-bottom: 0; }
+.update-bar { position: relative; height: 26px; border-radius: 7px; background: var(--surface-2); overflow: hidden; }
+.update-bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent-subtle); border-right: 2px solid var(--accent); transition: width var(--t) var(--ease-out); }
+.update-bar span { position: relative; display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; font-size: 12px; }
+.update-error { color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .update-pop { animation: none; } .update-bar i { transition: none; } }
 @media (max-width: 1180px) {
   .top .btn .label { display: none; }
   .top > .btn { padding: 8px 11px; }

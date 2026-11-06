@@ -26,11 +26,11 @@ export class UpdateError extends Error {}
 
 const truthy = (v: unknown) => !(v === null || v === undefined || v === false || v === 0 || v === "" || (Array.isArray(v) && !v.length));
 
-/** The Pulse.exe of a release: {url, size, sha256}; null when there is no such asset. */
-export function pickAsset(releaseJson: string): ReleaseAsset | null {
+/** The Pulse.exe (or the file `name`) of a release: {url, size, sha256}; null when there is no such asset. */
+export function pickAsset(releaseJson: string, name: string = ASSET): ReleaseAsset | null {
   const data = JSON.parse(releaseJson);
   for (const asset of (truthy(data.assets) ? data.assets : []) as Record<string, unknown>[]) {
-    if (asset.name === ASSET && truthy(asset.browser_download_url)) {
+    if (asset.name === name && truthy(asset.browser_download_url)) {
       const found = SHA_LINE.exec(truthy(data.body) ? String(data.body) : "");
       return { url: String(asset.browser_download_url), size: truthy(asset.size) ? pyInt(asset.size) : 0,
         sha256: found ? found[1].toLowerCase() : "" };
