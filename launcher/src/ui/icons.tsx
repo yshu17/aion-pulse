@@ -28,6 +28,7 @@ export const IconSettings = () => (
 // the filter pills of the bestiary's bar and the list head
 export const IconSort = () => <Svg size={14}><path d="M8 5v14M4 15l4 4 4-4M16 19V5M12 9l4-4 4 4" /></Svg>;
 export const IconStairs = () => <Svg size={14}><path d="M4 20h4v-4h4v-4h4V8h4V4" /></Svg>;
+export const IconFlag = () => <Svg size={14}><path d="M5 21V4M5 4h11l-2.5 4L16 12H5" /></Svg>;
 export const IconRank = () => <Svg size={14}><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /></Svg>;
 export const IconShield = () => <Svg size={18}><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /></Svg>;
 export const IconPin = () => <Svg size={18}><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></Svg>;

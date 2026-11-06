@@ -7,14 +7,14 @@
 import { memo, startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
-import { statText } from "../../core/bestiary/labels";
+import { FACTIONS, statText } from "../../core/bestiary/labels";
 import type { Row } from "../../core/bestiary/store";
 import { hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { iconUrl, mapNames } from "../data";
 import { CountUp, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
-import { IconClose, IconNavigate, IconPin, IconRank, IconSearch, IconSort, IconStairs } from "../icons";
+import { IconClose, IconFlag, IconNavigate, IconPin, IconRank, IconSearch, IconSort, IconStairs } from "../icons";
 import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
@@ -51,6 +51,7 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const [query, setQuery] = useState("");
   const [rank, setRank] = useState("");
   const [level, setLevel] = useState(LEVELS[0]);
+  const [faction, setFaction] = useState(""); // the side: Элийцы, Асмодиане, Балауры, Другие; "" all
   const [order, setOrder] = useState("level_desc");
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
@@ -58,7 +59,7 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
   const asked = useRef(0); // the newest search: an older answer arriving late is dropped
-  const options = useMemo(() => ({ text: query, rank, order, limit: PAGE, ...levelRange(level) }), [query, rank, order, level]);
+  const options = useMemo(() => ({ text: query, rank, race: faction, order, limit: PAGE, ...levelRange(level) }), [query, rank, faction, order, level]);
   useEffect(() => {
     if (!client) return;
     const seq = ++asked.current;
@@ -90,7 +91,7 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const loading = client === undefined || (client !== null && searching);
   const rankLabel = rank ? RANK_CHIPS.find(([, value]) => value === rank)?.[0] ?? "" : "";
   const levelOn = level !== LEVELS[0];
-  const filters = (rank !== "" ? 1 : 0) + (levelOn ? 1 : 0);
+  const filters = (rank !== "" ? 1 : 0) + (faction !== "" ? 1 : 0) + (levelOn ? 1 : 0);
   const sortLabel = Object.entries(SORTS).find(([, value]) => value === order)?.[0] ?? "Сортировка";
 
   return (
@@ -104,14 +105,17 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
         </div>
         <PickMenu id="rank" label="Класс" icon={<IconRank />} text={rankLabel ? `Класс: ${rankLabel}` : "Класс"} lit={rank !== ""}
           options={RANK_CHIPS.map(([label, value]) => [label, value])} value={rank} onPick={setRank} />
+        <PickMenu id="faction" label="Раса" icon={<IconFlag />} text={faction ? `Раса: ${faction}` : "Раса"} lit={faction !== ""}
+          options={[["Все", ""], ...FACTIONS.map((name): [string, string] => [name, name])]} value={faction} onPick={setFaction} />
         <PickMenu id="level" label="Уровень" icon={<IconStairs />} text={levelOn ? `Ур. ${level}` : "Уровень"} lit={levelOn}
           options={LEVELS.map((choice) => [choice, choice])} value={level} onPick={setLevel} />
         {filters > 0 && (
           <div className="bst-tags" aria-label="Включённые фильтры">
             <span className="bst-tags-n">Фильтры: {filters}</span>
             {rank !== "" && <button type="button" className="bst-tag" onClick={() => setRank("")} aria-label={`Снять фильтр: ${rankLabel}`}>{rankLabel}<IconClose /></button>}
+            {faction !== "" && <button type="button" className="bst-tag" onClick={() => setFaction("")} aria-label={`Снять фильтр: ${faction}`}>{faction}<IconClose /></button>}
             {levelOn && <button type="button" className="bst-tag" onClick={() => setLevel(LEVELS[0])} aria-label={`Снять фильтр: уровень ${level}`}>Ур. {level}<IconClose /></button>}
-            <button type="button" className="bst-reset" onClick={() => { setRank(""); setLevel(LEVELS[0]); }}>Сбросить</button>
+            <button type="button" className="bst-reset" onClick={() => { setRank(""); setFaction(""); setLevel(LEVELS[0]); }}>Сбросить</button>
           </div>
         )}
       </div>
