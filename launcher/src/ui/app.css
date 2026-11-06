@@ -334,9 +334,31 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
 /* narrow window: the buttons of the head never shrink or leave the window; the tabs take what is left */
 .window { min-width: 0; }
 .top > .btn, .top > .brand { flex: none; }
-.top .tabs { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.top .tabs::-webkit-scrollbar { display: none; }
+.top .tabs { flex: 0 1 auto; min-width: 0; align-self: stretch; align-items: flex-end; }
 .top .tab { white-space: nowrap; flex: none; }
+
+/* the top tabs' groups and menus (TopTabs.tsx, docs/concepts/top-tabs/npc-tab.html variant 2) */
+.tabs-sep { flex: none; width: 1px; height: 18px; margin: 0 6px 12px; background: var(--border); }
+.tab-host { position: relative; display: flex; flex: none; }
+.menu-tab { display: inline-flex; align-items: center; gap: 6px; }
+.tab-sub { color: var(--accent); font-weight: 600; }
+.tab-sub::before { content: "·"; color: var(--muted); margin-right: 6px; }
+.tab-chev { display: inline-flex; color: var(--muted); transform: rotate(90deg); transition: transform var(--t-fast) var(--ease-out), color var(--t-fast); }
+.tab-chev.open { transform: rotate(-90deg); color: var(--accent); }
+.menu-tab.open { color: var(--text); }
+.tab-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; min-width: 250px; padding: 6px;
+  background: var(--pop-bg); border: 1px solid var(--pop-border); border-radius: var(--r-pop); box-shadow: var(--pop-shadow); animation: arrive var(--t) var(--ease-out); }
+.presence.leaving > .tab-menu { animation: pop-out var(--t-leave) var(--ease-in) forwards; }
+.tab-menu-grp + .tab-menu-grp { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }
+.tab-menu-title { padding: 6px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tab-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 18px; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px;
+  background: none; color: var(--text); font-size: 14px; font-weight: 600; text-align: left; white-space: nowrap; transition: background var(--t-fast); }
+.tab-menu-item.cur { background: var(--pop-hover); }
+.tab-menu-item.on { color: var(--accent); }
+.tab-menu-item em { font-style: normal; font-size: 12px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tab-menu-item em.later { color: #6d7280; }
+.tab-menu-item:active { transform: none; }
+@media (prefers-reduced-motion: reduce) { .tab-chev { transition: none; } .tab-menu { animation: none; } }
 @media (max-width: 1180px) {
   .top .btn .label { display: none; }
   .top > .btn { padding: 8px 11px; }

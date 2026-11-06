@@ -21,13 +21,12 @@ import { ScheduleTab } from "./schedule/ScheduleTab";
 import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
+import { TopTabs } from "./TopTabs";
+import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
 import { useItems } from "./data";
 import { useWatch } from "./useWatch";
 
-/** The tabs that have a screen; the others say «будет следующей». */
-const LIVE_TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание"];
-const TABS = ["Чат", "Карта", "NPC / Бестиарий", "Расписание", "Крафт", "Броня", "Стигмы", "Гайды"];
 const MODES: [string, string][] = [["or", "Слово или предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово и предмет"]];
 
 /** One tab's place: all the opened tabs lie one on another, only the chosen one is seen (a hidden one keeps its size and scroll). */
@@ -155,12 +154,7 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
     <div className="window">
       <header className="top">
         <span className="brand">Pulse<i>+</i></span>
-        <nav className="tabs" role="tablist">
-          {TABS.map((name) => (
-            <button key={name} role="tab" aria-selected={tab === name} className={`tab${tab === name ? " on" : ""}`}
-              onClick={() => { if (name === "Карта" && tab === "Карта") setMapHome((n) => n + 1); setTab(name); }}>{name}{tab === name && <Glide group="tab-line" className="tab-line" />}</button>
-          ))}
-        </nav>
+        <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); setTab(id); }} />
         <span className="spacer" />
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
@@ -251,15 +245,15 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
           </OpenMap.Provider>
         </Pane>
       )}
-      {alive("NPC / Бестиарий") && (
-        <Pane on={tab === "NPC / Бестиарий"}>
+      {alive("NPC") && (
+        <Pane on={tab === "NPC"}>
           <OpenMap.Provider value={openMap}>
             <BestiaryTab />
           </OpenMap.Provider>
         </Pane>
       )}
       {alive("Расписание") && <Pane on={tab === "Расписание"}><ScheduleTab schedule={schedule} /></Pane>}
-      {!LIVE_TABS.includes(tab) && <main className="soon"><p>Вкладка «{tab}» будет следующей.</p></main>}
+      {!LIVE_TABS.includes(tab) && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
       </div>
       <AnimatePresence>{card && tab === "Чат" && <ItemCard key="item-card" card={card} onClose={closeCard} />}</AnimatePresence>
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
