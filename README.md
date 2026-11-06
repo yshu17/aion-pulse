@@ -24,6 +24,10 @@
 </p>
 
 <p align="center">
+  <sub>Все данные (предметы, NPC, карты, задания, рецепты) взяты из открытых источников: сайта Aion Empire и распаковки клиента игры сервера.</sub>
+</p>
+
+<p align="center">
   <img src="screenshots/pp-1-chat.png" alt="Pulse+ — вкладка «Чат»" width="95%">
 </p>
 
