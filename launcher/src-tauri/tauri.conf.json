@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "Pulse+",
-        "width": 1280,
+        "width": 1360,
         "height": 820,
-        "minWidth": 1100,
+        "minWidth": 1345,
         "minHeight": 600,
         "label": "main",
         "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --autoplay-policy=no-user-gesture-required"
