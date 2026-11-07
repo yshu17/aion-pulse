@@ -23,6 +23,7 @@ import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { TopTabs } from "./TopTabs";
 import { UpdateButton } from "./UpdateButton";
+import { Credit } from "./Credit";
 import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
 import { useItems } from "./data";
@@ -261,7 +262,7 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
-      <div className="credit" aria-hidden="true">Developed by Sexbomb, special for Aion Empire</div>
+      <Credit />
     </div>
   );
 }
