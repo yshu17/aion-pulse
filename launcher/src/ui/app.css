@@ -229,7 +229,7 @@ html.overlay-mode:has(.overlay.up) #root { display: flex; flex-direction: column
 
 .search-field { position: relative; display: flex; }
 .search-field .field { flex: 1; padding-right: 34px; }
-.search-field .x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.search-field .x { position: absolute; right: 8px; top: 0; bottom: 0; margin: auto 0; } /* not by transform: a pressed button is scaled by the kit (see bestiary.css) */
 .found-count { font-size: 12px; margin-top: -4px; }
 .more { font-size: 12px; padding: 2px 6px 6px; }
 

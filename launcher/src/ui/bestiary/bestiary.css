@@ -10,7 +10,9 @@
 .bst-search { position: relative; flex: 0 1 264px; min-width: 180px; } /* the search is 40% shorter: the pills need the room */
 .bst-search > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .bst-search .field { width: 100%; padding-left: 38px; }
-.bst-search .x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+/* centred without transform: the kit scales a pressed button (transform: scale), which dropped «translateY(-50%)», so the
+   cross jumped down half its height under the mouse and the click did not reach it */
+.bst-search .x { position: absolute; right: 6px; top: 0; bottom: 0; margin: auto 0; }
 /* the highlight of the chosen tab slides to the next one */
 .bst-glide { position: absolute; inset: 0; border-radius: inherit; background: var(--accent); }
 
