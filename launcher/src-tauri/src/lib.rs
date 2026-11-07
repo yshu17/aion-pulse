@@ -633,6 +633,25 @@ fn unzip_safe(zip_path: &Path, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// The whole new maps folder `stage` becomes `home/maps`. The old folder is moved aside first and kept when the new one
+/// cannot take its place, so the pictures never vanish; it is deleted once the swap is done.
+fn put_maps_in_place(home: &Path, stage: &Path) -> Result<(), String> {
+    let target = home.join("maps");
+    let old = home.join("maps-old");
+    let _ = fs::remove_dir_all(&old);
+    if target.exists() {
+        fs::rename(&target, &old).map_err(|e| format!("the old maps are in use: {e}"))?;
+    }
+    if let Err(e) = fs::rename(stage, &target) {
+        if old.exists() {
+            let _ = fs::rename(&old, &target); // the old pictures stay
+        }
+        return Err(e.to_string());
+    }
+    let _ = fs::remove_dir_all(&old);
+    Ok(())
+}
+
 static MAPS_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Download the map pack of this build (progress in «maps-progress» events), check it and put it in place of the old maps
@@ -665,19 +684,7 @@ async fn maps_install(app: AppHandle) -> Result<(), String> {
             return Err("the map pack holds no maps.json".into());
         }
         fs::write(stage.join(MAPS_MARKER), &want).map_err(|e| e.to_string())?; // last: the folder is whole
-        let target = home.join("maps");
-        let old = home.join("maps-old");
-        let _ = fs::remove_dir_all(&old);
-        if target.exists() {
-            fs::rename(&target, &old).map_err(|e| format!("the old maps are in use: {e}"))?;
-        }
-        if let Err(e) = fs::rename(&stage, &target) {
-            if old.exists() {
-                let _ = fs::rename(&old, &target); // the old pictures stay
-            }
-            return Err(e.to_string());
-        }
-        let _ = fs::remove_dir_all(&old);
+        put_maps_in_place(&home, &stage)?;
         let _ = fs::remove_dir_all(&work);
         Ok(())
     })
@@ -757,7 +764,7 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside, query_db, split_ranges, unzip_safe, update_url_ok, MapsPack};
+    use super::{allowed_url, has_game, inside, put_maps_in_place, query_db, split_ranges, unzip_safe, update_url_ok, MapsPack};
     use std::io::Write;
     use std::path::Path;
 
@@ -797,6 +804,25 @@ mod tests {
             assert!(!dir.join("escape.txt").exists() && !out.join("escape.txt").exists(), "{evil}");
             let _ = std::fs::remove_dir_all(dir);
         }
+    }
+
+    #[test]
+    fn a_new_maps_folder_replaces_the_old_one_and_the_old_one_stays_when_that_fails() {
+        let home = std::env::temp_dir().join(format!("pulse-test-home-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        std::fs::create_dir_all(home.join("maps")).unwrap();
+        std::fs::write(home.join("maps").join("maps.json"), "old").unwrap();
+        let stage = home.join("maps-download").join("files");
+        std::fs::create_dir_all(&stage).unwrap();
+        std::fs::write(stage.join("maps.json"), "new").unwrap();
+        put_maps_in_place(&home, &stage).unwrap();
+        assert_eq!(std::fs::read_to_string(home.join("maps").join("maps.json")).unwrap(), "new");
+        assert!(!home.join("maps-old").exists() && !stage.exists());
+        // no stage folder: the swap fails and the maps of before are back
+        assert!(put_maps_in_place(&home, &home.join("missing")).is_err());
+        assert_eq!(std::fs::read_to_string(home.join("maps").join("maps.json")).unwrap(), "new");
+        assert!(!home.join("maps-old").exists());
+        let _ = std::fs::remove_dir_all(home);
     }
 
     #[test]
