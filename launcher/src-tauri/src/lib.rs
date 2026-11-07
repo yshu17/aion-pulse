@@ -231,15 +231,40 @@ async fn http_fetch(url: String, method: String) -> Result<(String, std::collect
     .map_err(|e| e.to_string())?
 }
 
-/// Where the map pictures are: `PULSE_MAPS` (a folder, for tests), else `data/maps/` next to the program or in a
-/// folder above it, as pulse.db. The pictures (44 MB) are read from there, not built into the program.
+/// The folder PulsePlus, where Pulse+.exe keeps what outlives one build of the app (it passes the path in `PULSE_HOME`).
+/// None for a copy not started from Pulse+.exe (the developer's build).
+fn home_dir() -> Option<PathBuf> {
+    std::env::var_os("PULSE_HOME").map(PathBuf::from).filter(|dir| dir.is_dir())
+}
+
+/// In the maps folder: the SHA-256 of the pack (see `MapsPack`) it was made from, written last.
+const MAPS_MARKER: &str = "maps.version";
+
+/// Where the map pictures are: `PULSE_MAPS` (a folder, for tests), else the maps folder of the PulsePlus folder (the
+/// pictures, 140 MB, are not in Pulse+.exe: they come as a pack of their own, see `maps_install`), else `data/maps/` next
+/// to the program or in a folder above it, as pulse.db. The pictures are read from there, not built into the program.
 #[tauri::command]
 fn maps_dir() -> Option<String> {
     if let Ok(dir) = std::env::var("PULSE_MAPS") {
         return Some(dir);
     }
+    if let Some(dir) = home_dir().map(|home| home.join("maps")).filter(|dir| dir.join("maps.json").is_file() && dir.join(MAPS_MARKER).is_file()) {
+        return Some(dir.to_string_lossy().into_owned());
+    }
     let exe = std::env::current_exe().ok()?;
     exe.ancestors().skip(1).map(|dir| dir.join("data").join("maps")).find(|dir| dir.join("maps.json").is_file())
+        .map(|dir| dir.to_string_lossy().into_owned())
+}
+
+/// The bestiary's pictures folder (`data/bestiary` with its `icons`): `PULSE_BESTIARY` (for tests), else next to the
+/// program or in a folder above it. It travels in the program's own data, apart from the maps.
+#[tauri::command]
+fn bestiary_dir() -> Option<String> {
+    if let Ok(dir) = std::env::var("PULSE_BESTIARY") {
+        return Some(dir);
+    }
+    let exe = std::env::current_exe().ok()?;
+    exe.ancestors().skip(1).map(|dir| dir.join("data").join("bestiary")).find(|dir| dir.join("icons").is_dir())
         .map(|dir| dir.to_string_lossy().into_owned())
 }
 
@@ -532,6 +557,136 @@ fn sha256_of(path: &Path) -> Result<String, String> {
     }
 }
 
+/// A release file into `path`, checked: its size (when known) and its SHA-256. The file is taken from several
+/// connections at once when the size is known and the server answers ranges (one GitHub connection gives about
+/// 13 MB/s, eight give about 35), else in one stream. Nothing is left at `path` when a check fails.
+fn download_checked(url: &str, size: u64, want: &str, path: &Path, progress: &(dyn Fn(u64, u64) + Sync)) -> Result<(), String> {
+    let done = match fetch_parts(url, size, path, progress) {
+        Ok(done) => done,
+        Err(FetchError::NoRanges) => fetch_single(url, size, path, progress)?,
+        Err(FetchError::Failed(text)) => { let _ = fs::remove_file(path); return Err(text); }
+    };
+    progress(done, done);
+    let problem = if size > 0 && done != size {
+        Some("download is incomplete".to_string())
+    } else if sha256_of(path)? != want {
+        Some("SHA-256 does not match the release notes".to_string())
+    } else {
+        None
+    };
+    match problem {
+        Some(problem) => { let _ = fs::remove_file(path); Err(problem) }
+        None => Ok(()),
+    }
+}
+
+/// The pack of the map pictures (the whole of data/maps, zipped) that this build of the program wants: tools/single_exe
+/// puts `data/maps_pack.json` into the program's data. It names a file of a release of this project; the pack changes
+/// only when a map changes, so an update of the program does not carry the maps again.
+#[derive(serde::Deserialize, Clone, Debug, PartialEq)]
+struct MapsPack {
+    sha256: String,
+    size: u64,
+    url: String,
+}
+
+fn maps_pack() -> Option<MapsPack> {
+    let exe = std::env::current_exe().ok()?;
+    let file = exe.ancestors().skip(1).map(|dir| dir.join("data").join("maps_pack.json")).find(|path| path.is_file())?;
+    serde_json::from_slice(&fs::read(file).ok()?).ok()
+}
+
+#[derive(serde::Serialize)]
+struct MapsStatus {
+    /// The maps folder is missing or made from another pack than this build wants: the pack has to come.
+    needed: bool,
+    /// Some maps are there already (an older pack): the pictures show while the new pack comes.
+    installed: bool,
+    size: u64,
+}
+
+/// Do the map pictures have to be downloaded? Only a program started from Pulse+.exe that carries a pack decides so.
+#[tauri::command]
+fn maps_status() -> MapsStatus {
+    let (Some(home), Some(pack)) = (home_dir(), maps_pack()) else { return MapsStatus { needed: false, installed: false, size: 0 } };
+    let have = fs::read_to_string(home.join("maps").join(MAPS_MARKER)).ok().map(|text| text.trim().to_string());
+    MapsStatus { needed: have.as_deref() != Some(pack.sha256.as_str()), installed: have.is_some(), size: pack.size }
+}
+
+/// Unpack a zip into `dest`; an entry that would leave `dest` («..», an absolute path) stops it.
+fn unzip_safe(zip_path: &Path, dest: &Path) -> Result<(), String> {
+    let mut archive = zip::ZipArchive::new(File::open(zip_path).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
+        let relative = entry.enclosed_name().ok_or("an unsafe path in the archive")?;
+        let out = dest.join(relative);
+        if entry.is_dir() {
+            fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+            continue;
+        }
+        if let Some(parent) = out.parent() {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let mut file = File::create(&out).map_err(|e| e.to_string())?;
+        std::io::copy(&mut entry, &mut file).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+static MAPS_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Download the map pack of this build (progress in «maps-progress» events), check it and put it in place of the old maps
+/// folder. The old pictures stay in use until the new folder is whole; nothing is replaced when a check fails.
+#[tauri::command]
+async fn maps_install(app: AppHandle) -> Result<(), String> {
+    use std::sync::atomic::Ordering;
+    let home = home_dir().ok_or("this copy was not started from Pulse+.exe: the maps come with the program's data")?;
+    let pack = maps_pack().ok_or("this build has no map pack")?;
+    if !update_url_ok(&pack.url) {
+        return Err(format!("EACCES: not a file of the Pulse+ releases: {}", pack.url));
+    }
+    let want = pack.sha256.to_ascii_lowercase();
+    if want.len() != 64 || !want.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("the map pack has no SHA-256".into());
+    }
+    if MAPS_BUSY.swap(true, Ordering::SeqCst) {
+        return Err("the maps are already coming".into());
+    }
+    let events = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let work = home.join("maps-download");
+        let _ = fs::remove_dir_all(&work);
+        fs::create_dir_all(&work).map_err(|e| e.to_string())?;
+        let zip_path = work.join("maps.zip");
+        download_checked(&pack.url, pack.size, &want, &zip_path, &|done, total| { let _ = events.emit("maps-progress", UpdateProgress { done, total }); })?;
+        let stage = work.join("files");
+        unzip_safe(&zip_path, &stage)?;
+        if !stage.join("maps.json").is_file() {
+            return Err("the map pack holds no maps.json".into());
+        }
+        fs::write(stage.join(MAPS_MARKER), &want).map_err(|e| e.to_string())?; // last: the folder is whole
+        let target = home.join("maps");
+        let old = home.join("maps-old");
+        let _ = fs::remove_dir_all(&old);
+        if target.exists() {
+            fs::rename(&target, &old).map_err(|e| format!("the old maps are in use: {e}"))?;
+        }
+        if let Err(e) = fs::rename(&stage, &target) {
+            if old.exists() {
+                let _ = fs::rename(&old, &target); // the old pictures stay
+            }
+            return Err(e.to_string());
+        }
+        let _ = fs::remove_dir_all(&old);
+        let _ = fs::remove_dir_all(&work);
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string());
+    MAPS_BUSY.store(false, Ordering::SeqCst);
+    result?
+}
+
 /// Download the new Pulse+.exe (progress in «update-progress» events), check its size and its SHA-256 against the
 /// release notes, put it in place of the Pulse+.exe that started this copy and start it: it waits for this program to
 /// close, unpacks the new build and starts it. This program closes. Nothing is replaced when a check fails.
@@ -551,26 +706,7 @@ async fn update_install(app: AppHandle, url: String, size: u64, sha256: String) 
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let part = dir.join("Pulse+.exe.part");
         let done_path = dir.join("Pulse+.exe");
-        let progress = |done: u64, total: u64| { let _ = events.emit("update-progress", UpdateProgress { done, total }); };
-        // several connections at once when the size is known and the server answers ranges (one GitHub connection gives
-        // about 13 MB/s, eight give about 35); otherwise the file comes in one stream
-        let done = match fetch_parts(&url, size, &part, &progress) {
-            Ok(done) => done,
-            Err(FetchError::NoRanges) => fetch_single(&url, size, &part, &progress)?,
-            Err(FetchError::Failed(text)) => { let _ = fs::remove_file(&part); return Err(text); }
-        };
-        progress(done, done);
-        let problem = if size > 0 && done != size {
-            Some("download is incomplete".to_string())
-        } else if sha256_of(&part)? != want {
-            Some("SHA-256 does not match the release notes".to_string())
-        } else {
-            None
-        };
-        if let Some(problem) = problem {
-            let _ = fs::remove_file(&part);
-            return Err(problem);
-        }
+        download_checked(&url, size, &want, &part, &|done, total| { let _ = events.emit("update-progress", UpdateProgress { done, total }); })?;
         fs::rename(&part, &done_path).map_err(|e| e.to_string())?;
         Ok(done_path)
     })
@@ -614,15 +750,63 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, db_query, overlay_bounds, overlay_clip, update_status, update_install])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, db_query, overlay_bounds, overlay_clip, update_status, update_install, bestiary_dir, maps_status, maps_install])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside, query_db, split_ranges, update_url_ok};
+    use super::{allowed_url, has_game, inside, query_db, split_ranges, unzip_safe, update_url_ok, MapsPack};
+    use std::io::Write;
     use std::path::Path;
+
+    /// A zip in a fresh temporary folder: (name, bytes) entries; returns the folder and the zip's path.
+    fn make_zip(tag: &str, entries: &[(&str, &[u8])]) -> (std::path::PathBuf, std::path::PathBuf) {
+        let dir = std::env::temp_dir().join(format!("pulse-test-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("pack.zip");
+        let mut writer = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+        let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        for (name, bytes) in entries {
+            writer.start_file(*name, options).unwrap();
+            writer.write_all(bytes).unwrap();
+        }
+        writer.finish().unwrap();
+        (dir, path)
+    }
+
+    #[test]
+    fn unpacks_a_map_pack_with_its_folders() {
+        let (dir, zip) = make_zip("ok", &[("maps.json", b"{}"), ("client/df1.jpg", b"jpg"), ("world/site/bg.png", b"png")]);
+        let out = dir.join("out");
+        unzip_safe(&zip, &out).unwrap();
+        assert_eq!(std::fs::read(out.join("maps.json")).unwrap(), b"{}");
+        assert_eq!(std::fs::read(out.join("client").join("df1.jpg")).unwrap(), b"jpg");
+        assert_eq!(std::fs::read(out.join("world").join("site").join("bg.png")).unwrap(), b"png");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn refuses_a_pack_that_would_write_outside_its_folder() {
+        for evil in ["../escape.txt", "client/../../escape.txt", "/abs.txt"] {
+            let (dir, zip) = make_zip("evil", &[("maps.json", b"{}"), (evil, b"x")]);
+            let out = dir.join("out");
+            assert!(unzip_safe(&zip, &out).is_err(), "{evil}");
+            assert!(!dir.join("escape.txt").exists() && !out.join("escape.txt").exists(), "{evil}");
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+
+    #[test]
+    fn reads_the_descriptor_of_a_map_pack() {
+        let text = r#"{"sha256":"ab12","size":139000000,"url":"https://github.com/yshu17/aion-pulse/releases/download/v2.0.4/maps-ab12.zip","extra":1}"#;
+        let pack: MapsPack = serde_json::from_str(text).unwrap();
+        assert_eq!(pack.size, 139_000_000);
+        assert!(update_url_ok(&pack.url));
+        assert!(serde_json::from_str::<MapsPack>(r#"{"size":1}"#).is_err());
+    }
 
     #[test]
     fn splits_a_download_into_ranges_that_cover_every_byte_once() {

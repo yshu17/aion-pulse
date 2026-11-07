@@ -18,7 +18,7 @@ import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, Ico
 import type { Boot } from "../useBoot";
 import { posLink, type GatherHit, type GatherNode } from "../../core/map/gathering";
 import { copyText, GatherPanel } from "./GatherPanel";
-import { gatherIcon, gathering, loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, Way, wayFrom, waysInto, zones } from "./mapData";
+import { gatherIcon, gathering, loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, useMapsEpoch, Way, wayFrom, waysInto, zones } from "./mapData";
 import type { ChatPlace, MapTarget } from "./placeLink";
 import { regionOf, world, WorldLayer, zoneTitle } from "./WorldLayer";
 import "./map.css";
@@ -97,6 +97,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   const [picture, setPicture] = useState<string | null>(null);
   const [pictureMissing, setPictureMissing] = useState(false);
   const file = zone ? (zone.layers.find(([id]) => id === layer)?.[2] ?? zone.file) : null;
+  const mapsEpoch = useMapsEpoch(); // the map pack has just come: read the picture again
   useEffect(() => {
     if (!file) return;
     let alive = true;
@@ -104,7 +105,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     setPictureMissing(false);
     pictureUrl(file).then((url) => { if (alive) { setPicture(url); setPictureMissing(url === null); } });
     return () => { alive = false; };
-  }, [file]);
+  }, [file, mapsEpoch]);
 
   // a new zone or the first size: the whole zone; a new size: kept on screen, never smaller than the fit
   const fittedZone = useRef<string | null>(null);

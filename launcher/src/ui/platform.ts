@@ -24,6 +24,12 @@ export interface Platform {
   httpFetch(url: string, method: "GET" | "HEAD"): Promise<[string, Record<string, string>]>;
   /** An address in the default browser. */
   openUrl(url: string): Promise<void>;
+  /** The folder of the bestiary's pictures (data/bestiary), or null when the program has none near it. */
+  bestiaryDir(): Promise<string | null>;
+  /** Must the map pack be downloaded (no maps yet, or maps of an older pack)? Only a program started from Pulse+.exe says yes. */
+  mapsStatus(): Promise<{ needed: boolean; installed: boolean; size: number }>;
+  /** Download, check and put in place the map pack (progress: «maps-progress» events). */
+  mapsInstall(): Promise<void>;
   /** This program's version and whether it can install an update itself (started from Pulse+.exe). */
   updateStatus(): Promise<{ version: string; can_install: boolean }>;
   /** Download, check and install a new Pulse+.exe; the program then restarts (progress: «update-progress» events). */
@@ -58,6 +64,9 @@ const tauri: Platform = {
   readRange: async (path, position, length) => new Uint8Array(await call<ArrayBuffer>("read_range", { path, position, length })),
   httpFetch: (url, method) => call("http_fetch", { url, method }),
   openUrl: async (url) => { const { openUrl } = await import("@tauri-apps/plugin-opener"); await openUrl(url); },
+  bestiaryDir: () => call("bestiary_dir"),
+  mapsStatus: () => call("maps_status"),
+  mapsInstall: () => call("maps_install"),
   updateStatus: () => call("update_status"),
   updateInstall: (url, size, sha256) => call("update_install", { url, size, sha256 }),
 };

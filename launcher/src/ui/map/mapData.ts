@@ -1,6 +1,8 @@
 // The map's data for the screen: zones (data/maps/maps.json + labels.tsv), points (poi.json), their icons (the game's
 // own map and radar sprites, as Pulse draws them) and the zone pictures. The pictures (44 MB) are read from data/maps
 // next to the program, not built into it; the plain browser (the dev page) takes them from the dev server.
+import { useSyncExternalStore } from "react";
+
 import gatheringJson from "../../../../data/maps/gathering.json?raw";
 import labelsText from "../../../../data/maps/labels.tsv?raw";
 import mapsJson from "../../../../data/maps/maps.json?raw";
@@ -74,6 +76,20 @@ const devPictures = import.meta.env.DEV
 
 const pictures = new Map<string, Promise<string | null>>();
 let mapsDir: Promise<string | null> | null = null;
+
+// The map pack comes after the start on a new install or when a map changes (ui/MapsButton.tsx): once it is in place,
+// the screens that showed no picture read again. `useMapsEpoch` changes then; their effects list it.
+let epoch = 0;
+const watchers = new Set<() => void>();
+export function mapsArrived(): void {
+  mapsDir = null;
+  pictures.clear();
+  epoch++;
+  watchers.forEach((watch) => watch());
+}
+export function useMapsEpoch(): number {
+  return useSyncExternalStore((watch) => { watchers.add(watch); return () => { watchers.delete(watch); }; }, () => epoch);
+}
 
 async function readPicture(file: string): Promise<string | null> {
   if (platform === null) {

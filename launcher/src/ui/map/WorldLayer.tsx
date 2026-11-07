@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import atreaJson from "../../../../data/maps/world/site/atrea.json?raw";
 import worldJson from "../../../../data/maps/world/world.json?raw";
 import { mapNames } from "../data";
-import { pictureUrl } from "./mapData";
+import { pictureUrl, useMapsEpoch } from "./mapData";
 
 interface GlobePart { region: string; part: string; frame: [number, number, number, number]; up: string; over: string }
 interface WorldZone {
@@ -39,13 +39,14 @@ export const zoneTitle = (zone: WorldZone) => ABYSS_NAMES[zone.code] ?? (zone.ma
 /** The world pictures, read once (data/maps/world, as the zone pictures). */
 function usePictures(files: string[]): Record<string, string> {
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const mapsEpoch = useMapsEpoch(); // the map pack has just come: read the pictures again
   useEffect(() => {
     let alive = true;
     for (const file of files) {
       pictureUrl(`world/${file}`).then((url) => { if (alive && url) setUrls((old) => ({ ...old, [file]: url })); });
     }
     return () => { alive = false; };
-  }, [files.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [files.join("|"), mapsEpoch]); // eslint-disable-line react-hooks/exhaustive-deps
   return urls;
 }
 

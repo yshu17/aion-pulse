@@ -23,6 +23,7 @@ import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { TopTabs } from "./TopTabs";
 import { UpdateButton } from "./UpdateButton";
+import { MapsButton } from "./MapsButton";
 import { Credit } from "./Credit";
 import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
@@ -158,6 +159,7 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
         <span className="brand">Pulse<i>+</i></span>
         <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); setTab(id); }} />
         <span className="spacer" />
+        <MapsButton />
         <UpdateButton />
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}

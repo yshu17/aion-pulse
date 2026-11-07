@@ -13,9 +13,9 @@ const devIcons = import.meta.env.DEV
   : {};
 
 let dataDir: Promise<string | null> | null = null;
-/** data/bestiary next to data/maps (the program finds data/maps above its exe). */
+/** data/bestiary (the program finds it above its exe, as pulse.db; the maps are apart from it, see ui/MapsButton.tsx). */
 function bestiaryDir(): Promise<string | null> {
-  dataDir ??= (platform?.mapsDir() ?? Promise.resolve(null)).then((maps) => (maps ? maps.replace(/[\\/]maps$/, "\\bestiary") : null)).catch(() => null);
+  dataDir ??= (platform?.bestiaryDir() ?? Promise.resolve(null)).catch(() => null);
   return dataDir;
 }
 

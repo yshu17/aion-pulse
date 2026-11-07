@@ -13,6 +13,9 @@ using Microsoft.Win32;
 static class Program
 {
     const string Build = "__BUILD__";
+    // SHA-256 of the map pack this build wants (the maps are not in the payload, see build_single_exe.ps1); the maps of an
+    // older Pulse+.exe that carried them are the same pictures and are kept, not downloaded again
+    const string MapsId = "__MAPS__";
     const string Payload = "payload.zip";
     const string Exe = "Pulse+Local.exe";
     // the Evergreen WebView2 Runtime: its EdgeUpdate client id and Microsoft's link to its small online installer
@@ -39,6 +42,8 @@ static class Program
             ProcessStartInfo start = new ProcessStartInfo(exe) { WorkingDirectory = app, UseShellExecute = false };
             // the app updates itself by replacing this file: it needs to know where it is
             start.EnvironmentVariables["PULSE_LAUNCHER"] = Application.ExecutablePath;
+            // what outlives one build of the app (the maps) lives next to the app folder
+            start.EnvironmentVariables["PULSE_HOME"] = root;
             Process.Start(start);
             return 0;
         }
@@ -65,9 +70,22 @@ static class Program
         ZipFile.ExtractToDirectory(zip, files);
         File.Delete(zip);
         File.WriteAllText(Path.Combine(files, "build.txt"), Build);
+        KeepOldMaps(root, app);
         DeleteDir(app); // an older build; fails if that copy is still running
         Directory.Move(files, app);
         Directory.Delete(work, true);
+    }
+
+    // An older Pulse+.exe carried the maps inside the app folder (data\maps). They go to the maps folder of the PulsePlus
+    // folder (a move on one disk: instant) with the id of this build's pack, so the app does not download them again.
+    // Only once: after the first build without maps in the payload there is no data\maps in the app folder any more.
+    static void KeepOldMaps(string root, string app)
+    {
+        string old = Path.Combine(app, "data", "maps");
+        string shared = Path.Combine(root, "maps");
+        if (MapsId.Length != 64 || Directory.Exists(shared) || !File.Exists(Path.Combine(old, "maps.json"))) return;
+        Directory.Move(old, shared);
+        File.WriteAllText(Path.Combine(shared, "maps.version"), MapsId);
     }
 
     // Microsoft's documented check: the runtime's version «pv» under its EdgeUpdate client, for all users (the 32-bit
