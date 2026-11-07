@@ -3569,7 +3569,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-app"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "rusqlite",
  "serde",
