@@ -413,6 +413,125 @@ struct UpdateProgress {
     total: u64,
 }
 
+/// Parts of an update download: one connection to GitHub is slow, several run side by side.
+const UPDATE_PARTS: u64 = 8;
+
+/// `size` bytes cut into at most `parts` ranges [from, to] (both ends inclusive), the last one the shortest.
+fn split_ranges(size: u64, parts: u64) -> Vec<(u64, u64)> {
+    if size == 0 || parts == 0 {
+        return Vec::new();
+    }
+    let chunk = size.div_ceil(parts);
+    (0..parts).map(|k| (k * chunk, ((k + 1) * chunk).min(size).saturating_sub(1))).filter(|(from, to)| from <= to && *from < size).collect()
+}
+
+enum FetchError {
+    /// The server did not answer a range with 206 (or the size is unknown): take the file in one stream.
+    NoRanges,
+    Failed(String),
+}
+
+fn update_agent() -> ureq::Agent {
+    ureq::AgentBuilder::new()
+        .timeout_connect(std::time::Duration::from_secs(15))
+        .timeout_read(std::time::Duration::from_secs(60))
+        .build()
+}
+
+/// One range into the file at its place; `done` counts the bytes of all the parts.
+fn fetch_range(url: &str, path: &Path, from: u64, to: u64, done: &std::sync::atomic::AtomicU64) -> Result<(), FetchError> {
+    use std::io::Write;
+    use std::sync::atomic::Ordering;
+    let failed = |e: &dyn std::fmt::Display| FetchError::Failed(e.to_string());
+    let response = update_agent().get(url).set("User-Agent", "Pulse+").set("Range", &format!("bytes={from}-{to}")).call().map_err(|e| failed(&e))?;
+    if response.status() != 206 {
+        return Err(FetchError::NoRanges);
+    }
+    let mut reader = response.into_reader();
+    let mut file = fs::OpenOptions::new().write(true).open(path).map_err(|e| failed(&e))?;
+    file.seek(SeekFrom::Start(from)).map_err(|e| failed(&e))?;
+    let mut buffer = vec![0u8; 256 * 1024];
+    let mut left = to - from + 1;
+    while left > 0 {
+        let want = (buffer.len() as u64).min(left) as usize;
+        let n = reader.read(&mut buffer[..want]).map_err(|e| failed(&e))?;
+        if n == 0 {
+            return Err(FetchError::Failed("download is incomplete".into()));
+        }
+        file.write_all(&buffer[..n]).map_err(|e| failed(&e))?;
+        done.fetch_add(n as u64, Ordering::Relaxed);
+        left -= n as u64;
+    }
+    file.sync_all().map_err(|e| failed(&e))
+}
+
+/// The file in `UPDATE_PARTS` ranges at once; the bytes written (all of `size`) when every part came.
+fn fetch_parts(url: &str, size: u64, path: &Path, progress: &(dyn Fn(u64, u64) + Sync)) -> Result<u64, FetchError> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    if size == 0 {
+        return Err(FetchError::NoRanges);
+    }
+    File::create(path).and_then(|file| file.set_len(size)).map_err(|e| FetchError::Failed(e.to_string()))?;
+    let done = AtomicU64::new(0);
+    let ranges = split_ranges(size, UPDATE_PARTS);
+    let results: Vec<Result<(), FetchError>> = std::thread::scope(|scope| {
+        let handles: Vec<_> = ranges.iter().map(|&(from, to)| { let done = &done; scope.spawn(move || fetch_range(url, path, from, to, done)) }).collect();
+        while handles.iter().any(|handle| !handle.is_finished()) {
+            progress(done.load(Ordering::Relaxed), size);
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
+        handles.into_iter().map(|handle| handle.join().unwrap_or_else(|_| Err(FetchError::Failed("download thread failed".into())))).collect()
+    });
+    let mut no_ranges = false;
+    for result in results {
+        match result {
+            Ok(()) => {}
+            Err(FetchError::NoRanges) => no_ranges = true,
+            Err(failure) => return Err(failure),
+        }
+    }
+    if no_ranges { Err(FetchError::NoRanges) } else { Ok(done.load(Ordering::Relaxed)) }
+}
+
+/// The file in one stream (the way before ranges); the bytes written.
+fn fetch_single(url: &str, size: u64, path: &Path, progress: &dyn Fn(u64, u64)) -> Result<u64, String> {
+    use std::io::Write;
+    let response = update_agent().get(url).set("User-Agent", "Pulse+").call().map_err(|e| e.to_string())?;
+    let total = response.header("Content-Length").and_then(|v| v.parse().ok()).unwrap_or(size);
+    let mut reader = response.into_reader();
+    let mut file = File::create(path).map_err(|e| e.to_string())?;
+    let mut buffer = vec![0u8; 256 * 1024];
+    let (mut done, mut shown) = (0u64, 0u64);
+    loop {
+        let n = reader.read(&mut buffer).map_err(|e| { let _ = fs::remove_file(path); e.to_string() })?;
+        if n == 0 {
+            break;
+        }
+        file.write_all(&buffer[..n]).map_err(|e| e.to_string())?;
+        done += n as u64;
+        if done - shown >= 1 << 20 {
+            shown = done;
+            progress(done, total);
+        }
+    }
+    file.sync_all().map_err(|e| e.to_string())?;
+    Ok(done)
+}
+
+fn sha256_of(path: &Path) -> Result<String, String> {
+    use sha2::{Digest, Sha256};
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
+    let mut hasher = Sha256::new();
+    let mut buffer = vec![0u8; 1 << 20];
+    loop {
+        let n = file.read(&mut buffer).map_err(|e| e.to_string())?;
+        if n == 0 {
+            return Ok(format!("{:x}", hasher.finalize()));
+        }
+        hasher.update(&buffer[..n]);
+    }
+}
+
 /// Download the new Pulse+.exe (progress in «update-progress» events), check its size and its SHA-256 against the
 /// release notes, put it in place of the Pulse+.exe that started this copy and start it: it waits for this program to
 /// close, unpacks the new build and starts it. This program closes. Nothing is replaced when a check fails.
@@ -429,48 +548,28 @@ async fn update_install(app: AppHandle, url: String, size: u64, sha256: String) 
     let dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?.join("update");
     let events = app.clone();
     let fresh = tauri::async_runtime::spawn_blocking(move || -> Result<PathBuf, String> {
-        use sha2::{Digest, Sha256};
-        use std::io::Write;
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let part = dir.join("Pulse+.exe.part");
         let done_path = dir.join("Pulse+.exe");
-        let agent = ureq::AgentBuilder::new()
-            .timeout_connect(std::time::Duration::from_secs(15))
-            .timeout_read(std::time::Duration::from_secs(60))
-            .build();
-        let response = agent.get(&url).set("User-Agent", "Pulse+").call().map_err(|e| e.to_string())?;
-        let total = response.header("Content-Length").and_then(|v| v.parse().ok()).unwrap_or(size);
-        let mut reader = response.into_reader();
-        let mut file = File::create(&part).map_err(|e| e.to_string())?;
-        let mut hasher = Sha256::new();
-        let mut buffer = vec![0u8; 256 * 1024];
-        let (mut done, mut shown) = (0u64, 0u64);
-        loop {
-            let n = reader.read(&mut buffer).map_err(|e| e.to_string())?;
-            if n == 0 {
-                break;
-            }
-            file.write_all(&buffer[..n]).map_err(|e| e.to_string())?;
-            hasher.update(&buffer[..n]);
-            done += n as u64;
-            if done - shown >= 1 << 20 {
-                shown = done;
-                let _ = events.emit("update-progress", UpdateProgress { done, total });
-            }
-        }
-        file.sync_all().map_err(|e| e.to_string())?;
-        drop(file);
-        let _ = events.emit("update-progress", UpdateProgress { done, total: done });
+        let progress = |done: u64, total: u64| { let _ = events.emit("update-progress", UpdateProgress { done, total }); };
+        // several connections at once when the size is known and the server answers ranges (one GitHub connection gives
+        // about 13 MB/s, eight give about 35); otherwise the file comes in one stream
+        let done = match fetch_parts(&url, size, &part, &progress) {
+            Ok(done) => done,
+            Err(FetchError::NoRanges) => fetch_single(&url, size, &part, &progress)?,
+            Err(FetchError::Failed(text)) => { let _ = fs::remove_file(&part); return Err(text); }
+        };
+        progress(done, done);
         let problem = if size > 0 && done != size {
-            Some("download is incomplete")
-        } else if format!("{:x}", hasher.finalize()) != want {
-            Some("SHA-256 does not match the release notes")
+            Some("download is incomplete".to_string())
+        } else if sha256_of(&part)? != want {
+            Some("SHA-256 does not match the release notes".to_string())
         } else {
             None
         };
         if let Some(problem) = problem {
             let _ = fs::remove_file(&part);
-            return Err(problem.into());
+            return Err(problem);
         }
         fs::rename(&part, &done_path).map_err(|e| e.to_string())?;
         Ok(done_path)
@@ -522,8 +621,23 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside, query_db, update_url_ok};
+    use super::{allowed_url, has_game, inside, query_db, split_ranges, update_url_ok};
     use std::path::Path;
+
+    #[test]
+    fn splits_a_download_into_ranges_that_cover_every_byte_once() {
+        assert_eq!(split_ranges(10, 4), vec![(0, 2), (3, 5), (6, 8), (9, 9)]);
+        assert_eq!(split_ranges(8, 8), (0..8).map(|k| (k, k)).collect::<Vec<_>>());
+        assert_eq!(split_ranges(3, 8), vec![(0, 0), (1, 1), (2, 2)]); // fewer bytes than parts
+        assert_eq!(split_ranges(184_591_360, 8).last(), Some(&(161_517_440, 184_591_359)));
+        assert!(split_ranges(0, 8).is_empty());
+        for size in [1u64, 7, 100, 184_591_360] {
+            let ranges = split_ranges(size, 8);
+            assert_eq!(ranges.first().map(|r| r.0), Some(0));
+            assert_eq!(ranges.last().map(|r| r.1), Some(size - 1));
+            assert!(ranges.windows(2).all(|w| w[0].1 + 1 == w[1].0));
+        }
+    }
 
     #[test]
     fn downloads_updates_only_from_the_project_releases() {
