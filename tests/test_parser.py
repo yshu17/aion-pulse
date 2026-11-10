@@ -208,10 +208,3 @@ def test_without_names_links_keep_ids_and_plain_labels():
     assert msg.text == "го ⟪Задание: Уничтожение повстанцев Ривара⟫"
 
 
-def test_bundled_link_names_load_from_the_data_folder():
-    from core.items.catalog import load_link_names
-    from watcher.paths import resource_root
-
-    maps, quests = load_link_names(resource_root() / "data")
-    assert maps["220070000"] == "Келькмарос" and quests["2058"] == "Уничтожение повстанцев Ривара"
-    assert load_link_names(resource_root() / "no-such-folder") == ({}, {})

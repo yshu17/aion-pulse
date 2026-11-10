@@ -341,7 +341,7 @@ def main() -> int:
         print(f"client world xml: {merge(data, service_points(read_tsv(service), zone_ids, races))} functional NPCs")
     sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(ROOT / "tools"))
-    from watcher.mapview import load_labels
+    from core.map.zones import load_labels
 
     labels = {map_id: [(gy, gx, text.replace("\n", " ")) for gx, gy, text, _level in rows]  # the client's area names
               for map_id, rows in load_labels(ROOT / "data" / "maps" / "labels.tsv").items()}

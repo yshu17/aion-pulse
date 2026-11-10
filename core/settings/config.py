@@ -1,7 +1,7 @@
 """The settings model of Pulse and reading / writing config.json (the path is a parameter).
 
 Portable core: no path of its own. A value of the wrong type falls back to its default, a broken file
-is kept as config.json.broken-<time>. `watcher.paths.app_root()` says where the file lives."""
+is kept as config.json.broken-<time>. its caller passes where the file lives."""
 
 import json
 import os

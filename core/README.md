@@ -1,7 +1,7 @@
 # Pulse core
 
-Portable logic of Pulse (ADR-001): no Tk, no Windows API, standard library only. The desktop program in `watcher/`
-is one user of it; the launcher (Tauri 2) is the next one. It can run the core as a separate process
+Portable logic of Pulse (ADR-001): no Tk, no Windows API, standard library only. Its user is Pulse+, the launcher
+(Tauri 2; the old Tk program in `watcher/` was removed on 07.11.2026). The launcher can run the core as a separate process
 (`python -m core`, JSON over stdin / stdout, see [API.md](API.md)) or rewrite it with the same contracts.
 
 Rules (checked by `tests/test_core_boundary.py`):
@@ -44,5 +44,5 @@ batch = session.process(lines, now=time.monotonic())
 
 Data file formats: [DATA.md](DATA.md). Standalone build: `build_core.bat` -> `pulse-core.exe`.
 
-Version: `core.__version__` (the API contract). The program finds its data folder with `watcher.paths.resource_root()`;
+Version: `core.__version__` (the API contract). The program finds its data folder with the data folder passed by its caller;
 a launcher passes its own.

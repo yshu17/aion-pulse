@@ -128,7 +128,8 @@ CREATE TABLE quest (
   repeatable INTEGER,
   giver TEXT,                    -- the NPC that gives it (npc.id), NULL when not known
   ender TEXT,                    -- the NPC that takes it back
-  rewards TEXT                   -- JSON [{type, group, item, amount}]
+  rewards TEXT,                  -- JSON [{type, group, item, amount}]
+  steps TEXT                     -- JSON: what to do, from the client's quest tables (core/pulse_db/quest_steps.py); NULL: none known
 );
 CREATE INDEX quest_giver ON quest (giver);
 CREATE INDEX quest_ender ON quest (ender);
@@ -165,12 +166,132 @@ CREATE TABLE vendor_item (
 CREATE INDEX vendor_item_npc ON vendor_item (npc_id);
 CREATE INDEX vendor_item_item ON vendor_item (item_id);
 
--- the titles: empty until the client's titles are exported (meta «title» says «not built»)
+-- stage 5 (map:45): the client's catalog export (client_extract/fresh_catalog/catalog.sqlite, core/pulse_db/catalog.py)
+
+-- the titles of the client (client_titles)
 CREATE TABLE title (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   name_key TEXT NOT NULL,
   description TEXT,
-  race TEXT,
-  stats TEXT                     -- JSON
+  race TEXT,                     -- «pc_light», «pc_dark» or both, comma-separated (title_race 0 / 1 / 2)
+  stats TEXT                     -- JSON {bonus: ["maxHp 20", …], priority, type, location: the client's string key}
 );
+CREATE INDEX title_name_key ON title (name_key);
+
+-- every skill of the client: the skill books and the stigmas point here
+CREATE TABLE skill (
+  id INTEGER PRIMARY KEY,
+  internal_name TEXT NOT NULL,   -- the client's name the books and stigmas use (case is not the same everywhere)
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,                     -- a picture of data/icons («skills/…», without «.png»); NULL: no file
+  stigma INTEGER NOT NULL DEFAULT 0  -- a stigma's skill
+);
+CREATE INDEX skill_internal ON skill (internal_name COLLATE NOCASE);
+CREATE INDEX skill_name_key ON skill (name_key);
+
+-- an item that teaches a skill (skill_to_learn); its name, level, grade and picture are the item's row
+CREATE TABLE skill_book (
+  item_id INTEGER PRIMARY KEY,
+  skill TEXT,                    -- the client's skill name
+  skill_id INTEGER,              -- skill.id; NULL: the client has no skill of that name
+  classes TEXT                   -- JSON {class: level from}
+);
+CREATE INDEX skill_book_skill ON skill_book (skill_id);
+
+-- a stigma stone and the skill it gives
+CREATE TABLE stigma (
+  item_id INTEGER PRIMARY KEY,
+  skill TEXT,                    -- gain_skill1
+  skill_id INTEGER,              -- skill.id; NULL: not confirmed
+  gain_level INTEGER,            -- the skill's level it gives
+  requires TEXT                  -- JSON [[skill name, skill.id or null, level], …]: the stigmas it needs first
+);
+CREATE INDEX stigma_skill ON stigma (skill_id);
+
+-- the pets of the client (toypets)
+CREATE TABLE pet (
+  id INTEGER PRIMARY KEY,
+  internal_name TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,
+  description TEXT,
+  functions TEXT,                -- JSON ["warehouse", "looting", …]
+  icon TEXT                      -- a picture of data/icons («pets/…»)
+);
+CREATE INDEX pet_name_key ON pet (name_key);
+
+-- the guide of a quest from aidb.ru (map:46, core/pulse_db/aidb_quests.py): the walk-through, the place, the NPCs of the client's ids,
+-- the recommended level; what the client's own tables do not hold. The quest's other fields stay in quest.
+CREATE TABLE quest_guide (
+  quest_id INTEGER PRIMARY KEY,
+  name_en TEXT,
+  icon TEXT,                     -- mission (the gold mark) | normal (the blue one)
+  category TEXT,                 -- «Миссии», «Обычные» …
+  race TEXT,
+  classes TEXT,                  -- JSON ["Воин", …]
+  level INTEGER,
+  rec_level INTEGER,
+  repeat TEXT,                   -- «1 раз»
+  notes TEXT,                    -- JSON ["Нельзя разделить."]
+  zone_id TEXT,                  -- the map the quest lies in (a map_id of the program)
+  zone_name TEXT,
+  giver TEXT,                    -- npc.id that starts it, NULL when pulse.db does not know the NPC
+  giver_name TEXT,
+  ender TEXT,
+  ender_name TEXT,
+  needs TEXT,                    -- JSON [{id, name, count}]: the items the quest asks for
+  exp INTEGER, gold INTEGER, abyss INTEGER,
+  title TEXT,                    -- the title it gives
+  rewards TEXT,                  -- JSON {items: [{id, name, count}], choice: [...]}
+  steps TEXT,                    -- JSON [{text, links: [{kind, id, name}]}]: the walk-through
+  start TEXT,                    -- JSON {zone, x, y}: the start on the zone's picture, in percents
+  source TEXT NOT NULL DEFAULT 'aidb.ru'
+);
+
+-- the gear calculator (docs/GEAR_CALC_PLAN.md, core/pulse_db/gear.py): what one can wear, the manastones, the item sets
+CREATE TABLE gear_item (
+  id INTEGER PRIMARY KEY,        -- item.id
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,        -- lower case, «ё» as «е»: for search
+  icon TEXT,
+  grade TEXT,
+  level INTEGER,
+  slot TEXT NOT NULL,            -- main | main_or_sub | sub | head | torso | pants | shoulder | glove | shoes | earring | ring | necklace | belt | wing
+  grp TEXT NOT NULL,             -- sword … orb | shield | rb_torso … pl_shoes | head | earring | ring | necklace | belt | wing
+  races TEXT,                    -- «pc_light,pc_dark»
+  classes TEXT,                  -- JSON ["fighter", …]: who may wear it
+  basic TEXT NOT NULL,           -- JSON {stat: value}: damage, attack delay, defence … of the item itself
+  bonus TEXT NOT NULL,           -- JSON [[stat, value, percent]]: the bonus_attr lines
+  stones INTEGER,                -- manastone slots (the card's), NULL: not known
+  stones_bonus INTEGER,          -- of them, the last ones that may be missing
+  enchant INTEGER NOT NULL,      -- 1: can be enchanted
+  set_id INTEGER                 -- gear_set.id
+);
+CREATE INDEX gear_item_slot ON gear_item (slot, level);
+CREATE TABLE gear_stone (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, icon TEXT, grade TEXT, level INTEGER, stat TEXT NOT NULL, value REAL NOT NULL
+);
+CREATE TABLE gear_set (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  items TEXT NOT NULL,           -- JSON [item ids]
+  bonuses TEXT NOT NULL          -- JSON [{need: pieces (0 = the whole set), stats: [[stat, value, percent]]}]
+);
+
+-- the ten sections of «База данных»: their rule and size, and the ids each lists (core/pulse_db/catalog.py RULES)
+CREATE TABLE db_section (
+  key TEXT PRIMARY KEY,          -- items | weapons | armour | jewels | skill_books | stigmas | titles | pets | quests | recipes
+  title TEXT NOT NULL,           -- the menu's name, «Оружие»
+  ord INTEGER NOT NULL,
+  entity TEXT NOT NULL,          -- the table the ids point to: item | title | pet | quest | recipe
+  rule TEXT NOT NULL,
+  count INTEGER NOT NULL
+);
+CREATE TABLE db_section_entry (
+  section TEXT NOT NULL,
+  entity_id INTEGER NOT NULL,
+  PRIMARY KEY (section, entity_id)
+) WITHOUT ROWID;

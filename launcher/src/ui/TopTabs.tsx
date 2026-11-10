@@ -5,7 +5,7 @@
 import { Fragment, useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { sectionCounts } from "../core/db/sections";
-import { LIVE_TABS, TOP, menuOf, tabLabel, type TopTab } from "../core/tabs";
+import { BETA, LIVE_TABS, TOP, isBeta, menuOf, tabLabel, type TopTab } from "../core/tabs";
 import { pulseDb } from "./db/pulseDb";
 import { Glide } from "./fx";
 import { IconCheck, IconChevron } from "./icons";
@@ -28,6 +28,11 @@ export function TopTabs({ tab, onPick }: Props) {
       ))}
     </nav>
   );
+}
+
+/** The small «beta» mark: the screen works, but is still being tested. */
+function Beta() {
+  return <span className="beta" title="Бета: раздел ещё проверяется, возможны неточности">beta</span>;
 }
 
 let counted: Promise<Record<string, number>> | null = null;
@@ -89,7 +94,7 @@ function MenuTab({ item, tab, onPick }: { item: TopTab; tab: string; onPick(id: 
       <button ref={button} role="tab" aria-selected={here} aria-haspopup="menu" aria-expanded={open}
         aria-controls={open ? list : undefined} aria-activedescendant={open ? `${list}-${cursor}` : undefined}
         className={`tab menu-tab${here ? " on" : ""}${open ? " open" : ""}`} onClick={() => (open ? setOpen(false) : show())}>
-        {item.label}{here && <span className="tab-sub">{tabLabel(tab)}</span>}
+        {item.label}{BETA.has(item.id) && <Beta />}{here && <span className="tab-sub">{tabLabel(tab)}</span>}{here && !BETA.has(item.id) && isBeta(tab) && <Beta />}
         <span className={`tab-chev${open ? " open" : ""}`} aria-hidden="true"><IconChevron open={false} /></span>
         {here && <Glide group="tab-line" className="tab-line" />}
       </button>
@@ -105,7 +110,7 @@ function MenuTab({ item, tab, onPick }: { item: TopTab; tab: string; onPick(id: 
                   <button key={s.id} id={`${list}-${i}`} role="menuitem" tabIndex={-1}
                     className={`tab-menu-item${s.id === tab ? " on" : ""}${i === cursor ? " cur" : ""}`}
                     onPointerEnter={() => setCursor(i)} onClick={() => choose(s.id)}>
-                    <span>{s.label}</span>
+                    <span className="tab-menu-name">{s.label}{BETA.has(s.id) && <Beta />}</span>
                     {s.id === tab ? <IconCheck /> : <em className={text === "скоро" ? "later" : ""}>{text}</em>}
                   </button>
                 );

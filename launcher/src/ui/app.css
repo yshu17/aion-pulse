@@ -398,3 +398,9 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
 .ov-sw.t-orange, .ov-prog i.t-orange { background: #ff8c1a; } .ov-sw.t-purple, .ov-prog i.t-purple { background: #b58cff; }
 .ov-sw.t-gray, .ov-prog i.t-gray { background: #8c919c; }
 .row-field + .field { margin-top: 8px; width: 100%; } /* the path of an own sound, under the choice */
+
+/* the «beta» mark of a tab or a menu entry: small, raised like an index, never wider than its word */
+.beta { display: inline-block; flex: none; align-self: flex-start; margin: -1px 0 0 5px; padding: 1px 5px 2px; border-radius: 999px; border: 1px solid #a75b21;
+  background: var(--accent-subtle); color: #ffae65; font-size: 9px; font-weight: 700; line-height: 1.1; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; cursor: help; }
+.tab-sub + .beta { margin-left: 6px; }
+.tab-menu-name { display: inline-flex; align-items: center; }

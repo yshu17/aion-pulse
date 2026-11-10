@@ -1,5 +1,7 @@
+from pathlib import Path
 from core.items.catalog import WatchItem, load_item_names, load_watch_items
-from watcher.paths import resource_root
+
+ROOT = Path(__file__).resolve().parents[1]  # the project: data/ and the rest
 
 
 def test_load_item_names(tmp_path):
@@ -22,7 +24,7 @@ def test_load_watch_items(tmp_path):
 
 
 def test_bundled_data_present():
-    data = resource_root() / "data"
+    data = ROOT / "data"
     items = load_watch_items(data / "watch_items.csv")
     from core.items.catalog import is_listed
 
@@ -47,7 +49,7 @@ def test_bundled_data_present():
 def test_medal_cards_use_their_own_ids_and_icons():
     from core.items.specs import load_specs
 
-    data = resource_root() / "data"
+    data = ROOT / "data"
     items = {item.id: item for item in load_watch_items(data / "watch_items.csv")}
     specs = load_specs(data / "item_specs.json.gz")
     medal_icons = {

@@ -43,29 +43,3 @@ def test_tooltip_block_is_added_to_a_copy_of_the_spec(tmp_path):
     assert RecipeBook().for_item("Меч") == []
 
 
-def test_tooltip_renders_the_recipe_block():
-    import tkinter as tk
-    from watcher.tooltip import SpecTooltip
-
-    root = tk.Tk()
-    try:
-        tip = SpecTooltip(root)
-        spec = {"name": "Меч", "grade": "common", "blocks": [
-            {"kind": "recipe", "recipes": [{"skill": "Оружейное дело", "level": 300, "count": 2,
-                                           "ingredients": [["Железо", 5], ["Кожа", 1]]}]}]}
-        tip.show(spec, None, 10, 10)
-        texts = []
-
-        def walk(widget):
-            for child in widget.winfo_children():
-                if isinstance(child, tk.Label):
-                    texts.append(child.cget("text"))
-                walk(child)
-
-        walk(tip.window)
-        assert "Создаётся по рецепту: Оружейное дело, 300" in texts
-        assert "•  Железо  ×5" in texts and "•  Кожа" in texts
-        assert "Создаётся предметов: 2" in texts
-        tip.hide()
-    finally:
-        root.destroy()

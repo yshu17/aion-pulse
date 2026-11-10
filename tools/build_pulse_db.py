@@ -32,11 +32,18 @@ def main(argv: list[str] | None = None) -> int:
                       npcs=data / "game" / "npcs.json.gz", bestiary=bestiary_source(),
                       item_names=data / "item_names.tsv", catalog=data / "watch_items.csv", specs=data / "item_specs.json.gz",
                       items=data / "game" / "items.json.gz", quests=data / "game" / "quests.json.gz", quest_names=data / "quest_names.tsv",
-                      recipes=data / "game" / "recipes.json.gz", vendors=data / "game" / "vendors.json.gz")
+                      recipes=data / "game" / "recipes.json.gz", vendors=data / "game" / "vendors.json.gz",
+                      client_catalog=ROOT / "client_extract" / "fresh_catalog" / "catalog.sqlite", icons=data / "icons",
+                      quest_dir=ROOT / "client_extract" / "raw" / "Data" / "quest",
+                      aidb_pages=ROOT / "downloads" / "aidb_quests" / "pages",
+                      client_raw=ROOT / "client_extract" / "fresh_catalog" / "raw")
     report = build(sources, args.out)
     print(f"{args.out}: {report['npcs']} NPCs ({report['listed']} in the bestiary), {report['aliases']} map markers linked, "
           f"{report['points']} points, {report['items']} items ({report['catalog']} with a card), {report['drops']} drops, {report['stock']} goods, "
-          f"{report['quests']} quests, {report['recipes']} recipes, {report['vendor_items']} vendor items")
+          f"{report['quests']} quests, {report['recipes']} recipes, {report['vendor_items']} vendor items, "
+          f"{report['titles']} titles, {report['skills']} skills, {report['skill_books']} skill books, {report['stigmas']} stigmas, "
+          f"{report['pets']} pets, {report['quest_steps']} quests with steps, {report['quest_guides']} guides, {report['gear_items']} gear items")
+    print("sections:", ", ".join(f"{key} {count}" for key, count in report["sections"].items()))
     return 0
 
 

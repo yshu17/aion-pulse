@@ -19,6 +19,13 @@ export interface OpenCard { id: string; x: number; y: number }
 export const OpenItem = createContext<(card: OpenCard) => void>(() => {});
 export const useOpenItem = () => useContext(OpenItem);
 
+/** The marks of a comparison (core/items/compare.ts): a stat's value is drawn better («up») or worse («dn»). */
+export const StatMarks = createContext<Record<string, "up" | "dn">>({});
+
+/** The rank line of a card made from the item's own row (its grade). */
+const RANK: Record<string, string> = { junk: "Простой", common: "Обычный", rare: "Редкий", legend: "Легендарный", unique: "Уникальный",
+  epic: "Эпический", mythic: "Мифический", finality: "Финальный" };
+
 export const OFFSET = 18; // from the click, as in Pulse
 const MARGIN = 8; // from the window's edges
 
@@ -44,11 +51,14 @@ export function useEsc(onClose: () => void): void {
 }
 
 /** The card itself: its title (a drag handle) with the cross, the picture and the description blocks. */
-export function CardBody({ id, answer, onClose, onDrag, cardRef, style, className = "" }: {
-  id: string; answer: SpecAnswer | null; onClose(): void; onDrag(e: React.PointerEvent): void;
+export function CardBody({ id, answer, onClose, onDrag, cardRef, style, className = "", fallback }: {
+  id: string; answer: SpecAnswer | null; onClose?(): void; onDrag?(e: React.PointerEvent): void;
   cardRef?: Ref<HTMLDivElement>; style?: React.CSSProperties; className?: string;
+  /** The item's own row when the catalog has no card for it (the «База данных» tab): name, picture, grade. */
+  fallback?: { name: string; icon: string; grade: string; level?: number | null; kind?: string };
 }) {
-  const item = catalogById[id];
+  const item = catalogById[id] ?? fallback;
+  const drag = onDrag ?? (() => {});
   const spec = answer?.spec ?? null;
   const name = spec?.name ?? item?.name ?? "Предмет";
   const grade = cardGrade(spec?.grade, item?.grade);
@@ -58,15 +68,15 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
   const empire = spec?.layout === "empire";
   const [head, rest] = headBlocks((spec?.blocks as Block[] | undefined) ?? []);
   return (
-    <m.div ref={cardRef} className={`item-card ${className}${database ? " database" : ""}${empire ? " empire" : ""}`} role="dialog" aria-label={name} style={style}
+    <m.div ref={cardRef} className={`item-card ${className}${database ? " database" : ""}${empire ? " empire" : ""}`} role={onClose ? "dialog" : "region"} aria-label={name} style={style}
       initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97, transition: FADE }}
       transition={{ ...SPRING, opacity: FADE }}>
       {empire ? <>
         <div className="ic-empire-title" onPointerDown={(e) => {
-          if (e.button === 0 && !(e.target as HTMLElement).closest("button")) onDrag(e);
+          if (e.button === 0 && !(e.target as HTMLElement).closest("button")) drag(e);
         }}>
           <b>{name}</b>
-          <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
+          {onClose && <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>}
         </div>
         <div className="ic-empire-tab">Общая информация</div>
         <div className="ic-empire-info">
@@ -80,14 +90,14 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
         <p className="ic-empire-description">{spec.description}</p>
       </> : database ? <>
         <div className="ic-title ic-db-heading" onPointerDown={(e) => {
-          if (e.button === 0 && !(e.target as HTMLElement).closest("button")) onDrag(e);
+          if (e.button === 0 && !(e.target as HTMLElement).closest("button")) drag(e);
         }}>
           {item?.icon && <Icon name={item.icon} size={56} />}
           <div className="ic-db-names">
             <b className={`ic-name g-${spec.title_grade ?? grade}`}>{name}</b>
             {spec.subtitle && <span>{spec.subtitle}</span>}
           </div>
-          <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
+          {onClose && <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>}
         </div>
         <dl className="ic-db-facts">
           {(spec.facts as [string, string][]).map(([label, value]) =>
@@ -105,16 +115,21 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
           }}>{copied ? "Скопировано" : "Копировать"}</button>
         </div>
       </> : <>
-        <div className="ic-title" onPointerDown={(e) => { if (e.button === 0 && !(e.target as HTMLElement).closest("button")) onDrag(e); }}>
+        <div className="ic-title" onPointerDown={(e) => { if (e.button === 0 && !(e.target as HTMLElement).closest("button")) drag(e); }}>
           <b className={`ic-name g-${grade}`}>{name}</b>
-          <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
+          {onClose && <button className="ic-x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>}
         </div>
         <div className="ic-top">
           {item?.icon && <Icon name={item.icon} size={40} />}
           <div className="ic-head">
             {head.map((block, i) => <SpecBlock key={i} block={block} />)}
             {!answer && <div className="ic-text muted">Загружаю описание…</div>}
-            {answer && !spec && <div className="ic-text muted">{answer.error ? "Описание не загрузилось, открой карточку ещё раз." : "У этого предмета нет описания."}</div>}
+            {answer && !spec && fallback && !answer.error && <dl className="ic-pairs">
+              <dt>Ранг</dt><dd>[{RANK[fallback.grade] ?? "Обычный"}]</dd>
+              {fallback.kind && <><dt>Тип</dt><dd>{fallback.kind}</dd></>}
+              {fallback.level ? <div className="ic-warning" style={{ gridColumn: "1 / -1" }}>Можно использовать с {fallback.level}-го уровня.</div> : null}
+            </dl>}
+            {answer && !spec && (!fallback || answer.error) && <div className="ic-text muted">{answer.error ? "Описание не загрузилось, открой карточку ещё раз." : "У этого предмета нет описания."}</div>}
           </div>
         </div>
         {rest.map((block, i) => <SpecBlock key={i} block={block} />)}
@@ -163,13 +178,15 @@ export function ItemCard({ card, onClose }: { card: OpenCard; onClose(): void })
 
 /** One block of a description, drawn as watcher/tooltip.py does. */
 function SpecBlock({ block }: { block: Block }) {
+  const marks = useContext(StatMarks);
+  const mark = (label: string) => (marks[label] ? `mark-${marks[label]}` : undefined);
   switch (block.kind) {
     case "hr":
       return <hr className="ic-hr" />;
     case "pairs":
       return (
         <dl className="ic-pairs">
-          {(block.rows as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd>{statValue(label, value)}</dd></Fragment>)}
+          {(block.rows as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd className={mark(label)}>{statValue(label, value)}</dd></Fragment>)}
         </dl>
       );
     case "props":
@@ -179,7 +196,7 @@ function SpecBlock({ block }: { block: Block }) {
     case "grid":
       return (
         <dl className={`ic-grid${block.dim ? " dim" : ""}`}>
-          {(block.pairs as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd>{statValue(label, value)}</dd></Fragment>)}
+          {(block.pairs as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd className={mark(label)}>{statValue(label, value)}</dd></Fragment>)}
         </dl>
       );
     case "text":

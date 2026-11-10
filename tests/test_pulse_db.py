@@ -186,6 +186,29 @@ def game_sources(tmp_path) -> Sources:
     return Sources(**{**base.__dict__, "items": items, "quests": quests, "quest_names": tmp_path / "quest_names.tsv", "recipes": recipes, "vendors": vendors})
 
 
+def test_client_name_level_and_grade_win_and_the_quality_fills_a_missing_grade(tmp_path):
+    base = item_sources(tmp_path)  # the catalog: 902 «Зелье жизни» level 1 common, 901 «Меч, древний» level 55 unique
+    items = {"schema": 1, "section": "items", "records": [
+        {"id": "902", "name": "Зелье жизни (новое)", "level": "42", "grade": None},  # no grade: the quality decides
+        {"id": "901", "name": "Временно> Меч", "level": "55", "grade": "epic"},
+    ]}
+    with gzip.open(tmp_path / "items.json.gz", "wt", encoding="utf-8") as out:
+        json.dump(items, out)
+    catalog = sqlite3.connect(tmp_path / "catalog.sqlite")
+    catalog.execute("CREATE TABLE entries (section TEXT, id TEXT, fields_json TEXT)")
+    catalog.execute("INSERT INTO entries VALUES ('items', '902', ?)", (json.dumps({"quality": "Rare"}),))
+    catalog.commit()
+    catalog.close()
+    sources = Sources(**{**base.__dict__, "items": tmp_path / "items.json.gz", "client_catalog": tmp_path / "catalog.sqlite"})
+    out = tmp_path / "pulse.db"
+    build(sources, out)
+    db = sqlite3.connect(out)
+    rows = {r[0]: r for r in db.execute("SELECT id, name, level, grade, catalog_ord FROM item WHERE id IN (901, 902)")}
+    assert rows[902][1:4] == ("Зелье жизни (новое)", 42, "rare")  # the client's name and level; the quality as the grade
+    assert rows[902][4] == 0  # the catalog's place is kept
+    assert rows[901][1:4] == ("<Временно> Меч", 55, "epic")  # «Временно>» gets its «<» back; the client's grade wins
+
+
 def test_holds_quests_recipes_vendors_and_an_empty_title_table(tmp_path):
     out = tmp_path / "pulse.db"
     report = build(game_sources(tmp_path), out)
@@ -193,7 +216,7 @@ def test_holds_quests_recipes_vendors_and_an_empty_title_table(tmp_path):
     db.row_factory = sqlite3.Row
     quests = {r["id"]: dict(r) for r in db.execute("SELECT * FROM quest")}
     assert quests[1101] | {"rewards": None} == {"id": 1101, "name": "Ёлочный сбор", "name_key": "елочный сбор", "min_level": 1,
-        "max_level": 0, "race": "pc_light", "category": "quest | Элтнен", "repeatable": 0, "giver": "100", "ender": None, "rewards": None}
+        "max_level": 0, "race": "pc_light", "category": "quest | Элтнен", "repeatable": 0, "giver": "100", "ender": None, "rewards": None, "steps": None}
     assert json.loads(quests[1101]["rewards"])[0]["item"] == "901" and quests[1102]["race"] == "pc_light,pc_dark"
     assert (quests[1200]["name"], quests[1200]["min_level"]) == ("Только в ссылках", None)  # a chat link's name only
     recipe = dict(db.execute("SELECT * FROM recipe").fetchone())
@@ -206,7 +229,7 @@ def test_holds_quests_recipes_vendors_and_an_empty_title_table(tmp_path):
     assert db.execute("SELECT value FROM meta WHERE key = 'title'").fetchone()[0] == "not built"
     assert (report["quests"], report["recipes"], report["vendor_items"]) == (3, 1, 2)
     items = {r["id"]: dict(r) for r in db.execute("SELECT id, name, level, grade, icon FROM item WHERE id IN (901, 903)")}
-    assert items[901] == {"id": 901, "name": "Меч, древний", "level": 55, "grade": "unique", "icon": "icon_item_sword"}  # the catalog's
+    assert items[901] == {"id": 901, "name": "Клиентское имя", "level": 50, "grade": "legend", "icon": "icon_item_sword"}  # the client's name, level, grade; the catalog's icon
     assert items[903] == {"id": 903, "name": "Туника наемника", "level": 1, "grade": None, "icon": "icon_item_cl_torso_c01"}
 
 

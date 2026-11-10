@@ -1,0 +1,93 @@
+/* The «База данных» tab (variant A2): pills of the sections, the bar of filters, the list and the card. */
+.dbt { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 14px 18px 22px; }
+.dbt-secs { display: flex; gap: 6px; flex-wrap: wrap; }
+.dbt-sec { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: color .15s, border-color .15s, background .15s; }
+.dbt-sec em { font-style: normal; font-size: 11px; font-weight: 500; opacity: .8; }
+.dbt-sec:hover { color: var(--text); border-color: var(--border-control); }
+.dbt-sec.on { color: #ffae65; border-color: #a75b21; background: var(--accent-subtle); }
+.dbt-sec:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dbt-bar { flex-wrap: wrap; }
+
+.dbt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 372px 1fr; gap: 14px; }
+.dbt-list { min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.dbt-list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 10px 14px; border-bottom: 1px solid var(--border); }
+.dbt-count { color: var(--muted); font-size: 13px; } .dbt-count b { color: var(--text); font-size: 20px; margin-right: 4px; }
+.dbt-rows { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; min-height: 0; scrollbar-width: thin; }
+.dbt-row { display: flex; align-items: center; gap: 10px; padding: 0 12px 0 14px; border-left: 3px solid transparent; }
+.dbt-row:hover { background: var(--surface-2); }
+.dbt-row.sel { background: var(--accent-subtle); border-left-color: var(--accent); }
+.dbt-tick { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.dbt-row-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; padding: 6px 0; border: 0; background: none; color: inherit;
+  font: inherit; text-align: left; cursor: pointer; }
+.dbt-row-main:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+.dbt-row-main .icon { flex: none; border-radius: 6px; background: #0f1014; }
+.dbt-noicon { width: 36px; height: 36px; flex: none; border-radius: 6px; }
+.dbt-row-text { min-width: 0; display: flex; flex-direction: column; }
+.dbt-row-text b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dbt-row-text span { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dbt-more { margin: 8px 12px 12px; }
+
+.dbt .g-common { color: var(--grade-common); } .dbt .g-rare { color: var(--grade-rare); } .dbt .g-legend { color: var(--grade-legend); }
+.dbt .g-unique { color: var(--grade-unique); } .dbt .g-epic { color: var(--grade-epic); } .dbt .g-mythic { color: var(--grade-mythic); }
+.dbt .g-finality { color: var(--grade-finality); } .dbt .g-junk { color: var(--muted); }
+
+.dbt-detail { min-height: 0; min-width: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 18px; overflow: auto; scrollbar-width: thin; }
+.dbt-card { display: flex; gap: 18px; align-items: flex-start; }
+.item-card.in-db { position: static; flex: none; width: 392px; max-width: 100%; overflow: visible; }
+.item-card.in-db .ic-title { position: static; cursor: default; }
+.item-card dd.mark-up { color: #6fd26a; } .item-card dd.mark-dn { color: #ff6b5e; }
+.dbt-side { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 12px; }
+.dbt-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.dbt-tag { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent); background: color-mix(in srgb, currentColor 12%, transparent); }
+.dbt-tag.plain { color: var(--muted); }
+.dbt-box { display: grid; gap: 7px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); font-size: 13px; }
+.dbt-box h5 { margin: 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.dbt-li { display: flex; justify-content: space-between; gap: 10px; } .dbt-li span { color: var(--muted); white-space: nowrap; }
+.dbt-li b { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbt-note { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.dbt-skill { display: flex; align-items: center; gap: 10px; } .dbt-skill .icon { border-radius: 6px; }
+.dbt-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.dbt-actions .btn.on { border-color: var(--accent); color: var(--accent); }
+
+.dbt-compare { display: flex; flex-direction: column; gap: 14px; }
+.dbt-cmpbar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #a75b21; border-radius: 12px; background: var(--accent-subtle); font-size: 13px; }
+.dbt-cmpbar b { color: #ffae65; } .dbt-cmpbar .spacer { flex: 1; }
+.dbt-cmpbar > span:not(.spacer):not(.dbt-legend) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbt-legend { display: flex; gap: 12px; font-size: 12px; white-space: nowrap; } .dbt-legend .up { color: #6fd26a; } .dbt-legend .dn { color: #ff6b5e; }
+.dbt-pair { display: flex; gap: 14px; align-items: flex-start; }
+.dbt-pair .item-card.in-db { flex: 1 1 0; width: auto; min-width: 0; }
+.dbt-vs { align-self: center; color: var(--muted); font-weight: 700; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .dbt-sec { transition: none; } }
+/* a recipe's parts: picture, name, count */
+.dbt-recipe { display: grid; gap: 5px; } .dbt-recipe + .dbt-recipe { padding-top: 8px; border-top: 1px solid var(--border); }
+.dbt-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.dbt-parts li { display: flex; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
+.dbt-parts li span:not(.icon) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbt-parts li b { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.dbt-parts .icon { flex: none; border-radius: 4px; }
+.dbt-part-blank { width: 26px; height: 26px; flex: none; border-radius: 4px; }
+.dbt-made-title { margin: 6px 0 4px; color: var(--muted); font-size: 12px; }
+.item-card ul.dbt-parts { padding-left: 0; margin: 0; } .item-card .dbt-parts li { list-style: none; padding-left: 0; } .item-card .dbt-parts li::before { content: none; }
+/* quests: the mark (the map's quest icon, gold for the campaign), the NPCs, the steps */
+.dbt-quest-icon { display: inline-grid; place-items: center; flex: none; }
+.dbt-quest-icon img { width: 100%; height: 100%; object-fit: contain; }
+.dbt-gold { color: #f3c04f; } .dbt-blue { color: #6fb2ff; }
+.dbt-quest .item-card.in-db { width: 470px; }
+.dbt-quest-title { align-items: center; gap: 10px; }
+.dbt-npc { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 3px 0; }
+.dbt-npc-label { color: var(--muted); min-width: 74px; }
+.dbt-npc-zone { color: var(--muted); font-size: 12.5px; }
+.dbt-npc-map { height: 26px; padding: 0 9px; font-size: 12px; margin-left: auto; }
+.dbt-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.item-card .dbt-steps li::before { content: none; }
+.dbt-steps li > span { margin-right: 6px; }
+.dbt-step-verb { color: var(--tip-props, #e8c55a); font-weight: 600; }
+.dbt-step-item { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.dbt-step-item .icon { border-radius: 4px; } .dbt-step-item b { color: var(--muted); }
+.dbt-step-from { color: var(--muted); }
+.dbt-quest-names { display: flex; flex-direction: column; min-width: 0; } .dbt-quest-names span { color: var(--muted); font-size: 12px; font-weight: 400; }
+.dbt-rec { color: var(--muted); } .dbt-title-reward { color: #e8c55a; }
+.dbt-steps li::marker { color: var(--muted); }

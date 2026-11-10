@@ -12,6 +12,8 @@ import { platform } from "./platform";
 import { ItemsPanel } from "./ItemsPanel";
 import { MapTab } from "./map/MapTab";
 import { BestiaryTab } from "./bestiary/BestiaryTab";
+import { DbTab } from "./db/DbTab";
+import { GearTab } from "./gear/GearTab";
 import { ChatPlace, MapTarget, OpenMap, OpenPlace } from "./map/placeLink";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
@@ -122,6 +124,10 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(["Чат"]));
   useEffect(() => { setSeen((old) => (old.has(tab) ? old : new Set(old).add(tab))); }, [tab]);
   const alive = (name: string) => tab === name || seen.has(name);
+  // the «База данных» sections share one screen: it stays alive like a tab, on the section last opened
+  const lastDb = useRef("db:Предметы");
+  if (tab.startsWith("db:")) lastDb.current = tab;
+  const dbSeen = [...seen].some((name) => name.startsWith("db:"));
   const [feedMode, setFeedMode] = useState<FeedMode>("all");
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
@@ -258,7 +264,15 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
         </Pane>
       )}
       {alive("Расписание") && <Pane on={tab === "Расписание"}><ScheduleTab schedule={schedule} /></Pane>}
-      {!LIVE_TABS.includes(tab) && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
+      {(tab.startsWith("db:") || dbSeen) && (
+        <Pane on={tab.startsWith("db:")}>
+          <OpenMap.Provider value={openMap}>
+            <DbTab tab={tab.startsWith("db:") ? tab : lastDb.current} onSection={setTab} />
+          </OpenMap.Provider>
+        </Pane>
+      )}
+      {alive("calc:Экипировка") && <Pane on={tab === "calc:Экипировка"}><GearTab /></Pane>}
+      {!LIVE_TABS.includes(tab) && !tab.startsWith("db:") && tab !== "calc:Экипировка" && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
       </div>
       <AnimatePresence>{card && tab === "Чат" && <ItemCard key="item-card" card={card} onClose={closeCard} />}</AnimatePresence>
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>

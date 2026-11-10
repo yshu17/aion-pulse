@@ -56,9 +56,10 @@ export function useItems(): { ready: boolean; problem: string } {
   return state;
 }
 
-const icons = import.meta.glob("../../../data/icons/*.png", { query: "?url", import: "default", eager: false });
+// items at the top, the skills' and pets' pictures in skills/ and pets/ (tools/sync_catalog_icons.py)
+const icons = import.meta.glob(["../../../data/icons/*.png", "../../../data/icons/skills/*.png", "../../../data/icons/pets/*.png"], { query: "?url", import: "default", eager: false });
 
-/** URL of an item picture (data/icons/<icon>.png), or null when there is none. */
+/** URL of a picture (data/icons/<icon>.png, «skills/…» and «pets/…» too), or null when there is none. */
 export async function iconUrl(icon: string): Promise<string | null> {
   const load = icons[`../../../data/icons/${icon}.png`];
   return load ? ((await load()) as string) : null;

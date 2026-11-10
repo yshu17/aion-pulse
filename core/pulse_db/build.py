@@ -11,7 +11,10 @@ count of an NPC is the one table's, so the list, the card and the map show the s
 Stage 3, ``item``: every item once — the catalog of cards (its fields win), the descriptions, the bestiary's drops
 (packed lists ``npc.drops`` / ``item.dropped_by``) and the names of chat links.
 Stage 4, the game data's ``quest`` (with the chat links' quest names), ``recipe`` / ``recipe_part`` and ``vendor_item``;
-``title`` stays empty until the titles are exported. The client's drop list is a part of the bestiary's, so no table.
+the client's drop list is a part of the bestiary's, so no table.
+Stage 5 (map:45), the client's catalog export (core/pulse_db/catalog.py): ``title``, ``skill``, ``skill_book``, ``stigma``, ``pet``,
+the client's name, level and grade of every item (its quality where it has no grade), its picture where the item has none, and
+``db_section`` / ``db_section_entry``: the ten sections of «База данных», their rule, size and ids.
 The schema is core/pulse_db/schema.sql; ``PRAGMA user_version`` is SCHEMA_VERSION. The same input gives the same rows.
 """
 
@@ -27,8 +30,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from core.bestiary.bestiary_store import BestiaryStore
+from core.pulse_db.aidb_quests import read_guides
+from core.pulse_db.catalog import RULES, SECTIONS, read_client, section_entries
+from core.pulse_db.gear import gear_rows
+from core.pulse_db.quest_steps import quest_steps
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 8
 SCHEMA = Path(__file__).with_name("schema.sql")
 # what of a bestiary card has a table or a column of its own; the rest goes into npc.profile
 CARD_COLUMNS = {"id", "name", "internal_name", "category", "role", "title", "description", "race", "faction", "kind", "rank",
@@ -49,13 +56,57 @@ class Sources:
     quest_names: Path | None = None  # data/quest_names.tsv: id<TAB>name of chat links
     recipes: Path | None = None     # data/game/recipes.json.gz
     vendors: Path | None = None     # data/game/vendors.json.gz
+    client_catalog: Path | None = None  # client_extract/fresh_catalog/catalog.sqlite: grade fallback, skills, books, stigmas, titles, pets
+    icons: Path | None = None       # data/icons: a picture is linked only when its file is there
+    quest_dir: Path | None = None   # client_extract/raw/Data/quest: quest_monster.csv, quest_script_monster.csv (the quests' steps)
+    aidb_pages: Path | None = None  # downloads/aidb_quests/pages: <quest id>.html of aidb.ru (tools/fetch_aidb_quests.py)
+    client_raw: Path | None = None  # client_extract/fresh_catalog/raw: client_setitem.xml and the string files (the gear sets)
 
 
 ITEM_FIELDS = ("id", "name", "level", "category", "grade", "kind", "icon", "drop_icon", "catalog_ord", "spec")
 
 
+def _client_name(text) -> str:
+    """The client writes «Временно>» without its «<»; the older lists and the game's own names keep «<Временно>»."""
+    name = str(text or "").strip()
+    return "<" + name if name.startswith("Временно>") else name
+
+
+def _client_quality(path: Path | None) -> dict[str, str]:
+    """The client's quality (the catalog's ``fields_json.quality``) by item id, lower case: the grade of an item without one."""
+    if not path or not path.is_file():
+        return {}
+    db = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
+    try:
+        return {str(i): str(json.loads(fields).get("quality") or "").lower()
+                for i, fields in db.execute("SELECT id, fields_json FROM entries WHERE section = 'items'")}
+    finally:
+        db.close()
+
+
+def _client_fields(items: dict[int, dict], sources: Sources) -> None:
+    """The client's own name, level and grade win over the older lists for the same id; the quality fills a missing grade."""
+    if not sources.items or not sources.items.is_file():
+        return
+    quality = _client_quality(sources.client_catalog)
+    for r in _read_json(sources.items).get("records", []):
+        item_id = str(r.get("id") or "").strip()
+        if not item_id.isdigit() or int(item_id) not in items:
+            continue
+        row = items[int(item_id)]
+        name = _client_name(r.get("name"))
+        if name:
+            row["name"] = name
+        level = _level(r.get("level"))
+        if level is not None:
+            row["level"] = level
+        grade = str(r.get("grade") or quality.get(item_id) or "").lower()
+        if grade:
+            row["grade"] = grade
+
+
 def _items(sources: Sources, drops: dict[str, tuple]) -> dict[int, dict]:
-    """Every item once: the catalog's fields first, then the bestiary's, then the chat links' names."""
+    """Every item once: the catalog's fields first, then the bestiary's, then the chat links' names; the client's name, level and grade last."""
     items: dict[int, dict] = {}
 
     def item(item_id, **fields) -> None:
@@ -84,6 +135,7 @@ def _items(sources: Sources, drops: dict[str, tuple]) -> dict[int, dict]:
             item_id, tab, name = line.partition("\t")
             if tab:
                 item(item_id, name=name.strip())
+    _client_fields(items, sources)
     return items
 
 
@@ -348,6 +400,12 @@ def build(sources: Sources, out: Path) -> dict:
     db.executemany("INSERT INTO npc_alias (alias, npc_id) VALUES (?, ?)", aliases)
     db.executemany("INSERT INTO npc_point (npc_id, map_id, x, y, z, source) VALUES (?,?,?,?,?,?)", points.rows)
     items = _items(sources, drop_items)
+    client = read_client(sources.client_catalog, sources.icons)
+    if sources.icons and client["item_icon"]:  # the client's picture where the item has none or its file is missing; else NULL
+        for item_id, row in items.items():
+            if row["icon"] and (sources.icons / f"{row['icon']}.png").is_file():
+                continue
+            row["icon"] = client["item_icon"].get(item_id)
     dictionary = spec_dict([r["spec"].encode("utf-8") for _, r in sorted(items.items()) if r["spec"]])
     db.executemany(
         "INSERT INTO item (id, name, name_key, level, category, grade, kind, icon, drop_icon, catalog_ord, spec, dropped_by) "
@@ -370,9 +428,64 @@ def build(sources: Sources, out: Path) -> dict:
     db.executemany("INSERT INTO npc_region (npc_id, map_id, name) VALUES (?,?,?)", places["npc_region"])
     db.executemany("INSERT INTO npc_area (npc_id, map_id, area_id, point_count, center_x, center_y, names, polygon) "
                    "VALUES (?,?,?,?,?,?,?,?)", places["npc_area"])
+    npc_by_internal = {str(r["internal_name"]).lower(): (r["id"], r["name"]) for r in npcs.values() if r.get("internal_name") and r["name"]}
+    quest_ids = {str(f.get("name") or "").upper(): qid for qid, f in client["quest_fields"].items() if f.get("name")}
+    steps = quest_steps(sources.quest_dir, client["quest_fields"], npc_by_internal, client["item_internal"], quest_ids)
+    db.executemany("UPDATE quest SET steps = ? WHERE id = ?",
+                   [(json.dumps(s, ensure_ascii=False, separators=(",", ":")), qid) for qid, s in sorted(steps.items())])
+    guides = read_guides(sources.aidb_pages)
+    known = {qid for (qid,) in db.execute("SELECT id FROM quest")}
+    npc_ids = set(npcs)
+    guide_rows = []
+    for qid, g in sorted(guides.items()):
+        if qid not in known:
+            continue
+        giver, ender, zone = g["giver"], g["ender"], g["zone"] or {}
+        guide_rows.append((
+            qid, g["name_en"], g["icon"], g["category"], g["race"], json.dumps(g["classes"], ensure_ascii=False), g["level"], g["rec_level"],
+            g["repeat"], json.dumps(g["notes"], ensure_ascii=False), zone.get("id"), zone.get("name"),
+            str(giver["id"]) if giver and str(giver["id"]) in npc_ids else None, giver["name"] if giver else None,
+            str(ender["id"]) if ender and str(ender["id"]) in npc_ids else None, ender["name"] if ender else None,
+            json.dumps(g["needs"], ensure_ascii=False), g["rewards"]["exp"], g["rewards"]["gold"], g["rewards"]["abyss"], g["title"],
+            json.dumps({"items": g["rewards"]["items"], "choice": g["rewards"]["choice"]}, ensure_ascii=False),
+            json.dumps(g["steps"], ensure_ascii=False, separators=(",", ":")),
+            json.dumps(g["start"]) if g["start"] else None))
+    db.executemany("INSERT INTO quest_guide (quest_id, name_en, icon, category, race, classes, level, rec_level, repeat, notes, zone_id, zone_name, "
+                   "giver, giver_name, ender, ender_name, needs, exp, gold, abyss, title, rewards, steps, start) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", guide_rows)
+    # the NPC that starts / takes back a quest where the client's data and the older lists name none (known NPCs only)
+    db.execute("UPDATE quest SET giver = (SELECT giver FROM quest_guide g WHERE g.quest_id = quest.id) "
+               "WHERE giver IS NULL AND (SELECT giver FROM quest_guide g WHERE g.quest_id = quest.id) IS NOT NULL")
+    db.execute("UPDATE quest SET ender = (SELECT ender FROM quest_guide g WHERE g.quest_id = quest.id) "
+               "WHERE ender IS NULL AND (SELECT ender FROM quest_guide g WHERE g.quest_id = quest.id) IS NOT NULL")
+    stones = {}
+    for item_id, row in items.items():  # the card's manastone slots
+        for block in (json.loads(row["spec"]).get("blocks", []) if row["spec"] else []):
+            if block.get("kind") == "stones":
+                stones[item_id] = {"count": block.get("count"), "bonus": block.get("bonus", 0)}
+    gear = gear_rows(sources.client_catalog, sources.client_raw, stones)
+    set_of = {item: sid for sid, _, members, _ in gear["set"] for item in json.loads(members)}
+    db.executemany("INSERT INTO gear_item (id, name, name_key, icon, grade, level, slot, grp, races, classes, basic, bonus, stones, stones_bonus, enchant, set_id) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [(r[0], r[1], name_key(r[1]), *r[2:], set_of.get(r[0])) for r in gear["item"]])
+    db.executemany("INSERT INTO gear_stone (id, name, icon, grade, level, stat, value) VALUES (?,?,?,?,?,?,?)", gear["stone"])
+    db.executemany("INSERT INTO gear_set (id, name, items, bonuses) VALUES (?,?,?,?)", gear["set"])
+    db.executemany("INSERT INTO title (id, name, name_key, description, race, stats) VALUES (?,?,?,?,?,?)", client["title"])
+    db.executemany("INSERT INTO skill (id, internal_name, name, name_key, description, icon, stigma) VALUES (?,?,?,?,?,?,?)", client["skill"])
+    db.executemany("INSERT INTO skill_book (item_id, skill, skill_id, classes) VALUES (?,?,?,?)",
+                   [r[:4] for r in client["skill_book"] if r[0] in items])
+    db.executemany("INSERT INTO stigma (item_id, skill, skill_id, gain_level, requires) VALUES (?,?,?,?,?)",
+                   [r[:5] for r in client["stigma"] if r[0] in items])
+    db.executemany("INSERT INTO pet (id, internal_name, name, name_key, description, functions, icon) VALUES (?,?,?,?,?,?,?)", client["pet"])
+    entries = section_entries(items, quests, recipes, client)
+    sizes: dict[str, int] = {}
+    for section, _ in entries:
+        sizes[section] = sizes.get(section, 0) + 1
+    db.executemany("INSERT INTO db_section (key, title, ord, entity, rule, count) VALUES (?,?,?,?,?,?)",
+                   [(key, title, ord_, entity, RULES[key], sizes.get(key, 0)) for ord_, (key, title, entity) in enumerate(SECTIONS)])
+    db.executemany("INSERT INTO db_section_entry (section, entity_id) VALUES (?, ?)", entries)
     db.executemany("INSERT INTO meta (key, value) VALUES (?, ?)", [
-        ("schema", str(SCHEMA_VERSION)), ("spec_dict", dictionary), ("title", "not built"),
-        ("stage", "4: npc + points, the bestiary's cards, every item, quests, recipes, vendors")])
+        ("schema", str(SCHEMA_VERSION)), ("spec_dict", dictionary), ("title", "client" if client["title"] else "not built"),
+        ("stage", "5: npc + points, the bestiary's cards, every item, quests, recipes, vendors, the client's catalog sections")])
     db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     db.commit()
     db.execute("VACUUM")
@@ -384,4 +497,5 @@ def build(sources: Sources, out: Path) -> dict:
     return {"npcs": len(npcs), "aliases": len(aliases), "points": len(points.rows), "listed": sum(r["listed"] for r in npcs.values()),
             "drops": sum(len(v) for v in dropped_by.values()), "stock": len(stock), "items": len(items),
             "catalog": sum(r["catalog_ord"] is not None for r in items.values()), "quests": len(quests), "recipes": len(recipes),
-            "vendor_items": len(vendors)}
+            "vendor_items": len(vendors), "titles": len(client["title"]), "skills": len(client["skill"]),
+            "skill_books": len(client["skill_book"]), "stigmas": len(client["stigma"]), "pets": len(client["pet"]), "quest_steps": len(steps), "quest_guides": len(guide_rows), "gear_items": len(gear["item"]), "sections": sizes}

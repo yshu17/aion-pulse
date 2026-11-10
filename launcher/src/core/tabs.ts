@@ -7,6 +7,7 @@
  *   tabLabel(id) -> string      what a screen is called
  *   menuOf(id) -> string|null   the menu a screen lies in, null for a plain tab
  *   LIVE_TABS                   the screens that exist; the others say «будет следующей»
+ *   BETA                        the tabs and screens still being tested: a small «beta» mark is drawn beside their name
  */
 
 export interface Section { id: string; label: string }
@@ -18,7 +19,7 @@ const sections = (prefix: string, labels: string[]): Section[] => labels.map((la
 export const TOP: TopTab[][] = [
   [{ id: "Чат", label: "Чат" }, { id: "Карта", label: "Карта" }, { id: "NPC", label: "NPC" }, { id: "Расписание", label: "Расписание" }],
   [
-    { id: "calc", label: "Калькуляторы", menu: [{ title: "", items: sections("calc", ["Броня", "Стигмы", "Крафт"]) }] },
+    { id: "calc", label: "Калькуляторы", menu: [{ title: "", items: sections("calc", ["Экипировка", "Стигмы", "Крафт"]) }] },
     { id: "db", label: "База данных", menu: [
       { title: "Предметы", items: sections("db", ["Предметы", "Оружие", "Броня", "Украшения"]) },
       { title: "Знания", items: sections("db", ["Книги умений", "Стигмы", "Титулы", "Питомцы"]) },
@@ -28,7 +29,13 @@ export const TOP: TopTab[][] = [
   [{ id: "Гайды", label: "Гайды" }],
 ];
 
-export const LIVE_TABS = ["Чат", "Карта", "NPC", "Расписание"];
+export const LIVE_TABS = ["Чат", "Карта", "NPC", "Расписание", "calc:Экипировка"];
+
+/** «db» is the whole menu (every section of «База данных»), «calc:Экипировка» is one screen of «Калькуляторы». */
+export const BETA: ReadonlySet<string> = new Set(["db", "calc:Экипировка"]);
+
+/** A screen is beta by itself or because the menu it lies in is: the id of a «db:…» section counts as «db». */
+export const isBeta = (id: string): boolean => BETA.has(id) || BETA.has(id.split(":")[0]);
 
 const owner = (id: string): TopTab | undefined =>
   TOP.flat().find((tab) => tab.id === id || tab.menu?.some((g) => g.items.some((s) => s.id === id)));
