@@ -4,12 +4,8 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import type { All } from "../../core/db/npcPoints";
+import { readSchema, type SchemaState } from "../../core/db/schema";
 import { platform } from "../platform";
-
-// the dev page only: the file comes from the dev server (dropped from the program's build)
-const devDb = import.meta.env.DEV
-  ? import.meta.glob("../../../../data/pulse.db", { query: "?url", import: "default" }) as Record<string, () => Promise<string>>
-  : {};
 
 function tauriAll(): All {
   return async (sql, params = []) => {
@@ -18,28 +14,8 @@ function tauriAll(): All {
   };
 }
 
-async function workerAll(): Promise<All | null> {
-  const load = devDb["../../../../data/pulse.db"];
-  if (!load) return null;
-  const bytes = await (await fetch(await load())).arrayBuffer();
-  const worker = new Worker(new URL("./dbWorker.ts", import.meta.url), { type: "module" });
-  let next = 1;
-  const calls = new Map<number, { resolve(v: any): void; reject(e: Error): void }>();
-  worker.onmessage = (event: MessageEvent<{ id: number; result?: unknown; error?: string }>) => {
-    const call = calls.get(event.data.id);
-    if (!call) return;
-    calls.delete(event.data.id);
-    if (event.data.error) call.reject(new Error(event.data.error));
-    else call.resolve(event.data.result);
-  };
-  const send = (message: Record<string, unknown>, transfer: Transferable[] = []) => new Promise<any>((resolve, reject) => {
-    const id = next++;
-    calls.set(id, { resolve, reject });
-    worker.postMessage({ ...message, id }, transfer);
-  });
-  await send({ op: "open", bytes }, [bytes]);
-  return (sql, params = []) => send({ op: "all", sql, params });
-}
+// only on the dev page: in the program's build the condition is a constant, so ./devDb (the worker and sql.js, 0.7 MB) is left out of it
+const workerAll = async (): Promise<All | null> => (import.meta.env.DEV ? (await import("./devDb")).workerAll() : null);
 
 let opened: Promise<All | null> | null = null;
 
@@ -52,4 +28,12 @@ export function pulseDb(): Promise<All | null> {
     return all;
   })().catch((error) => { console.warn("pulse.db", error); return null; });
   return opened;
+}
+
+let version: Promise<SchemaState> | null = null;
+
+/** Whether the database on disk is the one this program was written for (core/db/schema.ts), asked once. */
+export function pulseDbSchema(): Promise<SchemaState> {
+  version ??= pulseDb().then((all) => (all ? readSchema(all) : { found: null, fits: false, text: "База игры не найдена: нет файла data/pulse.db." }));
+  return version;
 }

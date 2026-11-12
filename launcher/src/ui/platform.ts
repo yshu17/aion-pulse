@@ -30,6 +30,10 @@ export interface Platform {
   mapsStatus(): Promise<{ needed: boolean; installed: boolean; size: number }>;
   /** Download, check and put in place the map pack (progress: «maps-progress» events). */
   mapsInstall(): Promise<void>;
+  /** Is a newer database pack on the release (and can this copy put it in place)? No network answers «available: false». */
+  dbPackStatus(): Promise<{ available: boolean; size: number; built: string; current: string; can_install: boolean; error: string }>;
+  /** Download, check and put in place the newest database pack (progress: «db-progress» events). */
+  dbPackInstall(): Promise<void>;
   /** This program's version and whether it can install an update itself (started from Pulse+.exe). */
   updateStatus(): Promise<{ version: string; can_install: boolean }>;
   /** Download, check and install a new Pulse+.exe; the program then restarts (progress: «update-progress» events). */
@@ -67,6 +71,8 @@ const tauri: Platform = {
   bestiaryDir: () => call("bestiary_dir"),
   mapsStatus: () => call("maps_status"),
   mapsInstall: () => call("maps_install"),
+  dbPackStatus: () => call("db_pack_status"),
+  dbPackInstall: () => call("db_pack_install"),
   updateStatus: () => call("update_status"),
   updateInstall: (url, size, sha256) => call("update_install", { url, size, sha256 }),
 };

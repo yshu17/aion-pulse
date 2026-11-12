@@ -15,6 +15,7 @@ The full client sets stay in client_extract/; the database holds what the list, 
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -26,7 +27,7 @@ SECTIONS = (
 )
 ARMOUR = ("Ткань", "Кожа", "Кольчуга", "Лата")
 RULES = {
-    "items": "every row of item (all the client's items and the older lists' ids)",
+    "items": "every row of item (all the client's items and the older lists' ids) except the client's test items (is_test_item)",
     "weapons": "item.category = 'Оружие': the catalog of item cards (data/watch_items.csv); the client's weapon_type is wider (variants, tests)",
     "armour": "item.category in Ткань, Кожа, Кольчуга, Лата: the catalog of item cards; shields and headgear are their own kinds",
     "jewels": "item.category = 'Украшения': the catalog of item cards",
@@ -39,6 +40,15 @@ RULES = {
 }
 # the class columns of an item record: the value is the level the class may use it from, «0» is «not this class»
 CLASSES = ("warrior", "fighter", "knight", "scout", "assassin", "ranger", "mage", "wizard", "elementalist", "priest", "cleric", "chanter")
+# the client's own test items («Тестовый эпический меч 55-го уровня ([%username])», «Тест меча Бездны…», «… для тестирования ячеек»):
+# they stay in item (a drop or a quest may name one) but are not listed in the sections
+TEST_ITEM = re.compile(r"^(Тестов|Тест[ _]|Тестирование)|\[%username|для тестирования", re.I)
+
+
+def is_test_item(name: str | None) -> bool:
+    return bool(name and TEST_ITEM.search(name))
+
+
 # title_race of client_titles: 0 Элийцы, 1 Асмодиане, 2 both (light_title* are 0, dark_title* are 1)
 TITLE_RACE = {"0": "pc_light", "1": "pc_dark", "2": "pc_light,pc_dark"}
 
@@ -90,6 +100,7 @@ def read_client(path: Path | None, icons: Path | None = None) -> dict:
         def skill_id(internal) -> int | None:
             return skills_by_name.get(str(internal or "").lower())
 
+        title_icon: dict[int, str] = {}  # a title's picture: the card item that gives it (cash_title), the generic card else
         books = category.get("skill_books", set())
         stigmas = category.get("stigmas", set())
         for eid, internal, name, icon_path, fields in db.execute(
@@ -98,6 +109,10 @@ def read_client(path: Path | None, icons: Path | None = None) -> dict:
             out["item_icon"][iid] = _icon(icon_path, "", icons)
             if internal:
                 out["item_internal"].setdefault(internal.lower(), iid)
+            if '"cash_title"' in fields and not (internal or "").lower().endswith("_test"):
+                given = _int(json.loads(fields).get("cash_title"))
+                if given is not None and out["item_icon"][iid]:
+                    title_icon.setdefault(given, out["item_icon"][iid])
             if iid not in books and iid not in stigmas:
                 continue
             f = json.loads(fields)
@@ -124,7 +139,8 @@ def read_client(path: Path | None, icons: Path | None = None) -> dict:
                      "location": f.get("title_location")}
             name = name or ""
             out["title"].append((int(eid), name, _key(name), desc or None, TITLE_RACE.get(str(f.get("title_race"))),
-                                 json.dumps(stats, ensure_ascii=False, sort_keys=True)))
+                                 json.dumps(stats, ensure_ascii=False, sort_keys=True),
+                                 title_icon.get(int(eid)) or _icon("icons/items/icon_cash_item_card_title_01.png", "", icons)))
 
         for eid, internal, name, desc, icon_path, fields in db.execute(
                 "SELECT id, internal_name, name_ru, description_ru, icon_path, fields_json FROM entries WHERE section = 'pets'"):
@@ -144,6 +160,8 @@ def section_entries(items: dict[int, dict], quests: list[tuple], recipes: list[t
     """(section, entity id) for each visible row, by RULES; ids of a section once."""
     rows: set[tuple[str, int]] = set()
     for iid, r in items.items():
+        if is_test_item(r.get("name")):
+            continue
         rows.add(("items", iid))
         if r.get("category") == "Оружие":
             rows.add(("weapons", iid))

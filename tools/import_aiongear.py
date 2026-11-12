@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -169,6 +170,9 @@ def copy_icon(name: str, folder: str) -> str | None:
             return None
         target_dir.mkdir(parents=True, exist_ok=True)
         target.write_bytes(src.read_bytes())
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from crop_icons import crop_padded  # the 64×64 textures hold a 40×40 picture
+        crop_padded(target)
     return f"{folder}/{stem}" if folder else stem
 
 

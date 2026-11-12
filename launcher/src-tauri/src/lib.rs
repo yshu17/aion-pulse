@@ -272,13 +272,152 @@ fn bestiary_dir() -> Option<String> {
 const PULSE_DB: &str = "pulse.db";
 const DB_ROWS: usize = 250_000; // the biggest answer a screen asks for (all the points of the map's index: ~70 000)
 
-/// Where pulse.db is: `PULSE_DB` (a file, for tests), else `data/pulse.db` next to the program or in a folder above it.
+/// The schema versions of pulse.db this program reads (launcher/src/core/db/schema.ts DB_SCHEMA; a test keeps the two equal).
+const DB_SCHEMA_SUPPORTED: std::ops::RangeInclusive<i64> = 9..=9;
+/// The record of the newest database pack: a file of this project's releases (tools/pack_pulse_db.py makes it, docs/ADR-003).
+const DB_MANIFEST: &str = "https://github.com/yshu17/aion-pulse/releases/download/db-latest/db_pack.json";
+
+/// A database pack: its zip (size, SHA-256, where it lives), the schema of the database in it and when it was built («2026-11-11T02:37:53Z»:
+/// texts of this shape compare as times).
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug, PartialEq)]
+struct DbPack {
+    schema: i64,
+    built: String,
+    sha256: String,
+    size: u64,
+    url: String,
+    #[serde(default)]
+    content: String,
+    #[serde(default)]
+    name: String,
+}
+
+fn read_pack(path: &Path) -> Option<DbPack> {
+    serde_json::from_slice(&fs::read(path).ok()?).ok()
+}
+
+/// The database that came with the program: `data/pulse.db` next to it or in a folder above it, with the record of its pack
+/// (`data/db_pack.json`, made by tools/pack_pulse_db.py) when there is one.
+fn bundled_db() -> Option<(PathBuf, Option<DbPack>)> {
+    let exe = std::env::current_exe().ok()?;
+    let data = exe.ancestors().skip(1).map(|dir| dir.join("data")).find(|dir| dir.join(PULSE_DB).is_file())?;
+    Some((data.join(PULSE_DB), read_pack(&data.join("db_pack.json"))))
+}
+
+/// The pack the program downloaded: `home/db/pulse.db` with its record `home/db/pack.json` (written last).
+fn installed_db() -> Option<(PathBuf, DbPack)> {
+    let dir = home_dir()?.join("db");
+    let file = dir.join(PULSE_DB);
+    if !file.is_file() {
+        return None;
+    }
+    Some((file, read_pack(&dir.join("pack.json"))?))
+}
+
+/// Which database is read: the downloaded pack when it is newer than the bundled one and its schema is one this program reads,
+/// else the bundled one. Gives the file and the built time of its pack (None for a bundled database without a record).
+fn choose_db(bundled: Option<(PathBuf, Option<DbPack>)>, installed: Option<(PathBuf, DbPack)>) -> Option<(PathBuf, Option<String>)> {
+    if let Some((path, pack)) = installed {
+        let newer = match &bundled {
+            Some((_, Some(have))) => pack.built > have.built,
+            _ => true,
+        };
+        if DB_SCHEMA_SUPPORTED.contains(&pack.schema) && newer {
+            return Some((path, Some(pack.built)));
+        }
+    }
+    bundled.map(|(path, pack)| (path, pack.map(|p| p.built)))
+}
+
+/// Where pulse.db is: `PULSE_DB` (a file, for tests), else the newest of the downloaded pack and `data/pulse.db` (see `choose_db`).
 fn pulse_db_path() -> Option<PathBuf> {
     if let Ok(file) = std::env::var("PULSE_DB") {
         return Some(PathBuf::from(file));
     }
-    let exe = std::env::current_exe().ok()?;
-    exe.ancestors().skip(1).map(|dir| dir.join("data").join(PULSE_DB)).find(|path| path.is_file())
+    choose_db(bundled_db(), installed_db()).map(|(path, _)| path)
+}
+
+/// Is this record a pack to take? Ok(true): newer than `current` and one this program can read; Ok(false): not newer; Err: the record is not usable.
+fn pack_wanted(pack: &DbPack, current: Option<&str>) -> Result<bool, String> {
+    if !DB_SCHEMA_SUPPORTED.contains(&pack.schema) {
+        return Err(format!("the pack's schema {} is not one this program reads: update the program", pack.schema));
+    }
+    if !update_url_ok(&pack.url) {
+        return Err(format!("EACCES: not a file of the Pulse+ releases: {}", pack.url));
+    }
+    if pack.sha256.len() != 64 || !pack.sha256.chars().all(|c| c.is_ascii_hexdigit()) || pack.size == 0 {
+        return Err("the pack's record has no SHA-256 or size".into());
+    }
+    Ok(current.is_none_or(|have| pack.built.as_str() > have))
+}
+
+/// The record of the newest pack, from the release (a few KB; a failure is the caller's to show or to ignore: no network is not an error).
+fn fetch_db_manifest() -> Result<DbPack, String> {
+    let agent = ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(10)).build();
+    let response = agent.get(DB_MANIFEST).set("User-Agent", "Pulse").call().map_err(|e| e.to_string())?;
+    let mut body = String::new();
+    response.into_reader().take(100_000).read_to_string(&mut body).map_err(|e| e.to_string())?;
+    serde_json::from_str(&body).map_err(|e| format!("the pack's record does not read: {e}"))
+}
+
+/// A database file that was just unpacked: it opens for reading, says the schema of its record and holds NPCs.
+fn check_db_file(file: &Path, pack: &DbPack) -> Result<(), String> {
+    let db = rusqlite::Connection::open_with_flags(file, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(|e| e.to_string())?;
+    let version: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0)).map_err(|e| e.to_string())?;
+    if version != pack.schema || !DB_SCHEMA_SUPPORTED.contains(&version) {
+        return Err(format!("the unpacked database is schema {version}, the record says {}", pack.schema));
+    }
+    let npcs: i64 = db.query_row("SELECT count(*) FROM npc", [], |row| row.get(0)).map_err(|e| e.to_string())?;
+    if npcs == 0 {
+        return Err("the unpacked database holds no NPCs".into());
+    }
+    Ok(())
+}
+
+#[derive(serde::Serialize, Default)]
+struct DbPackStatus {
+    /// A newer pack that this program can read is on the release.
+    available: bool,
+    size: u64,
+    built: String,
+    /// The built time of the database in use («» when it has no record).
+    current: String,
+    /// This copy was started from Pulse+.exe, so it can put the pack in place.
+    can_install: bool,
+    /// Why there is no answer (no network, an unreadable record); the screen keeps quiet about it.
+    error: String,
+}
+
+/// Is a newer database pack on the release? Asked once a little after the start; no network just means no.
+#[tauri::command]
+async fn db_pack_status() -> DbPackStatus {
+    tauri::async_runtime::spawn_blocking(|| {
+        let current = choose_db(bundled_db(), installed_db()).and_then(|(_, built)| built).unwrap_or_default();
+        let mut status = DbPackStatus { current: current.clone(), can_install: home_dir().is_some(), ..Default::default() };
+        match fetch_db_manifest().and_then(|pack| pack_wanted(&pack, (!current.is_empty()).then_some(current.as_str())).map(|wanted| (pack, wanted))) {
+            Ok((pack, wanted)) => { status.available = wanted; status.size = pack.size; status.built = pack.built; }
+            Err(error) => status.error = error,
+        }
+        status
+    })
+    .await
+    .unwrap_or_default()
+}
+
+/// A database built while the program was running waits beside the old one as `pulse.db.new` (Windows does not let an
+/// open file be replaced; tools/build_pulse_db.py leaves it there). It takes the old one's place before the first
+/// query of the next start; true when it did.
+fn adopt_staged_db(db: &Path) -> bool {
+    let mut name = db.as_os_str().to_owned();
+    name.push(".new");
+    let staged = PathBuf::from(name);
+    staged.is_file() && fs::rename(&staged, db).is_ok()
+}
+
+/// Only reading statements reach the database: a SELECT (or WITH … SELECT), or a PRAGMA that reads (the version).
+fn reading_sql(sql: &str) -> bool {
+    let head = sql.trim_start().get(..6).unwrap_or("").to_ascii_lowercase();
+    head.starts_with("select") || head.starts_with("with") || head.starts_with("pragma")
 }
 
 /// One answer of the database, by columns: names once, then the rows (smaller than an object per row).
@@ -305,6 +444,9 @@ fn to_sql(value: &serde_json::Value) -> rusqlite::types::Value {
 /// Run a reading query on an open database; anything that would write is refused.
 fn query_db(db: &rusqlite::Connection, sql: &str, params: &[serde_json::Value]) -> Result<DbAnswer, String> {
     use rusqlite::types::ValueRef;
+    if !reading_sql(sql) {
+        return Err("EPERM: pulse.db is read only".into());
+    }
     let mut statement = db.prepare(sql).map_err(|e| e.to_string())?;
     if !statement.readonly() {
         return Err("EPERM: pulse.db is read only".into());
@@ -339,6 +481,7 @@ async fn db_query(sql: String, params: Vec<serde_json::Value>) -> Result<DbAnswe
         let mut held = PULSE.lock().map_err(|e| e.to_string())?;
         if held.is_none() {
             let path = pulse_db_path().filter(|path| path.is_file()).ok_or_else(|| format!("ENOENT: {PULSE_DB}"))?;
+            adopt_staged_db(&path);
             let db = rusqlite::Connection::open_with_flags(&path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX)
                 .map_err(|e| e.to_string())?;
             *held = Some(db);
@@ -633,23 +776,65 @@ fn unzip_safe(zip_path: &Path, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// The whole new maps folder `stage` becomes `home/maps`. The old folder is moved aside first and kept when the new one
-/// cannot take its place, so the pictures never vanish; it is deleted once the swap is done.
-fn put_maps_in_place(home: &Path, stage: &Path) -> Result<(), String> {
-    let target = home.join("maps");
-    let old = home.join("maps-old");
-    let _ = fs::remove_dir_all(&old);
+/// The whole new folder `stage` becomes `target`. The old folder is moved aside to `old` first and kept when the new one
+/// cannot take its place, so what was there never vanishes; it is deleted once the swap is done.
+fn swap_dir(target: &Path, stage: &Path, old: &Path) -> Result<(), String> {
+    let _ = fs::remove_dir_all(old);
     if target.exists() {
-        fs::rename(&target, &old).map_err(|e| format!("the old maps are in use: {e}"))?;
+        fs::rename(target, old).map_err(|e| format!("the old folder is in use: {e}"))?;
     }
-    if let Err(e) = fs::rename(stage, &target) {
+    if let Err(e) = fs::rename(stage, target) {
         if old.exists() {
-            let _ = fs::rename(&old, &target); // the old pictures stay
+            let _ = fs::rename(old, target); // the old files stay
         }
         return Err(e.to_string());
     }
-    let _ = fs::remove_dir_all(&old);
+    let _ = fs::remove_dir_all(old);
     Ok(())
+}
+
+fn put_maps_in_place(home: &Path, stage: &Path) -> Result<(), String> {
+    swap_dir(&home.join("maps"), stage, &home.join("maps-old"))
+}
+
+static DB_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Download the newest database pack (progress in «db-progress» events), check its size, SHA-256 and the database in it, and
+/// put it in `home/db` in place of the pack before. The connection to the old file is closed first; the screens read again
+/// after this returns (the page reloads). Nothing is replaced when a check fails.
+#[tauri::command]
+async fn db_pack_install(app: AppHandle) -> Result<(), String> {
+    use std::sync::atomic::Ordering;
+    let home = home_dir().ok_or("this copy was not started from Pulse+.exe: the database comes with the program's data")?;
+    if DB_BUSY.swap(true, Ordering::SeqCst) {
+        return Err("the database is already coming".into());
+    }
+    let events = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let pack = fetch_db_manifest()?;
+        let current = choose_db(bundled_db(), installed_db()).and_then(|(_, built)| built);
+        if !pack_wanted(&pack, current.as_deref())? {
+            return Err("the database is up to date".into());
+        }
+        let want = pack.sha256.to_ascii_lowercase();
+        let work = home.join("db-download");
+        let _ = fs::remove_dir_all(&work);
+        fs::create_dir_all(&work).map_err(|e| e.to_string())?;
+        let zip_path = work.join("pulse-db.zip");
+        download_checked(&pack.url, pack.size, &want, &zip_path, &|done, total| { let _ = events.emit("db-progress", UpdateProgress { done, total }); })?;
+        let stage = work.join("files");
+        unzip_safe(&zip_path, &stage)?;
+        check_db_file(&stage.join(PULSE_DB), &pack)?;
+        fs::write(stage.join("pack.json"), serde_json::to_vec_pretty(&pack).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?; // last: the folder is whole
+        *PULSE.lock().map_err(|e| e.to_string())? = None; // nothing holds the old file open
+        swap_dir(&home.join("db"), &stage, &home.join("db-old"))?;
+        let _ = fs::remove_dir_all(&work);
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string());
+    DB_BUSY.store(false, Ordering::SeqCst);
+    result?
 }
 
 static MAPS_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -757,14 +942,14 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, db_query, overlay_bounds, overlay_clip, update_status, update_install, bestiary_dir, maps_status, maps_install])
+        .invoke_handler(tauri::generate_handler![config_path, game_running, pulse_config_candidates, windows_sounds, maps_dir, read_text, file_size, read_range, write_text, http_fetch, db_query, db_pack_status, db_pack_install, overlay_bounds, overlay_clip, update_status, update_install, bestiary_dir, maps_status, maps_install])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed_url, has_game, inside, put_maps_in_place, query_db, split_ranges, unzip_safe, update_url_ok, MapsPack};
+    use super::{adopt_staged_db, check_db_file, choose_db, pack_wanted, swap_dir, DbPack, DB_SCHEMA_SUPPORTED, allowed_url, has_game, inside, put_maps_in_place, query_db, reading_sql, split_ranges, unzip_safe, update_url_ok, MapsPack};
     use std::io::Write;
     use std::path::Path;
 
@@ -870,6 +1055,8 @@ mod tests {
         assert_eq!(query_db(&db, "SELECT level FROM npc WHERE id = '2'", &[]).unwrap().rows, vec![vec![serde_json::Value::Null]]);
         assert!(query_db(&db, "DELETE FROM npc", &[]).unwrap_err().starts_with("EPERM"));
         assert!(query_db(&db, "INSERT INTO npc VALUES ('3', 'x', 1)", &[]).is_err());
+        assert!(query_db(&db, "ATTACH DATABASE 'other.db' AS other", &[]).unwrap_err().starts_with("EPERM"));
+        assert!(query_db(&db, "PRAGMA user_version", &[]).is_ok());
     }
 
     #[test]
@@ -915,5 +1102,97 @@ mod tests {
         assert!(!allowed_url("https://intranet/")); // no dot: not a public name
         assert!(!allowed_url("https:///nohost"));
         assert!(!allowed_url("file:///C:/Windows/system.ini"));
+    }
+
+    #[test]
+    fn only_reading_statements_are_let_through() {
+        for ok in ["SELECT 1", "  select 1", "WITH a AS (SELECT 1) SELECT * FROM a", "PRAGMA user_version"] {
+            assert!(reading_sql(ok), "{ok}");
+        }
+        for no in ["", "DELETE FROM npc", "ATTACH DATABASE 'x' AS y", "VACUUM INTO 'x'", "sel"] {
+            assert!(!reading_sql(no), "{no}");
+        }
+    }
+
+    #[test]
+    fn a_staged_database_takes_the_old_ones_place() {
+        let dir = std::env::temp_dir().join(format!("pulse-test-adopt-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("pulse.db");
+        std::fs::write(&db, b"old").unwrap();
+        assert!(!adopt_staged_db(&db)); // nothing waits
+        std::fs::write(dir.join("pulse.db.new"), b"new").unwrap();
+        assert!(adopt_staged_db(&db));
+        assert_eq!(std::fs::read(&db).unwrap(), b"new");
+        assert!(!dir.join("pulse.db.new").exists());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    fn pack(built: &str, schema: i64) -> DbPack {
+        DbPack { schema, built: built.into(), sha256: "a".repeat(64), size: 17_000_000, name: String::new(), content: String::new(),
+            url: "https://github.com/yshu17/aion-pulse/releases/download/db-latest/pulse-db-aaaaaaaaaaaa.zip".into() }
+    }
+
+    #[test]
+    fn the_downloaded_pack_is_read_only_when_it_is_newer_and_readable() {
+        let bundled = || Some((std::path::PathBuf::from("bundled.db"), Some(pack("2026-11-01T00:00:00Z", 9))));
+        let installed = |built: &str, schema: i64| Some((std::path::PathBuf::from("installed.db"), pack(built, schema)));
+        assert_eq!(choose_db(bundled(), installed("2026-11-10T00:00:00Z", 9)).unwrap().0, std::path::PathBuf::from("installed.db"));
+        assert_eq!(choose_db(bundled(), installed("2026-10-01T00:00:00Z", 9)).unwrap().0, std::path::PathBuf::from("bundled.db")); // the program came with a newer one
+        assert_eq!(choose_db(bundled(), installed("2026-11-10T00:00:00Z", 99)).unwrap().0, std::path::PathBuf::from("bundled.db")); // a schema it cannot read
+        assert_eq!(choose_db(None, installed("2026-11-10T00:00:00Z", 9)).unwrap().0, std::path::PathBuf::from("installed.db"));
+        assert_eq!(choose_db(bundled(), None).unwrap().1.as_deref(), Some("2026-11-01T00:00:00Z"));
+        assert!(choose_db(None, None).is_none());
+    }
+
+    #[test]
+    fn a_pack_is_taken_only_when_newer_readable_and_from_the_releases() {
+        let ok = pack("2026-11-11T00:00:00Z", 9);
+        assert_eq!(pack_wanted(&ok, Some("2026-11-01T00:00:00Z")), Ok(true));
+        assert_eq!(pack_wanted(&ok, None), Ok(true));
+        assert_eq!(pack_wanted(&ok, Some("2026-11-11T00:00:00Z")), Ok(false));
+        assert!(pack_wanted(&pack("2026-11-11T00:00:00Z", 10), None).unwrap_err().contains("schema"));
+        let mut elsewhere = ok.clone();
+        elsewhere.url = "https://example.com/pulse-db.zip".into();
+        assert!(pack_wanted(&elsewhere, None).unwrap_err().starts_with("EACCES"));
+        let mut loose = ok.clone();
+        loose.sha256 = "abc".into();
+        assert!(pack_wanted(&loose, None).is_err());
+        assert!(DB_SCHEMA_SUPPORTED.contains(&9));
+    }
+
+    #[test]
+    fn an_unpacked_database_is_checked_before_it_replaces_the_old_one() {
+        let dir = std::env::temp_dir().join(format!("pulse-test-dbpack-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("pulse.db");
+        let db = rusqlite::Connection::open(&file).unwrap();
+        db.execute_batch("CREATE TABLE npc (id TEXT); PRAGMA user_version = 9;").unwrap();
+        drop(db);
+        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 9)).unwrap_err().contains("no NPCs")); // empty
+        let db = rusqlite::Connection::open(&file).unwrap();
+        db.execute("INSERT INTO npc VALUES ('1')", []).unwrap();
+        drop(db);
+        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 9)).is_ok());
+        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 8)).unwrap_err().contains("schema")); // the record says another schema
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_folder_swap_keeps_the_old_files_when_the_new_ones_cannot_come() {
+        let dir = std::env::temp_dir().join(format!("pulse-test-swap-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("db")).unwrap();
+        std::fs::write(dir.join("db").join("pulse.db"), "old").unwrap();
+        assert!(swap_dir(&dir.join("db"), &dir.join("missing"), &dir.join("db-old")).is_err());
+        assert_eq!(std::fs::read_to_string(dir.join("db").join("pulse.db")).unwrap(), "old");
+        std::fs::create_dir_all(dir.join("stage")).unwrap();
+        std::fs::write(dir.join("stage").join("pulse.db"), "new").unwrap();
+        swap_dir(&dir.join("db"), &dir.join("stage"), &dir.join("db-old")).unwrap();
+        assert_eq!(std::fs::read_to_string(dir.join("db").join("pulse.db")).unwrap(), "new");
+        assert!(!dir.join("db-old").exists());
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

@@ -78,5 +78,6 @@ export const IconFit = () => <Svg size={16}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5
 export const IconMessage = () => <Svg size={15} tone={TEAL} fill="M4 5h16v11H9l-5 4z"><path d="M4 5h16v11H9l-5 4z" /></Svg>;
 export const IconNavigate = () => <Svg size={16} tone={CYAN} fill="M21 3L3 10.5l7.5 3 3 7.5z"><path d="M21 3L3 10.5l7.5 3 3 7.5z" /></Svg>;
 export const IconPlus = () => <Svg size={14}><path d="M12 5v14M5 12h14" /></Svg>;
+export const IconSwap = () => <Svg size={14}><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4" /></Svg>;
 export const IconLeft = () => <Svg size={16}><path d="M15 6l-6 6 6 6" /></Svg>;
 export const IconRight = () => <Svg size={16}><path d="M9 6l6 6-6 6" /></Svg>;

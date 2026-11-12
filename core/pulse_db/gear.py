@@ -17,6 +17,8 @@ import re
 import sqlite3
 from pathlib import Path
 
+from core.pulse_db.catalog import is_test_item
+
 WEAPON = {"1h_sword": "sword", "1h_dagger": "dagger", "1h_mace": "mace", "2h_sword": "greatsword", "2h_polearm": "polearm",
           "2h_staff": "staff", "bow": "bow", "2h_book": "spellbook", "2h_orb": "orb"}
 ARMOUR = {"robe": "rb", "leather": "lt", "chain": "ch", "plate": "pl"}
@@ -77,8 +79,10 @@ def _values(value) -> list:
 
 def item_row(item_id: int, name: str, icon: str | None, f: dict, stones: dict | None) -> tuple | None:
     group = group_of(f)
-    if not group or str(f.get("armor_type") or "") == "clothes":
+    if not group or not name or is_test_item(name):  # no Russian name: not an item of this version
         return None
+    if str(f.get("armor_type") or "") == "clothes" and group != "wing":
+        return None  # the clothes are for looks only; the wings are «clothes» in the client and carry stats
     basic = {}
     for key, stat in BASIC.items():
         value = _num(f.get(key))

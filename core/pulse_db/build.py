@@ -31,11 +31,12 @@ from pathlib import Path
 
 from core.bestiary.bestiary_store import BestiaryStore
 from core.pulse_db.aidb_quests import read_guides
+from core.pulse_db.aidb_skills import read_skill_damage
 from core.pulse_db.catalog import RULES, SECTIONS, read_client, section_entries
 from core.pulse_db.gear import gear_rows
 from core.pulse_db.quest_steps import quest_steps
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 SCHEMA = Path(__file__).with_name("schema.sql")
 # what of a bestiary card has a table or a column of its own; the rest goes into npc.profile
 CARD_COLUMNS = {"id", "name", "internal_name", "category", "role", "title", "description", "race", "faction", "kind", "rank",
@@ -60,6 +61,7 @@ class Sources:
     icons: Path | None = None       # data/icons: a picture is linked only when its file is there
     quest_dir: Path | None = None   # client_extract/raw/Data/quest: quest_monster.csv, quest_script_monster.csv (the quests' steps)
     aidb_pages: Path | None = None  # downloads/aidb_quests/pages: <quest id>.html of aidb.ru (tools/fetch_aidb_quests.py)
+    aidb_skills: Path | None = None  # downloads/aidb_skills/pages: <skill id>.html of aidb.ru (tools/fetch_aidb_skills.py)
     client_raw: Path | None = None  # client_extract/fresh_catalog/raw: client_setitem.xml and the string files (the gear sets)
 
 
@@ -469,12 +471,15 @@ def build(sources: Sources, out: Path) -> dict:
                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [(r[0], r[1], name_key(r[1]), *r[2:], set_of.get(r[0])) for r in gear["item"]])
     db.executemany("INSERT INTO gear_stone (id, name, icon, grade, level, stat, value) VALUES (?,?,?,?,?,?,?)", gear["stone"])
     db.executemany("INSERT INTO gear_set (id, name, items, bonuses) VALUES (?,?,?,?)", gear["set"])
-    db.executemany("INSERT INTO title (id, name, name_key, description, race, stats) VALUES (?,?,?,?,?,?)", client["title"])
+    db.executemany("INSERT INTO title (id, name, name_key, description, race, stats, icon) VALUES (?,?,?,?,?,?,?)", client["title"])
     db.executemany("INSERT INTO skill (id, internal_name, name, name_key, description, icon, stigma) VALUES (?,?,?,?,?,?,?)", client["skill"])
     db.executemany("INSERT INTO skill_book (item_id, skill, skill_id, classes) VALUES (?,?,?,?)",
                    [r[:4] for r in client["skill_book"] if r[0] in items])
     db.executemany("INSERT INTO stigma (item_id, skill, skill_id, gain_level, requires) VALUES (?,?,?,?,?)",
                    [r[:5] for r in client["stigma"] if r[0] in items])
+    damage = read_skill_damage(sources.aidb_skills)
+    db.executemany("INSERT INTO skill_damage (skill_id, text, dmg_min, dmg_max) VALUES (?,?,?,?)",
+                   [(sid, d["text"], d["min"], d["max"]) for sid, d in sorted(damage.items()) if sid in {r[0] for r in client["skill"]}])
     db.executemany("INSERT INTO pet (id, internal_name, name, name_key, description, functions, icon) VALUES (?,?,?,?,?,?,?)", client["pet"])
     entries = section_entries(items, quests, recipes, client)
     sizes: dict[str, int] = {}
@@ -485,7 +490,7 @@ def build(sources: Sources, out: Path) -> dict:
     db.executemany("INSERT INTO db_section_entry (section, entity_id) VALUES (?, ?)", entries)
     db.executemany("INSERT INTO meta (key, value) VALUES (?, ?)", [
         ("schema", str(SCHEMA_VERSION)), ("spec_dict", dictionary), ("title", "client" if client["title"] else "not built"),
-        ("stage", "5: npc + points, the bestiary's cards, every item, quests, recipes, vendors, the client's catalog sections")])
+        ("stage", "5: npc + points, the bestiary's cards, every item, quests, recipes, vendors, the client's catalog sections, skill damage (aidb)")])
     db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     db.commit()
     db.execute("VACUUM")
@@ -493,7 +498,8 @@ def build(sources: Sources, out: Path) -> dict:
     try:
         os.replace(fresh, out)
     except PermissionError as error:  # Windows: a running Pulse+ holds the old file open
-        raise PermissionError(f"{out} is in use (close Pulse+ first); the new database is left in {fresh}") from error
+        raise PermissionError(f"{out} is in use by a running Pulse+; the new database is left in {fresh}: "
+                              "Pulse+ takes it at its next start (docs/ADR-003-pulse-db-replace.md)") from error
     return {"npcs": len(npcs), "aliases": len(aliases), "points": len(points.rows), "listed": sum(r["listed"] for r in npcs.values()),
             "drops": sum(len(v) for v in dropped_by.values()), "stock": len(stock), "items": len(items),
             "catalog": sum(r["catalog_ord"] is not None for r in items.values()), "quests": len(quests), "recipes": len(recipes),

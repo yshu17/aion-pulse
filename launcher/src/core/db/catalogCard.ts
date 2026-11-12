@@ -4,6 +4,7 @@
  *   itemSources(all, itemId) -> { drops, dropTotal, recipes, usedIn, vendors }   where an item comes from
  *   itemSkill(all, itemId) -> ItemSkill | null     the skill a skill book teaches or a stigma gives
  *   entityCard(all, entity, id) -> Row | null      a title, a pet, a quest or a recipe as a card
+ *   linkParts(text, links) -> (string | GuideLink)[]   a guide's line cut at the names it links (an NPC, an item, a zone)
  */
 
 import { recipesFor, type Recipe } from "./game";
@@ -46,19 +47,19 @@ export async function itemSources(all: All, itemId: number): Promise<ItemSources
   };
 }
 
-export interface ItemSkill { kind: "book" | "stigma"; name: string; description: string; icon: string; level: number | null; classes: Record<string, number> }
+export interface ItemSkill { kind: "book" | "stigma"; name: string; description: string; damage: string | null; icon: string; level: number | null; classes: Record<string, number> }
 
 export async function itemSkill(all: All, itemId: number): Promise<ItemSkill | null> {
   const [book] = await all(
-    "SELECT b.skill, b.classes, s.name, s.description, s.icon FROM skill_book b LEFT JOIN skill s ON s.id = b.skill_id WHERE b.item_id = ?", [itemId]);
+    "SELECT b.skill, b.classes, s.name, s.description, s.icon, d.text AS damage FROM skill_book b LEFT JOIN skill s ON s.id = b.skill_id LEFT JOIN skill_damage d ON d.skill_id = b.skill_id WHERE b.item_id = ?", [itemId]);
   if (book) {
-    return { kind: "book", name: book.name || book.skill || "", description: book.description ?? "", icon: book.icon ?? "", level: null,
+    return { kind: "book", name: book.name || book.skill || "", description: book.description ?? "", damage: book.damage ?? null, icon: book.icon ?? "", level: null,
       classes: book.classes ? JSON.parse(book.classes) : {} };
   }
   const [stigma] = await all(
-    "SELECT g.skill, g.gain_level, s.name, s.description, s.icon FROM stigma g LEFT JOIN skill s ON s.id = g.skill_id WHERE g.item_id = ?", [itemId]);
+    "SELECT g.skill, g.gain_level, s.name, s.description, s.icon, d.text AS damage FROM stigma g LEFT JOIN skill s ON s.id = g.skill_id LEFT JOIN skill_damage d ON d.skill_id = g.skill_id WHERE g.item_id = ?", [itemId]);
   if (!stigma || !(stigma.name || stigma.skill)) return null;
-  return { kind: "stigma", name: stigma.name || stigma.skill, description: stigma.description ?? "", icon: stigma.icon ?? "",
+  return { kind: "stigma", name: stigma.name || stigma.skill, description: stigma.description ?? "", damage: stigma.damage ?? null, icon: stigma.icon ?? "",
     level: stigma.gain_level ?? null, classes: {} };
 }
 
@@ -81,9 +82,11 @@ export interface QuestStep {
   quests?: { id: string; name: string }[];
 }
 /** The guide of a quest from aidb.ru (quest_guide): what the client's tables do not hold. */
+/** A name inside a guide's line and what it is: «npcs» (an NPC or a monster), «items», «zones» (a map_id). */
+export interface GuideLink { kind: "npcs" | "items" | "zones"; id: string; name: string }
 export interface QuestGuide {
   name_en: string; category: string; race: string; classes: string[]; level: number | null; rec_level: number | null; repeat: string; notes: string[];
-  zone: string; title: string; steps: { text: string }[]; needs: { id: string; name: string; count: number; grade: string; icon: string }[];
+  zone: string; zoneId: string; title: string; steps: { text: string; links: GuideLink[] }[]; needs: { id: string; name: string; count: number; grade: string; icon: string }[];
   choice: { id: string; name: string; count: number; grade: string; icon: string }[]; giverName: string; enderName: string;
 }
 export interface QuestCard {
@@ -91,6 +94,27 @@ export interface QuestCard {
   id: string; name: string; gold: boolean; kind: string; zone: string; min_level: number | null; max_level: number | null;
   races: string[]; repeatable: boolean; giver: QuestNpc | null; ender: QuestNpc | null; steps: QuestStep[];
   rewards: { type: string; amount: number; choice: boolean; item: { id: string; name: string; grade: string; icon: string } | null }[];
+}
+
+/** A guide's line cut into plain text and the names it links, in the order of the text (the longest name first where two overlap). */
+export function linkParts(text: string, links: GuideLink[]): (string | GuideLink)[] {
+  const found: { at: number; link: GuideLink }[] = [];
+  for (const link of [...links].sort((a, b) => b.name.length - a.name.length)) {
+    if (!link.name) continue;
+    for (let at = text.indexOf(link.name); at >= 0; at = text.indexOf(link.name, at + link.name.length)) {
+      if (!found.some((f) => at < f.at + f.link.name.length && f.at < at + link.name.length)) found.push({ at, link });
+    }
+  }
+  found.sort((a, b) => a.at - b.at);
+  const parts: (string | GuideLink)[] = [];
+  let from = 0;
+  for (const { at, link } of found) {
+    if (at > from) parts.push(text.slice(from, at));
+    parts.push(link);
+    from = at + link.name.length;
+  }
+  if (from < text.length) parts.push(text.slice(from));
+  return parts;
 }
 
 /** The quest's kind and region from its category («mission | Фоэта»): a mission (the campaign) wears the gold icon. */
@@ -137,8 +161,9 @@ export async function questCard(all: All, id: number): Promise<QuestCard | null>
   const guide: QuestGuide | null = guideRow ? {
     name_en: String(guideRow.name_en ?? ""), category: String(guideRow.category ?? ""), race: String(guideRow.race ?? ""),
     classes: JSON.parse(guideRow.classes ?? "[]"), level: guideRow.level ?? null, rec_level: guideRow.rec_level ?? null, repeat: String(guideRow.repeat ?? ""),
-    notes: JSON.parse(guideRow.notes ?? "[]"), zone: String(guideRow.zone_name ?? ""), title: String(guideRow.title ?? ""),
-    steps: JSON.parse(guideRow.steps ?? "[]").map((st: Row) => ({ text: String(st.text) })),
+    notes: JSON.parse(guideRow.notes ?? "[]"), zone: String(guideRow.zone_name ?? ""), zoneId: String(guideRow.zone_id ?? ""), title: String(guideRow.title ?? ""),
+    steps: JSON.parse(guideRow.steps ?? "[]").map((st: Row) => ({ text: String(st.text),
+      links: (st.links ?? []).map((l: Row): GuideLink => ({ kind: l.kind, id: String(l.id), name: String(l.name ?? "") })) })),
     needs: JSON.parse(guideRow.needs ?? "[]").map(withItem), choice: (JSON.parse(guideRow.rewards ?? "{}").choice ?? []).map(withItem),
     giverName: String(guideRow.giver_name ?? ""), enderName: String(guideRow.ender_name ?? ""),
   } : null;

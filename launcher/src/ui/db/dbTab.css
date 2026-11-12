@@ -74,8 +74,8 @@
 /* quests: the mark (the map's quest icon, gold for the campaign), the NPCs, the steps */
 .dbt-quest-icon { display: inline-grid; place-items: center; flex: none; }
 .dbt-quest-icon img { width: 100%; height: 100%; object-fit: contain; }
-.dbt-gold { color: #f3c04f; } .dbt-blue { color: #6fb2ff; }
-.dbt-quest .item-card.in-db { width: 470px; }
+.dbt-gold { color: #f3c04f; } .dbt-blue { color: #6fb2ff; } .dbt-darkblue { color: #6b8cff; } .dbt-pink { color: #ff7ac8; }
+.dbt-quest .item-card.in-db { width: min(640px, 100%); }
 .dbt-quest-title { align-items: center; gap: 10px; }
 .dbt-npc { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 3px 0; }
 .dbt-npc-label { color: var(--muted); min-width: 74px; }
@@ -91,3 +91,36 @@
 .dbt-quest-names { display: flex; flex-direction: column; min-width: 0; } .dbt-quest-names span { color: var(--muted); font-size: 12px; font-weight: 400; }
 .dbt-rec { color: var(--muted); } .dbt-title-reward { color: #e8c55a; }
 .dbt-steps li::marker { color: var(--muted); }
+.dbt-chip { height: 32px; padding: 0 12px; border: 1px dashed var(--border-control); border-radius: 999px; background: none; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.dbt-chip.on { border-style: solid; border-color: #a75b21; color: #ffae65; background: var(--accent-subtle); }
+.dbt-dmg { color: #ffae65; font-weight: 600; white-space: nowrap; }
+/* one size for the head icon of every card of the tab: the item's tooltip (its three layouts), the skill, the title, the pet, the quest */
+.dbt .item-card.in-db .ic-top > .icon, .dbt .item-card.in-db .ic-empire-info > .icon, .dbt .item-card.in-db .ic-db-heading > .icon,
+.dbt .dbt-skill .icon { width: 48px !important; height: 48px !important; flex: none; }
+.dbt-row-main .icon, .dbt-row-main .dbt-quest-icon { width: 36px; height: 36px; object-fit: contain; }
+.dbt-parts .icon, .dbt-step-item .icon { width: 26px !important; height: 26px !important; }
+/* a name that opens what it names */
+.dbt-link { display: inline; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset: 3px; }
+.dbt-link:hover { text-decoration-style: solid; text-decoration-color: currentColor; }
+.dbt-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.dbt-link-npc { color: #8fd0ff; } .dbt-link-zone { color: #9be28f; } .dbt-link-quest { color: #f3c04f; }
+.dbt-b { font-weight: 600; }
+.dbt-li .dbt-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbt-parts li .dbt-link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbt-before { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; }
+.item-card .dbt-before li::before { content: none; }
+/* a card that has just been chosen comes in softly; the developer's «без плавности» and the system's reduced motion turn it off */
+@keyframes dbt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.dbt-in { animation: dbt-in 140ms var(--ease-out, ease-out); }
+.no-fade .dbt-in { animation: none; }
+@media (prefers-reduced-motion: reduce) { .dbt-in { animation: none; } }
+.dbt-row { transition: background-color .12s; }
+.dbt-box h5 { display: flex; align-items: baseline; gap: 8px; } .dbt-box h5 em { font-style: normal; font-weight: 500; letter-spacing: 0; opacity: .8; }
+.dbt-absent { padding: 0 2px; }
+.dbt-more-link { justify-self: start; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: 12.5px; cursor: pointer; }
+.dbt-more-link:hover { text-decoration: underline; } .dbt-more-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.dbt-schema { margin: 0; }
+.dbt-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 12px 8px 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.reward-name { display: inline-flex; align-items: center; gap: 6px; }
+.reward-icon { flex: none; object-fit: contain; vertical-align: middle; }

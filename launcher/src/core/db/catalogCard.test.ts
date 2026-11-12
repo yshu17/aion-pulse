@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
-import { entityCard, itemSkill, itemSources } from "./catalogCard";
+import { entityCard, itemSkill, itemSources, linkParts } from "./catalogCard";
 import type { All } from "./npcPoints";
 
 const SCHEMA = readFileSync(join(__dirname, "..", "..", "..", "..", "core", "pulse_db", "schema.sql"), "utf8");
@@ -41,6 +41,17 @@ function sample(): All {
   return async (sql, params = []) => db.prepare(sql).all(...(params as any[])) as Record<string, any>[];
 }
 
+describe("a guide's line", () => {
+  it("is cut at the names it links, the longest first, every occurrence", () => {
+    const npc = { kind: "npcs" as const, id: "1", name: "Муранес" };
+    const long = { kind: "npcs" as const, id: "2", name: "Рогатый керубим" };
+    const short = { kind: "items" as const, id: "3", name: "керубим" };
+    expect(linkParts("Возвращайтесь к Муранес.", [npc])).toEqual(["Возвращайтесь к ", npc, "."]);
+    expect(linkParts("Убейте: Рогатый керубим, керубим.", [short, long])).toEqual(["Убейте: ", long, ", ", short, "."]);
+    expect(linkParts("Без имён.", [npc])).toEqual(["Без имён."]);
+  });
+});
+
 describe("the database card's sources", () => {
   it("name the NPCs that drop an item, the recipes that make it and need it, and who sells it", async () => {
     const all = sample();
@@ -56,7 +67,7 @@ describe("the database card's sources", () => {
 
   it("give the skill a book teaches and a stigma gives", async () => {
     const all = sample();
-    expect(await itemSkill(all, 3)).toEqual({ kind: "book", name: "Укрепление I", description: "Больше защиты.", icon: "skills/p_boost",
+    expect(await itemSkill(all, 3)).toEqual({ kind: "book", name: "Укрепление I", description: "Больше защиты.", damage: null, icon: "skills/p_boost",
       level: null, classes: { fighter: 5 } });
     expect(await itemSkill(all, 4)).toMatchObject({ kind: "stigma", name: "Свет", level: 9 });
     expect(await itemSkill(all, 1)).toBeNull();

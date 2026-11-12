@@ -72,7 +72,7 @@ def test_builds_the_ten_sections_with_their_rule_and_size(tmp_path):
     out = tmp_path / "pulse.db"
     report = build(Sources(**{**base.__dict__, "client_catalog": tmp_path / "catalog.sqlite", "icons": icons}), out)
     db = sqlite3.connect(out)
-    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 8
+    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 9
     sections = db.execute("SELECT key, title, ord, entity, count FROM db_section ORDER BY ord").fetchall()
     assert [s[0] for s in sections] == [key for key, _, _ in SECTIONS]
     counts = {s[0]: s[4] for s in sections}
@@ -91,3 +91,14 @@ def test_builds_the_ten_sections_with_their_rule_and_size(tmp_path):
     # the client's picture where the item has none
     assert db.execute("SELECT icon FROM item WHERE id = 902").fetchone()[0] == "icon_item_skillbook_02"
     assert report["sections"]["items"] == db.execute("SELECT count(*) FROM item").fetchone()[0]
+
+
+def test_the_clients_test_items_are_not_listed():
+    from core.pulse_db.catalog import is_test_item
+
+    for name in ("Тестовый эпический меч 55-го уровня ([%username])", "Тестовые сапоги (ур. 14)", "Тест меча Бездны героического класса",
+                 "Обычный меч для тестирования ячеек магических камней.", "Тест_изменение_внешнего_вида_Мужчина",
+                 "Тестирование_кольца_сопротивление магическому крит. удару +300"):
+        assert is_test_item(name), name
+    for name in ("Меч Аваддона", "[Newbie] Меч отваги", "Контест", "", None):
+        assert not is_test_item(name), name

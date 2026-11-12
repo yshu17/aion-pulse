@@ -5,7 +5,7 @@
  *   writeBuild(saved) -> text
  */
 
-import type { SlotKey } from "./engine";
+import type { GearItem, SlotKey } from "./engine";
 
 export interface SavedSlot { id: number; enchant: number; stones: (number | null)[] }
 export interface SavedSet {
@@ -57,4 +57,34 @@ export function removeSet(b: SavedBuild, index: number): SavedBuild {
   if (b.sets.length <= 1) return b;
   const sets = b.sets.filter((_, i) => i !== index).map((s, i) => ({ ...s, title: /^Набор \d+$/.test(s.title) ? `Набор ${i + 1}` : s.title }));
   return { ...b, sets, active: Math.min(b.active > index ? b.active - 1 : b.active, sets.length - 1) };
+}
+
+/**
+ * The main hand and the off hand swapped, each with its enchant and manastones; null when they cannot change places: a weapon
+ * that is only for the main hand (a two-hander, a bow) cannot go to the off hand, a shield only to the off hand.
+ */
+export function swapWeapons(slots: SavedSet["slots"], items: ReadonlyMap<number, GearItem>): SavedSet["slots"] | null {
+  const { main, sub } = slots;
+  if (!main && !sub) return null;
+  const inMain = main && items.get(main.id);
+  const inSub = sub && items.get(sub.id);
+  if ((main && !inMain) || (sub && !inSub)) return null;
+  const toSub = (i: GearItem) => i.grp === "shield" || i.slot === "main_or_sub";
+  const toMain = (i: GearItem) => i.grp !== "shield" && (i.slot === "main" || i.slot === "main_or_sub");
+  if ((inMain && !toSub(inMain)) || (inSub && !toMain(inSub))) return null;
+  const out = { ...slots };
+  delete out.main;
+  delete out.sub;
+  if (sub) out.main = sub;
+  if (main) out.sub = main;
+  return out;
+}
+
+/** The highest manastone level an item takes, from its card's line «Можно усилить магическими камнями 70-го уровня и ниже»; null when the card has none. */
+export function stoneCap(blocks: { kind?: string; text?: string }[] | undefined): number | null {
+  for (const b of blocks ?? []) {
+    const found = b.kind === "text" && b.text ? /камнями\s+(\d+)-го уровня/.exec(b.text) : null;
+    if (found) return Number(found[1]);
+  }
+  return null;
 }

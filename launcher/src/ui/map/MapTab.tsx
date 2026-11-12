@@ -170,6 +170,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   useEffect(() => {
     if (!target) return;
     if (target.type === "npc") { showNpc(target.npc, target.name, target.map_id, target.at, target.points); return; }
+    if (target.type === "zone") { setSelected(null); setNpcFocus(null); goToZone(target.map_id); return; }
     setShownPlace(target);
     setSelected(null);
     setNpcFocus(null);

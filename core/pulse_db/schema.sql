@@ -175,7 +175,8 @@ CREATE TABLE title (
   name_key TEXT NOT NULL,
   description TEXT,
   race TEXT,                     -- «pc_light», «pc_dark» or both, comma-separated (title_race 0 / 1 / 2)
-  stats TEXT                     -- JSON {bonus: ["maxHp 20", …], priority, type, location: the client's string key}
+  stats TEXT,                    -- JSON {bonus: ["maxHp 20", …], priority, type, location: the client's string key}
+  icon TEXT                      -- a picture of data/icons: the card item that gives the title, the generic title card else
 );
 CREATE INDEX title_name_key ON title (name_key);
 
@@ -191,6 +192,13 @@ CREATE TABLE skill (
 );
 CREATE INDEX skill_internal ON skill (internal_name COLLATE NOCASE);
 CREATE INDEX skill_name_key ON skill (name_key);
+-- the skill's own text of aidb.ru («Описание»), with its damage: min = max for one number; NULL: the page names none
+CREATE TABLE skill_damage (
+  skill_id INTEGER PRIMARY KEY,  -- skill.id (aidb's id is the client's)
+  text TEXT NOT NULL,
+  dmg_min INTEGER,
+  dmg_max INTEGER
+);
 
 -- an item that teaches a skill (skill_to_learn); its name, level, grade and picture are the item's row
 CREATE TABLE skill_book (

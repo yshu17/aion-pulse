@@ -366,6 +366,7 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
 .maps-btn i { position: absolute; inset: 0 auto 0 0; background: var(--accent-subtle); border-right: 2px solid var(--accent); transition: width var(--t) var(--ease-out); }
 .maps-btn span { position: relative; font-variant-numeric: tabular-nums; }
 .maps-btn.warn { color: var(--danger); border-color: var(--danger); }
+.maps-btn.offer { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 @media (prefers-reduced-motion: reduce) { .maps-btn i { transition: none; } }
 
 /* the update button and its card (UpdateButton.tsx) */
@@ -404,3 +405,5 @@ mark { background: rgba(255, 140, 26, .25); color: inherit; border-radius: 3px; 
   background: var(--accent-subtle); color: #ffae65; font-size: 9px; font-weight: 700; line-height: 1.1; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; cursor: help; }
 .tab-sub + .beta { margin-left: 6px; }
 .tab-menu-name { display: inline-flex; align-items: center; }
+.top .btn.back { margin-right: 6px; flex: none; }
+.top .btn.back:disabled { opacity: .35; cursor: default; }

@@ -57,12 +57,19 @@ export function useItems(): { ready: boolean; problem: string } {
 }
 
 // items at the top, the skills' and pets' pictures in skills/ and pets/ (tools/sync_catalog_icons.py)
-const icons = import.meta.glob(["../../../data/icons/*.png", "../../../data/icons/skills/*.png", "../../../data/icons/pets/*.png"], { query: "?url", import: "default", eager: false });
+// the addresses of all of them are one small module (./iconMap), asked for once: a request per picture made every list flicker
+let iconMap: Record<string, string> | null = null;
+let iconsLoading: Promise<Record<string, string>> | null = null;
+const loadIcons = () => (iconsLoading ??= import("./iconMap").then((m) => (iconMap = m.ICONS)));
 
 /** URL of a picture (data/icons/<icon>.png, «skills/…» and «pets/…» too), or null when there is none. */
 export async function iconUrl(icon: string): Promise<string | null> {
-  const load = icons[`../../../data/icons/${icon}.png`];
-  return load ? ((await load()) as string) : null;
+  return (await loadIcons())[`../../../data/icons/${icon}.png`] ?? null;
+}
+
+/** The same at once, when the addresses are already here: undefined while they are still coming. */
+export function iconUrlNow(icon: string): string | null | undefined {
+  return iconMap ? iconMap[`../../../data/icons/${icon}.png`] ?? null : undefined;
 }
 
 // ---- demo chat: lines in the Chat.log format, made from real item ids -------------------------------------------

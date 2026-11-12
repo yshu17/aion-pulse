@@ -1,20 +1,16 @@
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { FeedMode } from "./chatRows";
 import { Feed } from "./Feed";
-import { IconBug, IconCheck, IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
+import { IconBug, IconCheck, IconLeft, IconOverlay, IconPlay, IconReset, IconSettings, IconStop } from "./icons";
 import { reportText } from "./bugReport";
 import { copyText } from "./map/GatherPanel";
 import { closeCardWindow, openCardWindow } from "./cardLink";
 import { ItemCard, OpenCard, OpenItem } from "./ItemCard";
 import { platform } from "./platform";
 import { ItemsPanel } from "./ItemsPanel";
-import { MapTab } from "./map/MapTab";
-import { BestiaryTab } from "./bestiary/BestiaryTab";
-import { DbTab } from "./db/DbTab";
-import { GearTab } from "./gear/GearTab";
-import { ChatPlace, MapTarget, OpenMap, OpenPlace } from "./map/placeLink";
+import { CardRef, ChatPlace, MapTarget, OpenMap, OpenPlace, OpenRef } from "./map/placeLink";
 import { AnimatePresence } from "motion/react";
 import { Glide, Pop } from "./fx";
 import { SettingsPanel } from "./SettingsPanel";
@@ -26,7 +22,9 @@ import { Toasts } from "./Toasts";
 import { TopTabs } from "./TopTabs";
 import { UpdateButton } from "./UpdateButton";
 import { MapsButton } from "./MapsButton";
+import { DbPackButton } from "./DbPackButton";
 import { Credit } from "./Credit";
+import { back, visit } from "../core/nav";
 import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
 import { useItems } from "./data";
@@ -34,9 +32,15 @@ import { useWatch } from "./useWatch";
 
 const MODES: [string, string][] = [["or", "Слово или предмет"], ["words", "Только слова"], ["items", "Только предметы"], ["and", "Слово и предмет"]];
 
+// the big screens come with their first opening: the chat, shown at the start, does not wait for the map's and the database's code
+const MapTab = lazy(() => import("./map/MapTab").then((m) => ({ default: m.MapTab })));
+const BestiaryTab = lazy(() => import("./bestiary/BestiaryTab").then((m) => ({ default: m.BestiaryTab })));
+const DbTab = lazy(() => import("./db/DbTab").then((m) => ({ default: m.DbTab })));
+const GearTab = lazy(() => import("./gear/GearTab").then((m) => ({ default: m.GearTab })));
+
 /** One tab's place: all the opened tabs lie one on another, only the chosen one is seen (a hidden one keeps its size and scroll). */
 function Pane({ on, children }: { on: boolean; children: ReactNode }) {
-  return <div className={`pane${on ? " on" : ""}`} aria-hidden={!on}>{children}</div>;
+  return <div className={`pane${on ? " on" : ""}`} aria-hidden={!on}><Suspense fallback={<main className="soon"><p>Открываю…</p></main>}>{children}</Suspense></div>;
 }
 
 export default function App() {
@@ -119,15 +123,41 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
     return () => { off.then((unlisten) => unlisten()); };
   }, [boot.platform]);
   const [tab, setTab] = useState("Чат");
+  // the way back: every move to another screen adds the one left to the trail; «Назад» returns to it (its place is kept: tabs stay alive)
+  const [trail, setTrail] = useState<string[]>([]);
+  const tabNow = useRef(tab);
+  tabNow.current = tab;
+  const go = useCallback((id: string) => {
+    const from = tabNow.current;
+    if (id === from) return;
+    tabNow.current = id; // a link may move twice in one go (a tab, then its section)
+    setTrail((t) => visit(t, from, id));
+    setTab(id);
+  }, []);
+  const trailRef = useRef(trail);
+  trailRef.current = trail;
+  const goBack = useCallback(() => {
+    const [to, rest] = back(trailRef.current);
+    if (to === null) return;
+    trailRef.current = rest;
+    tabNow.current = to;
+    setTrail(rest);
+    setTab(to);
+  }, []);
+  useEffect(() => { // Alt+← and the mouse's «back» button
+    const key = (e: KeyboardEvent) => { if (e.altKey && e.key === "ArrowLeft" && trailRef.current.length) { e.preventDefault(); goBack(); } };
+    const mouse = (e: MouseEvent) => { if (e.button === 3 && trailRef.current.length) { e.preventDefault(); goBack(); } };
+    window.addEventListener("keydown", key);
+    window.addEventListener("mouseup", mouse);
+    return () => { window.removeEventListener("keydown", key); window.removeEventListener("mouseup", mouse); };
+  }, [goBack]);
   // A tab that has been opened stays alive under the others (hidden, same size): its chosen NPC, search, zone, scroll and
   // fields are what the user left when coming back. A tab not opened yet is not drawn at all.
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(["Чат"]));
   useEffect(() => { setSeen((old) => (old.has(tab) ? old : new Set(old).add(tab))); }, [tab]);
   const alive = (name: string) => tab === name || seen.has(name);
-  // the «База данных» sections share one screen: it stays alive like a tab, on the section last opened
-  const lastDb = useRef("db:Предметы");
-  if (tab.startsWith("db:")) lastDb.current = tab;
-  const dbSeen = [...seen].some((name) => name.startsWith("db:"));
+  // every section of «База данных» is a screen of its own and stays alive like a tab: its filters, chosen row and scroll are kept
+  const dbSections = [...seen].filter((name) => name.startsWith("db:"));
   const [feedMode, setFeedMode] = useState<FeedMode>("all");
   const [settings, setSettings] = useState(false);
   const [card, setCard] = useState<OpenCard | null>(null); // the item card opened from the chat
@@ -136,9 +166,19 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
   const [mapTarget, setMapTarget] = useState<(MapTarget & { n: number }) | null>(null);
   const openMap = useCallback((target: MapTarget) => {
     setMapTarget((old) => ({ ...target, n: (old?.n ?? 0) + 1 }));
-    setTab("Карта");
-  }, []);
+    go("Карта");
+  }, [go]);
   const openPlace = useCallback((place: ChatPlace) => openMap({ type: "place", ...place }), [openMap]);
+  // a name in a card of «База данных» opens where it lives: an NPC in «NPC», a zone on the map, an item, a quest or a title in its section
+  const [npcTarget, setNpcTarget] = useState<{ id: string; name: string; n: number } | null>(null);
+  const [dbTarget, setDbTarget] = useState<(CardRef & { n: number; section: string }) | null>(null);
+  const openRef = useCallback((ref: CardRef) => {
+    if (ref.kind === "zone") { openMap({ type: "zone", map_id: ref.id }); return; }
+    if (ref.kind === "npc") { setNpcTarget((old) => ({ id: ref.id, name: ref.name, n: (old?.n ?? 0) + 1 })); go("NPC"); return; }
+    const section = `db:${{ item: "Предметы", quest: "Задания", title: "Титулы" }[ref.kind]}`;
+    setDbTarget((old) => ({ ...ref, n: (old?.n ?? 0) + 1, section }));
+    go(section);
+  }, [openMap, go]);
   const closeCard = useCallback(() => setCard(null), []);
   // the program: the card is a window of its own (it may stand outside this one); the plain browser: inside the page
   const openCard = useCallback((open: OpenCard) => { if (platform) openCardWindow(open.id); else setCard(open); }, []);
@@ -163,8 +203,11 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
     <div className="window">
       <header className="top">
         <span className="brand">Pulse<i>+</i></span>
-        <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); setTab(id); }} />
+        <button type="button" className="btn icon-only back" disabled={!trail.length} aria-label="Назад"
+          title={trail.length ? `Назад: ${tabLabel(trail[trail.length - 1])} (Alt+←)` : "Назад: некуда"} onClick={goBack}><IconLeft /></button>
+        <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); go(id); }} />
         <span className="spacer" />
+        <DbPackButton />
         <MapsButton />
         <UpdateButton />
         <button className="btn" disabled={!boot.platform}
@@ -259,18 +302,20 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
       {alive("NPC") && (
         <Pane on={tab === "NPC"}>
           <OpenMap.Provider value={openMap}>
-            <BestiaryTab />
+            <BestiaryTab target={npcTarget} />
           </OpenMap.Provider>
         </Pane>
       )}
       {alive("Расписание") && <Pane on={tab === "Расписание"}><ScheduleTab schedule={schedule} /></Pane>}
-      {(tab.startsWith("db:") || dbSeen) && (
-        <Pane on={tab.startsWith("db:")}>
+      {dbSections.map((section) => (
+        <Pane key={section} on={tab === section}>
           <OpenMap.Provider value={openMap}>
-            <DbTab tab={tab.startsWith("db:") ? tab : lastDb.current} onSection={setTab} />
+            <OpenRef.Provider value={openRef}>
+              <DbTab tab={section} onSection={go} target={dbTarget?.section === section ? dbTarget : null} />
+            </OpenRef.Provider>
           </OpenMap.Provider>
         </Pane>
-      )}
+      ))}
       {alive("calc:Экипировка") && <Pane on={tab === "calc:Экипировка"}><GearTab /></Pane>}
       {!LIVE_TABS.includes(tab) && !tab.startsWith("db:") && tab !== "calc:Экипировка" && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
       </div>

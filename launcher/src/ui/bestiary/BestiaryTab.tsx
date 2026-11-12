@@ -19,6 +19,7 @@ import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import { PickMenu } from "./PickMenu";
+import { RewardIcon } from "../RewardIcon";
 import "./bestiary.css";
 
 const PAGE = 150; // rows per search; «Показать ещё» adds the next ones
@@ -41,13 +42,16 @@ function Pic({ path, game, className }: { path: string | null | undefined; game?
   return url ? <img className={className} src={url} alt="" draggable={false} decoding="async" loading="lazy" /> : <span className={`${className} blank`} aria-hidden="true" />;
 }
 
-export function BestiaryTab() {
+/** An NPC another tab asks to show (a name in a quest's card): searched by its name and picked by its id. */
+export interface NpcTarget { id: string; name: string; n: number }
+
+export function BestiaryTab({ target = null }: { target?: NpcTarget | null }) {
   const [client, setClient] = useState<BestiaryClient | null | undefined>(undefined); // undefined: still opening
   useEffect(() => { openBestiary().then(setClient); }, []);
-  return <Bestiary client={client} />;
+  return <Bestiary client={client} target={target} />;
 }
 
-function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
+function Bestiary({ client, target }: { client: BestiaryClient | null | undefined; target: NpcTarget | null }) {
   const [query, setQuery] = useState("");
   const [rank, setRank] = useState("");
   const [level, setLevel] = useState(LEVELS[0]);
@@ -61,6 +65,12 @@ function Bestiary({ client }: { client: BestiaryClient | null | undefined }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
   const asked = useRef(0); // the newest search: an older answer arriving late is dropped
+  useEffect(() => { // asked from another tab: the filters go, the name is searched, the NPC is picked
+    if (!target) return;
+    setRank(""); setLevel(LEVELS[0]); setFaction(""); setGroup(""); setRole("");
+    setQuery(target.name);
+    setSelected(target.id);
+  }, [target?.n]); // eslint-disable-line react-hooks/exhaustive-deps
   const options = useMemo(() => ({ text: query, rank, race: faction, category: group, role, order, limit: PAGE, ...levelRange(level) }), [query, rank, faction, group, role, order, level]);
   useEffect(() => {
     if (!client) return;
@@ -246,7 +256,7 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
         <m.div className="bst-stats" {...reveal(2)}>
           {key.map(([name, value]) => (
             <div key={name} className={`bst-stat ${STAT_TONE[name] ?? ""}`}>
-              <span>{name}</span>
+              <span className="bst-stat-name">{name === "Опыт" && <RewardIcon kind="exp" />}{name}</span>
               <b>{/^[\d\s]+$/.test(value) ? <CountUp value={Number(value.replace(/\s/g, ""))} format={(n) => statText(String(n))} /> : value}</b>
             </div>
           ))}

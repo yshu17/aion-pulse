@@ -20,9 +20,11 @@ export interface PickMenuProps {
   /** The list opens under the button's right edge instead of the left one. */
   right?: boolean;
   label: string;
+  /** A class for an option's text by its value (a grade's colour). */
+  tone?(value: string): string;
 }
 
-export function PickMenu({ id, text, icon, lit, options, value, onPick, right, label }: PickMenuProps) {
+export function PickMenu({ id, text, icon, lit, options, value, onPick, right, label, tone }: PickMenuProps) {
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const root = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export function PickMenu({ id, text, icon, lit, options, value, onPick, right, l
           {options.map(([name, v], i) => (
             <li key={v} id={`${list}-${i}`} role="option" aria-selected={v === value} className={`${v === value ? "on" : ""}${i === cursor ? " cur" : ""}`}
               onPointerEnter={() => setCursor(i)} onClick={() => choose(v)}>
-              <span>{name}</span>{v === value && <IconCheck />}
+              <span className={tone?.(v) || undefined}>{name}</span>{v === value && <IconCheck />}
             </li>
           ))}
         </ul>

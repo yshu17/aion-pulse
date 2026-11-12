@@ -14,6 +14,9 @@ Get-CimInstance Win32_Process -Filter "Name='Pulse+Local.exe'" | Where-Object { 
 # the one game database first (data/pulse.db, docs/ADR-002-pulse-db.md): every tab reads it, the build packs it
 & python (Join-Path $root "tools\build_pulse_db.py")
 if ($LASTEXITCODE -ne 0) { throw "build_pulse_db failed: $LASTEXITCODE" }
+# the record of this database as a pack (data\db_pack.json, also in the program): it is compared with the newest pack on the release
+& python (Join-Path $root "tools\pack_pulse_db.py")
+if ($LASTEXITCODE -ne 0) { throw "pack_pulse_db failed: $LASTEXITCODE" }
 
 Push-Location $launcher
 try {

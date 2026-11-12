@@ -125,3 +125,6 @@ html.card-mode, html.card-mode body, html.card-mode #root { background: transpar
   transition: text-decoration-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
 .seg-item.card-link:hover { text-decoration-color: currentColor; background: rgba(255, 255, 255, .06); }
 .seg-item.card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.item-card .ic-add { margin-left: 5px; font-style: normal; font-weight: 700; color: #6fd26a; }
+.item-card .ic-stone-extra { margin: 4px 0; } .item-card .ic-stone-extra-title { margin: 6px 0 2px; color: #6fd26a; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.item-card .ic-stone-extra .ic-grid dt, .item-card .ic-stone-extra .ic-grid dd { color: #6fd26a; }

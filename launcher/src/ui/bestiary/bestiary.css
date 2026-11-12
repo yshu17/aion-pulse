@@ -202,3 +202,4 @@
 .bst-go:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
 .bst-go:active:not(:disabled) { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { .bst-tile, .bst-good, .bst-place, .bst-go { transition: none; } .bst-tile:hover, .bst-good:hover { transform: none; } }
+.bst-stat-name { display: inline-flex; align-items: center; gap: 5px; }

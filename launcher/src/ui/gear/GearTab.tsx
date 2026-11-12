@@ -7,17 +7,22 @@ import classStats from "../../../../data/gear/eu20/class_stats.json";
 import passiveTable from "../../../../data/gear/eu20/passive_skills.json";
 import activeTable from "../../../../data/gear/eu20/active_skills.json";
 import scrollTable from "../../../../data/gear/eu20/scrolls.json";
-import { addSet, emptyBuild, KEY, MAX_SETS, readBuild, removeSet, withSet, writeBuild, type SavedBuild, type SavedSlot } from "../../core/gear/build";
-import { buffAt, calcStats, canEnchant, display, passiveSkills, scrollAt, titleLines, type ActiveSkill, type BaseRow, type Equipped, type GearItem, type GearSet,
+import { addSet, emptyBuild, KEY, MAX_SETS, readBuild, removeSet, withSet, writeBuild, type SavedBuild, type SavedSlot, stoneCap, swapWeapons } from "../../core/gear/build";
+import { buffAt, calcStats, canEnchant, display, enchantBonus, passiveSkills, scrollAt, titleLines, type ActiveSkill, type BaseRow, type Equipped, type GearItem, type GearSet,
   type ScrollData, type Skill, type SlotKey, type StatMap, type Stone } from "../../core/gear/engine";
 import { CLASSES, PANEL, SLOT_NAME, groupName, statName } from "../../core/gear/labels";
 import { gearChoices, gearGroups, gearItem, gearSets, gearStones, gearTitles } from "../../core/db/gear";
 import { RARITY } from "../../core/bestiary/card";
 import type { All } from "../../core/db/npcPoints";
 import { PickMenu } from "../bestiary/PickMenu";
-import { CardBody, useSpec } from "../ItemCard";
+import { CardBody, useSpec, hasStoneBlock, StoneUi } from "../ItemCard";
 import { Icon } from "../Icon";
-import { IconClose, IconReset, IconSearch } from "../icons";
+import { IconClose, IconReset, IconSearch, IconSwap } from "../icons";
+import { m } from "motion/react";
+import { EASE } from "../fx";
+import { enchantAdds, stoneAdds, stoneSum } from "../../core/gear/stones";
+import type { Block } from "../../core/items/card";
+import { StonePicker } from "./StonePicker";
 import { pulseDb } from "../db/pulseDb";
 import "../bestiary/bestiary.css";
 import "./gear.css";
@@ -111,6 +116,11 @@ export function GearTab() {
     setSelected(slot);
     setPicking(null);
   };
+  const swapHands = () => {
+    const next = swapWeapons(active.slots, items);
+    if (next) change((s) => ({ ...s, slots: next }));
+  };
+  const canSwap = !!swapWeapons(active.slots, items);
   const takeOff = (slot: SlotKey) => change((s) => { const slots = { ...s.slots }; delete slots[slot]; return { ...s, slots }; });
   const setSlot = (slot: SlotKey, fn: (x: SavedSlot) => SavedSlot) => change((s) => ({ ...s, slots: { ...s.slots, [slot]: fn(s.slots[slot]!) } }));
   const enchantAll = (level: number) => change((s) => ({ ...s, slots: Object.fromEntries(Object.entries(s.slots).map(([k, v]) => {
@@ -146,7 +156,8 @@ export function GearTab() {
       </div>
 
       <div className="gear-body">
-        <Doll slots={active.slots} items={items} selected={selected} onSlot={(slot, filled) => (filled ? setSelected(slot) : setPicking(slot))} />
+        <Doll slots={active.slots} items={items} selected={selected} onSlot={(slot, filled) => (filled ? setSelected(slot) : setPicking(slot))}
+          canSwap={canSwap} onSwap={() => { swapHands(); setSelected((s) => (s === "main" ? "sub" : s === "sub" ? "main" : s)); }} />
 
         <section className="gear-item" aria-label="Предмет">
           {all === null && <div className="bst-empty">База игры не найдена: нет файла data/pulse.db.</div>}
@@ -238,11 +249,20 @@ function SlotPanel({ slot, item, saved, stones, onEnchant, onStone, onReplace, o
   onReplace(): void; onTakeOff(): void;
 }) {
   const answer = useSpec(String(item.id));
-  const fits = stones.filter((s) => s.level <= Math.max(item.level, 10));
+  // the card says how high a stone the item takes («70-го уровня и ниже»); without that line, ten levels above the item
+  const cap = stoneCap(answer?.spec?.blocks as { kind?: string; text?: string }[] | undefined) ?? Math.min(item.level + 10, 70);
+  const fits = stones.filter((s) => s.level <= cap);
   const slots = item.stones ?? 0;
   const optional = item.stonesBonus ?? 0;
+  // the stones are drawn in the card, in place of its empty squares; a card without them gets the picker above it
+  const inCard = hasStoneBlock(answer?.spec?.blocks as Block[] | undefined);
+  const stoneById = new Map(fits.map((x) => [x.id, x]));
+  const chosen = Array.from({ length: slots }, (_, i) => saved.stones[i] ?? null);
+  const picker = <StonePicker slots={slots} optional={optional} chosen={chosen} fits={fits} onStone={onStone} />;
+  const adds = [...enchantAdds(canEnchant(item) && saved.enchant > 0 ? enchantBonus(item.grp, saved.enchant) : {}),
+    ...stoneAdds(stoneSum(chosen.map((id) => (id === null ? null : stoneById.get(id) ?? null))))];
   return (
-    <div className="gear-slotpanel">
+    <m.div className="gear-slotpanel" key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: EASE }}>
       <div className="gear-slotpanel-head">
         <span className="dbt-made-title">{SLOT_NAME[slot]} · {groupName(item.grp)}</span>
         <span className="spacer" />
@@ -259,20 +279,14 @@ function SlotPanel({ slot, item, saved, stones, onEnchant, onStone, onReplace, o
             <b>+{saved.enchant}</b>
           </> : <em>{item.enchant && !canEnchant(item) ? "украшения, крылья и головные уборы не точатся" : "не точится"}</em>}
         </div>
-        <div className="gear-stones">
-          <span>Магические камни {slots ? `(${slots - optional}${optional ? ` + ${optional} доп.` : ""})` : ""}</span>
-          {slots === 0 && <em>{item.stones === null ? "слоты для камней не известны" : "нет слотов"}</em>}
-          {Array.from({ length: slots }, (_, i) => (
-            <select key={i} className={`field gear-stone${i >= slots - optional ? " optional" : ""}`} value={saved.stones[i] ?? ""}
-              aria-label={`Камень ${i + 1}`} onChange={(e) => onStone(i, e.target.value ? Number(e.target.value) : null)}>
-              <option value="">{i >= slots - optional ? "— доп. слот —" : "— пусто —"}</option>
-              {fits.map((s) => <option key={s.id} value={s.id}>{statName(s.stat)} +{s.value} (ур. {s.level})</option>)}
-            </select>
-          ))}
-        </div>
+        {slots === 0 && <div className="gear-stones"><div className="gear-stones-head"><span>Магические камни</span></div>
+          <em className="gear-stones-none">{item.stones === null ? "слоты для камней не известны" : "нет слотов"}</em></div>}
+        {slots > 0 && answer && !inCard && picker}
       </div>
-      <CardBody id={String(item.id)} answer={answer} className="in-db" fallback={{ name: item.name, icon: item.icon, grade: item.grade, level: item.level, kind: groupName(item.grp) }} />
-    </div>
+      <StoneUi.Provider value={{ ui: slots > 0 && inCard ? picker : null, adds }}>
+        <CardBody id={String(item.id)} answer={answer} className="in-db" fallback={{ name: item.name, icon: item.icon, grade: item.grade, level: item.level, kind: groupName(item.grp) }} />
+      </StoneUi.Provider>
+    </m.div>
   );
 }
 
@@ -365,25 +379,30 @@ function Picker({ all, slot, cls, level, onPick, onClose }: { all: All; slot: Sl
 }
 
 /** The doll as the game's character window has it: the weapons and the wings on top, six slots down each side. */
-const DOLL_LAYOUT: { slot: SlotKey; area: string; hint: string }[] = [
+const DOLL_LAYOUT: { slot: SlotKey; area: string; hint: string }[] = [ // row by row: Tab goes the way the eye does
   { slot: "main", area: "main", hint: "icon_item_sword_c01" }, { slot: "wing", area: "wing", hint: "icon_item_wing01" },
   { slot: "sub", area: "sub", hint: "icon_item_shield_c01" },
-  { slot: "head", area: "l1", hint: "icon_item_pl_head_c01a" }, { slot: "earring1", area: "l2", hint: "icon_item_earring_c01" },
-  { slot: "torso", area: "l3", hint: "icon_item_pl_torso_c01" }, { slot: "pants", area: "l4", hint: "icon_item_pl_pants_c01" },
-  { slot: "ring1", area: "l5", hint: "icon_item_ring_c01" }, { slot: "shoes", area: "l6", hint: "icon_item_pl_shoes_c01" },
-  { slot: "shoulder", area: "r1", hint: "icon_item_pl_shoulder_c01" }, { slot: "earring2", area: "r2", hint: "icon_item_earring_c01" },
-  { slot: "necklace", area: "r3", hint: "icon_item_necklace_c01" }, { slot: "glove", area: "r4", hint: "icon_item_pl_glove_c01" },
-  { slot: "ring2", area: "r5", hint: "icon_item_ring_c01" }, { slot: "belt", area: "r6", hint: "icon_item_belt_c01" },
+  { slot: "head", area: "l1", hint: "icon_item_pl_head_c01a" }, { slot: "necklace", area: "r1", hint: "icon_item_necklace_c01" },
+  { slot: "earring1", area: "l2", hint: "icon_item_earring_c01" }, { slot: "earring2", area: "r2", hint: "icon_item_earring_c01" },
+  { slot: "torso", area: "l3", hint: "icon_item_pl_torso_c01" }, { slot: "shoulder", area: "r3", hint: "icon_item_pl_shoulder_c01" },
+  { slot: "pants", area: "l4", hint: "icon_item_pl_pants_c01" }, { slot: "glove", area: "r4", hint: "icon_item_pl_glove_c01" },
+  { slot: "ring1", area: "l5", hint: "icon_item_ring_c01" }, { slot: "ring2", area: "r5", hint: "icon_item_ring_c01" },
+  { slot: "shoes", area: "l6", hint: "icon_item_pl_shoes_c01" }, { slot: "belt", area: "r6", hint: "icon_item_belt_c01" },
 ];
 
-function Doll({ slots, items, selected, onSlot }: {
+function Doll({ slots, items, selected, onSlot, canSwap, onSwap }: {
   slots: SavedBuild["sets"][number]["slots"]; items: Map<number, GearItem>; selected: SlotKey | null; onSlot(slot: SlotKey, filled: boolean): void;
+  canSwap: boolean; onSwap(): void;
 }) {
   const chosen = selected ? slots[selected] : undefined;
   const chosenItem = chosen ? items.get(chosen.id) : undefined;
   return (
     <section className="gear-doll" aria-label="Экипировка">
       <div className="gear-doll-grid">
+        <button type="button" className="gear-swap" style={{ gridArea: "swap" }} disabled={!canSwap} onClick={onSwap} aria-label="Поменять оружие местами"
+          title={canSwap ? "Поменять оружие в руках местами" : "Оружие не поменять: нужны два оружия для одной руки или одно, подходящее для обеих"}>
+          <IconSwap />
+        </button>
         {DOLL_LAYOUT.map(({ slot, area, hint }) => {
           const s = slots[slot];
           const item = s ? items.get(s.id) : undefined;

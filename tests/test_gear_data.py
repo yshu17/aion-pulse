@@ -30,3 +30,6 @@ def test_an_item_row_keeps_its_own_numbers_its_bonus_lines_and_who_wears_it():
     assert json.loads(row[10]) == [["maxhp", 347, False], ["attackdelay", 19, True]]
     assert row[11:] == (5, 0, 1)
     assert item_row(1, "Костюм", None, {"armor_type": "clothes", "equipment_slots": "torso"}, None) is None
+    wing = item_row(2, "Крылья", None, {"armor_type": "clothes", "equipment_slots": "wing", "quality": "epic", "level": "55", "bonus_attr1": "maxfp 80"}, None)
+    assert wing is not None and wing[5] == "wing" and wing[6] == "wing"  # the wings are «clothes» in the client, with stats
+    assert item_row(3, "Тестовый эпический меч 55-го уровня ([%username])", None, {"weapon_type": "1h_sword", "equipment_slots": "main_or_sub"}, None) is None

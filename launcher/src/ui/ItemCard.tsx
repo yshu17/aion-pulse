@@ -3,9 +3,10 @@
 // In the program it is a window of its own (CardWindow.tsx), so it may stand outside the program's window; the plain
 // browser (the dev page) shows it inside the page (ItemCard below).
 import { m } from "motion/react";
-import { createContext, Fragment, Ref, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createContext, Fragment, ReactNode, Ref, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Block, cardGrade, headBlocks, statValue } from "../core/items/card";
+import { placeBonus, type BonusAdd, type BonusPlace } from "../core/gear/stones";
 import { catalogById } from "./data";
 import { FADE, SPRING } from "./fx";
 import { Icon } from "./Icon";
@@ -21,6 +22,17 @@ export const useOpenItem = () => useContext(OpenItem);
 
 /** The marks of a comparison (core/items/compare.ts): a stat's value is drawn better («up») or worse («dn»). */
 export const StatMarks = createContext<Record<string, "up" | "dn">>({});
+
+/**
+ * What the calculator adds to an item's card: `ui` (when there is one) takes the place of the card's empty manastone squares,
+ * `adds` are the numbers the chosen stones and the enchant give; each is drawn as «(+N)» beside the number it adds to, or as an extra row.
+ */
+export interface StoneCard { ui: ReactNode | null; adds: BonusAdd[] }
+export const StoneUi = createContext<StoneCard | null>(null);
+const NoPlace: BonusPlace = { deltas: new Map(), extra: [], after: -1 };
+const Placed = createContext<BonusPlace>(NoPlace);
+/** Whether a description has the squares of manastones (a card without them cannot show the stones' picker). */
+export const hasStoneBlock = (blocks: Block[] | undefined): boolean => !!blocks?.some((b) => b.kind === "stones");
 
 /** The rank line of a card made from the item's own row (its grade). */
 const RANK: Record<string, string> = { junk: "Простой", common: "Обычный", rare: "Редкий", legend: "Легендарный", unique: "Уникальный",
@@ -66,8 +78,13 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
   useEffect(() => setCopied(false), [id]);
   const database = spec?.layout === "database";
   const empire = spec?.layout === "empire";
-  const [head, rest] = headBlocks((spec?.blocks as Block[] | undefined) ?? []);
+  const allBlocks = (spec?.blocks as Block[] | undefined) ?? [];
+  const [head, rest] = headBlocks(allBlocks);
+  const stoneCard = useContext(StoneUi);
+  const adds = stoneCard?.adds;
+  const place = useMemo(() => (adds ? placeBonus(allBlocks, adds) : NoPlace), [allBlocks, adds]);
   return (
+    <Placed.Provider value={place}>
     <m.div ref={cardRef} className={`item-card ${className}${database ? " database" : ""}${empire ? " empire" : ""}`} role={onClose ? "dialog" : "region"} aria-label={name} style={style}
       initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97, transition: FADE }}
       transition={{ ...SPRING, opacity: FADE }}>
@@ -122,7 +139,7 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
         <div className="ic-top">
           {item?.icon && <Icon name={item.icon} size={40} />}
           <div className="ic-head">
-            {head.map((block, i) => <SpecBlock key={i} block={block} />)}
+            {head.map((block, i) => <Fragment key={i}><SpecBlock block={block} index={i} />{place.after === i && <StoneExtra place={place} />}</Fragment>)}
             {!answer && <div className="ic-text muted">Загружаю описание…</div>}
             {answer && !spec && fallback && !answer.error && <dl className="ic-pairs">
               <dt>Ранг</dt><dd>[{RANK[fallback.grade] ?? "Обычный"}]</dd>
@@ -132,9 +149,28 @@ export function CardBody({ id, answer, onClose, onDrag, cardRef, style, classNam
             {answer && !spec && (!fallback || answer.error) && <div className="ic-text muted">{answer.error ? "Описание не загрузилось, открой карточку ещё раз." : "У этого предмета нет описания."}</div>}
           </div>
         </div>
-        {rest.map((block, i) => <SpecBlock key={i} block={block} />)}
+        {rest.map((block, i) => <Fragment key={i}><SpecBlock block={block} index={head.length + i} />{place.after === head.length + i && <StoneExtra place={place} />}</Fragment>)}
       </>}
     </m.div>
+    </Placed.Provider>
+  );
+}
+
+/** The stats the card has no row for, from the chosen stones: a small block of their own, in green. */
+function StoneExtra({ place }: { place: BonusPlace }) {
+  if (!place.extra.length) return null;
+  const groups = (["enchant", "stone"] as const).map((group) => [group, place.extra.filter((e) => e.group === group)] as const).filter(([, rows]) => rows.length);
+  return (
+    <>
+      {groups.map(([group, rows]) => (
+        <m.div key={group} className="ic-stone-extra" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={FADE}>
+          <div className="ic-stone-extra-title">{group === "stone" ? "От камней" : "От заточки"}</div>
+          <dl className="ic-grid">
+            {rows.map(({ label, value }) => <Fragment key={label}><dt>{label}</dt><dd>+{value}</dd></Fragment>)}
+          </dl>
+        </m.div>
+      ))}
+    </>
   );
 }
 
@@ -177,8 +213,12 @@ export function ItemCard({ card, onClose }: { card: OpenCard; onClose(): void })
 }
 
 /** One block of a description, drawn as watcher/tooltip.py does. */
-function SpecBlock({ block }: { block: Block }) {
+function SpecBlock({ block, index }: { block: Block; index: number }) {
   const marks = useContext(StatMarks);
+  const place = useContext(Placed);
+  const stoneUi = useContext(StoneUi);
+  const add = (row: number) => { const n = place.deltas.get(`${index}:${row}`); return n ? <m.i key={n} className="ic-add" initial={{ scale: 1.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+    transition={{ type: "spring", stiffness: 600, damping: 20 }}>(+{n})</m.i> : null; };
   const mark = (label: string) => (marks[label] ? `mark-${marks[label]}` : undefined);
   switch (block.kind) {
     case "hr":
@@ -196,12 +236,13 @@ function SpecBlock({ block }: { block: Block }) {
     case "grid":
       return (
         <dl className={`ic-grid${block.dim ? " dim" : ""}`}>
-          {(block.pairs as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd className={mark(label)}>{statValue(label, value)}</dd></Fragment>)}
+          {(block.pairs as [string, string][]).map(([label, value], i) => <Fragment key={i}><dt>{label}</dt><dd className={mark(label)}>{statValue(label, value)}{add(i)}</dd></Fragment>)}
         </dl>
       );
     case "text":
       return <p className={`ic-text ${block.style ?? "normal"}`}>{block.text}</p>;
     case "stones": {
+      if (stoneUi?.ui) return <>{stoneUi.ui}</>;
       const bonus = block.bonus ?? 0;
       return (
         <div className="ic-stones" aria-label={`Гнёзд для камней: ${block.count}`}>

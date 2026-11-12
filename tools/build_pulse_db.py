@@ -36,6 +36,7 @@ def main(argv: list[str] | None = None) -> int:
                       client_catalog=ROOT / "client_extract" / "fresh_catalog" / "catalog.sqlite", icons=data / "icons",
                       quest_dir=ROOT / "client_extract" / "raw" / "Data" / "quest",
                       aidb_pages=ROOT / "downloads" / "aidb_quests" / "pages",
+                      aidb_skills=ROOT / "downloads" / "aidb_skills" / "pages",
                       client_raw=ROOT / "client_extract" / "fresh_catalog" / "raw")
     report = build(sources, args.out)
     print(f"{args.out}: {report['npcs']} NPCs ({report['listed']} in the bestiary), {report['aliases']} map markers linked, "

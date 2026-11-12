@@ -22,6 +22,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tools"))
+from crop_icons import crop_padded  # noqa: E402 - the 64×64 textures hold a 40×40 picture
 
 FRESH = ROOT / "client_extract" / "fresh_catalog"
 ICONS = ROOT / "data" / "icons"
@@ -74,6 +76,7 @@ def main() -> int:
                     diffs.append(d)
             continue
         shutil.copyfile(src, ICONS / name)
+        crop_padded(ICONS / name)
         report["copied"]["items"].append([name, sha(src)])
     if diffs:
         report["kept_art_difference"] = {"sample": len(diffs), "mean": round(sum(diffs) / len(diffs), 1), "max": max(diffs),
@@ -87,11 +90,13 @@ def main() -> int:
         src = FRESH / "icons" / "skills" / name
         if src.is_file():
             shutil.copyfile(src, ICONS / "skills" / name.lower())
+            crop_padded(ICONS / "skills" / name.lower())
             report["copied"]["skills"].append([name.lower(), sha(src)])
 
     (ICONS / "pets").mkdir(exist_ok=True)
     for src in sorted((FRESH / "icons" / "pets").glob("*.png")):
         shutil.copyfile(src, ICONS / "pets" / src.name.lower())
+        crop_padded(ICONS / "pets" / src.name.lower())
         report["copied"]["pets"].append([src.name.lower(), sha(src)])
 
     manifest = json.loads((FRESH / "manifest.json").read_text(encoding="utf-8"))

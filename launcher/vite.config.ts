@@ -8,6 +8,8 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [react()],
   worker: { format: "es" as const }, // the item descriptions' worker (src/ui/specWorker.ts) is a module
+  // pictures stay files: 4 700 game icons inlined as text would add a third to their size and a module to each
+  build: { assetsInlineLimit: 0 },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
