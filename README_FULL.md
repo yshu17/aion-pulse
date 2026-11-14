@@ -1,3 +1,5 @@
+> **Это описание старой версии Pulse на Python и Tkinter (релизы 1.x, ветка `feat/chat-watcher`).** Актуальное описание Pulse+ в [README.md](README.md).
+
 <h1 align="center">⚡ Pulse — полная версия</h1>
 
 <p align="center">
