@@ -19,7 +19,6 @@ import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
 import { useOpenMap } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import { PickMenu } from "./PickMenu";
-import { RewardIcon } from "../RewardIcon";
 import "./bestiary.css";
 
 const PAGE = 150; // rows per search; «Показать ещё» adds the next ones
@@ -256,7 +255,7 @@ const Card = memo(function Card({ client, detail }: { client: BestiaryClient; de
         <m.div className="bst-stats" {...reveal(2)}>
           {key.map(([name, value]) => (
             <div key={name} className={`bst-stat ${STAT_TONE[name] ?? ""}`}>
-              <span className="bst-stat-name">{name === "Опыт" && <RewardIcon kind="exp" />}{name}</span>
+              <span>{name}</span>
               <b>{/^[\d\s]+$/.test(value) ? <CountUp value={Number(value.replace(/\s/g, ""))} format={(n) => statText(String(n))} /> : value}</b>
             </div>
           ))}

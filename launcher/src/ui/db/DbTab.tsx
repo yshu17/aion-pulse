@@ -12,7 +12,6 @@ import { SECTION_KEY, SKILL_CLASSES, sectionCounts, sectionGrades, sectionKinds,
 import { TOP } from "../../core/tabs";
 import { RARITY } from "../../core/bestiary/card";
 import { PickMenu } from "../bestiary/PickMenu";
-import { REWARD_KIND, RewardIcon } from "../RewardIcon";
 import { CardBody, StatMarks, useSpec } from "../ItemCard";
 import { Icon } from "../Icon";
 import { IconClose, IconCopy, IconReset, IconSearch } from "../icons";
@@ -533,7 +532,7 @@ function QuestDetail({ all, row }: { all: NonNullable<Awaited<ReturnType<typeof 
             <ul className="dbt-parts">
               {card.rewards.map((r, i) => r.item
                 ? <li key={i}>{r.item.icon ? <Icon name={r.item.icon} size={PART_ICON} /> : <span className="icon blank dbt-part-blank" />}<RefLink kind="item" id={r.item.id} name={r.item.name} className={r.item.grade ? `g-${r.item.grade}` : ""} /><b>{r.choice ? "на выбор · " : ""}×{r.amount}</b></li>
-                : <li key={i}><span className="reward-name">{REWARD_KIND[r.type] && <RewardIcon kind={REWARD_KIND[r.type]} />}{REWARD[r.type] ?? r.type}</span><b>{r.amount.toLocaleString("ru-RU")}</b></li>)}
+                : <li key={i}><span>{REWARD[r.type] ?? r.type}</span><b>{r.amount.toLocaleString("ru-RU")}</b></li>)}
               {card.rewards.every((r) => !r.item) && (guide?.choice ?? []).map((c) => (
                 <li key={`c${c.id}`}>{c.icon ? <Icon name={c.icon} size={PART_ICON} /> : <span className="icon blank dbt-part-blank" />}<RefLink kind="item" id={c.id} name={c.name} className={c.grade ? `g-${c.grade}` : ""} /><b>на выбор · ×{c.count}</b></li>))}
               {guide?.title && <li><span>Титул</span><RefLink kind="title" id={guide.title} name={guide.title} className="dbt-title-reward dbt-b" /></li>}
