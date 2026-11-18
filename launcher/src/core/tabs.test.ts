@@ -37,14 +37,15 @@ describe("the top tabs (docs/concepts/top-tabs, variant 2)", () => {
   });
 
   it("have screens only for the chat, the map, the NPCs and the schedule", () => {
-    expect(LIVE_TABS).toEqual(["Чат", "Карта", "NPC", "Расписание", "calc:Экипировка"]);
+    expect(LIVE_TABS).toEqual(["Чат", "Карта", "NPC", "Расписание", "calc:Экипировка", "calc:Стигмы"]);
   });
 
-  it("mark the database and the gear calculator as beta, and nothing else", () => {
-    expect([...BETA].sort()).toEqual(["calc:Экипировка", "db"]);
+  it("mark the database and the two calculators as beta, and nothing else", () => {
+    expect([...BETA].sort()).toEqual(["calc:Стигмы", "calc:Экипировка", "db"]);
     expect(isBeta("db")).toBe(true);
     expect(isBeta("db:Оружие")).toBe(true); // every section of the database
     expect(isBeta("calc:Экипировка")).toBe(true);
-    for (const id of ["Чат", "Карта", "NPC", "Расписание", "calc:Стигмы", "calc:Крафт", "Гайды"]) expect(isBeta(id)).toBe(false);
+    expect(isBeta("calc:Стигмы")).toBe(true);
+    for (const id of ["Чат", "Карта", "NPC", "Расписание", "calc:Крафт", "Гайды"]) expect(isBeta(id)).toBe(false);
   });
 });

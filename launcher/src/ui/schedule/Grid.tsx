@@ -5,8 +5,9 @@ import { dayStart, ScheduleEvent } from "../../core/schedule/reminders";
 import type { Reset } from "../../core/schedule/resets";
 import { bellKey, localZone, MSK_OFFSET } from "../../core/schedule/timing";
 import { FADE, SPRING } from "../fx";
-import { IconBell, IconClose, IconPencil } from "../icons";
+import { IconBell, IconClose, IconPencil, IconPlus } from "../icons";
 import { Axis, buildAxis, cardFont, cardNeed, fitName, Measure, hm, minuteAt, Placed, placeDay, toMinutes, toneOf, yOf } from "./layout";
+import { busyBlocks, plusAt, type HourLine, type PlusSpot } from "./plus";
 import type { Schedule } from "./useSchedule";
 
 export interface DayColumn {
@@ -77,9 +78,11 @@ interface Props {
   onEdit(event: ScheduleEvent): void;
   onDelete(event: ScheduleEvent): void;
   onMenu(event: ScheduleEvent, x: number, y: number): void;
+  /** The plus between blocks: a new event or reset on this day, from `from` to `to` minutes (MSK). */
+  onPlus(day: string, from: number, to: number, kind: "event" | "reset"): void;
 }
 
-export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect, onEdit, onDelete, onMenu }: Props) {
+export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect, onEdit, onDelete, onMenu, onPlus }: Props) {
   const { now } = schedule;
   const root = useRef<HTMLDivElement>(null);
   const [colW, setColW] = useState(120); // the width of a day column: how much room the card text has
@@ -114,6 +117,35 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
   const nowMinute = Math.floor((now - today) / 60000);
   const shift = zoneShift(zone);
   const drag = useRef<{ day: string; from: number; rect: DOMRect } | null>(null);
+
+  // the plus under the pointer: busy blocks of each day, the spot, and its little menu «Событие · Откат»
+  const blocks = useMemo(() => new Map(columns.map((c) => [c.day.key, busyBlocks(c.placed.map((p) => [p.s, p.e] as [number, number]),
+    (m, end) => yOf(axis, m, end))])), [columns, axis]);
+  const hourLines: HourLine[] = marks.filter((m) => m < 1440).map((m) => ({ m, y: yOf(axis, m) }));
+  const [spot, setSpot] = useState<{ day: string; at: PlusSpot } | null>(null);
+  const [pick, setPick] = useState(false);
+  useEffect(() => {
+    if (!pick) return;
+    const outside = (e: Event) => { if (!(e.target as HTMLElement).closest?.(".sch-plus")) { setPick(false); setSpot(null); } };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setPick(false); setSpot(null); } };
+    window.addEventListener("pointerdown", outside);
+    window.addEventListener("keydown", esc);
+    return () => { window.removeEventListener("pointerdown", outside); window.removeEventListener("keydown", esc); };
+  }, [pick]);
+  const hover = (e: React.PointerEvent<HTMLDivElement>, day: string) => {
+    if (pick || drag.current || ghost || e.pointerType === "touch") return;
+    if ((e.target as HTMLElement).closest(".sch-plus")) return;
+    const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+    const band = axis.bands.find((b) => b.kind === "resets" && y >= b.y && y <= b.y + b.h); // a reset stands here: the plus goes to the side
+    const at: PlusSpot | null = band ? { y: band.y + band.h / 2, from: band.from, to: Math.min(1440, band.from + 60), edge: "side" } : plusAt(blocks.get(day) ?? [], y, axis.height, hourLines);
+    setSpot((old) => (at === null ? null : old && old.day === day && old.at.y === at.y && old.at.edge === at.edge ? old : { day, at }));
+  };
+  const plus = (kind: "event" | "reset") => {
+    if (!spot) return;
+    onPlus(spot.day, spot.at.from, spot.at.to, kind);
+    setPick(false);
+    setSpot(null);
+  };
 
   const down = (e: React.PointerEvent<HTMLDivElement>, day: string) => {
     if (e.button !== 0 || (e.target as HTMLElement).closest(".sch-card, .sch-ghost")) return; // only on an empty place
@@ -156,7 +188,7 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
             const y = yOf(axis, m, m === 1440);
             if (y - last < LABEL_GAP || (nowY !== null && Math.abs(y - nowY) < LABEL_GAP)) return null;
             last = y;
-            return <span key={m} style={{ top: y }}>{shown(m, shift)}</span>;
+            return <span key={m} className={spot?.at.edge === "gap" && spot.at.from === m ? "hot" : ""} style={{ top: y }}>{shown(m, shift)}</span>;
           });
         })()}
         {days.some((d) => d.date === today) && <span className="nowchip" style={{ top: yOf(axis, nowMinute) }}>{shown(nowMinute, shift)}</span>}
@@ -166,7 +198,8 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
         const isToday = d.date === today;
         return (
           <div key={d.key + d.date} className={`sch-col${isToday ? " today" : ""}`} style={{ height: axis.height }}
-            onPointerDown={(e) => down(e, d.key)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+            onPointerDown={(e) => down(e, d.key)} onPointerMove={(e) => { move(e); hover(e, d.key); }} onPointerUp={up} onPointerCancel={up}
+            onPointerLeave={() => { if (!pick) setSpot(null); }}>
             {marks.map((m) => <div key={m} className="sch-hl" style={{ top: yOf(axis, m, m === 1440) }} />)}
             {axis.bands.filter((b) => b.kind !== "hours").map((b) => (
               <div key={b.kind + b.from} className={`sch-fold${b.kind === "resets" ? " resets" : ""}`} style={{ top: b.y, height: b.h }}>
@@ -227,6 +260,19 @@ export function Grid({ days, schedule, zone, selected, ghost, onGhost, onSelect,
               </div>
             )}
             {isToday && <div className="sch-nowrow" style={{ top: yOf(axis, nowMinute) }}><i /></div>}
+            {spot && spot.day === d.key && !ghost && (
+              <div key={`${spot.at.y}-${spot.at.edge}`} className={`sch-plus ${spot.at.edge}${pick ? " picking" : ""}`} style={{ top: spot.at.y }}>
+                <i className="line" />
+                <button className="plus" aria-label={`Добавить: ${DAY_SHORT[d.key]} ${shown(spot.at.from, shift)}`} aria-expanded={pick}
+                  title="Добавить событие или откат" onPointerDown={(e) => e.stopPropagation()} onClick={() => setPick(!pick)}><IconPlus /></button>
+                {pick && (
+                  <div className="pick" role="menu" onPointerDown={(e) => e.stopPropagation()}>
+                    <button role="menuitem" className="ev" onClick={() => plus("event")}><IconPlus />Событие</button>
+                    <button role="menuitem" className="rs" onClick={() => plus("reset")}><IconPlus />Откат</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

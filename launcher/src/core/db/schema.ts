@@ -11,9 +11,9 @@
 
 import type { All } from "./npcPoints";
 
-export const DB_SCHEMA = 9;
+export const DB_SCHEMA = 10;
 /** The newest version known to stay readable; a database above it is still tried, with a warning. */
-export const DB_SCHEMA_MAX = 9;
+export const DB_SCHEMA_MAX = 10;
 
 export interface SchemaState { found: number | null; fits: boolean; text: string }
 

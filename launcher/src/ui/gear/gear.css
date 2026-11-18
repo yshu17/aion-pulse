@@ -206,3 +206,26 @@ html.no-fade .gear-pick-wrap { transition: none; }
 .item-card .gear-stones-sum { display: none; }
 /* a stat's number and its «(+N)» stay on one line; the card is wide enough for them */
 .gear-slotpanel .item-card .ic-grid dd, .gear-slotpanel .item-card .ic-pairs dd { white-space: nowrap; }
+
+/* the tooltip of a skill, scroll or buff (HoverTip.tsx) */
+.gear-tip { position: fixed; z-index: 60; width: 300px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border-control);
+  border-radius: 12px; background: color-mix(in srgb, var(--surface) 94%, black); box-shadow: var(--pop-shadow); pointer-events: none; font-size: 12.5px; }
+.gear-tip header { display: flex; align-items: center; gap: 10px; }
+.gear-tip header .icon { border-radius: 7px; box-shadow: 0 0 0 1px var(--border-control); flex: none; }
+.gear-tip b { display: block; font-size: 14px; font-weight: 600; color: #f0c75e; }
+.gear-tip small { color: var(--muted); font-size: 11.5px; }
+.gear-tip .txt { margin: 0; line-height: 1.5; }
+.gear-tip .dbt-dmg { color: #ffae65; font-weight: 600; white-space: nowrap; }
+.gear-tip ul { margin: 0; padding: 8px 10px; list-style: none; border-radius: 8px; background: var(--surface-2); display: grid; gap: 3px; }
+.gear-tip li { color: #6fd26a; font-variant-numeric: tabular-nums; }
+.gear-tip li:last-child:not(:only-child) { color: var(--muted); }
+
+/* a chosen skill or scroll: a bright rim and a glow with a slow shine, as on aiongear.fun; the others stay dim */
+.gear-buff, .gear-buffrow .icon { position: relative; }
+.gear-buff:hover { opacity: .9; filter: none; border-color: var(--border-control); }
+.gear-buff.on { border-color: #ffd37a; box-shadow: 0 0 0 1px rgba(255, 211, 122, .55), 0 0 14px 1px rgba(255, 170, 60, .55), inset 0 0 10px rgba(255, 190, 90, .35); overflow: hidden; }
+.gear-buff.on::after { content: ""; position: absolute; inset: -40% -60%; background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .38) 50%, transparent 58%);
+  transform: translateX(-60%); animation: gear-shine 2.8s ease-in-out infinite; pointer-events: none; }
+.gear-buffrow.on .icon { box-shadow: 0 0 0 1px rgba(255, 211, 122, .6), 0 0 12px 1px rgba(255, 170, 60, .5); }
+@keyframes gear-shine { 0%, 55% { transform: translateX(-60%); } 100% { transform: translateX(60%); } }
+@media (prefers-reduced-motion: reduce) { .gear-buff.on::after { animation: none; display: none; } }

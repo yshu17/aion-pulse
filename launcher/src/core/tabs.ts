@@ -29,10 +29,10 @@ export const TOP: TopTab[][] = [
   [{ id: "Гайды", label: "Гайды" }],
 ];
 
-export const LIVE_TABS = ["Чат", "Карта", "NPC", "Расписание", "calc:Экипировка"];
+export const LIVE_TABS = ["Чат", "Карта", "NPC", "Расписание", "calc:Экипировка", "calc:Стигмы"];
 
 /** «db» is the whole menu (every section of «База данных»), «calc:Экипировка» is one screen of «Калькуляторы». */
-export const BETA: ReadonlySet<string> = new Set(["db", "calc:Экипировка"]);
+export const BETA: ReadonlySet<string> = new Set(["db", "calc:Экипировка", "calc:Стигмы"]);
 
 /** A screen is beta by itself or because the menu it lies in is: the id of a «db:…» section counts as «db». */
 export const isBeta = (id: string): boolean => BETA.has(id) || BETA.has(id.split(":")[0]);

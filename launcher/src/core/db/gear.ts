@@ -89,3 +89,12 @@ export async function gearTitles(all: All): Promise<{ id: number; name: string; 
   return rows.map((r) => ({ id: Number(r.id), name: String(r.name), race: String(r.race ?? ""), bonus: (JSON.parse(r.stats ?? "{}").bonus ?? []) as string[] }))
     .filter((t) => t.bonus.length > 0);
 }
+
+/** The game's text of a skill or a scroll by its name (a class skill, a buff): resolved text with this server's numbers, else the description. */
+export async function skillText(all: All, name: string): Promise<string | null> {
+  const [row] = await all(
+    `SELECT s.description, d.text AS damage FROM skill s LEFT JOIN skill_damage d ON d.skill_id = s.id WHERE s.name = ? ORDER BY s.stigma, s.id LIMIT 1`, [name]);
+  if (!row) return null;
+  const text = row.damage || row.description || "";
+  return text ? String(text) : null;
+}

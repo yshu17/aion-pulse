@@ -37,6 +37,7 @@ const MapTab = lazy(() => import("./map/MapTab").then((m) => ({ default: m.MapTa
 const BestiaryTab = lazy(() => import("./bestiary/BestiaryTab").then((m) => ({ default: m.BestiaryTab })));
 const DbTab = lazy(() => import("./db/DbTab").then((m) => ({ default: m.DbTab })));
 const GearTab = lazy(() => import("./gear/GearTab").then((m) => ({ default: m.GearTab })));
+const StigmaTab = lazy(() => import("./stigma/StigmaTab").then((m) => ({ default: m.StigmaTab })));
 
 /** One tab's place: all the opened tabs lie one on another, only the chosen one is seen (a hidden one keeps its size and scroll). */
 function Pane({ on, children }: { on: boolean; children: ReactNode }) {
@@ -317,7 +318,8 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
         </Pane>
       ))}
       {alive("calc:Экипировка") && <Pane on={tab === "calc:Экипировка"}><GearTab /></Pane>}
-      {!LIVE_TABS.includes(tab) && !tab.startsWith("db:") && tab !== "calc:Экипировка" && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
+      {alive("calc:Стигмы") && <Pane on={tab === "calc:Стигмы"}><OpenRef.Provider value={openRef}><StigmaTab /></OpenRef.Provider></Pane>}
+      {!LIVE_TABS.includes(tab) && !tab.startsWith("db:") && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
       </div>
       <AnimatePresence>{card && tab === "Чат" && <ItemCard key="item-card" card={card} onClose={closeCard} />}</AnimatePresence>
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>

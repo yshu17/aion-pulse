@@ -215,7 +215,13 @@ CREATE TABLE stigma (
   skill TEXT,                    -- gain_skill1
   skill_id INTEGER,              -- skill.id; NULL: not confirmed
   gain_level INTEGER,            -- the skill's level it gives
-  requires TEXT                  -- JSON [[skill name, skill.id or null, level], …]: the stigmas it needs first
+  requires TEXT,                 -- JSON [[skill name, skill.id or null, level], …]: the stigmas it needs first
+  classes TEXT,                  -- JSON {class: the character's level from}, the client's class columns (fighter, knight, …)
+  races TEXT,                    -- race_permitted: «pc_light pc_dark», «pc_light» or «pc_dark»
+  shards INTEGER,                -- require_shard: stigma shards to put it in
+  ap INTEGER,                    -- abyss_point: abyss points to buy it (advanced stigmas)
+  price INTEGER,                 -- price: kinah
+  advanced INTEGER NOT NULL DEFAULT 0  -- stigma_type Enhanced…: an advanced stigma
 );
 CREATE INDEX stigma_skill ON stigma (skill_id);
 

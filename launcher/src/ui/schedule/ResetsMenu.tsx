@@ -10,6 +10,9 @@ import { Presence } from "../motion";
 import { announce, useYields } from "./popover";
 import type { Schedule } from "./useSchedule";
 
+/** Ask the menu for a new reset with a day and a time (the grid's plus): `detail` {day, time}. */
+export const NEW_RESET = "sch-new-reset";
+
 const SHORT: Record<string, string> = { mon: "Пн", tue: "Вт", wed: "Ср", thu: "Чт", fri: "Пт", sat: "Сб", sun: "Вс" };
 
 /**
@@ -22,9 +25,21 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
   const { resets, resetBells } = schedule;
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null); // the id of the reset in the form, "new" for a new one
+  const [fresh, setFresh] = useState<ResetDraft>({ name: "", days: [...DAYS], time: "09:00" }); // what a new reset starts with
   const root = useRef<HTMLDivElement>(null);
   const all = resets.length > 0 && resets.every((r) => resetBells.has(r.id));
   useYields("resets", () => setOpen(false));
+  useEffect(() => { // the grid's plus: the menu opens on a new reset of that day and time
+    const on = (e: Event) => {
+      const { day, time } = (e as CustomEvent<{ day: string; time: string }>).detail;
+      announce("resets");
+      setFresh({ name: "", days: [day], time });
+      setOpen(true);
+      setTimeout(() => setEditing("new"), 0); // after the menu's own reset of the form
+    };
+    window.addEventListener(NEW_RESET, on);
+    return () => window.removeEventListener(NEW_RESET, on);
+  }, []);
 
   useEffect(() => {
     if (!open) { setEditing(null); return; }
@@ -73,8 +88,8 @@ export function ResetsMenu({ schedule }: { schedule: Schedule }) {
           )}
 
           {editing === "new"
-            ? <div className="editing"><ResetForm initial={{ name: "", days: [...DAYS], time: "09:00" }} schedule={schedule} reset={null} onDone={() => setEditing(null)} /></div>
-            : <button className="btn add" onClick={() => setEditing("new")}><IconPlus />Свой откат</button>}
+            ? <div className="editing"><ResetForm initial={fresh} schedule={schedule} reset={null} onDone={() => { setEditing(null); setFresh({ name: "", days: [...DAYS], time: "09:00" }); }} /></div>
+            : <button className="btn add" onClick={() => { setFresh({ name: "", days: [...DAYS], time: "09:00" }); setEditing("new"); }}><IconPlus />Свой откат</button>}
 
           <p className="hint">
             Время по МСК, как на сервере.

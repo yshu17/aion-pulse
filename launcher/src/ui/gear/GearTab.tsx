@@ -12,6 +12,8 @@ import { buffAt, calcStats, canEnchant, display, enchantBonus, passiveSkills, sc
   type ScrollData, type Skill, type SlotKey, type StatMap, type Stone } from "../../core/gear/engine";
 import { CLASSES, PANEL, SLOT_NAME, groupName, statName } from "../../core/gear/labels";
 import { gearChoices, gearGroups, gearItem, gearSets, gearStones, gearTitles } from "../../core/db/gear";
+import { effectLines } from "../../core/gear/tips";
+import { useHoverTip } from "./HoverTip";
 import { RARITY } from "../../core/bestiary/card";
 import type { All } from "../../core/db/npcPoints";
 import { PickMenu } from "../bestiary/PickMenu";
@@ -175,7 +177,7 @@ export function GearTab() {
             <button type="button" className={view === "amp" ? "on" : ""} onClick={() => setView("amp")}>Усиление</button>
             <button type="button" className={view === "compare" ? "on" : ""} onClick={() => setView("compare")} disabled={build.sets.length < 2}>Сравнение наборов</button>
           </div>
-          {view === "amp" ? <AmpPanel cls={build.cls} level={build.level} set={active} titles={titles} onChange={change} />
+          {view === "amp" ? <AmpPanel cls={build.cls} level={build.level} set={active} titles={titles} all={all ?? null} onChange={change} />
             : view === "stats" || build.sets.length < 2 ? <StatsPanel stats={stats} naked={naked} /> : <ComparePanel build={build} statsOf={statsOf} />}
         </section>
       </div>
@@ -426,10 +428,11 @@ function Doll({ slots, items, selected, onSlot, canSwap, onSwap }: {
 }
 
 /** «Усиление»: the scrolls, the class's buffs and the ones other classes share, the title. */
-function AmpPanel({ cls, level, set, titles, onChange }: {
-  cls: string; level: number; set: SavedBuild["sets"][number]; titles: Title[];
+function AmpPanel({ cls, level, set, titles, all, onChange }: {
+  cls: string; level: number; set: SavedBuild["sets"][number]; titles: Title[]; all: All | null;
   onChange(fn: (s: SavedBuild["sets"][number]) => SavedBuild["sets"][number]): void;
 }) {
+  const tip = useHoverTip(all);
   const [titleQuery, setTitleQuery] = useState("");
   const buffs = set.buffs ?? [];
   const scrolls = set.scrolls ?? [];
@@ -451,7 +454,8 @@ function AmpPanel({ cls, level, set, titles, onChange }: {
             const grade = scrollAt(x, level);
             if (!grade) return null;
             const on = scrolls.includes(x.type);
-            return <button key={x.type} type="button" className={`gear-buff${on ? " on" : ""}`} aria-pressed={on} title={grade.name} onClick={() => toggleScroll(x.type)}>
+            return <button key={x.type} type="button" className={`gear-buff${on ? " on" : ""}`} aria-pressed={on} aria-label={grade.name} onClick={() => toggleScroll(x.type)}
+              {...tip.bind({ name: grade.name, kind: "Свиток", icon: grade.icon, lines: effectLines(x.effects, true) })}>
               {grade.icon ? <Icon name={grade.icon} size={38} /> : <span className="icon blank" />}
             </button>;
           })}
@@ -460,7 +464,8 @@ function AmpPanel({ cls, level, set, titles, onChange }: {
       <div className="gear-amp-group">
         <h5>Умения класса</h5>
         <div className="gear-buffs">
-          {own.length ? own.map(({ skill, step }) => <BuffRow key={skill.id} name={step!.name} icon={step!.icon} on={buffs.includes(skill.id)} onToggle={() => toggleBuff(skill.id)} />)
+          {own.length ? own.map(({ skill, step }) => <BuffRow key={skill.id} name={step!.name} icon={step!.icon} on={buffs.includes(skill.id)} onToggle={() => toggleBuff(skill.id)}
+            tip={tip.bind({ name: step!.name, kind: "Умение класса", icon: step!.icon, lines: effectLines(step!.effects, true) })} />)
             : <p className="dbt-note">На этом уровне умений, меняющих характеристики, нет.</p>}
         </div>
       </div>
@@ -468,7 +473,8 @@ function AmpPanel({ cls, level, set, titles, onChange }: {
         <h5>Баффы других классов</h5>
         <div className="gear-buffs">
           {shared.map(({ owner, skill, step }) => <BuffRow key={`${owner}-${skill.id}`} name={step!.name} sub={ownerName(owner)} icon={step!.icon}
-            on={buffs.includes(skill.id)} onToggle={() => toggleBuff(skill.id)} />)}
+            on={buffs.includes(skill.id)} onToggle={() => toggleBuff(skill.id)}
+            tip={tip.bind({ name: step!.name, kind: `Бафф: ${ownerName(owner)}`, icon: step!.icon, lines: effectLines(step!.effects, true) })} />)}
         </div>
       </div>
       <div className="gear-amp-group">
@@ -483,13 +489,14 @@ function AmpPanel({ cls, level, set, titles, onChange }: {
           ))}
         </ul>
       </div>
+      {tip.box}
     </div>
   );
 }
 
-function BuffRow({ name, sub, icon, on, onToggle }: { name: string; sub?: string; icon: string | null; on: boolean; onToggle(): void }) {
+function BuffRow({ name, sub, icon, on, onToggle, tip }: { name: string; sub?: string; icon: string | null; on: boolean; onToggle(): void; tip?: object }) {
   return (
-    <button type="button" className={`gear-buffrow${on ? " on" : ""}`} aria-pressed={on} onClick={onToggle}>
+    <button type="button" className={`gear-buffrow${on ? " on" : ""}`} aria-pressed={on} onClick={onToggle} {...tip}>
       {icon ? <Icon name={icon} size={32} /> : <span className="icon blank" />}
       <span><b>{name}</b>{sub && <small>{sub}</small>}</span>
       <i className="tick" aria-hidden />

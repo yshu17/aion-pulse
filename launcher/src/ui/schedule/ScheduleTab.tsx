@@ -13,6 +13,8 @@ import { Presence } from "../motion";
 import { ResetsMenu } from "./ResetsMenu";
 import { SourceMenu } from "./SourceMenu";
 import { announce, useYields } from "./popover";
+import { PresetMenu } from "./PresetMenu";
+import { NEW_RESET } from "./ResetsMenu";
 import { Ribbon } from "./Ribbon";
 import { CHIP_TONE, CHIPS, Draft, Schedule } from "./useSchedule";
 
@@ -208,6 +210,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
             </div>
           )}
         </div>
+        <PresetMenu schedule={schedule} />
         <span className="spacer" />
         <SourceMenu schedule={schedule} />
         <button className={`btn sq bell-all${schedule.allBells ? " on" : ""}`} aria-pressed={schedule.allBells} onClick={schedule.toggleAllBells}
@@ -222,7 +225,13 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
 
       <Grid days={days} schedule={schedule} zone={zone} selected={selected} ghost={ghost} onGhost={onGhost}
         onSelect={(e) => { setForm(null); setGhost(null); setSelected(e); }} onEdit={openEdit}
-        onDelete={schedule.removeOne} onMenu={(event, x, y) => { announce("grid"); setMenu({ event, x, y }); }} />
+        onDelete={schedule.removeOne} onMenu={(event, x, y) => { announce("grid"); setMenu({ event, x, y }); }}
+        onPlus={(day, from, to, kind) => {
+          if (kind === "reset") { window.dispatchEvent(new CustomEvent(NEW_RESET, { detail: { day, time: hm(from % 1440) } })); return; }
+          const g = { day, s: from, e: to };
+          setGhost(g);
+          openCreate({ name: "", start: hm(from), end: to >= 1440 ? "24:00" : hm(to), days: [day], chip: "Своё", bell: true, lead: schedule.defaultLead }, g);
+        }} />
 
       <div className="sch-legend">
         <span className="hintbar">Потяни по пустому месту сетки: появится новое событие. Клик по событию — подробности.</span>
@@ -258,7 +267,7 @@ export function ScheduleTab({ schedule }: { schedule: Schedule }) {
         {schedule.undo && (
           <div className="sch-undo" role="status">
             <span>{schedule.undo.label}</span>
-            <button className="btn primary" onClick={schedule.undoLast}>Отменить удаление</button>
+            <button className="btn primary" onClick={schedule.undoLast}>{schedule.undo.action ?? "Отменить удаление"}</button>
             <UndoLeft until={schedule.undo.until} />
           </div>
         )}

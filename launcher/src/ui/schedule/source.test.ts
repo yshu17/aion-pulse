@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ARTICLE, Fetch, isImageUrl, sourceFingerprint } from "../../core/schedule/scheduleUpdate";
-import { DEFAULT_SOURCE, knownFor, parseSource, serializeSource, webAddress } from "./source";
+import { DEFAULT_SOURCE, knownFor, NO_SOURCE, parseSource, serializeSource, webAddress } from "./source";
 
 describe("schedule source link", () => {
   it("takes only https addresses of a public name", () => {
@@ -28,6 +28,11 @@ describe("schedule source link", () => {
     expect(parseSource('{"url":"https://example.com/s.jpg","known":5}')).toEqual({ url: "https://example.com/s.jpg", known: null });
     const saved = { url: "https://example.com/s.jpg", known: "s.jpg|e|m" };
     expect(parseSource(serializeSource(saved))).toEqual(saved);
+  });
+
+  it("keeps «no link» as it was saved (a set of the schedule may have none)", () => {
+    expect(parseSource(serializeSource(NO_SOURCE))).toEqual({ url: "", known: null });
+    expect(parseSource('{"url": "", "known": "x"}')).toEqual(NO_SOURCE);
   });
 
   it("compares a custom link only with the state taken when it was saved; the article also with the typed grid", () => {

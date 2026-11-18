@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
-import { gearChoices, gearGroups, gearItem, gearSets, gearStones } from "./gear";
+import { gearChoices, gearGroups, gearItem, gearSets, gearStones, skillText } from "./gear";
 import type { All } from "./npcPoints";
 
 const SCHEMA = readFileSync(join(__dirname, "..", "..", "..", "..", "core", "pulse_db", "schema.sql"), "utf8");
@@ -40,5 +40,20 @@ describe("the gear calculator's data", () => {
     const all = sample();
     expect((await gearStones(all, 40)).map((s) => s.id)).toEqual([10]);
     expect(await gearSets(all, [7, 7])).toEqual([{ id: 7, name: "Набор", items: [4, 8], bonuses: [{ need: 2, stats: [["maxhp", 100, false]] }] }]);
+  });
+});
+
+describe("a skill's text by name", () => {
+  it("takes the resolved text with the server's numbers, else the description, null when unknown", async () => {
+    const db = new DatabaseSync(":memory:");
+    db.exec(SCHEMA);
+    db.exec(`INSERT INTO skill (id, internal_name, name, name_key, description, icon, stigma) VALUES
+      (1, 'KN_StoneBody_G1', 'Каменное тело I', 'каменное тело i', 'Восстанавливает [%e1.Value] HP.', NULL, 0),
+      (2, 'P_Other_G1', 'Усиление I', 'усиление i', 'Увеличивает силу.', NULL, 0);
+      INSERT INTO skill_damage (skill_id, text, dmg_min, dmg_max) VALUES (1, 'Восстанавливает 25% HP.', NULL, NULL);`);
+    const all: All = async (sql, params = []) => db.prepare(sql).all(...(params as any[])) as Record<string, any>[];
+    expect(await skillText(all, "Каменное тело I")).toBe("Восстанавливает 25% HP.");
+    expect(await skillText(all, "Усиление I")).toBe("Увеличивает силу.");
+    expect(await skillText(all, "Нет такого")).toBeNull();
   });
 });

@@ -24,7 +24,8 @@ def catalog(path, icons):
          {"skill_to_learn": "p_statboost_g1", "fighter": "5", "mage": "0"}),  # the case differs from the skill's
         ("items", "907", "skillbook_lost", "", None, None, {"skill_to_learn": "No_Such_Skill"}),  # no Russian name: not listed
         ("items", "901", "item_stigma_heal_g2", "Исцеляющий свет II", None, None,
-         {"gain_skill1": "Stigma_Heal_G2", "gain_level1": "9", "require_skill1": "Stigma_Missing", "require_skill1_lv": "2"}),
+         {"gain_skill1": "Stigma_Heal_G2", "gain_level1": "9", "require_skill1": "Stigma_Missing", "require_skill1_lv": "2", "fighter": "20",
+          "mage": "0", "require_shard": "40", "abyss_point": "1200", "price": "3840", "stigma_type": "Enhanced1", "race_permitted": "pc_light pc_dark"}),
         ("titles", "1", "light_title01", "Хранитель Фоэты", "Все миссии выполнены.", None,
          {"title_race": "0", "title_priority": "4", "title_type": "0", "title_location": "STR_QUEST_ZONE01",
           "bonus_attrs": {"data": [{"bonus_attr": "maxHp 20"}]}}),
@@ -52,7 +53,9 @@ def test_reads_skills_books_stigmas_titles_and_pets_without_guessing(tmp_path):
                                (12, "Stigma_Heal_G2", "Исцеляющий свет II", "исцеляющий свет ii", None, None, 1)]  # no file: no picture
     assert client["skill_book"][0] == (902, "p_statboost_g1", 11, '{"fighter": 5}', 1)  # linked by name, any case
     assert client["skill_book"][1][:3] == (907, "No_Such_Skill", None)  # the client has no such skill: NULL, the name kept
-    assert client["stigma"] == [(901, "Stigma_Heal_G2", 12, 9, '[["Stigma_Missing", null, 2]]', 1)]
+    # the stone's classes (with the level), races, shards, abyss points, price and «advanced» (stigma_type Enhanced…)
+    assert client["stigma"] == [(901, "Stigma_Heal_G2", 12, 9, '[["Stigma_Missing", null, 2]]', 1, '{"fighter": 20}', "pc_light pc_dark",
+                                 40, 1200, 3840, 1)]
     title = client["title"][0]
     assert title[:5] == (1, "Хранитель Фоэты", "хранитель фоэты", "Все миссии выполнены.", "pc_light")
     assert json.loads(title[5]) == {"bonus": ["maxHp 20"], "priority": 4, "type": 0, "location": "STR_QUEST_ZONE01"}
@@ -72,7 +75,7 @@ def test_builds_the_ten_sections_with_their_rule_and_size(tmp_path):
     out = tmp_path / "pulse.db"
     report = build(Sources(**{**base.__dict__, "client_catalog": tmp_path / "catalog.sqlite", "icons": icons}), out)
     db = sqlite3.connect(out)
-    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 9
+    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 10
     sections = db.execute("SELECT key, title, ord, entity, count FROM db_section ORDER BY ord").fetchall()
     assert [s[0] for s in sections] == [key for key, _, _ in SECTIONS]
     counts = {s[0]: s[4] for s in sections}
@@ -83,6 +86,8 @@ def test_builds_the_ten_sections_with_their_rule_and_size(tmp_path):
     assert db.execute("SELECT count(*) FROM title").fetchone()[0] == 2
     assert db.execute("SELECT value FROM meta WHERE key = 'title'").fetchone()[0] == "client"
     assert db.execute("SELECT skill_id FROM skill_book WHERE item_id = 902").fetchone()[0] == 11
+    assert db.execute("SELECT classes, races, shards, ap, price, advanced FROM stigma WHERE item_id = 901").fetchone() == (
+        '{"fighter": 20}', "pc_light pc_dark", 40, 1200, 3840, 1)
     # every link points to a row: the books' and stigmas' skills, the sections' items
     assert db.execute("SELECT count(*) FROM skill_book b LEFT JOIN skill s ON s.id = b.skill_id "
                       "WHERE b.skill_id IS NOT NULL AND s.id IS NULL").fetchone()[0] == 0

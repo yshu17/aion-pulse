@@ -126,7 +126,10 @@ def read_client(path: Path | None, icons: Path | None = None) -> dict:
                 needs = [[f[f"require_skill{n}"], skill_id(f[f"require_skill{n}"]), _int(f.get(f"require_skill{n}_lv"))]
                          for n in (1, 2) if f.get(f"require_skill{n}")]
                 out["stigma"].append((iid, skill or None, skill_id(skill), _int(f.get("gain_level1")),
-                                      json.dumps(needs, ensure_ascii=False) if needs else None, int(bool(name))))
+                                      json.dumps(needs, ensure_ascii=False) if needs else None, int(bool(name)),
+                                      json.dumps(classes, sort_keys=True) if classes else None, f.get("race_permitted") or None,
+                                      _int(f.get("require_shard")), _int(f.get("abyss_point")), _int(f.get("price")),
+                                      int(str(f.get("stigma_type") or "").lower().startswith("enhanced"))))
 
         out["quest_fields"] = {int(eid): json.loads(fields) for eid, fields in db.execute(
             "SELECT id, fields_json FROM entries WHERE section = 'quests'")}

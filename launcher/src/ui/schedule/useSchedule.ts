@@ -5,11 +5,12 @@ import { Custom, eventKey, OWN_KIND } from "../../core/schedule/scheduleCustom";
 import { ScheduleEvent } from "../../core/schedule/reminders";
 import { decide, knownFingerprint, sourceFingerprint } from "../../core/schedule/scheduleUpdate";
 import { bellKey, mskNow, parseEvents } from "../../core/schedule/timing";
-import { checkReset, daysText, EMPTY_RESETS, nextOwnId, parseResets, removeReset, Reset, ResetDraft, ResetStore, RESETS_FILE, resetBellKey, resetEvents, resolveResets, restoreResets, saveReset, serializeResets } from "../../core/schedule/resets";
+import { baseId, checkReset, daysText, EMPTY_RESETS, nextOwnId, parseResets, removeReset, Reset, ResetDraft, ResetStore, RESETS_FILE, resetBellKey, resetEvents, resolveResets, restoreResets, saveReset, serializeResets } from "../../core/schedule/resets";
+import { addPreset, emptyState, PresetStore, PRESETS_FILE, readPresets, removePreset, renamePreset, ScheduleState, switchPreset, writePresets } from "../../core/schedule/presets";
 import scheduleText from "../../../../data/schedule.json?raw";
 import type { Boot } from "../useBoot";
 import { countdown, slotOf, TONE_NAME, Tone } from "./layout";
-import { DEFAULT_SOURCE, knownFor, parseSource, serializeSource, Source, SOURCE_FILE, webAddress } from "./source";
+import { DEFAULT_SOURCE, knownFor, NO_SOURCE, parseSource, serializeSource, Source, SOURCE_FILE, webAddress } from "./source";
 
 export const CHIPS = ["Дерадиконы", "Арены", "Осады", "Прочее", "Своё"] as const;
 export type Chip = (typeof CHIPS)[number];
@@ -47,6 +48,8 @@ export interface Undo {
   label: string;
   snapshot: string;
   until: number; // Date.now() when «Отменить удаление» goes away
+  action?: string; // the button's words; «Отменить удаление» when absent
+  state?: ScheduleState; // the whole schedule to bring back («Очистить всё»), else only the own events (`snapshot`)
 }
 
 const data = JSON.parse(scheduleText) as { events: ScheduleEvent[]; resets: { name: string; when: string; day?: string; time: string }[] };
@@ -56,6 +59,7 @@ const KNOWN = knownFingerprint(data as unknown as Record<string, unknown>);
 const LEADS_FILE = "schedule_leads.json"; // next to config.json: {"<bell key>": minutes} for events with their own lead
 const REMIND_EVERY_MS = 20_000;
 export const UNDO_MS = 30_000; // how long a deleted event can be brought back
+const CLEAR_UNDO_MS = 10_000; // how long «Очистить всё» can be taken back
 
 const DEMO_OWN: ScheduleEvent[] = [
   { day: "thu", start: "18:00", end: "19:30", name: "Сбор легиона", group: "Своё", color: TONE_NAME.purple },
@@ -77,6 +81,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   const [resetUndo, setResetUndo] = useState<{ label: string; store: ResetStore } | null>(null);
   const resetUndoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [source, setSource] = useState<Source>(DEFAULT_SOURCE); // the link the schedule is checked by
+  const [presets, setPresets] = useState<PresetStore>(() => readPresets(null)); // «Набор 1, Набор 2…» (core/schedule/presets.ts)
   const custom = useRef<Custom>(Custom.load(null, null));
   const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const planner = useRef(new ReminderPlanner());
@@ -103,6 +108,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
       custom.current = Custom.load(text, (out) => { files.writeText(path, out).catch(() => {}); });
       setVersion((v) => v + 1);
     });
+    files.readText(boot.ownFile(PRESETS_FILE)).then((text) => setPresets(readPresets(text))).catch(() => {});
     files.readText(boot.ownFile(RESETS_FILE)).then((text) => setResetStore(parseResets(text, data.resets))).catch(() => {});
     files.readText(boot.ownFile(SOURCE_FILE)).then((text) => setSource(parseSource(text))).catch(() => {});
     files.readText(boot.ownFile(LEADS_FILE)).then((text) => {
@@ -192,6 +198,10 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
 
   /** Ask the saved link; a manual check always answers on the tab, the check at start only reports a new version. */
   const checkSite = async (manual: boolean) => {
+    if (!source.url) { // a set without a link: nothing to check
+      if (manual) setSite({ state: "error", text: "У этого набора нет ссылки на расписание. Вставь адрес и нажми «Сохранить»." });
+      return;
+    }
     const files = boot.platform;
     if (files === null) {
       if (manual) setSite({ state: "error", text: "Проверка работает только в программе, не в браузере." });
@@ -221,6 +231,11 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
 
   /** «Сохранить»: the link is the source from now on, and what it shows now is the current schedule. Gives an error text, or null. */
   const saveSource = async (text: string): Promise<string | null> => {
+    if (!text.trim()) { // an empty field: the set has no link
+      storeSource(NO_SOURCE);
+      setSite({ state: "same", text: "Ссылка убрана: у этого набора её нет, расписание не проверяется." });
+      return null;
+    }
     const url = webAddress(text);
     if (url === null) return "Адрес должен начинаться с https:// и вести на сайт.";
     const files = boot.platform;
@@ -239,6 +254,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
 
   /** «Проверить обновление» by the link in the field: the saved link is compared, a new one is saved first (no state to compare with yet). */
   const checkSource = async (text: string): Promise<string | null> => {
+    if (!text.trim()) return "Вставь ссылку на расписание: у этого набора её нет.";
     const url = webAddress(text);
     if (url === null) return "Адрес должен начинаться с https:// и вести на сайт.";
     if (url !== source.url) return saveSource(text);
@@ -254,6 +270,35 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   }, [boot.ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changed = () => setVersion((v) => v + 1);
+
+  const storePresets = (next: PresetStore) => {
+    setPresets(next);
+    const files = boot.platform;
+    const path = boot.ownFile(PRESETS_FILE);
+    if (files && path) files.writeText(path, writePresets(next)).catch(() => {});
+  };
+  /** The schedule as it is now: the working copy of the active set. */
+  const stateNow = (): ScheduleState => ({
+    custom: JSON.parse(JSON.stringify(custom.current.data)), remind: [...cfg.remind_events], leads: { ...leads },
+    hidden: [...cfg.schedule_hidden], resets: resetStore, source: { ...source },
+  });
+  /** Put a set's schedule in place of the working copy: own events, reminders and their leads, filters, resets. */
+  const loadState = (state: ScheduleState) => {
+    const files = boot.platform;
+    const path = boot.ownFile("schedule_custom.json");
+    const write = files && path ? (out: string) => { files.writeText(path, out).catch(() => {}); } : null;
+    custom.current = Custom.load(JSON.stringify(state.custom), write);
+    custom.current.save();
+    saveLeads(state.leads);
+    storeResets(parseResets(JSON.stringify(state.resets), data.resets));
+    if (state.source) storeSource(parseSource(JSON.stringify(state.source))); // a set of before has no link of its own: the link stays
+    setSite(null);
+    boot.save({ remind_events: state.remind, schedule_hidden: state.hidden.filter((c) => (CHIPS as readonly string[]).includes(c)) });
+    clearTimeout(undoTimer.current);
+    setUndo(null);
+    setResetUndo(null);
+    changed();
+  };
 
   const saveLeads = (next: Record<string, number>) => {
     setLeads(next);
@@ -288,6 +333,33 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
   const seriesOf = (e: ScheduleEvent) => (e.kind === OWN_KIND ? events.filter((x) => x.kind === OWN_KIND && isSeries(x, e)) : [e]);
 
   const api = {
+    /** The sets of the schedule and the active one. */
+    presets,
+    selectPreset: (index: number) => {
+      const { store, load } = switchPreset(presets, index, stateNow());
+      storePresets(store);
+      if (load) loadState(load);
+    },
+    /** A new set: a copy of the schedule now (the gear calculator does the same). */
+    addPreset: () => storePresets(addPreset(presets, stateNow())),
+    removePreset: (index: number) => {
+      const { store, load } = removePreset(presets, index, stateNow());
+      storePresets(store);
+      if (load) loadState(load);
+    },
+    renamePreset: (index: number, title: string) => storePresets(renamePreset(presets, index, title)),
+    /** How many own events each set has (the active one: as it is now). */
+    presetOwn: presets.presets.map((p, i) => (i === presets.active ? custom.current.data.added.length : p.state?.custom.added.length ?? 0)),
+    /** «Очистить всё»: the active set empty — no server or own events, no resets, no reminders (the link stays); 10 s to take it back. */
+    clearPreset: () => {
+      const before = stateNow();
+      loadState({ ...emptyState(), custom: { added: [], removed: base.map(eventKey) },
+        resets: { edits: {}, removed: data.resets.map((_, i) => baseId(i)), own: [] }, source: before.source });
+      clearTimeout(undoTimer.current);
+      setUndo({ label: `Набор «${presets.presets[presets.active]?.title ?? ""}» очищен`, snapshot: "", until: Date.now() + CLEAR_UNDO_MS,
+        action: "Отменить очистку", state: before });
+      undoTimer.current = setTimeout(() => setUndo(null), CLEAR_UNDO_MS);
+    },
     now, events, visible, counts, bells, version, undo, hiddenGroups, leadOf, defaultLead: cfg.remind_min,
     hiddenCount: custom.current.data.removed.length,
     resets,
@@ -390,6 +462,7 @@ export function useSchedule(boot: Boot, notify: (title: string, text: string) =>
     },
     undoLast: () => {
       if (!undo) return;
+      if (undo.state) { loadState(undo.state); return; } // «Очистить всё» taken back: the whole set as it was
       custom.current.data = JSON.parse(undo.snapshot);
       custom.current.save();
       clearTimeout(undoTimer.current);

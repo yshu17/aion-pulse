@@ -63,6 +63,7 @@
 .sch-dh b { color: var(--text); font-weight: 600; } .sch-dh.today { background: var(--accent); color: var(--accent-text); } .sch-dh.today b { color: var(--accent-text); }
 .sch-axis { position: relative; color: var(--muted); font-size: 11px; text-align: right; }
 .sch-axis span { position: absolute; right: 6px; transform: translateY(-50%); white-space: nowrap; }
+.sch-axis span { transition: color var(--t-fast); } .sch-axis span.hot { color: var(--accent); font-weight: 700; }
 .sch-axis .quiet { font-size: 10px; line-height: 1.1; }
 .sch-axis .nowchip { right: auto; left: 0; transform: translate(-2px, -50%); background: var(--accent); color: var(--accent-text); font-weight: 700; border-radius: 6px; padding: 1px 6px; z-index: 4; }
 /* the hatching is the background of the whole column, the same from the top to the end of the day */
@@ -234,3 +235,75 @@
 
 /* «+ Событие» while its form is open: pressed in, as «+ Откат» with its menu open */
 .sch-bar .btn.primary.sch-add.on { background: var(--accent-hover); box-shadow: 0 0 0 3px rgba(255, 140, 26, .25); }
+
+/* the schedule's sets (PresetMenu.tsx): an orange chip beside «Фильтры» and its dropdown */
+.sch-presets { position: relative; flex: none; }
+.sch-preset-chip { border-color: #a75b21; background: var(--accent-subtle); color: #ffae65; cursor: pointer; }
+.sch-preset-chip:hover, .sch-preset-chip.open { background: #4a3214; }
+.sch-preset-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(255, 140, 26, .18); }
+.sch-preset-chip b { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.sch-preset-chip em { color: #c98b4f; }
+.sch-preset-chip .caret { transition: transform var(--t) var(--ease-out); } .sch-preset-chip.open .caret { transform: rotate(180deg); }
+.sch-preset-drop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 35; width: 300px; padding: 8px; border-radius: var(--r-pop);
+  background: var(--pop-bg); border: 1px solid var(--pop-border); box-shadow: var(--pop-shadow); transform-origin: 30px -6px; }
+.sch-preset-drop .hd { display: flex; align-items: center; gap: 8px; padding: 2px 4px 8px 6px; color: var(--muted); font-size: 12px; }
+.sch-preset-drop .hd em { font-style: normal; }
+.sch-preset-drop .add { margin-left: auto; width: 28px; height: 28px; padding: 0; border-radius: 8px; border: 1px dashed var(--border-control); background: none;
+  color: var(--text); display: grid; place-items: center; cursor: pointer; transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t) var(--ease-out); }
+.sch-preset-drop .add:hover { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-text); transform: rotate(90deg); }
+.sch-preset-drop .add:disabled { opacity: .35; pointer-events: none; }
+.sch-preset-drop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.sch-preset-drop li { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 8px; border-radius: 9px; cursor: pointer; transition: background var(--t-fast); }
+.sch-preset-drop li:hover { background: var(--pop-hover); }
+.sch-preset-drop li.on { background: var(--accent-subtle); }
+.sch-preset-drop .mark { width: 16px; display: grid; place-items: center; color: var(--accent); flex: none; }
+.sch-preset-drop .name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sch-preset-drop li.on .name { color: #ffae65; }
+.sch-preset-drop .meta { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+.sch-preset-drop .act { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--muted); display: grid; place-items: center;
+  cursor: pointer; opacity: 0; transition: opacity var(--t-fast), background var(--t-fast), color var(--t-fast); }
+.sch-preset-drop .act svg { width: 13px; height: 13px; }
+.sch-preset-drop li:hover .act, .sch-preset-drop .act:focus-visible, .sch-preset-drop .act.ask { opacity: 1; }
+.sch-preset-drop .act:hover { background: var(--surface-3); color: var(--text); } .sch-preset-drop .act.del:hover { color: var(--danger); }
+.sch-preset-drop .act.ask { width: auto; padding: 0 8px; color: var(--danger); font-size: 12px; font-weight: 600; background: rgba(255, 107, 112, .12); }
+.sch-preset-drop input { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 0; border-radius: 7px; background: var(--bg); color: var(--text);
+  font: inherit; font-weight: 600; outline: 2px solid var(--accent); }
+.sch-preset-drop .sep { height: 1px; background: var(--border); margin: 8px 2px; }
+.sch-preset-drop .clear { width: 100%; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 600; transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+.sch-preset-drop .clear:hover, .sch-preset-drop .clear.ask { border-color: rgba(255, 107, 112, .5); color: var(--danger); background: rgba(255, 107, 112, .08); }
+.sch-preset-drop .hint { margin: 6px 4px 2px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+
+/* the plus between blocks (Grid.tsx, plus.ts): a dashed line across the gap and a round button that springs out */
+.sch-plus { position: absolute; left: 0; right: 0; height: 0; z-index: 7; pointer-events: none; }
+.sch-plus { transition: top 110ms var(--ease-out); }
+.sch-plus .line { position: absolute; left: 8px; right: 8px; top: -1px; border-top: 2px dashed var(--accent); opacity: .85;
+  animation: sch-plus-line 260ms var(--ease-out); }
+/* on a block's edge: the same line, a smaller plus, centred like the one in a gap */
+.sch-plus.before .plus, .sch-plus.after .plus { width: 20px; height: 20px; margin: -10px 0 0 -10px; }
+.sch-plus.before .plus svg, .sch-plus.after .plus svg { width: 11px; height: 11px; }
+/* over resets: the line stops short, the plus sits at the right end, the resets stay readable */
+.sch-plus.side .line { right: 34px; }
+.sch-plus.side .plus { left: auto; right: 6px; width: 22px; height: 22px; margin: -11px 0 0 0; }
+.sch-plus.side .plus svg { width: 12px; height: 12px; }
+.sch-plus.side .pick { left: auto; right: 0; transform: none; animation-name: sch-plus-menu-r; }
+@keyframes sch-plus-menu-r { from { opacity: 0; transform: translateY(-4px) scale(.95); } to { opacity: 1; transform: none; } }
+.sch-plus .plus { position: absolute; left: 50%; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: var(--accent-text); cursor: pointer; pointer-events: auto;
+  box-shadow: 0 0 0 4px rgba(255, 140, 26, .18), 0 6px 16px rgba(0, 0, 0, .5); animation: sch-plus-pop 300ms cubic-bezier(.34, 1.56, .64, 1);
+  transition: transform var(--t) var(--ease-out); }
+.sch-plus .plus svg { width: 14px; height: 14px; stroke-width: 2.6; }
+.sch-plus .plus:hover, .sch-plus.picking .plus { transform: rotate(90deg) scale(1.08); }
+.sch-plus .plus:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.sch-plus .pick { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 12px; pointer-events: auto;
+  background: var(--pop-bg); border: 1px solid var(--pop-border); box-shadow: var(--pop-shadow); white-space: nowrap; animation: sch-plus-menu 200ms var(--ease-out); }
+.sch-plus .pick button { height: 30px; padding: 0 12px 0 9px; border: 0; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 700; transition: filter var(--t-fast); }
+.sch-plus .pick button svg { width: 12px; height: 12px; }
+.sch-plus .pick .ev { background: var(--accent); color: var(--accent-text); } .sch-plus .pick .rs { background: var(--accent-subtle); color: #ffc27a; }
+.sch-plus .pick button:hover { filter: brightness(1.12); }
+@keyframes sch-plus-pop { from { opacity: 0; transform: scale(.4) rotate(-90deg); } to { opacity: 1; transform: none; } }
+@keyframes sch-plus-line { from { opacity: 0; transform: scaleX(.2); } to { opacity: .85; transform: none; } }
+
+@keyframes sch-plus-menu { from { opacity: 0; transform: translateX(-50%) translateY(-4px) scale(.95); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .sch-plus .plus, .sch-plus .line, .sch-plus .pick { animation: none; } }

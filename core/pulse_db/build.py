@@ -36,7 +36,7 @@ from core.pulse_db.catalog import RULES, SECTIONS, read_client, section_entries
 from core.pulse_db.gear import gear_rows
 from core.pulse_db.quest_steps import quest_steps
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 SCHEMA = Path(__file__).with_name("schema.sql")
 # what of a bestiary card has a table or a column of its own; the rest goes into npc.profile
 CARD_COLUMNS = {"id", "name", "internal_name", "category", "role", "title", "description", "race", "faction", "kind", "rank",
@@ -475,8 +475,8 @@ def build(sources: Sources, out: Path) -> dict:
     db.executemany("INSERT INTO skill (id, internal_name, name, name_key, description, icon, stigma) VALUES (?,?,?,?,?,?,?)", client["skill"])
     db.executemany("INSERT INTO skill_book (item_id, skill, skill_id, classes) VALUES (?,?,?,?)",
                    [r[:4] for r in client["skill_book"] if r[0] in items])
-    db.executemany("INSERT INTO stigma (item_id, skill, skill_id, gain_level, requires) VALUES (?,?,?,?,?)",
-                   [r[:5] for r in client["stigma"] if r[0] in items])
+    db.executemany("INSERT INTO stigma (item_id, skill, skill_id, gain_level, requires, classes, races, shards, ap, price, advanced) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?,?)", [r[:5] + r[6:] for r in client["stigma"] if r[0] in items])
     damage = read_skill_damage(sources.aidb_skills)
     db.executemany("INSERT INTO skill_damage (skill_id, text, dmg_min, dmg_max) VALUES (?,?,?,?)",
                    [(sid, d["text"], d["min"], d["max"]) for sid, d in sorted(damage.items()) if sid in {r[0] for r in client["skill"]}])

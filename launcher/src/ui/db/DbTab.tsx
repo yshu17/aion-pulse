@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 
 import { compareStats } from "../../core/items/compare";
 import { bonusLine, cleanSkillText } from "../../core/items/statNames";
+import { SkillText } from "../SkillText";
 import type { Block } from "../../core/items/card";
 import { entityCard, itemSkill, itemSources, linkParts, questCard, questKind, type ItemSkill, type ItemSources, type QuestCard, type QuestNpc } from "../../core/db/catalogCard";
 import { recipe as readRecipe, type Recipe } from "../../core/db/game";
@@ -60,21 +61,6 @@ function QuestIcon({ mark, size = ROW_ICON }: { mark: QuestMark; size?: number }
     {url && <img src={url} alt="" />}
   </span>;
 }
-const NUMBER = /[+-]?\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?(?:\s*%|\s*ед\.(?:\s*урона)?|\s*сек\.?|\s*мин\.?|\s*м(?![а-яё]))?/gi;
-
-/** A skill's text with every number that matters marked: damage, healing, range, time, percent («661-665 ед. урона», «25 м», «10 сек.», «+3%»). */
-function SkillText({ text }: { text: string }) {
-  const parts: (string | { hit: string })[] = [];
-  let from = 0;
-  for (const m of text.matchAll(NUMBER)) {
-    if (m.index > from) parts.push(text.slice(from, m.index));
-    parts.push({ hit: m[0] });
-    from = m.index + m[0].length;
-  }
-  if (from < text.length) parts.push(text.slice(from));
-  return <>{parts.map((part, i) => (typeof part === "string" ? part : <b key={i} className="dbt-dmg">{part.hit}</b>))}</>;
-}
-
 /** A name that opens what it names: an item, a quest or a title in its section, an NPC in «NPC», a zone on the map. */
 function RefLink({ kind, id, name, className = "" }: CardRef & { className?: string }) {
   const open = useOpenRef();

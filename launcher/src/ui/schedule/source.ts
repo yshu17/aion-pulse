@@ -10,6 +10,8 @@ export interface Source {
 
 export const SOURCE_FILE = "schedule_source.json";
 export const DEFAULT_SOURCE: Source = { url: ARTICLE, known: null };
+/** No link at all: a set of the schedule may have none (nothing is checked then). */
+export const NO_SOURCE: Source = { url: "", known: null };
 
 const LOCAL_SUFFIXES = [".local", ".localhost", ".internal", ".lan", ".home", ".arpa"];
 
@@ -30,10 +32,11 @@ export function webAddress(text: string): string | null {
   }
 }
 
-/** The source from the file text; a missing or broken file is the default article. */
+/** The source from the file text; a missing or broken file is the default article, an empty url is «no link». */
 export function parseSource(text: string | null): Source {
   try {
     const data: { url?: unknown; known?: unknown } | null = text ? JSON.parse(text) : null;
+    if (data?.url === "") return NO_SOURCE;
     const url = typeof data?.url === "string" ? webAddress(data.url) : null;
     if (!url) return DEFAULT_SOURCE;
     return { url, known: typeof data?.known === "string" && data.known ? data.known : null };
