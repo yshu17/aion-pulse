@@ -36,7 +36,7 @@ from core.pulse_db.catalog import RULES, SECTIONS, read_client, section_entries
 from core.pulse_db.gear import gear_rows
 from core.pulse_db.quest_steps import quest_steps
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 9
 SCHEMA = Path(__file__).with_name("schema.sql")
 # what of a bestiary card has a table or a column of its own; the rest goes into npc.profile
 CARD_COLUMNS = {"id", "name", "internal_name", "category", "role", "title", "description", "race", "faction", "kind", "rank",

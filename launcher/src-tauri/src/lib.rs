@@ -273,7 +273,7 @@ const PULSE_DB: &str = "pulse.db";
 const DB_ROWS: usize = 250_000; // the biggest answer a screen asks for (all the points of the map's index: ~70 000)
 
 /// The schema versions of pulse.db this program reads (launcher/src/core/db/schema.ts DB_SCHEMA; a test keeps the two equal).
-const DB_SCHEMA_SUPPORTED: std::ops::RangeInclusive<i64> = 10..=10;
+const DB_SCHEMA_SUPPORTED: std::ops::RangeInclusive<i64> = 9..=9;
 /// The record of the newest database pack: a file of this project's releases (tools/pack_pulse_db.py makes it, docs/ADR-003).
 const DB_MANIFEST: &str = "https://github.com/yshu17/aion-pulse/releases/download/db-latest/db_pack.json";
 
@@ -1136,30 +1136,30 @@ mod tests {
 
     #[test]
     fn the_downloaded_pack_is_read_only_when_it_is_newer_and_readable() {
-        let bundled = || Some((std::path::PathBuf::from("bundled.db"), Some(pack("2026-11-01T00:00:00Z", 10))));
+        let bundled = || Some((std::path::PathBuf::from("bundled.db"), Some(pack("2026-11-01T00:00:00Z", 9))));
         let installed = |built: &str, schema: i64| Some((std::path::PathBuf::from("installed.db"), pack(built, schema)));
-        assert_eq!(choose_db(bundled(), installed("2026-11-10T00:00:00Z", 10)).unwrap().0, std::path::PathBuf::from("installed.db"));
-        assert_eq!(choose_db(bundled(), installed("2026-10-01T00:00:00Z", 10)).unwrap().0, std::path::PathBuf::from("bundled.db")); // the program came with a newer one
+        assert_eq!(choose_db(bundled(), installed("2026-11-10T00:00:00Z", 9)).unwrap().0, std::path::PathBuf::from("installed.db"));
+        assert_eq!(choose_db(bundled(), installed("2026-10-01T00:00:00Z", 9)).unwrap().0, std::path::PathBuf::from("bundled.db")); // the program came with a newer one
         assert_eq!(choose_db(bundled(), installed("2026-11-10T00:00:00Z", 99)).unwrap().0, std::path::PathBuf::from("bundled.db")); // a schema it cannot read
-        assert_eq!(choose_db(None, installed("2026-11-10T00:00:00Z", 10)).unwrap().0, std::path::PathBuf::from("installed.db"));
+        assert_eq!(choose_db(None, installed("2026-11-10T00:00:00Z", 9)).unwrap().0, std::path::PathBuf::from("installed.db"));
         assert_eq!(choose_db(bundled(), None).unwrap().1.as_deref(), Some("2026-11-01T00:00:00Z"));
         assert!(choose_db(None, None).is_none());
     }
 
     #[test]
     fn a_pack_is_taken_only_when_newer_readable_and_from_the_releases() {
-        let ok = pack("2026-11-11T00:00:00Z", 10);
+        let ok = pack("2026-11-11T00:00:00Z", 9);
         assert_eq!(pack_wanted(&ok, Some("2026-11-01T00:00:00Z")), Ok(true));
         assert_eq!(pack_wanted(&ok, None), Ok(true));
         assert_eq!(pack_wanted(&ok, Some("2026-11-11T00:00:00Z")), Ok(false));
-        assert!(pack_wanted(&pack("2026-11-11T00:00:00Z", 11), None).unwrap_err().contains("schema"));
+        assert!(pack_wanted(&pack("2026-11-11T00:00:00Z", 10), None).unwrap_err().contains("schema"));
         let mut elsewhere = ok.clone();
         elsewhere.url = "https://example.com/pulse-db.zip".into();
         assert!(pack_wanted(&elsewhere, None).unwrap_err().starts_with("EACCES"));
         let mut loose = ok.clone();
         loose.sha256 = "abc".into();
         assert!(pack_wanted(&loose, None).is_err());
-        assert!(DB_SCHEMA_SUPPORTED.contains(&10));
+        assert!(DB_SCHEMA_SUPPORTED.contains(&9));
     }
 
     #[test]
@@ -1169,13 +1169,13 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let file = dir.join("pulse.db");
         let db = rusqlite::Connection::open(&file).unwrap();
-        db.execute_batch("CREATE TABLE npc (id TEXT); PRAGMA user_version = 10;").unwrap();
+        db.execute_batch("CREATE TABLE npc (id TEXT); PRAGMA user_version = 9;").unwrap();
         drop(db);
-        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 10)).unwrap_err().contains("no NPCs")); // empty
+        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 9)).unwrap_err().contains("no NPCs")); // empty
         let db = rusqlite::Connection::open(&file).unwrap();
         db.execute("INSERT INTO npc VALUES ('1')", []).unwrap();
         drop(db);
-        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 10)).is_ok());
+        assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 9)).is_ok());
         assert!(check_db_file(&file, &pack("2026-11-11T00:00:00Z", 8)).unwrap_err().contains("schema")); // the record says another schema
         let _ = std::fs::remove_dir_all(dir);
     }

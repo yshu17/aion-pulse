@@ -75,7 +75,7 @@ def test_builds_the_ten_sections_with_their_rule_and_size(tmp_path):
     out = tmp_path / "pulse.db"
     report = build(Sources(**{**base.__dict__, "client_catalog": tmp_path / "catalog.sqlite", "icons": icons}), out)
     db = sqlite3.connect(out)
-    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 10
+    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 9
     sections = db.execute("SELECT key, title, ord, entity, count FROM db_section ORDER BY ord").fetchall()
     assert [s[0] for s in sections] == [key for key, _, _ in SECTIONS]
     counts = {s[0]: s[4] for s in sections}
