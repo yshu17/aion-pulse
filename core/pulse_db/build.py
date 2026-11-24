@@ -35,7 +35,7 @@ from core.pulse_db.aidb_quests import read_guides
 from core.pulse_db.aidb_skills import read_skill_damage
 from core.pulse_db.catalog import RULES, SECTIONS, read_client, section_entries
 from core.pulse_db.client_spec import client_spec, repaired_spec, resolve_text
-from core.pulse_db.gear import gear_rows
+from core.pulse_db.gear import fill_categories, gear_rows
 from core.pulse_db.gear_spec import gear_spec
 from core.pulse_db.quest_steps import quest_steps
 
@@ -484,6 +484,13 @@ def build(sources: Sources, out: Path) -> dict:
             if row["icon"] and (sources.icons / f"{row['icon']}.png").is_file():
                 continue
             row["icon"] = client["item_icon"].get(item_id)
+    stones = {}
+    for item_id, row in items.items():  # the card's manastone slots
+        for block in (json.loads(row["spec"]).get("blocks", []) if row["spec"] else []):
+            if block.get("kind") == "stones":
+                stones[item_id] = {"count": block.get("count"), "bonus": block.get("bonus", 0)}
+    gear = gear_rows(sources.client_catalog, sources.client_raw, stones)
+    fill_categories(items, gear["item"])  # the client's gear the old catalog never had: its category and type, for the sections
     dictionary = spec_dict([r["spec"].encode("utf-8") for _, r in sorted(items.items()) if r["spec"]])
     db.executemany(
         "INSERT INTO item (id, name, name_key, level, category, grade, kind, icon, drop_icon, catalog_ord, spec, dropped_by, desc_key) "
@@ -537,12 +544,6 @@ def build(sources: Sources, out: Path) -> dict:
                "WHERE giver IS NULL AND (SELECT giver FROM quest_guide g WHERE g.quest_id = quest.id) IS NOT NULL")
     db.execute("UPDATE quest SET ender = (SELECT ender FROM quest_guide g WHERE g.quest_id = quest.id) "
                "WHERE ender IS NULL AND (SELECT ender FROM quest_guide g WHERE g.quest_id = quest.id) IS NOT NULL")
-    stones = {}
-    for item_id, row in items.items():  # the card's manastone slots
-        for block in (json.loads(row["spec"]).get("blocks", []) if row["spec"] else []):
-            if block.get("kind") == "stones":
-                stones[item_id] = {"count": block.get("count"), "bonus": block.get("bonus", 0)}
-    gear = gear_rows(sources.client_catalog, sources.client_raw, stones)
     set_of = {item: sid for sid, _, members, _ in gear["set"] for item in json.loads(members)}
     db.executemany("INSERT INTO gear_item (id, name, name_key, icon, grade, level, slot, grp, races, classes, basic, bonus, stones, stones_bonus, enchant, set_id) "
                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [(r[0], r[1], name_key(r[1]), *r[2:], set_of.get(r[0])) for r in gear["item"]])

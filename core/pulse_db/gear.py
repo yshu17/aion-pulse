@@ -57,6 +57,42 @@ def slot_of(f: dict, group: str) -> str:
     return group
 
 
+# the category and type the old site catalog gives its items (the sections «Оружие», «Броня», «Украшения» are made of them)
+WEAPON_KIND = {"sword": "Меч", "greatsword": "Двуручный меч", "dagger": "Кинжал", "mace": "Булава", "polearm": "Копье",
+               "staff": "Посох", "bow": "Лук", "spellbook": "Гримуар", "orb": "Орб"}
+ARMOUR_CATEGORY = {"rb": "Ткань", "lt": "Кожа", "ch": "Кольчуга", "pl": "Лата"}
+JEWEL_KIND = {"ring": "Кольца", "earring": "Серьги", "necklace": "Ожерелья", "belt": "Пояса"}
+
+
+def category_of(group: str) -> tuple[str, str | None] | None:
+    """(category, type) of an equipment group, the way the site catalog names them; None for a group this does not know."""
+    if group in WEAPON_KIND:
+        return "Оружие", WEAPON_KIND[group]
+    if group in JEWEL_KIND:
+        return "Украшения", JEWEL_KIND[group]
+    prefix = group.split("_", 1)[0] if "_" in group else ""
+    if prefix in ARMOUR_CATEGORY:
+        return ARMOUR_CATEGORY[prefix], None
+    return {"shield": ("Щиты", None), "head": ("Головные уборы", None), "wing": ("Крылья", None)}.get(group)
+
+
+def fill_categories(items: dict[int, dict], gear_items: list[tuple]) -> int:
+    """Give the items the client's equipment rows describe a category and a type where the catalog has none: the old catalog
+    (a crawl of a site) holds only the gear of level 45 and up, the client's own low-level and variant gear had no category.
+    Returns how many items were filled."""
+    filled = 0
+    for r in gear_items:
+        row = items.get(r[0])
+        found = category_of(r[6]) if row is not None else None
+        if not found or row.get("category"):
+            continue
+        row["category"] = found[0]
+        if not row.get("kind"):
+            row["kind"] = found[1]
+        filled += 1
+    return filled
+
+
 def _num(value) -> float:
     try:
         return float(value)

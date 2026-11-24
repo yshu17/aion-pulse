@@ -40,9 +40,9 @@ RULES = {
 }
 # the class columns of an item record: the value is the level the class may use it from, «0» is «not this class»
 CLASSES = ("warrior", "fighter", "knight", "scout", "assassin", "ranger", "mage", "wizard", "elementalist", "priest", "cleric", "chanter")
-# the client's own test items («Тестовый эпический меч 55-го уровня ([%username])», «Тест меча Бездны…», «… для тестирования ячеек»):
+# the client's own test items («Тестовый эпический меч 55-го уровня ([%username])», «Тест меча Бездны…», «… для тестирования ячеек», «Кольцо_Тест_Защита_20»):
 # they stay in item (a drop or a quest may name one) but are not listed in the sections
-TEST_ITEM = re.compile(r"^(Тестов|Тест[ _]|Тестирование)|\[%username|для тестирования", re.I)
+TEST_ITEM = re.compile(r"^(Тестов|Тест[ _]|Тестирование)|_Тест_|\[%username|для тестирования", re.I)
 
 
 def is_test_item(name: str | None) -> bool:
