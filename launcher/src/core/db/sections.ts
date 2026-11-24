@@ -46,6 +46,7 @@ export interface SectionRow {
 
 export interface PageOptions {
   query?: string;          // a part of the name (lower case, «ё» as «е») or the id
+  inDesc?: boolean;        // items: the query is also looked for in the card's description (item.desc_key; an older database has none: the name only)
   grade?: string;          // only this grade («epic»)
   kind?: string;           // only this type («Меч»)
   levelMin?: number;       // the level from … to …, both included
@@ -101,17 +102,40 @@ const SKILL_TABLE: Record<string, string> = { skill_books: "skill_book", stigmas
 
 const fold = (text: string) => text.toLowerCase().split("ё").join("е").trim();
 
+/**
+ * A text as the description search compares it (core/pulse_db/build.py search_fold writes item.desc_key the same way): lower case,
+ * «ё» as «е», punctuation as spaces, «физ» as «ф» (cards write both «Физ. крит» and «Ф. крит.»), single spaces.
+ */
+export const searchFold = (text: string): string =>
+  fold(text).replace(/[.,:;!?()[\]«»"'/+%-]/g, " ").replace(/(?<![\p{L}\d_])физ(?![\p{L}\d_])/gu, "ф").split(/\s+/).filter(Boolean).join(" ");
+
+/** Whether the database has the item.desc_key column (the description search; databases built before it have none). */
+const descKeyOf = new WeakMap<object, Promise<boolean>>();
+export function hasDescKey(all: All): Promise<boolean> {
+  let known = descKeyOf.get(all);
+  if (!known) {
+    known = all("SELECT 1 FROM pragma_table_info('item') WHERE name = 'desc_key'").then((rows) => rows.length > 0, () => false);
+    descKeyOf.set(all, known);
+  }
+  return known;
+}
+
 async function shapeOf(all: All, section: string): Promise<Shape | null> {
   const [meta] = await all("SELECT entity FROM db_section WHERE key = ?", [section]);
   return (meta && SHAPE[String(meta.entity)]) || null;
 }
 
 /** The FROM … WHERE of a section with its filters, and its arguments. */
-function filtered(shape: Shape, section: string, options: PageOptions, skip: "kind" | "grade" | "" = ""): [string, unknown[]] {
+function filtered(shape: Shape, section: string, options: PageOptions, skip: "kind" | "grade" | "" = "", hasDescKey = false): [string, unknown[]] {
   const where: string[] = ["e.section = ?"];
   const args: unknown[] = [section];
   const query = fold(options.query ?? "");
-  if (query) { where.push(`(${shape.name} LIKE ? OR CAST(t.id AS TEXT) = ?)`); args.push(`%${query}%`, query); }
+  const words = options.inDesc && shape.table === "item" && hasDescKey ? searchFold(query).split(" ").filter(Boolean) : [];
+  if (query && words.length) {
+    // every word in the name or in the description, in any order: «крит свиток» finds «Свиток ф. крит. удара»
+    where.push(`(CAST(t.id AS TEXT) = ? OR (${words.map(() => `(${shape.name} LIKE ? OR t.desc_key LIKE ?)`).join(" AND ")}))`);
+    args.push(query, ...words.flatMap((w) => [`%${w}%`, `%${w}%`]));
+  } else if (query) { where.push(`(${shape.name} LIKE ? OR CAST(t.id AS TEXT) = ?)`); args.push(`%${query}%`, query); }
   if (options.grade && skip !== "grade") { where.push(`${shape.grade} = ?`); args.push(options.grade); }
   if (options.kind && skip !== "kind") { where.push(`${shape.kind} = ?`); args.push(options.kind); }
   if (options.questType) {
@@ -146,14 +170,17 @@ function filtered(shape: Shape, section: string, options: PageOptions, skip: "ki
 export async function sectionPage(all: All, section: string, options: PageOptions = {}): Promise<{ total: number; rows: SectionRow[] }> {
   const shape = await shapeOf(all, section);
   if (!shape) return { total: 0, rows: [] };
-  const [base, args] = filtered(shape, section, options);
+  const [base, args] = filtered(shape, section, options, "", options.inDesc ? await hasDescKey(all) : false);
   const [count] = await all(`SELECT count(*) AS n ${base}`, args);
   const order = options.sort === "level" ? shape.level : options.sort === "id" ? "t.id" : shape.name;
   const dir = options.desc ? "DESC" : "ASC";
+  // a description search shows first the rows whose name has the query, then the ones found by the description
+  const query = fold(options.query ?? "");
+  const byName = options.inDesc && query && shape.table === "item" ? `CASE WHEN ${shape.name} LIKE ? THEN 0 ELSE 1 END, ` : "";
   const rows = await all(
     `SELECT t.id, t.name, ${shape.kind} AS kind, ${shape.level} AS level, ${shape.grade} AS grade, ${shape.icon} AS icon ${base} `
-    + `ORDER BY ${order} IS NULL, ${order} ${dir}, t.id LIMIT ? OFFSET ?`,
-    [...args, options.limit ?? 50, options.offset ?? 0],
+    + `ORDER BY ${byName}${order} IS NULL, ${order} ${dir}, t.id LIMIT ? OFFSET ?`,
+    [...args, ...(byName ? [`%${query}%`] : []), options.limit ?? 50, options.offset ?? 0],
   );
   return {
     total: Number(count.n),
@@ -168,7 +195,7 @@ export async function sectionPage(all: All, section: string, options: PageOption
 export async function sectionKinds(all: All, section: string, options: PageOptions = {}): Promise<[string, number][]> {
   const shape = await shapeOf(all, section);
   if (!shape || shape.kind === "''") return [];
-  const [base, args] = filtered(shape, section, options, "kind");
+  const [base, args] = filtered(shape, section, options, "kind", options.inDesc ? await hasDescKey(all) : false);
   const rows = await all(`SELECT ${shape.kind} AS kind, count(*) AS n ${base} GROUP BY 1 HAVING ${shape.kind} <> '' ORDER BY n DESC, 1`, args);
   return rows.map((r) => [String(r.kind), Number(r.n)]);
 }
@@ -177,7 +204,7 @@ export async function sectionKinds(all: All, section: string, options: PageOptio
 export async function sectionGrades(all: All, section: string, options: PageOptions = {}): Promise<[string, number][]> {
   const shape = await shapeOf(all, section);
   if (!shape || shape.grade === "''") return [];
-  const [base, args] = filtered(shape, section, options, "grade");
+  const [base, args] = filtered(shape, section, options, "grade", options.inDesc ? await hasDescKey(all) : false);
   const rows = await all(`SELECT ${shape.grade} AS grade, count(*) AS n ${base} GROUP BY 1 HAVING ${shape.grade} <> ''`, args);
   return rows.map((r) => [String(r.grade), Number(r.n)]);
 }

@@ -8,7 +8,7 @@ import zlib
 from pathlib import Path
 
 from core.bestiary.bestiary_store import DETAIL_DICT
-from core.pulse_db.build import SCHEMA_VERSION, Sources, build, pack_ids, unpack_ids, unpack_spec
+from core.pulse_db.build import SCHEMA_VERSION, Sources, build, desc_key, pack_ids, search_fold, unpack_ids, unpack_spec
 
 FIXTURE = Path(__file__).parent / "golden" / "bestiary_fixture.sqlite"  # a small real bestiary (15 NPCs, drops, goods, areas)
 
@@ -133,6 +133,8 @@ def item_sources(tmp_path) -> Sources:
         "901,\"Меч, древний\",55,Оружие,unique,icon_item_sword,Меч\n", encoding="utf-8")
     with gzip.open(tmp_path / "item_specs.json.gz", "wt", encoding="utf-8") as out:
         json.dump({"901": {"name": "Меч, древний", "grade": "unique", "blocks": [{"kind": "hr"}]},
+                   "903": {"name": "Свиток", "grade": "common", "blocks": [{"kind": "grid", "pairs": [["Физ. крит", "+15"]]},
+                                                                           {"kind": "text", "text": "Повышает Ф. крит на 30 секунд. Ёлка"}]},
                    "902": json.dumps({"name": "Зелье жизни", "grade": "common", "blocks": []})}, out)  # values may be JSON text
     return Sources(spawns=base.spawns, npc_points=base.npc_points, npcs=base.npcs, bestiary=base.bestiary,
                    item_names=tmp_path / "item_names.tsv", catalog=tmp_path / "watch_items.csv", specs=tmp_path / "item_specs.json.gz")
@@ -147,7 +149,7 @@ def test_holds_every_item_once_names_cards_and_descriptions(tmp_path):
     # the catalog's fields win over the older name list; its order is kept for the «Что искать» list
     assert dict(rows[901]) | {"spec": None, "dropped_by": None} == {
         "id": 901, "name": "Меч, древний", "name_key": "меч, древний", "level": 55, "category": "Оружие", "grade": "unique",
-        "kind": "Меч", "icon": "icon_item_sword", "drop_icon": None, "catalog_ord": 1, "spec": None, "dropped_by": None}
+        "kind": "Меч", "icon": "icon_item_sword", "drop_icon": None, "catalog_ord": 1, "spec": None, "dropped_by": None, "desc_key": None}
     dictionary = db.execute("SELECT value FROM meta WHERE key = 'spec_dict'").fetchone()[0]  # the descriptions are deflated with it
     assert unpack_spec(rows[901]["spec"], dictionary)["blocks"] == [{"kind": "hr"}]
     assert unpack_spec(rows[902]["spec"], dictionary)["name"] == "Зелье жизни"
@@ -238,3 +240,27 @@ def test_packs_id_lists_both_ways():
     assert unpack_ids(pack_ids([100, 105, 106], delta=True), delta=True) == [100, 105, 106]
     assert unpack_ids(pack_ids([5, 1, 300])) == [5, 1, 300]  # the card's order kept
     assert unpack_ids(None) == []
+
+
+def test_search_text_of_a_card_is_its_description_folded(tmp_path):
+    out = tmp_path / "pulse.db"
+    build(item_sources(tmp_path), out)
+    db = sqlite3.connect(out)
+    key = db.execute("SELECT desc_key FROM item WHERE id = 903").fetchone()[0]
+    assert key == "ф крит\n15\nповышает ф крит на 30 секунд елка"  # the stats and the text, punctuation out, «Физ.» as «ф», «Ё» folded
+    assert db.execute("SELECT desc_key FROM item WHERE id IN (901, 902, 907)").fetchall() == [(None,)] * 3  # no text, no key
+    assert desc_key(None) is None and desc_key("not json") is None
+
+
+def test_description_search_holds_the_whole_card():
+    spec = json.dumps({"blocks": [
+        {"kind": "pairs", "rows": [["Ранг", "[Обычный]"], ["Тип", "[Магические предметы]"]]},
+        {"kind": "warning", "text": "Можно использовать с 55-го уровня."}, {"kind": "props", "lines": ["[Нельзя обменять]"]},
+        {"kind": "text", "text": "Обычное оружие, кол-во ударов: 2"}, {"kind": "grid", "pairs": [["Ф. крит.", "50"]]},
+        {"kind": "text", "text": "Физ. крит +30. Время действия: 5 мин."},
+        {"kind": "text", "text": "Можно усилить магическими камнями 60-го уровня и ниже."}, {"kind": "stones", "count": 1}]}, ensure_ascii=False)
+    assert desc_key(spec) == ("ранг\nобычный\nтип\nмагические предметы\nможно использовать с 55 го уровня\nнельзя обменять\n"
+                              "обычное оружие кол во ударов 2\nф крит\n50\nф крит 30 время действия 5 мин\n"
+                              "можно усилить магическими камнями 60 го уровня и ниже")
+    assert search_fold("Ф. крит.  Удара") == "ф крит удара" and search_fold("ФИЗ. атака") == "ф атака"
+    assert desc_key(json.dumps({"blocks": [{"kind": "hr"}]})) is None

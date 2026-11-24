@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
 import type { All } from "./npcPoints";
-import { sectionCounts, sectionGrades, sectionKinds, sectionPage } from "./sections";
+import { searchFold, sectionCounts, sectionGrades, sectionKinds, sectionPage } from "./sections";
 
 const SCHEMA = readFileSync(join(__dirname, "..", "..", "..", "..", "core", "pulse_db", "schema.sql"), "utf8");
 
@@ -18,6 +18,7 @@ function sample(withSections: boolean): All {
       (5, 'Кольчуга', 'кольчуга', 10, 'Кольчуга', NULL, NULL, NULL), (6, 'Латы', 'латы', 10, 'Лата', NULL, NULL, NULL),
       (7, 'Щит', 'щит', 10, 'Щиты', NULL, NULL, NULL), (8, 'Кольцо', 'кольцо', NULL, 'Украшения', NULL, NULL, NULL),
       (9, 'Кость', 'кость', NULL, NULL, NULL, NULL, NULL);
+    UPDATE item SET desc_key = 'повышает ф крит на 30 секунд' WHERE id = 2; UPDATE item SET desc_key = 'острый меч' WHERE id = 6;
     INSERT INTO quest (id, name, name_key, min_level, category) VALUES (1, 'А', 'а', 5, 'quest'), (2, 'Б', 'б', 1, 'quest');
     INSERT INTO recipe (id, name, name_key, product, profession, level) VALUES (1, 'Р', 'р', 1, 'weaponsmith', 100);
     INSERT INTO title (id, name, name_key) VALUES (1, 'Хранитель Фоэты', 'хранитель фоэты');
@@ -109,5 +110,42 @@ describe("the filters of a section", () => {
     const all = sample(true);
     expect((await sectionPage(all, "items", { hideAbove: 40 })).rows.map((r) => r.id).sort()).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
     expect((await sectionPage(all, "titles", { hideAbove: 55 })).total).toBe(1);
+  });
+});
+
+describe("the search in an item's description", () => {
+  it("finds an item by a word of its description only when asked, and keeps the name and id search", async () => {
+    const all = sample(true);
+    const names = async (o: object) => (await sectionPage(all, "items", o)).rows.map((r) => r.name);
+    expect(await names({ query: "крит" })).toEqual([]); // the name only, by default
+    expect(await names({ query: "крит", inDesc: true })).toEqual(["Лук"]);
+    expect(await names({ query: "меч", inDesc: true })).toEqual(["Меч", "Латы"]); // the name still counts, and first
+    expect(await names({ query: "2", inDesc: true })).toEqual(["Лук"]); // and the id
+    expect((await sectionKinds(all, "items", { query: "крит", inDesc: true })).map(([k]) => k)).toEqual(["Лук"]);
+  });
+
+  it("falls back to the name when the database has no description column (built before it)", async () => {
+    const db = sample(true);
+    const noColumn = async (sql: string, params: unknown[] = []) => (sql.includes("pragma_table_info('item')") ? [] : db(sql, params));
+    expect((await sectionPage(noColumn, "items", { query: "крит", inDesc: true })).total).toBe(0);
+    expect((await sectionPage(noColumn, "items", { query: "лук", inDesc: true })).total).toBe(1);
+  });
+});
+
+describe("the words of a description search", () => {
+  it("match in any order, across the name and the description, with the card's punctuation and «Физ.» folded", async () => {
+    const all = sample(true);
+    const names = async (query: string) => (await sectionPage(all, "items", { query, inDesc: true })).rows.map((r) => r.name);
+    expect(await names("Физ. крит")).toEqual(["Лук"]);
+    expect(await names("секунд крит")).toEqual(["Лук"]); // any order
+    expect(await names("лук крит")).toEqual(["Лук"]); // one word in the name, one in the description
+    expect(await names("лук меч")).toEqual([]); // every word must be found
+    expect(await names("меч")).toEqual(["Меч", "Латы"]); // the name's match first, then the description's
+  });
+
+  it("fold a query as the build folds the description", () => {
+    expect(searchFold("Ф. крит.  Удара")).toBe("ф крит удара");
+    expect(searchFold("ФИЗ. атака +30%")).toBe("ф атака 30");
+    expect(searchFold("Физика")).toBe("физика");
   });
 });

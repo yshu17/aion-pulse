@@ -7,8 +7,8 @@ import classStats from "../../../../data/gear/eu20/class_stats.json";
 import passiveTable from "../../../../data/gear/eu20/passive_skills.json";
 import activeTable from "../../../../data/gear/eu20/active_skills.json";
 import scrollTable from "../../../../data/gear/eu20/scrolls.json";
-import { addSet, emptyBuild, KEY, MAX_SETS, readBuild, removeSet, withSet, writeBuild, type SavedBuild, type SavedSlot, stoneCap, swapWeapons } from "../../core/gear/build";
-import { buffAt, calcStats, canEnchant, display, enchantBonus, passiveSkills, scrollAt, titleLines, type ActiveSkill, type BaseRow, type Equipped, type GearItem, type GearSet,
+import { addSet, emptyBuild, KEY, MAX_SETS, readBuild, removeSet, withSet, writeBuild, type SavedBuild, type SavedSlot, stoneCap, subBlocked, swapWeapons, putItem } from "../../core/gear/build";
+import { buffAt, calcStats, canEnchant, canStone, stoneSlots, display, enchantBonus, passiveSkills, scrollAt, titleLines, type ActiveSkill, type BaseRow, type Equipped, type GearItem, type GearSet,
   type ScrollData, type Skill, type SlotKey, type StatMap, type Stone } from "../../core/gear/engine";
 import { CLASSES, PANEL, SLOT_NAME, groupName, statName } from "../../core/gear/labels";
 import { gearChoices, gearGroups, gearItem, gearSets, gearStones, gearTitles } from "../../core/db/gear";
@@ -22,7 +22,7 @@ import { Icon } from "../Icon";
 import { IconClose, IconReset, IconSearch, IconSwap } from "../icons";
 import { m } from "motion/react";
 import { EASE } from "../fx";
-import { enchantAdds, stoneAdds, stoneSum } from "../../core/gear/stones";
+import { enchantAdds, stoneAdds, stoneSum, withoutStones } from "../../core/gear/stones";
 import type { Block } from "../../core/items/card";
 import { StonePicker } from "./StonePicker";
 import { pulseDb } from "../db/pulseDb";
@@ -113,8 +113,11 @@ export function GearTab() {
   const active = build.sets[build.active];
   const change = (fn: (s: SavedBuild["sets"][number]) => SavedBuild["sets"][number]) => setBuild((b) => withSet(b, b.active, fn));
   const put = (slot: SlotKey, item: GearItem) => {
-    setItems((old) => new Map(old).set(item.id, item));
-    change((s) => ({ ...s, slots: { ...s.slots, [slot]: { id: item.id, enchant: 0, stones: Array(item.stones ?? 0).fill(null) } } }));
+    const known = new Map(items).set(item.id, item);
+    const next = putItem(active.slots, slot, item, known);
+    if (!next) { setPicking(null); return; } // the off hand is taken by a two-hander
+    setItems(known);
+    change((s) => ({ ...s, slots: next }));
     setSelected(slot);
     setPicking(null);
   };
@@ -158,7 +161,7 @@ export function GearTab() {
       </div>
 
       <div className="gear-body">
-        <Doll slots={active.slots} items={items} selected={selected} onSlot={(slot, filled) => (filled ? setSelected(slot) : setPicking(slot))}
+        <Doll slots={active.slots} items={items} selected={selected} onSlot={(slot, filled) => (filled ? setSelected(slot) : setPicking(slot))} subBlocked={subBlocked(active.slots, items)}
           canSwap={canSwap} onSwap={() => { swapHands(); setSelected((s) => (s === "main" ? "sub" : s === "sub" ? "main" : s)); }} />
 
         <section className="gear-item" aria-label="Предмет">
@@ -250,12 +253,14 @@ function SlotPanel({ slot, item, saved, stones, onEnchant, onStone, onReplace, o
   slot: SlotKey; item: GearItem; saved: SavedSlot; stones: Stone[]; onEnchant(n: number): void; onStone(i: number, id: number | null): void;
   onReplace(): void; onTakeOff(): void;
 }) {
-  const answer = useSpec(String(item.id));
+  const spec = useSpec(String(item.id));
+  // an item that takes no manastones shows none of the card's lines and empty squares about them
+  const answer = useMemo(() => (spec?.spec && !canStone(item) ? { ...spec, spec: { ...spec.spec, blocks: withoutStones(spec.spec.blocks as Block[]) } } : spec), [spec, item]);
   // the card says how high a stone the item takes («70-го уровня и ниже»); without that line, ten levels above the item
   const cap = stoneCap(answer?.spec?.blocks as { kind?: string; text?: string }[] | undefined) ?? Math.min(item.level + 10, 70);
   const fits = stones.filter((s) => s.level <= cap);
-  const slots = item.stones ?? 0;
-  const optional = item.stonesBonus ?? 0;
+  const slots = stoneSlots(item);
+  const optional = slots > 0 ? item.stonesBonus ?? 0 : 0;
   // the stones are drawn in the card, in place of its empty squares; a card without them gets the picker above it
   const inCard = hasStoneBlock(answer?.spec?.blocks as Block[] | undefined);
   const stoneById = new Map(fits.map((x) => [x.id, x]));
@@ -279,10 +284,10 @@ function SlotPanel({ slot, item, saved, stones, onEnchant, onStone, onReplace, o
             <input type="range" min={0} max={15} value={saved.enchant} onChange={(e) => onEnchant(Number(e.target.value))} aria-label="Уровень заточки" />
             <button type="button" className="btn" onClick={() => onEnchant(Math.min(15, saved.enchant + 1))} aria-label="Больше">+</button>
             <b>+{saved.enchant}</b>
-          </> : <em>{item.enchant && !canEnchant(item) ? "украшения, крылья и головные уборы не точатся" : "не точится"}</em>}
+          </> : <em>не точится</em>}
         </div>
-        {slots === 0 && <div className="gear-stones"><div className="gear-stones-head"><span>Магические камни</span></div>
-          <em className="gear-stones-none">{item.stones === null ? "слоты для камней не известны" : "нет слотов"}</em></div>}
+        {slots === 0 && <div className="gear-enchant"><span>Камни</span>
+          <em>{!canStone(item) ? "не вставляются" : item.stones === null ? "слоты не известны" : "нет слотов"}</em></div>}
         {slots > 0 && answer && !inCard && picker}
       </div>
       <StoneUi.Provider value={{ ui: slots > 0 && inCard ? picker : null, adds }}>
@@ -392,9 +397,9 @@ const DOLL_LAYOUT: { slot: SlotKey; area: string; hint: string }[] = [ // row by
   { slot: "shoes", area: "l6", hint: "icon_item_pl_shoes_c01" }, { slot: "belt", area: "r6", hint: "icon_item_belt_c01" },
 ];
 
-function Doll({ slots, items, selected, onSlot, canSwap, onSwap }: {
+function Doll({ slots, items, selected, onSlot, canSwap, onSwap, subBlocked }: {
   slots: SavedBuild["sets"][number]["slots"]; items: Map<number, GearItem>; selected: SlotKey | null; onSlot(slot: SlotKey, filled: boolean): void;
-  canSwap: boolean; onSwap(): void;
+  canSwap: boolean; onSwap(): void; subBlocked: boolean;
 }) {
   const chosen = selected ? slots[selected] : undefined;
   const chosenItem = chosen ? items.get(chosen.id) : undefined;
@@ -407,14 +412,16 @@ function Doll({ slots, items, selected, onSlot, canSwap, onSwap }: {
         </button>
         {DOLL_LAYOUT.map(({ slot, area, hint }) => {
           const s = slots[slot];
-          const item = s ? items.get(s.id) : undefined;
+          const blocked = slot === "sub" && subBlocked;
+          const item = s && !blocked ? items.get(s.id) : undefined;
           return (
-            <button key={slot} type="button" style={{ gridArea: area }} title={item ? `${SLOT_NAME[slot]}: ${item.name}` : SLOT_NAME[slot]}
+            <button key={slot} type="button" style={{ gridArea: area }} disabled={blocked}
+              title={blocked ? "Левая рука занята двуручным оружием" : item ? `${SLOT_NAME[slot]}: ${item.name}` : SLOT_NAME[slot]}
               aria-label={item ? `${SLOT_NAME[slot]}: ${item.name}` : `${SLOT_NAME[slot]}: пусто`}
               className={`gear-cell-slot${selected === slot ? " sel" : ""}${item ? ` filled g-${item.grade}` : ""}`} onClick={() => onSlot(slot, !!item)}>
               {item ? <Icon name={item.icon} size={46} /> : <span className="hint"><Icon name={hint} size={46} /></span>}
               {item && s!.enchant > 0 && <em className="plus">+{s!.enchant}</em>}
-              {item && s!.stones.some(Boolean) && <i className="dots">{s!.stones.map((x, i) => <b key={i} className={x ? "on" : ""} />)}</i>}
+              {item && canStone(item) && s!.stones.some(Boolean) && <i className="dots">{s!.stones.map((x, i) => <b key={i} className={x ? "on" : ""} />)}</i>}
             </button>
           );
         })}

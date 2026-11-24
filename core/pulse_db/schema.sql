@@ -77,7 +77,8 @@ CREATE TABLE item (
   drop_icon TEXT,                -- a picture of data/bestiary/icons/items, the bestiary's
   catalog_ord INTEGER,           -- the place in the catalog (it has a card); NULL: only a name
   spec BLOB,                     -- the card's description, JSON {name, grade, blocks}, deflated with meta «spec_dict»
-  dropped_by BLOB                -- the NPC ids that drop it, sorted, packed as steps (see below)
+  dropped_by BLOB,               -- the NPC ids that drop it, sorted, packed as steps (see below)
+  desc_key TEXT                  -- the card's description as plain search text (lower case, «ё» as «е»), the name not in it; NULL: no card
 );
 CREATE INDEX item_name_key ON item (name_key);
 CREATE INDEX item_catalog ON item (catalog_ord) WHERE catalog_ord IS NOT NULL;

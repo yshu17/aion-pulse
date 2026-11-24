@@ -60,6 +60,20 @@ export function canEnchant(item: GearItem): boolean {
   return item.enchant && (item.grp === "shield" || item.grp in WEAPON_ENCHANT || item.grp in ARMOUR_ENCHANT);
 }
 
+/** Neither the head, the jewellery, the belt nor the wings take an enchant or a manastone in 2.0: only weapons, shields and the five armour pieces do. */
+export function canStone(item: Pick<GearItem, "grp">): boolean {
+  return item.grp === "shield" || item.grp in WEAPON_ENCHANT || item.grp in ARMOUR_ENCHANT;
+}
+
+/** How many manastones can go into the item: none for what cannot take them, whatever the card says. */
+export function stoneSlots(item: Pick<GearItem, "grp" | "stones">): number {
+  return canStone(item) ? item.stones ?? 0 : 0;
+}
+
+/** The weapons that fill both hands: a shield or a second weapon cannot go with them. */
+const TWO_HAND = new Set(["greatsword", "polearm", "staff", "bow", "spellbook", "orb"]);
+export const isTwoHanded = (item: Pick<GearItem, "grp"> | undefined): boolean => !!item && TWO_HAND.has(item.grp);
+
 /** What `level` enchant levels add to an item of this group: name -> value. */
 export function enchantBonus(grp: string, level: number): Record<string, number> {
   const out: Record<string, number> = {};
@@ -146,7 +160,9 @@ export interface CalcInput {
 }
 
 export function calcStats(input: CalcInput): StatMap {
-  const { cls, level, slots, skills } = input;
+  const { cls, level, skills } = input;
+  // a two-hander fills both hands: whatever a saved build keeps in the off hand does not count
+  const slots: CalcInput["slots"] = isTwoHanded(input.slots.main?.item) ? { ...input.slots, sub: undefined } : input.slots;
   const stats: StatMap = new Map();
   const setBasic = (o: Record<string, number>) => { for (const [k, v] of Object.entries(o)) { const s = stats.get(k) ?? { basic: 0, bonus: 0 }; s.basic = v; stats.set(k, s); } };
   const addBonus = (o: Record<string, number>) => { for (const [k, v] of Object.entries(o)) { const s = stats.get(k) ?? { basic: 0, bonus: 0 }; s.bonus += v; stats.set(k, s); } };
@@ -214,7 +230,7 @@ export function calcStats(input: CalcInput): StatMap {
         armourDefence += e.item.basic.physicaldefend ?? 0;
         armourPct += e.item.grp.endsWith("_torso") ? 5 : 2;
       }
-      for (const stone of e.stones) if (stone && !ignored(stone.stat, main?.item)) for (const k of expand(stone.stat)) add(b, k, stone.value);
+      for (const stone of canStone(e.item) ? e.stones : []) if (stone && !ignored(stone.stat, main?.item)) for (const k of expand(stone.stat)) add(b, k, stone.value);
     }
     // the hands: the better attack speed and casting speed, PvP attack
     let delay = 0, cast = 0, pvp = 0;

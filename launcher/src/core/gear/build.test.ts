@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addSet, emptyBuild, readBuild, removeSet, stoneCap, swapWeapons, withSet, writeBuild } from "./build";
+import { addSet, emptyBuild, putItem, readBuild, removeSet, stoneCap, subBlocked, swapWeapons, withSet, writeBuild } from "./build";
 import type { GearItem } from "./engine";
 
 describe("a saved gear build", () => {
@@ -53,5 +53,38 @@ describe("the weapons of a build", () => {
     expect(stoneCap([{ kind: "text", text: "Можно усилить магическими камнями 70-го уровня и ниже." }])).toBe(70);
     expect(stoneCap([{ kind: "text", text: "Усиление 0/15" }])).toBeNull();
     expect(stoneCap(undefined)).toBeNull();
+  });
+});
+
+describe("a two-handed weapon fills both hands", () => {
+  const items = new Map<number, GearItem>([
+    [1, { ...piece(1, "main_or_sub", "sword"), stones: 3 } as GearItem], [3, { ...piece(3, "sub", "shield"), stones: 2 } as GearItem],
+    [4, { ...piece(4, "main", "greatsword"), stones: 4 } as GearItem], [5, { ...piece(5, "wing", "wing"), stones: 2 } as GearItem],
+    [6, { ...piece(6, "main", "orb"), stones: 4 } as GearItem],
+  ]);
+  const at = (id: number) => ({ id, enchant: 5, stones: [9] });
+
+  it("empties the off hand when it goes to the main hand, and blocks the off hand while it is there", () => {
+    const slots = { main: at(1), sub: at(3), head: at(7) };
+    const two = putItem(slots, "main", items.get(4)!, items)!;
+    expect(two.sub).toBeUndefined();
+    expect(two.main).toEqual({ id: 4, enchant: 0, stones: [null, null, null, null] });
+    expect(two.head?.id).toBe(7);
+    expect(subBlocked(two, items)).toBe(true);
+    expect(putItem(two, "sub", items.get(3)!, items)).toBeNull(); // no shield, no second weapon
+    expect(putItem(two, "sub", items.get(1)!, items)).toBeNull();
+    expect(subBlocked({ main: at(6) }, items)).toBe(true); // a spellbook or an orb fills both hands too
+  });
+
+  it("leaves the off hand free for a one-hander, and frees it again when the main hand changes", () => {
+    const one = putItem({ main: at(1) }, "sub", items.get(3)!, items)!;
+    expect(one.sub?.id).toBe(3);
+    expect(subBlocked(one, items)).toBe(false);
+    expect(putItem(one, "main", items.get(1)!, items)!.sub?.id).toBe(3); // a one-hander keeps the shield
+    expect(subBlocked({ main: at(4) }, new Map())).toBe(false); // an item that is not known blocks nothing
+  });
+
+  it("gives an item that takes no manastones none, whatever its card says", () => {
+    expect(putItem({}, "wing", items.get(5)!, items)!.wing?.stones).toEqual([]);
   });
 });

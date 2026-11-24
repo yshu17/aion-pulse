@@ -1,6 +1,10 @@
 # Builds the Pulse+ release for the users: copied to local\Pulse+Release, the one tools\single_exe packs.
 # The script is ASCII only on purpose: Windows PowerShell 5.1 reads files by code page.
-# Usage: powershell -ExecutionPolicy Bypass -File tools\build_pulse_plus.ps1
+# Usage: powershell -ExecutionPolicy Bypass -File tools\build_pulse_plus.ps1 [-Variant release] [-FetchDb]
+#   -FetchDb  take the published database (release db-latest) instead of building it: for a machine without client_extract and
+#           downloads (the game client files), where tools\build_pulse_db.py would write a poorer database. Such a machine never
+#           publishes a database pack.
+param([ValidateSet("release")][string]$Variant = "release", [switch]$FetchDb)
 $ErrorActionPreference = "Stop"
 
 $root = (Resolve-Path "$PSScriptRoot\..").Path
@@ -12,11 +16,16 @@ $target = Join-Path $root "local\Pulse+Release"
 Get-CimInstance Win32_Process -Filter "Name='Pulse+Local.exe'" | Where-Object { $_.ExecutablePath -like "$target\*" } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
 # the one game database first (data/pulse.db, docs/ADR-002-pulse-db.md): every tab reads it, the build packs it
-& python (Join-Path $root "tools\build_pulse_db.py")
-if ($LASTEXITCODE -ne 0) { throw "build_pulse_db failed: $LASTEXITCODE" }
-# the record of this database as a pack (data\db_pack.json, also in the program): it is compared with the newest pack on the release
-& python (Join-Path $root "tools\pack_pulse_db.py")
-if ($LASTEXITCODE -ne 0) { throw "pack_pulse_db failed: $LASTEXITCODE" }
+if ($FetchDb) {
+    & python (Join-Path $root "tools\fetch_db_pack.py")
+    if ($LASTEXITCODE -ne 0) { throw "fetch_db_pack failed: $LASTEXITCODE" }
+} else {
+    & python (Join-Path $root "tools\build_pulse_db.py")
+    if ($LASTEXITCODE -ne 0) { throw "build_pulse_db failed: $LASTEXITCODE" }
+    # the record of this database as a pack (data\db_pack.json, also in the program): it is compared with the newest pack on the release
+    & python (Join-Path $root "tools\pack_pulse_db.py")
+    if ($LASTEXITCODE -ne 0) { throw "pack_pulse_db failed: $LASTEXITCODE" }
+}
 
 Push-Location $launcher
 try {

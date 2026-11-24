@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { calcStats, canEnchant, display, enchantBonus, passiveSkills, shown, titleLines, type Equipped, type GearItem } from "./engine";
+import { calcStats, canEnchant, canStone, display, enchantBonus, isTwoHanded, passiveSkills, shown, stoneSlots, titleLines, type Equipped, type GearItem } from "./engine";
 
 const DATA = join(__dirname, "..", "..", "..", "..", "data", "gear", "eu20");
 const classStats = JSON.parse(readFileSync(join(DATA, "class_stats.json"), "utf8")).classes;
@@ -74,5 +74,37 @@ describe("the gear calculator's arithmetic, against aiongear.fun eu20", () => {
       scrolls: [{ times: 3, effects: [{ type: "statup", stats: [{ name: "speed", value: { value: 10, relative: true } }] }] }] });
     expect(value(titled, "maxhp") - value(plain, "maxhp")).toBe(20);
     expect(value(titled, "speed")).toBeCloseTo(6 * (1 + 0.35), 5); // the title's 5 % and the third-grade scroll's 3 × 10 %
+  });
+});
+
+describe("the items that take manastones and the hands", () => {
+  const item = (grp: string, extra: Partial<GearItem> = {}): GearItem => ({ id: 1, name: "x", icon: "", grade: "epic", level: 55, slot: "main", grp, classes: [],
+    basic: {}, bonus: [], stones: 4, stonesBonus: null, enchant: true, setId: null, ...extra });
+  const stone = { id: 9, name: "s", icon: "", grade: "rare", level: 50, stat: "maxhp", value: 100 };
+  const stats = (slots: Parameters<typeof calcStats>[0]["slots"]) =>
+    calcStats({ cls: "fighter", level: 55, base: classStats.fighter[54], slots, sets: [], skills: [] });
+
+  it("take them in weapons, shields and the five armour pieces, not in the head, jewellery, belt or wings", () => {
+    for (const grp of ["sword", "greatsword", "shield", "pl_torso", "rb_shoes"]) expect(canStone(item(grp))).toBe(true);
+    for (const grp of ["head", "earring", "ring", "necklace", "belt", "wing"]) { expect(canStone(item(grp))).toBe(false); expect(stoneSlots(item(grp))).toBe(0); }
+    expect(stoneSlots(item("sword"))).toBe(4);
+    expect(stoneSlots(item("sword", { stones: null }))).toBe(0);
+  });
+
+  it("do not count the stones a saved build keeps in a wing", () => {
+    const wing = (stones: (typeof stone | null)[]): Equipped => ({ item: item("wing", { slot: "wing" }), enchant: 0, stones });
+    expect(value(stats({ wing: wing([stone]) }), "maxhp")).toBe(value(stats({}), "maxhp"));
+    const sword: Equipped = { item: item("sword"), enchant: 0, stones: [stone] };
+    expect(value(stats({ main: sword }), "maxhp")).toBe(value(stats({}), "maxhp") + 100);
+  });
+
+  it("tell the two-handers, and do not count an off hand beside one", () => {
+    for (const grp of ["greatsword", "polearm", "staff", "bow", "spellbook", "orb"]) expect(isTwoHanded(item(grp))).toBe(true);
+    for (const grp of ["sword", "dagger", "mace", "shield"]) expect(isTwoHanded(item(grp))).toBe(false);
+    const shield: Equipped = { item: item("shield", { slot: "sub", basic: { block: 100 } }), enchant: 0, stones: [] };
+    const bow: Equipped = { item: item("bow"), enchant: 0, stones: [] };
+    const sword: Equipped = { item: item("sword", { slot: "main_or_sub" }), enchant: 0, stones: [] };
+    expect(value(stats({ main: bow, sub: shield }), "block")).toBe(value(stats({ main: bow }), "block"));
+    expect(value(stats({ main: sword, sub: shield }), "block")).toBeGreaterThan(value(stats({ main: sword }), "block"));
   });
 });

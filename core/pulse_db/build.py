@@ -24,6 +24,7 @@ import csv
 import gzip
 import json
 import os
+import re
 import sqlite3
 import zlib
 from dataclasses import dataclass
@@ -190,6 +191,43 @@ def unpack_spec(blob: bytes | None, dictionary: bytes) -> dict | None:
 
 def name_key(name: str) -> str:
     return name.casefold().replace("ё", "е")
+
+
+def _texts(node, out: list[str]) -> None:
+    if isinstance(node, str):
+        if node.strip():
+            out.append(node.strip())
+    elif isinstance(node, list):
+        for x in node:
+            _texts(x, out)
+    elif isinstance(node, dict):
+        for key, x in node.items():
+            if key != "kind":  # a block's type is not text of the card
+                _texts(x, out)
+
+
+def search_fold(text: str) -> str:
+    """The text as the description search compares it (launcher/src/core/db/sections.ts searchFold does the same): lower case,
+    «ё» as «е», punctuation as spaces, «физ» as «ф» (the cards write both «Физ. крит» and «Ф. крит.»), single spaces; lines stay."""
+    text = text.casefold().replace("ё", "е")
+    text = re.sub(r"[.,:;!?()\[\]«»\"'/+%-]", " ", text)
+    text = re.sub(r"(?<!\w)физ(?!\w)", "ф", text)
+    return "\n".join(" ".join(line.split()) for line in text.split("\n")).strip()
+
+
+def desc_key(spec: str | None) -> str | None:
+    """The card's whole text for the description search: every string of its blocks (the stats «Ф. крит. 50», the description,
+    the lines), one per line, folded by ``search_fold``; the item's name and the blocks' ``kind`` are not in it. None when the item
+    has no card or the card has no text."""
+    if not spec:
+        return None
+    try:
+        blocks = json.loads(spec).get("blocks", [])
+    except (ValueError, AttributeError):
+        return None
+    lines: list[str] = []
+    _texts(blocks, lines)
+    return search_fold("\n".join(lines)) or None
 
 
 def _level(value) -> int | None:
@@ -410,10 +448,11 @@ def build(sources: Sources, out: Path) -> dict:
             row["icon"] = client["item_icon"].get(item_id)
     dictionary = spec_dict([r["spec"].encode("utf-8") for _, r in sorted(items.items()) if r["spec"]])
     db.executemany(
-        "INSERT INTO item (id, name, name_key, level, category, grade, kind, icon, drop_icon, catalog_ord, spec, dropped_by) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO item (id, name, name_key, level, category, grade, kind, icon, drop_icon, catalog_ord, spec, dropped_by, desc_key) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [(i, r["name"], name_key(r["name"]), r["level"], r["category"], r["grade"], r["kind"], r["icon"], r["drop_icon"],
-          r["catalog_ord"], pack_spec(r["spec"], dictionary) if r["spec"] else None, pack_ids(sorted(dropped_by[str(i)]), delta=True) if str(i) in dropped_by else None)
+          r["catalog_ord"], pack_spec(r["spec"], dictionary) if r["spec"] else None, pack_ids(sorted(dropped_by[str(i)]), delta=True) if str(i) in dropped_by else None,
+          desc_key(r["spec"]))
          for i, r in sorted(items.items())])
     db.executemany("INSERT INTO npc_stock (npc_id, ord, item_id, name, name_key, rarity, level, icon, grp, trade_mode) "
                    "VALUES (?,?,?,?,?,?,?,?,?,?)", stock)

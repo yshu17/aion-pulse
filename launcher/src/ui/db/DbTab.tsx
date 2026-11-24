@@ -87,6 +87,7 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
   const [showHigh, setShowHigh] = useState(false); // items and quests above level 55 are hidden unless this is on
   const [slot, setSlot] = useState(""); // armour: the part of the body
   const [cls, setCls] = useState(""); // skill books and stigmas: the class
+  const [inDesc, setInDesc] = useState(true); // items: look for the text in the whole card too («крит» finds the items with crit), on by default
   const [best, setBest] = useState(false); // skill books and stigmas: only the highest level of a skill
   const [grades, setGrades] = useState<Set<string> | null>(null); // the grades the section has under the other filters
   const [sort, setSort] = useState(() => (NO_LEVEL.has(section) ? "name-asc" : "level-desc"));
@@ -124,10 +125,10 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
     const [by, dir] = sort.split("-");
     const cap = (items || section === "quests") && !showHigh && !level ? 55 : undefined; // only items and quests are capped
     const skills = SKILL_SECTIONS.has(section);
-    return { query, grade: items ? grade : "", kind, levelMin: min, levelMax: max, hideAbove: cap, sort: by as PageOptions["sort"], desc: dir === "desc",
+    return { query, inDesc: items && inDesc, grade: items ? grade : "", kind, levelMin: min, levelMax: max, hideAbove: cap, sort: by as PageOptions["sort"], desc: dir === "desc",
       questType: section === "quests" && questType ? questType : undefined, race: section === "quests" && race ? race : undefined,
       slot: section === "armour" && slot ? slot : undefined, cls: skills && cls ? cls : undefined, best: skills && best };
-  }, [query, grade, kind, level, sort, items, showHigh, section, questType, race, slot, cls, best]);
+  }, [query, inDesc, grade, kind, level, sort, items, showHigh, section, questType, race, slot, cls, best]);
 
   const load = useCallback(async (offset: number) => {
     if (!all) return;
@@ -164,7 +165,7 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
 
   const tick = (row: SectionRow) => setTicked((old) => old.some((r) => r.id === row.id)
     ? old.filter((r) => r.id !== row.id) : [...old, row].slice(-2)); // two at most: a third replaces the oldest
-  const reset = () => { setGrade(""); setKind(""); setLevel(""); setTyped(""); setQuestType(""); setRace(""); setSlot(""); setCls(""); setBest(false); };
+  const reset = () => { setGrade(""); setKind(""); setLevel(""); setTyped(""); setQuestType(""); setRace(""); setSlot(""); setCls(""); setBest(false); setInDesc(true); };
   const comparing = items && ticked.length === 2;
 
   return (
@@ -190,6 +191,8 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
         {section === "armour" && <PickMenu id="db-slot" label="Часть" text={slot ? SLOTS.find(([, v]) => v === slot)![0] : "Часть"} lit={!!slot} value={slot} onPick={setSlot} options={SLOTS} />}
         {SKILL_SECTIONS.has(section) && <PickMenu id="db-class" label="Класс" text={cls ? SKILL_CLASSES.find(([id]) => id === cls)![1] : "Класс"} lit={!!cls} value={cls} onPick={setCls}
           options={[["Все", ""], ...SKILL_CLASSES.map(([id, name]): [string, string] => [name, id])]} />}
+        {items && <button type="button" className={`dbt-chip${inDesc ? " on" : ""}`} aria-pressed={inDesc} onClick={() => setInDesc((v) => !v)}
+          title="Искать текст не только в названии, но и в описании предмета">Искать в описании</button>}
         {SKILL_SECTIONS.has(section) && <button type="button" className={`dbt-chip${best ? " on" : ""}`} aria-pressed={best} onClick={() => setBest((v) => !v)}>Только высший уровень</button>}
         {!NO_LEVEL.has(section) && <PickMenu id="db-level" label="Уровень" text={level ? `Ур. ${level.replace("-999", "+").replace("-", "–")}` : "Уровень"}
           lit={!!level} value={level} onPick={setLevel} options={LEVELS} />}
@@ -201,7 +204,7 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
           {showHigh ? "Выше 55: показаны" : "Выше 55: скрыты"}</button>}
         {kinds.length > 1 && section !== "quests" && <PickMenu id="db-kind" label={section === "armour" ? "Тип брони" : "Тип"} text={kind ? PROFESSION[kind] ?? kind : section === "armour" ? "Тип брони" : "Тип"} lit={!!kind} value={kind} onPick={setKind}
           options={[["Все", ""], ...kinds.slice(0, 40).map(([k, n]): [string, string] => [`${PROFESSION[k] ?? k} · ${n.toLocaleString("ru-RU")}`, k])]} />}
-        {(grade || kind || level || typed || questType || race || slot || cls || best) && <button type="button" className="bst-reset" onClick={reset}><IconReset />Сбросить</button>}
+        {(grade || kind || level || typed || questType || race || slot || cls || best || !inDesc) && <button type="button" className="bst-reset" onClick={reset}><IconReset />Сбросить</button>}
       </div>
       <div className="dbt-body">
         <section className="dbt-list" aria-label={`Список: ${label}`}>

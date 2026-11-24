@@ -5,7 +5,7 @@
  *   writeBuild(saved) -> text
  */
 
-import type { GearItem, SlotKey } from "./engine";
+import { isTwoHanded, stoneSlots, type GearItem, type SlotKey } from "./engine";
 
 export interface SavedSlot { id: number; enchant: number; stones: (number | null)[] }
 export interface SavedSet {
@@ -87,4 +87,22 @@ export function stoneCap(blocks: { kind?: string; text?: string }[] | undefined)
     if (found) return Number(found[1]);
   }
   return null;
+}
+
+/** True when the off hand is not free: the main hand holds a two-hander (a shield or a second weapon cannot go with it). */
+export function subBlocked(slots: SavedSet["slots"], items: ReadonlyMap<number, GearItem>): boolean {
+  const main = slots.main && items.get(slots.main.id);
+  return isTwoHanded(main || undefined);
+}
+
+/**
+ * The slots with an item put in `slot`, empty enchant and stones (as many places as the item takes).
+ * A two-hander in the main hand empties the off hand; the off hand takes nothing while a two-hander is in the main hand (null).
+ */
+export function putItem(slots: SavedSet["slots"], slot: SlotKey, item: GearItem, items: ReadonlyMap<number, GearItem>): SavedSet["slots"] | null {
+  const out = { ...slots };
+  if (slot === "sub" && subBlocked(slots, items)) return null;
+  out[slot] = { id: item.id, enchant: 0, stones: Array(stoneSlots(item)).fill(null) };
+  if (slot === "main" && isTwoHanded(item)) delete out.sub;
+  return out;
 }

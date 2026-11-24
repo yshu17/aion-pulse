@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Stone } from "./engine";
-import { enchantAdds, placeBonus, stoneAdds, stoneRows, stoneSum, stoneTabs } from "./stones";
+import { enchantAdds, placeBonus, stoneAdds, stoneRows, stoneSum, stoneTabs, withoutStones } from "./stones";
 
 const stone = (id: number, stat: string, grade: string, level: number, value: number): Stone => ({ id, name: `${stat}+${value}`, icon: "", grade, level, stat, value });
 const all = [stone(1, "critical", "common", 10, 4), stone(2, "critical", "rare", 60, 17), stone(3, "critical", "common", 50, 12), stone(4, "critical", "rare", 20, 9),
@@ -63,5 +63,16 @@ describe("where the extra numbers go in a card", () => {
 
   it("falls back to the place before the stones block when the card has no «+» grid", () => {
     expect(placeBonus([{ kind: "text", text: "x" }, { kind: "stones", count: 1 }], stoneAdds([["maxhp", 5]])).after).toBe(0);
+  });
+});
+
+describe("the card of an item that takes no manastones", () => {
+  it("loses the line about the stones and the empty squares, and the rules around them", () => {
+    const blocks = [{ kind: "grid", pairs: [["Макс. HP", "+100"]] }, { kind: "hr" },
+      { kind: "text", text: "Можно усилить магическими камнями 70-го уровня и ниже." }, { kind: "stones", count: 5, bonus: 0 }, { kind: "hr" },
+      { kind: "text", text: "Описание" }] as any[];
+    expect(withoutStones(blocks).map((b) => b.kind)).toEqual(["grid", "hr", "text"]);
+    expect(withoutStones(blocks.slice(0, 4)).map((b) => b.kind)).toEqual(["grid"]); // no rule left at the end
+    expect(withoutStones([{ kind: "text", text: "Усиление 0/15" }] as any[]).length).toBe(1);
   });
 });

@@ -49,6 +49,21 @@ export const CARD_LABELS: Record<string, string[]> = {
   hitaccuracy: ["Точность"], maxmp: ["Макс. MP"], maxfp: ["Время полета", "Время полёта", "Макс. время полёта"], healskillboost: ["Сила исцеления"],
 };
 
+/**
+ * The card of an item that takes no manastones (wings, head, jewellery, belt): without the line «Можно усилить магическими камнями …»
+ * and without the empty squares under it, and without the rule left twice or at the end where they were.
+ */
+export function withoutStones(blocks: Block[]): Block[] {
+  const out: Block[] = [];
+  for (const b of blocks) {
+    if (b.kind === "stones" || (b.kind === "text" && /магическими камнями/i.test(String(b.text ?? "")))) continue;
+    if (b.kind === "hr" && out.length && out[out.length - 1].kind === "hr") continue;
+    out.push(b);
+  }
+  while (out.length && out[out.length - 1].kind === "hr") out.pop();
+  return out;
+}
+
 export type BonusGroup = "stone" | "enchant";
 /** A number to show in a card: where it goes (labels the card may call the stat, whether a row without «+» is fine), how much, and whose it is. */
 export interface BonusAdd { group: BonusGroup; labels: string[]; any: boolean; value: number }
