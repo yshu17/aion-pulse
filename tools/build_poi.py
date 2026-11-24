@@ -12,6 +12,7 @@ Output:
 x/y are map pixels, gx/gy game coordinates (1 unit ≈ 1 m).
 Gathering points are left out (the map does not show them); --gather keeps them.
 Dev tool. Usage: python tools/build_poi.py [--gather] [client_extract_dir]
+--rifts rewrites only the spatial rifts of the existing poi.json.
 """
 
 import csv
@@ -125,12 +126,14 @@ def build(objects: list[dict], entities: list[dict], zones: set[str], gather: bo
         if row.get("function_type"):
             continue  # functional NPCs come from the client's world XML only (service_points), as the game's map
         type_ = classify_object(row)
-        if type_ is None or row.get("map_id") not in zones or (not gather and type_.startswith("gather_")):
+        if type_ is None or type_ == "direct_portal" or row.get("map_id") not in zones or (not gather and type_.startswith("gather_")):
             continue
         name = row.get("npc_russian_name") or ""
         point = _point(type_, row, name)
         if point is not None:
             out.setdefault(row["map_id"], []).append(point)
+    for map_id, points in rift_points(objects, zones).items():
+        out.setdefault(map_id, []).extend(points)
     artifacts = set()
     for row in entities:
         if row.get("entity_class") == "AbyssArtifacts" and row.get("map_id") in zones:
@@ -148,6 +151,44 @@ def build(objects: list[dict], entities: list[dict], zones: set[str], gather: bo
             if (icons / f"{t}.png").is_file():
                 types[t]["icon"] = f"{t}.png"  # made by tools/build_map_icons.py
     return {"version": 1, "types": types, "zones": out}
+
+
+RIFT_SPOT_M = 10.0  # Brusthonin marks each rift with three objects 2-3 m apart: one rift on the map
+
+
+def rift_points(objects: list[dict], zones: set[str]) -> dict[str, list[dict]]:
+    """The spatial rifts (level objects «DP…_DirectPortalN») of the mapped zones, by game coordinates only:
+    the Elyos zones got their maps after the level export, so their rows carry no map pixels.
+    Marks closer than RIFT_SPOT_M are one rift, placed at their middle."""
+    spots: dict[str, list[list[tuple[float, float]]]] = {}
+    for row in objects:
+        if classify_object(row) != "direct_portal" or row.get("map_id") not in zones:
+            continue
+        try:
+            here = (float(row["game_x"]), float(row["game_y"]))
+        except (KeyError, ValueError):
+            continue
+        groups = spots.setdefault(row["map_id"], [])
+        near = next((g for g in groups if math.hypot(g[0][0] - here[0], g[0][1] - here[1]) <= RIFT_SPOT_M), None)
+        if near is None:
+            groups.append([here])
+        else:
+            near.append(here)
+    return {map_id: [{"t": "direct_portal", "x": 0.0, "y": 0.0,
+                      "gx": round(sum(x for x, _ in g) / len(g), 1), "gy": round(sum(y for _, y in g) / len(g), 1),
+                      "name": ""} for g in groups] for map_id, groups in spots.items()}
+
+
+def replace_rifts(data: dict, rifts: dict[str, list[dict]]) -> dict:
+    """poi.json data with its spatial rifts replaced by `rifts`; the other points stay as they are."""
+    zones = data["zones"]
+    for map_id in list(zones):
+        zones[map_id] = [p for p in zones[map_id] if p.get("t") != "direct_portal"]
+    for map_id, points in rifts.items():
+        zones.setdefault(map_id, []).extend(points)
+    for map_id in [z for z, points in zones.items() if not points]:
+        del zones[map_id]
+    return data
 
 
 OWNER_PAIR_M = 3.0  # an Elyos and an Asmodian NPC of one function this close: one spot, the owner's NPC stands
@@ -329,10 +370,17 @@ def read_tsv(path: Path) -> list[dict]:
 
 
 def main() -> int:
-    args = [a for a in sys.argv[1:] if a != "--gather"]
+    args = [a for a in sys.argv[1:] if a not in ("--gather", "--rifts")]
     source = Path(args[0]) if args else ROOT / "client_extract"
     zones = set(json.loads((ROOT / "data" / "maps" / "maps.json").read_text(encoding="utf-8")))
     objects = read_tsv(source / "client_level_objects.tsv")
+    if "--rifts" in sys.argv:  # only the spatial rifts of the current poi.json: the other points have later edits
+        out = ROOT / "data" / "maps" / "poi.json"
+        rifts = rift_points(objects, zones)
+        data = replace_rifts(json.loads(out.read_text(encoding="utf-8")), rifts)
+        out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        print("spatial rifts:", {z: len(p) for z, p in sorted(rifts.items())})
+        return 0
     data = build(objects, read_tsv(source / "client_level_entities.tsv"), zones, gather="--gather" in sys.argv)
     zone_ids = {row["zone"]: row["map_id"] for row in objects if row["map_id"] in zones}
     service = source / "raw" / "npc_service_coords.tsv"

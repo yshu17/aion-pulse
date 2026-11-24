@@ -22,7 +22,13 @@ if (-not (Test-Path $csc)) { throw "csc.exe not found: $csc" }
 if (-not (Test-Path $App)) { throw "no release build: run tools\build_pulse_plus.ps1 -Variant release first (the developer build is never packed)" }
 if ((Resolve-Path $App).Path -notlike ("*" + [IO.Path]::DirectorySeparatorChar + "Pulse+Release" + [IO.Path]::DirectorySeparatorChar + "*")) { throw "only the release build is packed (local\Pulse+Release); the developer build is never packed" }
 $app = (Resolve-Path $App).Path
+# a release build with the build stamp in the header (the default of a local build) is a test build of one machine: never
+# packed for the users. The users' file: tools\build_pulse_plus.ps1 -Variant release -NoStamp, then this script.
+if (Test-Path (Join-Path (Split-Path $app) "stamped.txt")) { throw "this release build carries the build stamp: run tools\build_pulse_plus.ps1 -Variant release -NoStamp first" }
 $data = (Resolve-Path $Data).Path
+# the NPC pictures and the HP bars (data\bestiary\icons, not in git: tools\copy_bestiary_data.py) travel only in this file.
+# Without them the NPC tab draws empty circles (2.3.1 and 2.3.2 went out so): no file is packed without them.
+if (-not (Test-Path (Join-Path $data "bestiary\icons\npc\hp-bars.png"))) { throw "no data\bestiary\icons (NPC pictures): copy the folder from a machine that has it or run tools\copy_bestiary_data.py" }
 $out = [IO.Path]::GetFullPath($Out)
 $stage = Join-Path $env:TEMP ("pulse-single-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path "$stage\pkg" | Out-Null

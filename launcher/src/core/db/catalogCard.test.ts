@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
-import { entityCard, itemSkill, itemSources, linkParts } from "./catalogCard";
+import { entityCard, itemDrops, itemSkill, itemSources, linkParts } from "./catalogCard";
 import type { All } from "./npcPoints";
 
 const SCHEMA = readFileSync(join(__dirname, "..", "..", "..", "..", "core", "pulse_db", "schema.sql"), "utf8");
@@ -63,6 +63,21 @@ describe("the database card's sources", () => {
     const sword = await itemSources(all, 1);
     expect(sword.recipes.map((r) => r.name)).toEqual(["Меч"]);
     expect(sword.dropTotal).toBe(0);
+  });
+
+  it("show the first 8 NPCs that drop an item, and all of them when asked (task 29), technical records left out", async () => {
+    const all = sample();
+    const names = ["Альфа", "Бета", "Гамма", "Дельта", "Эпсилон", "Зета", "Эта", "Тета", "Йота", "Каппа"];
+    for (const [i, name] of names.entries()) await all("INSERT INTO npc (id, name, name_key, source) VALUES (?, ?, ?, 'client')", [String(500 + i), name, name.toLowerCase()]);
+    await all("INSERT INTO npc (id, name, name_key, source) VALUES ('600', 'DF4_Квест_Тест', 'df4_квест_тест', 'client')");
+    await all("UPDATE item SET dropped_by = ? WHERE id = 1", [pack([...names.map((_, i) => 500 + i), 600])]);
+    const sword = await itemSources(all, 1);
+    expect(sword.drops).toHaveLength(8);
+    expect(sword.dropTotal).toBe(11);
+    expect(sword.dropNamed).toBe(10);
+    const every = await itemDrops(all, 1);
+    expect(every.map((n) => n.name)).toEqual([...names].sort((a, b) => (a < b ? -1 : 1)));
+    expect(await itemDrops(all, 3)).toEqual([]);
   });
 
   it("give the skill a book teaches and a stigma gives", async () => {

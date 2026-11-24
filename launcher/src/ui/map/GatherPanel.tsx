@@ -28,9 +28,9 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied, onCopyFailed }: {
+export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied, onCopyFailed, onDb }: {
   nodes: { essence: GatherNode[]; aether: GatherNode[] }; mapId: string; shown: string[]; onToggle(id: string): void; onClear(): void;
-  onCopied(name: string): void; onCopyFailed(): void;
+  onCopied(name: string): void; onCopyFailed(): void; onDb?(name: string): void;
 }) {
   const [open, setOpen] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
@@ -95,6 +95,7 @@ export function GatherPanel({ nodes, mapId, shown, onToggle, onClear, onCopied, 
                         <span className="m">{n.points.length}</span>
                         <span className="eye" aria-hidden="true"><IconEye /></span>
                       </button>
+                      {onDb && <button className="map-gather-copy map-gather-db" aria-label={`Показать «${n.name}» в БД`} title="Показать предмет в базе данных" onClick={() => onDb(n.name)}>БД</button>}
                       <button className={`map-gather-copy${copied === key ? " done" : ""}`}
                         aria-label={`Копировать ссылку на точку «${n.name}»`} title="Копировать ссылку на одну точку (каждый клик — следующая)"
                         onClick={() => copy(key, n)}>

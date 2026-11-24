@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Config } from "../core/settings/config";
 import { IconCheck, IconClose } from "./icons";
+import { UpdateRows } from "./UpdateNotice";
 import type { Boot } from "./useBoot";
 import { MAX_TOASTS_LIMIT } from "./useWatch";
 
@@ -120,6 +121,7 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
           <button className="btn icon-only" aria-label="Закрыть настройки" onClick={onClose}><IconClose /></button>
         </div>
         <div className="pb">
+          <UpdateRows />
           <section className="sec">
             <h3>Что искать в чате</h3>
             <div className="lbl" id="kw-label">Ключевые слова</div>

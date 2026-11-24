@@ -20,9 +20,8 @@ import { overlaySchedule } from "./schedule/overlaySchedule";
 import { useSchedule } from "./schedule/useSchedule";
 import { Toasts } from "./Toasts";
 import { TopTabs } from "./TopTabs";
-import { UpdateButton } from "./UpdateButton";
+import { UpdateNotice } from "./UpdateNotice";
 import { MapsButton } from "./MapsButton";
-import { DbPackButton } from "./DbPackButton";
 import { back, visit } from "../core/nav";
 import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
@@ -170,11 +169,11 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
   }, [go]);
   const openPlace = useCallback((place: ChatPlace) => openMap({ type: "place", ...place }), [openMap]);
   // a name in a card of «База данных» opens where it lives: an NPC in «NPC», a zone on the map, an item, a quest or a title in its section
-  const [npcTarget, setNpcTarget] = useState<{ id: string; name: string; n: number } | null>(null);
+  const [npcTarget, setNpcTarget] = useState<{ id: string; name: string; n: number; view?: "stock" } | null>(null);
   const [dbTarget, setDbTarget] = useState<(CardRef & { n: number; section: string }) | null>(null);
   const openRef = useCallback((ref: CardRef) => {
     if (ref.kind === "zone") { openMap({ type: "zone", map_id: ref.id }); return; }
-    if (ref.kind === "npc") { setNpcTarget((old) => ({ id: ref.id, name: ref.name, n: (old?.n ?? 0) + 1 })); go("NPC"); return; }
+    if (ref.kind === "npc") { setNpcTarget((old) => ({ id: ref.id, name: ref.name, n: (old?.n ?? 0) + 1, view: ref.view })); go("NPC"); return; }
     const section = `db:${{ item: "Предметы", quest: "Задания", title: "Титулы" }[ref.kind]}`;
     setDbTarget((old) => ({ ...ref, n: (old?.n ?? 0) + 1, section }));
     go(section);
@@ -207,9 +206,7 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
           title={trail.length ? `Назад: ${tabLabel(trail[trail.length - 1])} (Alt+←)` : "Назад: некуда"} onClick={goBack}><IconLeft /></button>
         <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); go(id); }} />
         <span className="spacer" />
-        <DbPackButton />
         <MapsButton />
-        <UpdateButton />
         <button className="btn" disabled={!boot.platform}
           title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
           aria-label="В накладку" onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay /><span className="label">В накладку</span></button>
@@ -287,7 +284,7 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
             </OpenItem.Provider>
           </section>
           <OpenItem.Provider value={openCard}>
-            <ItemsPanel checked={watch.checked} onChange={watch.setChecked} />
+            <OpenRef.Provider value={openRef}><ItemsPanel checked={watch.checked} onChange={watch.setChecked} /></OpenRef.Provider>
           </OpenItem.Provider>
           </div>
         </main>
@@ -295,14 +292,18 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
       {alive("Карта") && (
         <Pane on={tab === "Карта"}>
           <OpenMap.Provider value={openMap}>
-            <MapTab boot={boot} target={mapTarget} home={mapHome} onPlaceCleared={() => setMapTarget(null)} />
+            <OpenRef.Provider value={openRef}>
+              <MapTab boot={boot} target={mapTarget} home={mapHome} onPlaceCleared={() => setMapTarget(null)} />
+            </OpenRef.Provider>
           </OpenMap.Provider>
         </Pane>
       )}
       {alive("NPC") && (
         <Pane on={tab === "NPC"}>
           <OpenMap.Provider value={openMap}>
-            <BestiaryTab target={npcTarget} />
+            <OpenRef.Provider value={openRef}>
+              <BestiaryTab target={npcTarget} />
+            </OpenRef.Provider>
           </OpenMap.Provider>
         </Pane>
       )}
@@ -316,11 +317,12 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
           </OpenMap.Provider>
         </Pane>
       ))}
-      {alive("calc:Экипировка") && <Pane on={tab === "calc:Экипировка"}><GearTab /></Pane>}
+      {alive("calc:Экипировка") && <Pane on={tab === "calc:Экипировка"}><OpenRef.Provider value={openRef}><GearTab /></OpenRef.Provider></Pane>}
       {alive("calc:Стигмы") && <Pane on={tab === "calc:Стигмы"}><OpenRef.Provider value={openRef}><StigmaTab /></OpenRef.Provider></Pane>}
       {!LIVE_TABS.includes(tab) && !tab.startsWith("db:") && <main key={tab} className="soon"><p>Раздел «{tabLabel(tab)}» будет следующим.</p></main>}
       </div>
       <AnimatePresence>{card && tab === "Чат" && <ItemCard key="item-card" card={card} onClose={closeCard} />}</AnimatePresence>
+      {!overlay && <UpdateNotice />}
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}

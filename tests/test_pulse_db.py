@@ -264,3 +264,92 @@ def test_description_search_holds_the_whole_card():
                               "можно усилить магическими камнями 60 го уровня и ниже")
     assert search_fold("Ф. крит.  Удара") == "ф крит удара" and search_fold("ФИЗ. атака") == "ф атака"
     assert desc_key(json.dumps({"blocks": [{"kind": "hr"}]})) is None
+
+
+def test_an_item_the_crawl_never_had_gets_its_card_from_the_clients_own_record(tmp_path):
+    base = item_sources(tmp_path)  # 901, 902, 903 have a crawl card; 907 is a chat link's name only
+    items = {"schema": 1, "section": "items", "records": [
+        {"id": "904", "name": "Бешевый коктейль", "level": 60, "icon": "Icon_Item_Drink", "grade": "rare"},
+        {"id": "905", "name": "Модель меча", "level": 1, "icon": "Icon_Item_Model", "grade": "common"},
+        {"id": "902", "name": "Зелье жизни", "level": 1, "icon": "Icon_Item_Potion", "grade": "common"}]}
+    with gzip.open(tmp_path / "items.json.gz", "wt", encoding="utf-8") as out:
+        json.dump(items, out, ensure_ascii=False)
+    catalog = sqlite3.connect(tmp_path / "catalog.sqlite")
+    catalog.executescript("""CREATE TABLE entries (section TEXT NOT NULL, id TEXT NOT NULL, internal_name TEXT, name_ru TEXT,
+        description_ru TEXT, icon_key TEXT, icon_path TEXT, fields_json TEXT NOT NULL, source_pak TEXT NOT NULL, PRIMARY KEY(section, id));""")
+    skill = {"effect1_type": "StatUp", "effect1_reserved13": "hpRegen", "effect1_reserved1": "2", "effect1_remain2": "1800000"}
+    no_trade = {"can_exchange": "FALSE", "can_sell_to_npc": "TRUE", "activation_skill": "food_hp"}
+    rows = [("skills", "10062", "food_hp", "Повышение восстановления HP", None, skill),
+            ("items", "904", "food_a", "Бешевый коктейль", "[%e1.StatUp.StatName]% +[%e1.StatUp.Value]. Время действия: [%e1.StatUp.RemainTime]", no_trade),
+            ("items", "905", "model_a", "Модель меча", "Это модель.\nДля меча.", {}),
+            ("items", "902", "potion_a", "Зелье жизни", "Описание клиента, которое не должно победить карточку сайта.", {}),
+            ("items", "907", "link_only", "Только в ссылках", "", {})]
+    catalog.executemany("INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?)", [(s, i, n, ru, d, None, None, json.dumps(f), "x.pak") for s, i, n, ru, d, f in rows])
+    catalog.commit()
+    catalog.close()
+    out = tmp_path / "pulse.db"
+    build(Sources(**{**base.__dict__, "items": tmp_path / "items.json.gz", "client_catalog": tmp_path / "catalog.sqlite"}), out)
+    db = sqlite3.connect(out)
+    dictionary = db.execute("SELECT value FROM meta WHERE key = 'spec_dict'").fetchone()[0]
+    spec = lambda i: unpack_spec(db.execute("SELECT spec FROM item WHERE id = ?", (i,)).fetchone()[0], dictionary)
+    food = spec(904)
+    assert food["grade"] == "rare"
+    assert food["blocks"] == [{"kind": "props", "lines": ["[Нельзя обменять]"]}, {"kind": "hr"},
+                              {"kind": "text", "text": "Восст. HP +2. Время действия: 30 мин.", "style": "normal"}]
+    assert spec(905)["blocks"][-1]["text"] == "Это модель. Для меча."
+    assert spec(902)["blocks"] == []  # the crawl's card wins over the client's text
+    assert db.execute("SELECT spec FROM item WHERE id = 907").fetchone()[0] is None  # no description in the client: no card
+    assert db.execute("SELECT desc_key FROM item WHERE id = 904").fetchone()[0].startswith("нельзя обменять")  # the description search reads it
+
+
+def test_a_crawl_card_with_a_half_filled_text_is_repaired_from_the_client(tmp_path):
+    base = item_sources(tmp_path)
+    with gzip.open(tmp_path / "item_specs.json.gz", "wt", encoding="utf-8") as out:
+        json.dump({"904": {"name": "Шкура древня", "grade": "common", "blocks": [
+            {"kind": "pairs", "rows": [["Ранг", "[Обычный]"]]}, {"kind": "hr"},
+            {"kind": "text", "text": "Макс. HP% +40. Время действия: 30 мин.", "style": "normal"}]}}, out, ensure_ascii=False)
+    with gzip.open(tmp_path / "items.json.gz", "wt", encoding="utf-8") as out:
+        json.dump({"schema": 1, "section": "items", "records": [{"id": "904", "name": "Шкура древня", "level": 4, "grade": "common"}]}, out)
+    catalog = sqlite3.connect(tmp_path / "catalog.sqlite")
+    catalog.executescript("""CREATE TABLE entries (section TEXT NOT NULL, id TEXT NOT NULL, internal_name TEXT, name_ru TEXT,
+        description_ru TEXT, icon_key TEXT, icon_path TEXT, fields_json TEXT NOT NULL, source_pak TEXT NOT NULL, PRIMARY KEY(section, id));""")
+    skill = {"effect1_type": "StatUp", "effect1_reserved13": "maxhp", "effect1_reserved1": "40", "effect1_remain2": "1800000"}
+    catalog.executemany("INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?)", [
+        ("skills", "1", "food_x", "Укрепление", None, None, None, json.dumps(skill), "x.pak"),
+        ("items", "904", "food_a", "Шкура древня", "[%e1.StatUp.StatName]% +[%e1.StatUp.Value]. Время действия: [%e1.StatUp.RemainTime]", None, None,
+         json.dumps({"activation_skill": "food_x"}), "x.pak")])
+    catalog.commit()
+    catalog.close()
+    out = tmp_path / "pulse.db"
+    build(Sources(**{**base.__dict__, "items": tmp_path / "items.json.gz", "client_catalog": tmp_path / "catalog.sqlite"}), out)
+    db = sqlite3.connect(out)
+    dictionary = db.execute("SELECT value FROM meta WHERE key = 'spec_dict'").fetchone()[0]
+    card = unpack_spec(db.execute("SELECT spec FROM item WHERE id = 904").fetchone()[0], dictionary)
+    assert card["blocks"][0] == {"kind": "pairs", "rows": [["Ранг", "[Обычный]"]]}  # the crawl's rank row stays
+    assert card["blocks"][2]["text"] == "Макс. HP +40. Время действия: 30 мин."
+
+
+def test_a_weapon_the_crawl_never_had_gets_a_card_with_its_stats_from_the_client(tmp_path):
+    base = item_sources(tmp_path)  # 902 has a crawl card
+    with gzip.open(tmp_path / "items.json.gz", "wt", encoding="utf-8") as out:
+        json.dump({"schema": 1, "section": "items", "records": [
+            {"id": "908", "name": "Орихалковый меч", "level": 45, "grade": "common"},
+            {"id": "902", "name": "Зелье жизни", "level": 1, "grade": "common"}]}, out, ensure_ascii=False)
+    catalog = sqlite3.connect(tmp_path / "catalog.sqlite")
+    catalog.executescript("""CREATE TABLE entries (section TEXT NOT NULL, id TEXT NOT NULL, internal_name TEXT, name_ru TEXT,
+        description_ru TEXT, icon_key TEXT, icon_path TEXT, fields_json TEXT NOT NULL, source_pak TEXT NOT NULL, PRIMARY KEY(section, id));""")
+    sword = {"weapon_type": "1h_sword", "equipment_slots": "main_or_sub", "level": "45", "min_damage": "115", "max_damage": "141",
+             "attack_delay": "1400", "bonus_attr1": "critical 19"}
+    catalog.executemany("INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?)", [
+        ("items", "908", "sword_a", "Орихалковый меч", "", None, None, json.dumps(sword), "x.pak"),
+        ("items", "902", "potion_a", "Зелье жизни", "", None, None, json.dumps({**sword}), "x.pak")])
+    catalog.commit()
+    catalog.close()
+    out = tmp_path / "pulse.db"
+    build(Sources(**{**base.__dict__, "items": tmp_path / "items.json.gz", "client_catalog": tmp_path / "catalog.sqlite"}), out)
+    db = sqlite3.connect(out)
+    dictionary = db.execute("SELECT value FROM meta WHERE key = 'spec_dict'").fetchone()[0]
+    spec = lambda i: unpack_spec(db.execute("SELECT spec FROM item WHERE id = ?", (i,)).fetchone()[0], dictionary)
+    grids = [b["pairs"] for b in spec(908)["blocks"] if b["kind"] == "grid"]
+    assert grids == [[["Атака", "115-141"], ["Скор. атаки", "1.4"]], [["Физ. крит", "+19"]]]
+    assert spec(902)["blocks"] == []  # the crawl's card wins over the client's numbers

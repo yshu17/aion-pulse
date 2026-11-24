@@ -22,8 +22,11 @@ export interface ChatPlace extends Place {
 export type MapTarget = ({ type: "place" } & ChatPlace) | { type: "npc"; npc: string; name: string; map_id: string; at?: [number, number]; points?: [number, number, number][] }
   | { type: "zone"; map_id: string };
 
-/** A thing a card names, opened where it lives: an item, a quest or a title in «База данных», an NPC in «NPC», a zone on «Карта». */
-export interface CardRef { kind: "item" | "quest" | "title" | "npc" | "zone"; id: string; name: string }
+/**
+ * A thing a card names, opened where it lives: an item, a quest or a title in «База данных», an NPC in «NPC», a zone on «Карта».
+ * `view` «stock» opens an NPC's card on its goods («Товары»).
+ */
+export interface CardRef { kind: "item" | "quest" | "title" | "npc" | "zone"; id: string; name: string; view?: "stock" }
 export const OpenRef = createContext<((ref: CardRef) => void) | null>(null);
 export const useOpenRef = () => useContext(OpenRef);
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stampText } from "./buildStamp";
+import { stampText, titleText } from "./buildStamp";
 
 describe("build stamp", () => {
   it("shows the date, time and machine", () => {
@@ -13,5 +13,12 @@ describe("build stamp", () => {
   it("is empty without a stamp", () => {
     expect(stampText(undefined, "pc")).toBe("");
     expect(stampText("вчера", "pc")).toBe("");
+  });
+});
+
+describe("the window's title", () => {
+  it("carries the version and the stamp, so the stamp takes no room in the header", () => {
+    expect(titleText("2.3.2", "Сборка: 24.11.2026 10:55 · ноутбук")).toBe("Pulse+ 2.3.2 · Сборка: 24.11.2026 10:55 · ноутбук");
+    expect(titleText("2.3.2", "")).toBe("Pulse+ 2.3.2");
   });
 });

@@ -7,9 +7,9 @@ import { compareStats } from "../../core/items/compare";
 import { bonusLine, cleanSkillText } from "../../core/items/statNames";
 import { SkillText } from "../SkillText";
 import type { Block } from "../../core/items/card";
-import { entityCard, itemSkill, itemSources, linkParts, questCard, questKind, type ItemSkill, type ItemSources, type QuestCard, type QuestNpc } from "../../core/db/catalogCard";
+import { entityCard, itemDrops, itemSkill, itemSources, linkParts, questCard, questKind, type ItemSkill, type ItemSources, type QuestCard, type QuestNpc } from "../../core/db/catalogCard";
 import { recipe as readRecipe, type Recipe } from "../../core/db/game";
-import { SECTION_KEY, SKILL_CLASSES, sectionCounts, sectionGrades, sectionKinds, sectionPage, type PageOptions, type SectionRow } from "../../core/db/sections";
+import { bandOptions, LEVEL_BANDS, levelBounds, SECTION_KEY, SKILL_CLASSES, sectionCounts, sectionGrades, sectionKinds, sectionPage, type LevelBand, type PageOptions, type SectionRow } from "../../core/db/sections";
 import { TOP } from "../../core/tabs";
 import { RARITY } from "../../core/bestiary/card";
 import { PickMenu } from "../bestiary/PickMenu";
@@ -28,8 +28,6 @@ const NO_LEVEL = new Set(["titles", "pets"]);
 const ENTITY: Record<string, string> = { titles: "title", pets: "pet", quests: "quest", recipes: "recipe" };
 const SECTIONS = TOP.flat().find((t) => t.id === "db")!.menu!.flatMap((g) => g.items);
 const GRADES = ["mythic", "epic", "unique", "legend", "rare", "common", "junk"];
-const LEVELS: [string, string][] = [["Любой", ""], ["1–10", "1-10"], ["11–20", "11-20"], ["21–30", "21-30"], ["31–40", "31-40"],
-  ["41–50", "41-50"], ["51–55", "51-55"], ["56–60", "56-60"], ["61+", "61-999"]];
 const SORTS: [string, string][] = [["Уровень ↓", "level-desc"], ["Уровень ↑", "level-asc"], ["Имя А–Я", "name-asc"], ["Имя Я–А", "name-desc"], ["ID", "id-asc"]];
 const PROFESSION: Record<string, string> = { weaponsmith: "Оружейник", armorsmith: "Бронник", tailoring: "Портной", handiwork: "Ремесленник",
   alchemy: "Алхимик", cooking: "Кулинар", convert: "Обработка" };
@@ -81,13 +79,15 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
   const [typed, setTyped] = useState("");
   const [grade, setGrade] = useState("");
   const [kind, setKind] = useState("");
-  const [level, setLevel] = useState("");
+  const [lvFrom, setLvFrom] = useState(""); // the typed «Ур. от – до» (task 11); an empty field is no bound
+  const [lvTo, setLvTo] = useState("");
+  const [level, setLevel] = useState(""); // the applied «from|to», a moment after typing or at Enter
   const [questType, setQuestType] = useState<"" | "gold" | "blue" | "darkblue" | "pink">("");
   const [race, setRace] = useState<"" | "light" | "dark" | "common">("");
-  const [showHigh, setShowHigh] = useState(false); // items and quests above level 55 are hidden unless this is on
+  const [band, setBand] = useState<LevelBand>(""); // items and quests: «Ниже 45 / Выше 45 / Все» (task 30), every level by default
   const [slot, setSlot] = useState(""); // armour: the part of the body
   const [cls, setCls] = useState(""); // skill books and stigmas: the class
-  const [inDesc, setInDesc] = useState(true); // items: look for the text in the whole card too («крит» finds the items with crit), on by default
+  const [inDesc, setInDesc] = useState(false); // items: look for the text in the whole card too («крит» finds the items with crit), off by default (task 31)
   const [best, setBest] = useState(false); // skill books and stigmas: only the highest level of a skill
   const [grades, setGrades] = useState<Set<string> | null>(null); // the grades the section has under the other filters
   const [sort, setSort] = useState(() => (NO_LEVEL.has(section) ? "name-asc" : "level-desc"));
@@ -107,28 +107,31 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
     pulseDbSchema().then((state) => setSchema(state.found === null ? "" : state.text));
   }, []);
   useEffect(() => { const t = setTimeout(() => setQuery(typed), 160); return () => clearTimeout(t); }, [typed]);
+  const levelNow = lvFrom.trim() || lvTo.trim() ? `${lvFrom.trim()}|${lvTo.trim()}` : "";
+  useEffect(() => { const t = setTimeout(() => setLevel(levelNow), 400); return () => clearTimeout(t); }, [levelNow]);
+  const clearLevel = () => { setLvFrom(""); setLvTo(""); setLevel(""); };
   // another section: its own filters
   useEffect(() => {
-    setTyped(""); setQuery(""); setGrade(""); setKind(""); setLevel(""); setSlot(""); setCls(""); setSelected(null); setTicked([]);
+    setTyped(""); setQuery(""); setGrade(""); setKind(""); clearLevel(); setSlot(""); setCls(""); setSelected(null); setTicked([]);
     setSort(NO_LEVEL.has(section) ? "name-asc" : "level-desc");
   }, [section]);
   // asked from a card (a name in a quest, a part of a recipe): no filters, the one record searched by its id (a title by its name)
   useEffect(() => {
     if (!target) return;
     const text = target.kind === "title" ? target.name : target.id;
-    setGrade(""); setKind(""); setLevel(""); setQuestType(""); setRace(""); setSlot(""); setCls(""); setBest(false); setShowHigh(true); setTicked([]);
+    setGrade(""); setKind(""); clearLevel(); setQuestType(""); setRace(""); setSlot(""); setCls(""); setBest(false); setBand(""); setTicked([]);
     setTyped(text); setQuery(text);
   }, [target?.n]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const options = useMemo((): PageOptions => {
-    const [min, max] = level ? level.split("-").map(Number) : [undefined, undefined];
+    const [from = "", to = ""] = level.split("|");
     const [by, dir] = sort.split("-");
-    const cap = (items || section === "quests") && !showHigh && !level ? 55 : undefined; // only items and quests are capped
+    const split = items || section === "quests" ? bandOptions(band) : {}; // only items and quests are split at level 45
     const skills = SKILL_SECTIONS.has(section);
-    return { query, inDesc: items && inDesc, grade: items ? grade : "", kind, levelMin: min, levelMax: max, hideAbove: cap, sort: by as PageOptions["sort"], desc: dir === "desc",
+    return { query, inDesc: items && inDesc, grade: items ? grade : "", kind, ...levelBounds(from, to), ...split, sort: by as PageOptions["sort"], desc: dir === "desc",
       questType: section === "quests" && questType ? questType : undefined, race: section === "quests" && race ? race : undefined,
       slot: section === "armour" && slot ? slot : undefined, cls: skills && cls ? cls : undefined, best: skills && best };
-  }, [query, inDesc, grade, kind, level, sort, items, showHigh, section, questType, race, slot, cls, best]);
+  }, [query, inDesc, grade, kind, level, sort, items, band, section, questType, race, slot, cls, best]);
 
   const load = useCallback(async (offset: number) => {
     if (!all) return;
@@ -165,7 +168,7 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
 
   const tick = (row: SectionRow) => setTicked((old) => old.some((r) => r.id === row.id)
     ? old.filter((r) => r.id !== row.id) : [...old, row].slice(-2)); // two at most: a third replaces the oldest
-  const reset = () => { setGrade(""); setKind(""); setLevel(""); setTyped(""); setQuestType(""); setRace(""); setSlot(""); setCls(""); setBest(false); setInDesc(true); };
+  const reset = () => { setGrade(""); setKind(""); clearLevel(); setTyped(""); setQuestType(""); setRace(""); setSlot(""); setCls(""); setBest(false); setInDesc(false); setBand(""); };
   const comparing = items && ticked.length === 2;
 
   return (
@@ -194,17 +197,23 @@ export function DbTab({ tab, onSection, target = null }: { tab: string; onSectio
         {items && <button type="button" className={`dbt-chip${inDesc ? " on" : ""}`} aria-pressed={inDesc} onClick={() => setInDesc((v) => !v)}
           title="Искать текст не только в названии, но и в описании предмета">Искать в описании</button>}
         {SKILL_SECTIONS.has(section) && <button type="button" className={`dbt-chip${best ? " on" : ""}`} aria-pressed={best} onClick={() => setBest((v) => !v)}>Только высший уровень</button>}
-        {!NO_LEVEL.has(section) && <PickMenu id="db-level" label="Уровень" text={level ? `Ур. ${level.replace("-999", "+").replace("-", "–")}` : "Уровень"}
-          lit={!!level} value={level} onPick={setLevel} options={LEVELS} />}
+        {!NO_LEVEL.has(section) && <span className={`dbt-range${levelNow ? " lit" : ""}`} role="group" aria-label="Уровень от и до">
+          <label htmlFor="db-lv-from">Ур.</label>
+          {([["db-lv-from", "от", lvFrom, setLvFrom], ["db-lv-to", "до", lvTo, setLvTo]] as const).map(([id, hint, value, set], i) => (
+            <Fragment key={id}>{i === 1 && <span aria-hidden="true">–</span>}
+              <input id={id} className="field" inputMode="numeric" maxLength={3} placeholder={hint} value={value} aria-label={`Уровень ${hint}`}
+                onChange={(e) => set(e.target.value.replace(/\D/g, ""))} onKeyDown={(e) => { if (e.key === "Enter") setLevel(levelNow); }} /></Fragment>))}
+          {levelNow && <button type="button" className="x" aria-label="Сбросить уровни" title="Сбросить уровни" onClick={clearLevel}><IconClose /></button>}
+        </span>}
         {section === "quests" && <PickMenu id="db-qtype" label="Вид" text={{ "": "Вид", gold: "Миссии", blue: "Задания", darkblue: "Важные", pink: "Сезонные" }[questType]} lit={!!questType} value={questType} onPick={(v) => setQuestType(v as typeof questType)}
           options={[["Все", ""], ["Миссии (золотой)", "gold"], ["Задания (голубой)", "blue"], ["Важные (тёмно-синий)", "darkblue"], ["Сезонные (розовый)", "pink"]]} />}
         {section === "quests" && <PickMenu id="db-race" label="Раса" text={{ "": "Раса", light: "Элийцы", dark: "Асмодиане", common: "Общие" }[race]} lit={!!race} value={race} onPick={(v) => setRace(v as typeof race)}
           options={[["Все", ""], ["Элийцы", "light"], ["Асмодиане", "dark"], ["Общие", "common"]]} />}
-        {(items || section === "quests") && <button type="button" className={`dbt-chip${showHigh ? " on" : ""}`} aria-pressed={showHigh} onClick={() => setShowHigh((v) => !v)}>
-          {showHigh ? "Выше 55: показаны" : "Выше 55: скрыты"}</button>}
+        {(items || section === "quests") && <PickMenu id="db-band" label="Уровни" text={LEVEL_BANDS.find(([, v]) => v === band)![0]} lit={!!band} value={band}
+          onPick={(v) => setBand(v as LevelBand)} options={LEVEL_BANDS} />}
         {kinds.length > 1 && section !== "quests" && <PickMenu id="db-kind" label={section === "armour" ? "Тип брони" : "Тип"} text={kind ? PROFESSION[kind] ?? kind : section === "armour" ? "Тип брони" : "Тип"} lit={!!kind} value={kind} onPick={setKind}
           options={[["Все", ""], ...kinds.slice(0, 40).map(([k, n]): [string, string] => [`${PROFESSION[k] ?? k} · ${n.toLocaleString("ru-RU")}`, k])]} />}
-        {(grade || kind || level || typed || questType || race || slot || cls || best || !inDesc) && <button type="button" className="bst-reset" onClick={reset}><IconReset />Сбросить</button>}
+        {(grade || kind || levelNow || typed || questType || race || slot || cls || best || inDesc || band) && <button type="button" className="bst-reset" onClick={reset}><IconReset />Сбросить</button>}
       </div>
       <div className="dbt-body">
         <section className="dbt-list" aria-label={`Список: ${label}`}>
@@ -276,13 +285,19 @@ function ItemDetail({ all, row, section, ticked, onTick }: {
   const [copied, setCopied] = useState(false);
   const [allRecipes, setAllRecipes] = useState(false); // the long lists are folded until asked for
   const [allVendors, setAllVendors] = useState(false);
+  const [allDrops, setAllDrops] = useState<{ id: string; name: string }[] | null>(null); // the full list, read when asked for (task 29)
+  const [dropsOpen, setDropsOpen] = useState(false);
   useEffect(() => {
     let alive = true;
-    setWhere(null); setSkill(null); setCopied(false); setAllRecipes(false); setAllVendors(false);
+    setWhere(null); setSkill(null); setCopied(false); setAllRecipes(false); setAllVendors(false); setAllDrops(null); setDropsOpen(false);
     itemSources(all, row.id).then((w) => alive && setWhere(w));
     if (section === "skill_books" || section === "stigmas" || section === "items") itemSkill(all, row.id).then((s) => alive && setSkill(s));
     return () => { alive = false; };
   }, [all, row.id, section]);
+  const toggleDrops = () => {
+    if (!dropsOpen && !allDrops) itemDrops(all, row.id).then(setAllDrops).catch(() => setAllDrops([]));
+    setDropsOpen((v) => !v);
+  };
   const classes = skill ? Object.keys(skill.classes).map((c) => CLASS_RU[c] ?? c) : [];
   const absent = where ? [where.dropTotal ? "" : "С монстров не падает", where.recipes.length ? "" : "Не создаётся", where.vendors.length ? "" : "Не продаётся"].filter(Boolean) : [];
   return (
@@ -309,8 +324,11 @@ function ItemDetail({ all, row, section, ticked, onTick }: {
           {where.dropTotal > 0 && (
             <div className="dbt-box">
               <h5>Добыча<em>{where.dropTotal.toLocaleString("ru-RU")}</em></h5>
-              {where.drops.map((n) => <div key={n.id} className="dbt-li"><RefLink kind="npc" id={n.id} name={n.name} className="dbt-b" /></div>)}
-              {where.dropTotal > where.drops.length && <p className="dbt-note">и ещё {(where.dropTotal - where.drops.length).toLocaleString("ru-RU")} NPC</p>}
+              <div className={`dbt-drops${dropsOpen && allDrops ? " open" : ""}`}>
+                {(dropsOpen && allDrops ? allDrops : where.drops).map((n) => <div key={n.id} className="dbt-li"><RefLink kind="npc" id={n.id} name={n.name} className="dbt-b" /></div>)}
+              </div>
+              {where.dropNamed > where.drops.length && <button type="button" className="dbt-more-link" aria-expanded={dropsOpen} onClick={toggleDrops}>
+                {dropsOpen ? (allDrops ? "Свернуть" : "Загружаю…") : `Показать всех (${where.dropNamed.toLocaleString("ru-RU")})`}</button>}
             </div>
           )}
           {(where.recipes.length > 0 || where.usedIn > 0) && (

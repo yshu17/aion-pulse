@@ -5,10 +5,32 @@
  *   sectionPage(all, "weapons", { query: "меч", sort: "level", offset: 0, limit: 50 })
  *     -> { total, rows: [{ id, name, kind, level, grade, icon }] }   a page of a section's list
  *
+ *   bandOptions("low" | "high" | "") -> { hideAbove } | { hideBelow } | {}   the drop-down «Ниже 45 / Выше 45 / Все» (LEVEL_BANDS)
+ *   levelBounds("40", "55") -> { levelMin: 40, levelMax: 55 }              the typed fields «Ур. от – до» (task 11)
+ *
  * A database built before the sections (schema 4) still gives the six counts it can, from its own tables.
  */
 
 import type { All } from "./npcPoints";
+
+/** The list's split at level 45 (task 30 of docs/TASKS_TG_2026-11-18.md): label, value. «Все» is the default. */
+export const LEVEL_BANDS: [string, LevelBand][] = [["Все уровни", ""], ["Ниже 45 (1–44)", "low"], ["Выше 45 (45+)", "high"]];
+export type LevelBand = "" | "low" | "high";
+
+export function bandOptions(band: LevelBand): Pick<PageOptions, "hideAbove" | "hideBelow"> {
+  return band === "low" ? { hideAbove: 44 } : band === "high" ? { hideBelow: 45 } : {};
+}
+
+/** The typed «Ур. от – до» fields as page options: an empty or unreadable field is no bound, a reversed range is swapped. */
+export function levelBounds(from: string, to: string): Pick<PageOptions, "levelMin" | "levelMax"> {
+  const read = (text: string) => {
+    const value = Math.trunc(Number(text.trim()));
+    return text.trim() !== "" && Number.isFinite(value) && value >= 0 ? value : undefined;
+  };
+  let [min, max] = [read(from), read(to)];
+  if (min !== undefined && max !== undefined && min > max) [min, max] = [max, min];
+  return { ...(min !== undefined ? { levelMin: min } : {}), ...(max !== undefined ? { levelMax: max } : {}) };
+}
 
 /** The item categories counted as armour (shields and headgear are their own kinds). */
 const ARMOUR = ["Ткань", "Кожа", "Кольчуга", "Лата"];
@@ -52,6 +74,7 @@ export interface PageOptions {
   levelMin?: number;       // the level from … to …, both included
   levelMax?: number;
   hideAbove?: number;      // hide the rows above this level; rows without a level (titles, pets …) stay
+  hideBelow?: number;      // hide the rows below this level; rows without a level stay
   slot?: string;           // armour: the gear slot («torso», «pants», «shoes», «shoulder», «glove») of gear_item
   cls?: string;            // skill books and stigmas: only this class' («fighter»), SKILL_CLASSES
   best?: boolean;          // skill books and stigmas: only the highest level of each skill («… III» without I and II)
@@ -163,6 +186,7 @@ function filtered(shape: Shape, section: string, options: PageOptions, skip: "ki
     args.push(section);
   }
   if (options.hideAbove !== undefined) { where.push(`(${shape.level} IS NULL OR ${shape.level} <= ?)`); args.push(options.hideAbove); }
+  if (options.hideBelow !== undefined) { where.push(`(${shape.level} IS NULL OR ${shape.level} >= ?)`); args.push(options.hideBelow); }
   return [`FROM db_section_entry e JOIN ${shape.table} t ON t.id = e.entity_id ${shape.join ?? ""} WHERE ${where.join(" AND ")}`, args];
 }
 

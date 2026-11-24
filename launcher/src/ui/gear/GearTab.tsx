@@ -17,6 +17,7 @@ import { useHoverTip } from "./HoverTip";
 import { RARITY } from "../../core/bestiary/card";
 import type { All } from "../../core/db/npcPoints";
 import { PickMenu } from "../bestiary/PickMenu";
+import { useOpenRef } from "../map/placeLink";
 import { CardBody, useSpec, hasStoneBlock, StoneUi } from "../ItemCard";
 import { Icon } from "../Icon";
 import { IconClose, IconReset, IconSearch, IconSwap } from "../icons";
@@ -161,7 +162,7 @@ export function GearTab() {
       </div>
 
       <div className="gear-body">
-        <Doll slots={active.slots} items={items} selected={selected} onSlot={(slot, filled) => (filled ? setSelected(slot) : setPicking(slot))} subBlocked={subBlocked(active.slots, items)}
+        <Doll slots={active.slots} items={items} selected={selected} onSlot={(slot, filled) => (filled ? setSelected(slot) : setPicking(slot))} onTakeOff={(slot) => { takeOff(slot); setSelected((cur) => (cur === slot ? null : cur)); }} subBlocked={subBlocked(active.slots, items)}
           canSwap={canSwap} onSwap={() => { swapHands(); setSelected((s) => (s === "main" ? "sub" : s === "sub" ? "main" : s)); }} />
 
         <section className="gear-item" aria-label="Предмет">
@@ -254,6 +255,7 @@ function SlotPanel({ slot, item, saved, stones, onEnchant, onStone, onReplace, o
   onReplace(): void; onTakeOff(): void;
 }) {
   const spec = useSpec(String(item.id));
+  const open = useOpenRef();
   // an item that takes no manastones shows none of the card's lines and empty squares about them
   const answer = useMemo(() => (spec?.spec && !canStone(item) ? { ...spec, spec: { ...spec.spec, blocks: withoutStones(spec.spec.blocks as Block[]) } } : spec), [spec, item]);
   // the card says how high a stone the item takes («70-го уровня и ниже»); without that line, ten levels above the item
@@ -273,6 +275,7 @@ function SlotPanel({ slot, item, saved, stones, onEnchant, onStone, onReplace, o
       <div className="gear-slotpanel-head">
         <span className="dbt-made-title">{SLOT_NAME[slot]} · {groupName(item.grp)}</span>
         <span className="spacer" />
+        {open && <button type="button" className="btn" onClick={() => open({ kind: "item", id: String(item.id), name: item.name })}>Показать в БД</button>}
         <button type="button" className="btn" onClick={onReplace}>Заменить</button>
         <button type="button" className="btn" onClick={onTakeOff}>Снять</button>
       </div>
@@ -397,8 +400,8 @@ const DOLL_LAYOUT: { slot: SlotKey; area: string; hint: string }[] = [ // row by
   { slot: "shoes", area: "l6", hint: "icon_item_pl_shoes_c01" }, { slot: "belt", area: "r6", hint: "icon_item_belt_c01" },
 ];
 
-function Doll({ slots, items, selected, onSlot, canSwap, onSwap, subBlocked }: {
-  slots: SavedBuild["sets"][number]["slots"]; items: Map<number, GearItem>; selected: SlotKey | null; onSlot(slot: SlotKey, filled: boolean): void;
+function Doll({ slots, items, selected, onSlot, onTakeOff, canSwap, onSwap, subBlocked }: {
+  slots: SavedBuild["sets"][number]["slots"]; items: Map<number, GearItem>; selected: SlotKey | null; onSlot(slot: SlotKey, filled: boolean): void; onTakeOff(slot: SlotKey): void;
   canSwap: boolean; onSwap(): void; subBlocked: boolean;
 }) {
   const chosen = selected ? slots[selected] : undefined;
@@ -415,14 +418,17 @@ function Doll({ slots, items, selected, onSlot, canSwap, onSwap, subBlocked }: {
           const blocked = slot === "sub" && subBlocked;
           const item = s && !blocked ? items.get(s.id) : undefined;
           return (
-            <button key={slot} type="button" style={{ gridArea: area }} disabled={blocked}
-              title={blocked ? "Левая рука занята двуручным оружием" : item ? `${SLOT_NAME[slot]}: ${item.name}` : SLOT_NAME[slot]}
-              aria-label={item ? `${SLOT_NAME[slot]}: ${item.name}` : `${SLOT_NAME[slot]}: пусто`}
-              className={`gear-cell-slot${selected === slot ? " sel" : ""}${item ? ` filled g-${item.grade}` : ""}`} onClick={() => onSlot(slot, !!item)}>
-              {item ? <Icon name={item.icon} size={46} /> : <span className="hint"><Icon name={hint} size={46} /></span>}
-              {item && s!.enchant > 0 && <em className="plus">+{s!.enchant}</em>}
-              {item && canStone(item) && s!.stones.some(Boolean) && <i className="dots">{s!.stones.map((x, i) => <b key={i} className={x ? "on" : ""} />)}</i>}
-            </button>
+            <div key={slot} className="gear-cell-wrap" style={{ gridArea: area }}>
+              <button type="button" disabled={blocked}
+                title={blocked ? "Левая рука занята двуручным оружием" : item ? `${SLOT_NAME[slot]}: ${item.name}` : SLOT_NAME[slot]}
+                aria-label={item ? `${SLOT_NAME[slot]}: ${item.name}` : `${SLOT_NAME[slot]}: пусто`}
+                className={`gear-cell-slot${selected === slot ? " sel" : ""}${item ? ` filled g-${item.grade}` : ""}`} onClick={() => onSlot(slot, !!item)}>
+                {item ? <Icon name={item.icon} size={46} /> : <span className="hint"><Icon name={hint} size={46} /></span>}
+                {item && s!.enchant > 0 && <em className="plus">+{s!.enchant}</em>}
+                {item && canStone(item) && s!.stones.some(Boolean) && <i className="dots">{s!.stones.map((x, i) => <b key={i} className={x ? "on" : ""} />)}</i>}
+              </button>
+              {item && <button type="button" className="gear-cell-x" aria-label={`Снять: ${item.name}`} title={`Снять: ${item.name}`} onClick={() => onTakeOff(slot)}><IconClose /></button>}
+            </div>
           );
         })}
       </div>

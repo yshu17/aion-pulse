@@ -34,7 +34,9 @@ from core.bestiary.bestiary_store import BestiaryStore
 from core.pulse_db.aidb_quests import read_guides
 from core.pulse_db.aidb_skills import read_skill_damage
 from core.pulse_db.catalog import RULES, SECTIONS, read_client, section_entries
+from core.pulse_db.client_spec import client_spec, repaired_spec, resolve_text
 from core.pulse_db.gear import gear_rows
+from core.pulse_db.gear_spec import gear_spec
 from core.pulse_db.quest_steps import quest_steps
 
 SCHEMA_VERSION = 9
@@ -108,6 +110,41 @@ def _client_fields(items: dict[int, dict], sources: Sources) -> None:
             row["grade"] = grade
 
 
+def _client_specs(items: dict[int, dict], sources: Sources) -> None:
+    """A card for every item the crawl's cards lack but the client describes: equipment with its stats (core/pulse_db/gear_spec.py),
+    the rest with the client's text (core/pulse_db/client_spec.py). The older card wins."""
+    if not sources.client_catalog or not sources.client_catalog.is_file():
+        return
+    db = sqlite3.connect(f"file:{sources.client_catalog.as_posix()}?mode=ro", uri=True)
+    try:
+        try:
+            skills = {str(internal): {"name": name or "", "effects": json.loads(fields)}
+                      for internal, name, fields in db.execute("SELECT internal_name, name_ru, fields_json FROM entries WHERE section = 'skills'")}
+            rows = db.execute("SELECT id, name_ru, description_ru, fields_json FROM entries WHERE section = 'items'").fetchall()
+        except sqlite3.OperationalError:  # an export without the names and descriptions (the small ones of the tests)
+            return
+        for item_id, name, description, fields_json in rows:
+            row = items.get(int(item_id)) if str(item_id).isdigit() else None
+            if row is None:
+                continue
+            fields = json.loads(fields_json)
+            skill = skills.get(str(fields.get("activation_skill") or ""))
+            if row["spec"]:  # the crawl's card stays, but a text it left half-filled («hpRegen% +2») is filled from the client
+                old = json.loads(row["spec"]) if isinstance(row["spec"], str) else None
+                fixed = repaired_spec(old, description, skill) if isinstance(old, dict) else None
+                if fixed:
+                    row["spec"] = json.dumps(fixed, ensure_ascii=False, separators=(",", ":"))
+                continue
+            card_name = row["name"] or _client_name(name)
+            # a piece of equipment gets its stats (core/pulse_db/gear_spec.py), anything else the client's text
+            spec = (gear_spec(name=card_name, grade=row["grade"], fields=fields, description=resolve_text(description, skill)[0])
+                    or client_spec(name=card_name, grade=row["grade"], description=description, fields=fields, skill=skill))
+            if spec:
+                row["spec"] = json.dumps(spec, ensure_ascii=False, separators=(",", ":"))
+    finally:
+        db.close()
+
+
 def _items(sources: Sources, drops: dict[str, tuple]) -> dict[int, dict]:
     """Every item once: the catalog's fields first, then the bestiary's, then the chat links' names; the client's name, level and grade last."""
     items: dict[int, dict] = {}
@@ -139,6 +176,7 @@ def _items(sources: Sources, drops: dict[str, tuple]) -> dict[int, dict]:
             if tab:
                 item(item_id, name=name.strip())
     _client_fields(items, sources)
+    _client_specs(items, sources)
     return items
 
 

@@ -23,7 +23,7 @@ CORE_GROUPS = {
     "update": ["updater", "selfupdate"],
     "telegram": ["tgbatch"],
     "game_data": ["tables", "layout", "sections", "build", "store"],
-    "pulse_db": ["build", "catalog", "quest_steps", "aidb_quests", "aidb_skills", "gear", "pack"],
+    "pulse_db": ["build", "catalog", "quest_steps", "aidb_quests", "aidb_skills", "gear", "pack", "client_spec", "gear_spec"],
 }
 FORBIDDEN_TOP = {"tkinter", "PIL", "ctypes", "winsound", "winreg", "watcher"}
 

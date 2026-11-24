@@ -110,6 +110,11 @@ button.world-zone-name:active:not(:disabled), button.world-label:active:not(:dis
 .map-point-title .muted { font-size: 12px; }
 .map-xy { font-size: 12px; font-variant-numeric: tabular-nums; }
 .map-note { margin: 0; font-size: 13px; white-space: pre-line; color: var(--text); }
+.map-link { display: inline; padding: 0; border: 0; background: none; font: inherit; color: var(--accent); cursor: pointer; text-align: left; }
+.map-link:hover { text-decoration: underline; }
+.map-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 2px; }
+.map-npc-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.map-npc-links .btn { display: inline-flex; align-items: center; gap: 6px; }
 .map-hint p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 
 /* «Сбор» (GatherPanel.tsx): gathering nodes under the card, two folding sections; their spots on the map */
@@ -276,3 +281,6 @@ button.map-deco:active:not(:disabled) { transform: translate(-50%, -50%) scale(1
 .map-deco:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .map-deco-sample { flex: none; width: 10px; height: 10px; margin: 0 8px; border-radius: 50%; background: #4aa8ff; border: 1px solid rgba(255, 255, 255, .85); }
 .map-near img { width: 26px; height: 26px; object-fit: contain; flex: none; }
+
+/* a gathering resource's «БД» button */
+.map-gather-db { font-size: 11px; font-weight: 600; }

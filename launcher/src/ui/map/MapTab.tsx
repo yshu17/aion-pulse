@@ -14,12 +14,16 @@ import { FILTER_GROUPS, SIDES, toImage, Zone } from "../../core/map/zones";
 import { nearestPoint, spawnAreas, SpawnPoint, Spawns } from "../../core/map/spawns";
 import { metresText, plural } from "../../core/text";
 import { Glide } from "../fx";
-import { IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconReset, IconSearch, IconTarget } from "../icons";
+import { IconCart, IconChevron, IconClose, IconFilter, IconLeft, IconFit, IconMessage, IconMinus, IconNavigate, IconPlus, IconReset, IconSearch, IconTarget, IconUser } from "../icons";
 import type { Boot } from "../useBoot";
 import { posLink, type GatherHit, type GatherNode } from "../../core/map/gathering";
 import { copyText, GatherPanel } from "./GatherPanel";
 import { gatherIcon, gathering, loadSpawns, pictureUrl, PLACE_ICON, poi, typeIcon, useMapsEpoch, Way, wayFrom, waysInto, zones } from "./mapData";
-import type { ChatPlace, MapTarget } from "./placeLink";
+import { itemByName } from "../../core/db/poiLinks";
+import { pulseDb } from "../db/pulseDb";
+import { useOpenRef, type ChatPlace, type MapTarget } from "./placeLink";
+import { questNote } from "../../core/db/poiLinks";
+import { usePoiLinks } from "./usePoiLinks";
 import { regionOf, world, WorldLayer, zoneTitle } from "./WorldLayer";
 import "./map.css";
 
@@ -339,6 +343,13 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
     noticeTimer.current = window.setTimeout(() => setNotice(null), 2200);
   };
   useEffect(() => () => clearTimeout(noticeTimer.current), []);
+  const openRefMap = useOpenRef();
+  const openGatherItem = async (name: string) => { // a gathering node's resource in «Предметы» of the database
+    const all = await pulseDb().catch(() => null);
+    const item = all ? await itemByName(all, name).catch(() => null) : null;
+    if (item && openRefMap) openRefMap({ kind: "item", id: item.id, name: item.name });
+    else notify(`«${name}» в базе предметов не найден`);
+  };
 
   // --- the right panel -------------------------------------------------------------------------------------------
   const placeHere = shownPlace && zone && shownPlace.map_id === zone.map_id ? shownPlace : null;
@@ -814,7 +825,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
         {level === "zone" && <aside className="map-panel" aria-label="Выбранное на карте">
           {selected?.kind === "poi" ? (
             <PointCard title={selected.poi.name || poi.typeName(selected.poi.type)} kind={poi.typeName(selected.poi.type)} icon={typeIcon(selected.poi.type)}
-              coords={[selected.poi.gx, selected.poi.gy]} note={selected.poi.note} near={near} onNear={(p) => pick(p, true)}
+              coords={[selected.poi.gx, selected.poi.gy]} note={selected.poi.note} npcName={selected.poi.name} mapId={selected.poi.zone} near={near} onNear={(p) => pick(p, true)}
               way={wayFrom(selected.poi.zone, selected.poi.name)} onWay={goWay}
               onClose={() => setSelected(null)} onBack={placeHere ? backToPlace : null} />
           ) : selected?.kind === "area" ? (
@@ -860,7 +871,7 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
               )}
             </div>
           )}
-          <GatherPanel nodes={gather} mapId={zone.map_id} onCopied={(name) => notify(`Метка «${name}» скопирована в буфер`)} onCopyFailed={() => notify("Не удалось скопировать в буфер")} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
+          <GatherPanel nodes={gather} mapId={zone.map_id} onCopied={(name) => notify(`Метка «${name}» скопирована в буфер`)} onCopyFailed={() => notify("Не удалось скопировать в буфер")} onDb={openRefMap ? openGatherItem : undefined} shown={gatherShown} onToggle={toggleGather} onClear={() => setGatherShown([])} />
         </aside>}
       </div>
     </main>
@@ -868,10 +879,11 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
 }
 
 /** A picked point (or an area of the search): what it is, where, and the nearest useful points. */
-function PointCard({ title, kind, icon, coords, note, near, onNear, onClose, onBack, way, onWay }: {
-  title: string; kind: string; icon: string | null; coords: [number, number] | null; note: string; near: Near[];
+function PointCard({ title, kind, icon, coords, note, npcName = "", mapId = "", near, onNear, onClose, onBack, way, onWay }: {
+  title: string; kind: string; icon: string | null; coords: [number, number] | null; note: string; npcName?: string; mapId?: string; near: Near[];
   onNear(p: Poi): void; onClose(): void; onBack: (() => void) | null; way?: Way | null; onWay?(way: Way): void;
 }) {
+  const links = usePoiLinks(npcName, mapId, note);
   return (
     <div className="map-card">
       <div className="map-card-head">
@@ -882,7 +894,8 @@ function PointCard({ title, kind, icon, coords, note, near, onNear, onClose, onB
         <button className="x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
       </div>
       {coords && <div className="muted map-xy">x {Math.round(coords[0])} · y {Math.round(coords[1])}</div>}
-      {note && <p className="map-note">{note}</p>}
+      {note && <PointNote note={note} quests={links.quests} />}
+      <NpcLinks npc={links.npc} />
       {way && onWay && zones[way.to] && (
         <button className="btn primary map-near-btn" onClick={() => onWay(way)}><IconNavigate /> Перейти: {zones[way.to].name}</button>
       )}
@@ -903,6 +916,7 @@ function NpcCard({ npc, zone, spOnly, near, onPoint, onNear, onClose }: {
 }) {
   const [gx, gy] = npc.points[npc.at];
   const kind = npc.npc.startsWith("poi:") ? "Точка карты" : "НПС / монстр";
+  const links = usePoiLinks(npc.name, zone.map_id, "");
   return (
     <div className="map-card">
       <div className="map-card-head">
@@ -913,6 +927,7 @@ function NpcCard({ npc, zone, spOnly, near, onPoint, onNear, onClose }: {
         <button className="x" aria-label="Закрыть" onClick={onClose}><IconClose /></button>
       </div>
       <div className="muted map-xy">x {Math.round(gx)} · y {Math.round(gy)}</div>
+      <NpcLinks npc={links.npc} />
       {zone.layers.length > 1 && <p className="map-note">Этаж в данных клиента не указан: точки показаны на всех этажах.</p>}
       {spOnly && <p className="map-note">Точки взяты только из расстановки клиента (SP): НПС может появляться не всегда, а по условию (задание, событие, сценарий). Условия не проверены.</p>}
       {npc.points.length > 1 && (
@@ -931,6 +946,39 @@ function NpcCard({ npc, zone, spOnly, near, onPoint, onNear, onClose }: {
         </>
       )}
       <NearList near={near} onNear={onNear} />
+    </div>
+  );
+}
+
+/** A point's note; the quests it names open in «База данных → Задания» (task 15), a name not in the database stays text. */
+function PointNote({ note, quests }: { note: string; quests: Record<string, string> }) {
+  const open = useOpenRef();
+  const parsed = questNote(note);
+  if (!parsed || !open) return <p className="map-note">{note}</p>;
+  return (
+    <p className="map-note">
+      {parsed.head}
+      {parsed.names.map((name, i) => (
+        <Fragment key={i}>
+          {i > 0 && "; "}
+          {quests[name]
+            ? <button type="button" className="map-link" title="Открыть задание в базе данных" onClick={() => open({ kind: "quest", id: quests[name], name })}>{name}</button>
+            : name}
+        </Fragment>
+      ))}
+      {parsed.more && "; …"}
+    </p>
+  );
+}
+
+/** The point's NPC in «NPC» (task 17): its card, and for a merchant what it sells. */
+function NpcLinks({ npc }: { npc: { id: string; name: string; sells: boolean } | null }) {
+  const open = useOpenRef();
+  if (!npc || !open) return null;
+  return (
+    <div className="map-npc-links">
+      <button type="button" className="btn" onClick={() => open({ kind: "npc", id: npc.id, name: npc.name })}><IconUser /> Карточка NPC</button>
+      {npc.sells && <button type="button" className="btn" onClick={() => open({ kind: "npc", id: npc.id, name: npc.name, view: "stock" })}><IconCart /> Что продаёт</button>}
     </div>
   );
 }

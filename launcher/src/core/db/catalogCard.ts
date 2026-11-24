@@ -1,7 +1,8 @@
 /**
  * What the «База данных» card shows beside an item, and the cards of the other sections (pulse.db, schema 5).
  *
- *   itemSources(all, itemId) -> { drops, dropTotal, recipes, usedIn, vendors }   where an item comes from
+ *   itemSources(all, itemId) -> { drops, dropTotal, dropNamed, recipes, usedIn, vendors }   where an item comes from
+ *   itemDrops(all, itemId, limit?) -> NpcRef[]      the NPCs that drop it by name (all of them without a limit: the card's «Показать всех»)
  *   itemSkill(all, itemId) -> ItemSkill | null     the skill a skill book teaches or a stigma gives
  *   entityCard(all, entity, id) -> Row | null      a title, a pet, a quest or a recipe as a card
  *   linkParts(text, links) -> (string | GuideLink)[]   a guide's line cut at the names it links (an NPC, an item, a zone)
@@ -17,30 +18,46 @@ export interface NpcRef { id: string; name: string }
 export interface ItemSources {
   drops: NpcRef[];      // the first NPCs that drop it, by name (not the technical records)
   dropTotal: number;    // how many NPCs drop it
+  dropNamed: number;    // how many of them the card can list (the technical records left out): the full list's length
   recipes: Recipe[];    // the recipes that make it
   usedIn: number;       // how many recipes need it
   vendors: (NpcRef & { kind: string })[];
 }
 
 const DROPS_SHOWN = 8;
+// the NPCs a card can name: technical records («DF4_ЕжедневныйКвест_…») stay out
+const NAMED = "FROM npc WHERE id IN (SELECT CAST(value AS TEXT) FROM json_each(?)) AND name <> '' AND service = 0 AND instr(name, '_') = 0";
+
+async function droppers(all: All, itemId: number): Promise<number[]> {
+  const [item] = await all("SELECT dropped_by FROM item WHERE id = ?", [itemId]);
+  return unpackIds(item?.dropped_by, true);
+}
+
+export async function itemDrops(all: All, itemId: number, limit?: number): Promise<NpcRef[]> {
+  const ids = await droppers(all, itemId);
+  if (!ids.length) return [];
+  const rows = await all(`SELECT id, name ${NAMED} ORDER BY name${limit ? " LIMIT ?" : ""}`, limit ? [JSON.stringify(ids), limit] : [JSON.stringify(ids)]);
+  return rows.map((r) => ({ id: String(r.id), name: String(r.name) }));
+}
 
 export async function itemSources(all: All, itemId: number): Promise<ItemSources> {
-  const [[item], used, sold, recipes] = await Promise.all([
-    all("SELECT dropped_by FROM item WHERE id = ?", [itemId]),
+  const [ids, used, sold, recipes] = await Promise.all([
+    droppers(all, itemId),
     all("SELECT count(DISTINCT recipe_id) AS n FROM recipe_part WHERE item_id = ?", [itemId]),
     all("SELECT v.npc_id, v.kind, coalesce(n.name, '') AS name FROM vendor_item v LEFT JOIN npc n ON n.id = v.npc_id "
       + "WHERE v.item_id = ? ORDER BY n.name, v.npc_id", [itemId]),
     recipesFor(all, String(itemId)),
   ]);
-  const ids = unpackIds(item?.dropped_by, true);
-  const named = ids.length
-    ? await all("SELECT id, name FROM npc WHERE id IN (SELECT CAST(value AS TEXT) FROM json_each(?)) AND name <> '' "
-      + "AND service = 0 AND instr(name, '_') = 0 ORDER BY name LIMIT ?", // technical records («DF4_ЕжедневныйКвест_…») stay out
-      [JSON.stringify(ids), DROPS_SHOWN])
-    : [];
+  const [named, [count]] = ids.length
+    ? await Promise.all([
+      all(`SELECT id, name ${NAMED} ORDER BY name LIMIT ?`, [JSON.stringify(ids), DROPS_SHOWN]),
+      all(`SELECT count(*) AS n ${NAMED}`, [JSON.stringify(ids)]),
+    ])
+    : [[], [{ n: 0 }]];
   return {
     drops: named.map((r) => ({ id: String(r.id), name: String(r.name) })),
     dropTotal: ids.length,
+    dropNamed: Number(count?.n ?? 0),
     recipes,
     usedIn: Number(used[0]?.n ?? 0),
     vendors: sold.map((r) => ({ id: String(r.npc_id), name: String(r.name || r.npc_id), kind: String(r.kind) })),

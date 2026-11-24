@@ -145,6 +145,11 @@
 .bst-good.g-common { --rc: var(--grade-common); } .bst-good.g-rare { --rc: var(--grade-rare); } .bst-good.g-legend { --rc: var(--grade-legend); }
 .bst-good.g-unique { --rc: var(--grade-unique); } .bst-good.g-epic { --rc: var(--grade-epic); } .bst-good.g-mythic { --rc: var(--grade-mythic); }
 .bst-good.g-junk { --rc: var(--muted); }
+.bst-good.link { padding: 0; }
+.bst-good-go { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 8px 12px; border: 0; border-radius: inherit; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bst-good-go:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bst-good.link:hover { border-color: var(--accent); }
 .bst-good-pic { width: 40px; height: 40px; flex: none; border-radius: 8px; object-fit: cover; }
 .bst-good-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .bst-good-text b { color: var(--rc); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

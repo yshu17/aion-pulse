@@ -5,7 +5,8 @@ import { GRADE_LABELS, ItemBrowser } from "../core/items/browser";
 import type { WatchItem } from "../core/items/catalog";
 import { watchItems } from "./data";
 import { Icon } from "./Icon";
-import { IconCheck, IconChevron, IconClose, IconCopy, IconEye } from "./icons";
+import { IconCheck, IconChevron, IconClose, IconCopy, IconExternal, IconEye } from "./icons";
+import { useOpenRef } from "./map/placeLink";
 import { m } from "motion/react";
 import { useOpenItem } from "./ItemCard";
 import { row as rowIn } from "./fx";
@@ -91,6 +92,7 @@ interface ListProps {
 
 /** The found line and the groups with their rows. Memoized: a keystroke in the input does not draw it again. */
 const ItemsList = memo(function ItemsList({ browser, version, query, searchFolded, setSearchFolded, redraw, commit, copiedId, copyId, peek }: ListProps) {
+  const toDb = useOpenRef(); // task 12: the item in «База данных»
   const searching = query.trim() !== "";
   const found = useMemo(() => {
     browser.search(query);
@@ -141,6 +143,10 @@ const ItemsList = memo(function ItemsList({ browser, version, query, searchFolde
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyId(item.id); }}>
         {copiedId === item.id ? <IconCheck /> : <IconCopy />}
       </button>
+      {toDb && <button type="button" className="peek to-db" aria-label={`Показать в БД: ${item.name}`} title="Показать в базе данных"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toDb({ kind: "item", id: String(item.id), name: item.name }); }}>
+        <IconExternal />
+      </button>}
     </label>
   );
 

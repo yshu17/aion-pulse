@@ -27,6 +27,11 @@ if ($FetchDb) {
     if ($LASTEXITCODE -ne 0) { throw "pack_pulse_db failed: $LASTEXITCODE" }
 }
 
+# the NPC pictures (data\bestiary\icons, not in git): without them the NPC tab draws empty circles. A test build goes on, loudly.
+if (-not (Test-Path (Join-Path $root "data\bestiary\icons\npc\hp-bars.png"))) {
+    Write-Warning "no data\bestiary\icons: the NPC tab of this build has no pictures (copy the folder or run tools\copy_bestiary_data.py)"
+}
+
 Push-Location $launcher
 try {
     & npx tauri build --no-bundle

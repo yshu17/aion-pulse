@@ -194,3 +194,27 @@ def test_quest_givers_placed_from_the_client_one_point_per_npc():
     elyos = build_poi.quest_points(quests, [{"quest_id": "104", "start_npc_id": "7"}], spawns, zone_ids, {})
     assert elyos["220020000"][0]["note"] == "Элийские задания (1): Для элийцев"
     assert elyos["220020000"][0]["side"] == "light" and "side" not in morheim[1]  # Morheim quests: no race given
+
+
+def dp(map_id, x, y, name="DPLF2_DirectPortal1"):
+    row = obj("DP", name, map_id=map_id, x="", y="")  # zones mapped after the level export have no map pixels
+    row["game_x"], row["game_y"] = str(x), str(y)
+    return row
+
+
+def test_rift_points_need_no_map_pixels_and_merge_one_spot():
+    rows = [dp("210020000", 621.25, 1018.1), dp("220050000", 109.3, 412.5), dp("220050000", 111.3, 413.7),
+            dp("220050000", 109.6, 414.6), dp("220050000", 2116.4, 509.5), dp("999000000", 1, 1),
+            obj("SP", "spawn", map_id="210020000")]
+    out = build_poi.rift_points(rows, {"210020000", "220050000"})
+    assert out["210020000"] == [{"t": "direct_portal", "x": 0.0, "y": 0.0, "gx": 621.2, "gy": 1018.1, "name": ""}]
+    assert [(p["gx"], p["gy"]) for p in out["220050000"]] == [(110.1, 413.6), (2116.4, 509.5)]  # three marks, one rift
+    assert "999000000" not in out
+
+
+def test_replace_rifts_keeps_other_points():
+    data = {"version": 1, "types": {"direct_portal": {}}, "zones": {
+        "A": [{"t": "direct_portal", "gx": 1}, {"t": "teleport", "gx": 2}], "B": [{"t": "direct_portal", "gx": 3}]}}
+    build_poi.replace_rifts(data, {"A": [{"t": "direct_portal", "gx": 9}], "C": [{"t": "direct_portal", "gx": 8}]})
+    assert data["zones"] == {"A": [{"t": "teleport", "gx": 2}, {"t": "direct_portal", "gx": 9}],
+                             "C": [{"t": "direct_portal", "gx": 8}]}

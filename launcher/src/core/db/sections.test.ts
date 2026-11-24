@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
 import type { All } from "./npcPoints";
-import { searchFold, sectionCounts, sectionGrades, sectionKinds, sectionPage } from "./sections";
+import { bandOptions, LEVEL_BANDS, levelBounds, searchFold, sectionCounts, sectionGrades, sectionKinds, sectionPage } from "./sections";
 
 const SCHEMA = readFileSync(join(__dirname, "..", "..", "..", "..", "core", "pulse_db", "schema.sql"), "utf8");
 
@@ -111,6 +111,21 @@ describe("the filters of a section", () => {
     expect((await sectionPage(all, "items", { hideAbove: 40 })).rows.map((r) => r.id).sort()).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
     expect((await sectionPage(all, "titles", { hideAbove: 55 })).total).toBe(1);
   });
+
+  it("hide what is below a level the same way", async () => {
+    const all = sample(true);
+    expect((await sectionPage(all, "items", { hideBelow: 30 })).rows.map((r) => r.id).sort()).toEqual([1, 2, 8, 9]);
+  });
+
+  it("split the list at level 45 by the drop-down «Ниже 45 / Выше 45 / Все» (task 30), «Все» shows every level", async () => {
+    expect(LEVEL_BANDS.map(([, v]) => v)).toEqual(["", "low", "high"]);
+    expect(bandOptions("")).toEqual({});
+    expect(bandOptions("low")).toEqual({ hideAbove: 44 });
+    expect(bandOptions("high")).toEqual({ hideBelow: 45 });
+    const all = sample(true);
+    expect((await sectionPage(all, "items", bandOptions("high"))).rows.map((r) => r.id).sort()).toEqual([1, 8, 9]);
+    expect((await sectionPage(all, "items", bandOptions("low"))).rows.map((r) => r.id).sort()).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+  });
 });
 
 describe("the search in an item's description", () => {
@@ -147,5 +162,19 @@ describe("the words of a description search", () => {
     expect(searchFold("Ф. крит.  Удара")).toBe("ф крит удара");
     expect(searchFold("ФИЗ. атака +30%")).toBe("ф атака 30");
     expect(searchFold("Физика")).toBe("физика");
+  });
+});
+
+describe("level from … to … (task 11)", () => {
+  it("reads the two typed fields; an empty one is no bound", () => {
+    expect(levelBounds("", "")).toEqual({});
+    expect(levelBounds("40", "55")).toEqual({ levelMin: 40, levelMax: 55 });
+    expect(levelBounds("40", "")).toEqual({ levelMin: 40 });
+    expect(levelBounds(" ", "30")).toEqual({ levelMax: 30 });
+  });
+  it("swaps a reversed range and ignores what is not a level", () => {
+    expect(levelBounds("55", "40")).toEqual({ levelMin: 40, levelMax: 55 });
+    expect(levelBounds("abc", "-3")).toEqual({});
+    expect(levelBounds("12.7", "")).toEqual({ levelMin: 12 });
   });
 });

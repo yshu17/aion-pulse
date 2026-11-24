@@ -68,12 +68,18 @@ describe("the bestiary from pulse.db", () => {
     const card = await detail(all, "100");
     expect(card).toMatchObject({ id: "100", name: "Лесной руфиллин", rank: "Обычный", level: 49, hp_bar: 1, category: "monster",
       icon_asset: "npc/m.jpg", stats: { "Макс. ХП": "11578" }, kb_status: "loaded", stock: [] });
-    expect(card!.drops).toEqual([{ item_id: "1", name: "Сверкающие когти", rarity: "common", icon: "icon_item_claw.png", catalog_icon: "icon_item_claw" }]);
+    expect(card!.drops).toEqual([{ item_id: "1", name: "Сверкающие когти", rarity: "common", icon: "icon_item_claw.png", catalog_icon: "icon_item_claw", in_db: true }]);
     expect(card!.points.map((p: any) => [p.map_id, p.gx, p.gy, p.source])).toEqual([["220050000", 653.2, 1692.4, "map"], ["220050000", 1000, 1000, "bestiary"]]);
     const shop = await detail(all, "200");
-    expect(shop!.stock).toEqual([{ item_id: "9", name: "Зелье жизни", rarity: "common", level: "1", icon_asset: "client/potion.png", catalog_icon: "icon_potion", group: "Бакалея", trade_mode: "Покупка" }]);
+    expect(shop!.stock).toEqual([{ item_id: "9", name: "Зелье жизни", rarity: "common", level: "1", icon_asset: "client/potion.png", catalog_icon: "icon_potion", group: "Бакалея", trade_mode: "Покупка", in_db: true }]);
     expect((await detail(all, "300"))!.points.map((p: any) => p.map_id)).toEqual(["210050000"]); // the map's marker of its name
     expect(await detail(all, "nobody")).toBeNull();
+  });
+
+  it("says which goods and drops have a record in «База данных» (their link opens it)", async () => {
+    const all = sample();
+    await all("INSERT INTO npc_stock VALUES ('200', 1, '777', 'Нет в базе', 'нет в базе', 'common', '1', NULL, NULL, NULL)");
+    expect((await detail(all, "200"))!.stock.map((s: any) => s.in_db)).toEqual([true, false]);
   });
 
   it("gives the approximate areas of an NPC", async () => {

@@ -16,7 +16,7 @@ import { CountUp, reveal, row, SPRING } from "../fx";
 import { m } from "motion/react";
 import { IconClose, IconFlag, IconGroup, IconNavigate, IconPin, IconRank, IconReset, IconRole, IconSearch, IconSort, IconStairs } from "../icons";
 import { pictureUrl, PLACE_ICON, zones } from "../map/mapData";
-import { useOpenMap } from "../map/placeLink";
+import { useOpenMap, useOpenRef } from "../map/placeLink";
 import { bestiaryIcon, openBestiary, type BestiaryClient } from "./bestiaryDb";
 import { PickMenu } from "./PickMenu";
 import "./bestiary.css";
@@ -42,7 +42,7 @@ function Pic({ path, game, className }: { path: string | null | undefined; game?
 }
 
 /** An NPC another tab asks to show (a name in a quest's card): searched by its name and picked by its id. */
-export interface NpcTarget { id: string; name: string; n: number }
+export interface NpcTarget { id: string; name: string; n: number; view?: "stock" } // view «stock»: the card opens on «Товары»
 
 export function BestiaryTab({ target = null }: { target?: NpcTarget | null }) {
   const [client, setClient] = useState<BestiaryClient | null | undefined>(undefined); // undefined: still opening
@@ -142,7 +142,7 @@ function Bestiary({ client, target }: { client: BestiaryClient | null | undefine
           {!loading && client && !rows.length && <div className="bst-empty">Никого не нашлось: проверь слово или сними фильтр класса и уровня.</div>}
         </section>
         <section className="bst-detail" aria-label="Карточка NPC">
-          {detail && client ? <Card key={String(detail.id)} client={client} detail={detail} />
+          {detail && client ? <Card key={String(detail.id)} client={client} detail={detail} ask={target && target.id === String(detail.id) ? target : null} />
             : loading || (selected && client) ? <CardSkeleton /> : <div className="bst-empty">Выбери NPC в списке.</div>}
         </section>
       </div>
@@ -198,10 +198,11 @@ type TabName = "drops" | "places" | "stock";
 const STAT_TONE: Record<string, string> = { "Макс. ХП": "hp", "Опыт": "xp", "DP": "dp" };
 
 // the card's points are pulse.db's npc_point (core/db/bestiary.ts detail): the table the map reads too
-const Card = memo(function Card({ client, detail }: { client: BestiaryClient; detail: Detail }) {
+const Card = memo(function Card({ client, detail, ask = null }: { client: BestiaryClient; detail: Detail; ask?: NpcTarget | null }) {
   const openMap = useOpenMap();
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
+  useEffect(() => { if (ask?.view === "stock" && sells) setTab("stock"); }, [ask?.n]); // eslint-disable-line react-hooks/exhaustive-deps
   // The pill under the chosen tab slides along the bar by its own position and width. (A shared-layout pill, Glide, follows the
   // tab on the screen: when the shorter list of the other tab scrolls the card, the bar moves and the pill jumped up and down.)
   const bar = useRef<HTMLDivElement>(null);
@@ -304,8 +305,9 @@ function HpBar({ detail }: { detail: Detail }) {
   );
 }
 
-/** The NPC's drops («Добыча») or goods («Товары») with the search box and a note under. */
+/** The NPC's drops («Добыча») or goods («Товары») with the search box and a note under; an item with a record opens in «База данных». */
 function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
+  const open = useOpenRef();
   const [q, setQ] = useState(() => "");
   const sells = kind === "stock";
   const list = sells ? filterStock(detail, q) : filterDrops(detail, q);
@@ -320,17 +322,30 @@ function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
       </div>
       <ul className="bst-goods">
         {list.slice(0, GOODS_SHOWN).map(([i, item], at) => (
-          <m.li key={i} className={`bst-good ${rarityClass(item.rarity)}`} {...row(at, 8)}>
-            <Pic path={item.icon_asset ?? item.icon} game={item.catalog_icon} className="bst-good-pic" />
-            <span className="bst-good-text">
-              <b>{item.name}</b>
-              <span>{[item.group, sells ? item.trade_mode : RARITY[item.rarity as string]].filter(Boolean).join(" · ")}</span>
-            </span>
+          <m.li key={i} className={`bst-good ${rarityClass(item.rarity)}${open && item.in_db ? " link" : ""}`} {...row(at, 8)}>
+            {open && item.in_db
+              ? <button type="button" className="bst-good-go" title="Открыть в базе данных" onClick={() => open({ kind: "item", id: String(item.item_id), name: item.name })}>
+                  <GoodBody item={item} sells={sells} />
+                </button>
+              : <GoodBody item={item} sells={sells} />}
           </m.li>
         ))}
       </ul>
       <p className="bst-note">{note}</p>
     </div>
+  );
+}
+
+/** A good or a drop: its picture, name and a line under. */
+function GoodBody({ item, sells }: { item: Detail; sells: boolean }) {
+  return (
+    <>
+      <Pic path={item.icon_asset ?? item.icon} game={item.catalog_icon} className="bst-good-pic" />
+      <span className="bst-good-text">
+        <b>{item.name}</b>
+        <span>{[item.group, sells ? item.trade_mode : RARITY[item.rarity as string]].filter(Boolean).join(" · ")}</span>
+      </span>
+    </>
   );
 }
 

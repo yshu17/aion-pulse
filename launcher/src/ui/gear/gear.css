@@ -98,6 +98,12 @@
 .gear-doll-grid { flex: 1; display: grid; justify-content: space-between; align-content: start; row-gap: 12px;
   grid-template-columns: 58px 1fr 58px; grid-template-areas: ". swap ." "main wing sub" "l1 . r1" "l2 . r2" "l3 . r3" "l4 . r4" "l5 . r5" "l6 . r6"; }
 .gear-doll-grid > [style*="wing"] { justify-self: center; margin-top: 0; }
+.gear-cell-wrap { position: relative; width: 58px; height: 58px; }
+.gear-cell-x { position: absolute; top: -6px; right: -6px; z-index: 1; width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border-radius: 50%;
+  border: 1px solid var(--border-control); background: var(--surface); color: var(--muted, #aab); cursor: pointer; opacity: .8; transition: opacity .15s; }
+.gear-cell-x svg { width: 10px; height: 10px; }
+.gear-cell-wrap:hover .gear-cell-x, .gear-cell-x:focus-visible { opacity: 1; }
+.gear-cell-x:hover { color: var(--danger); border-color: var(--danger); }
 .gear-cell-slot { position: relative; width: 58px; height: 58px; display: grid; place-items: center; padding: 0; border-radius: 8px; cursor: pointer;
   border: 1px solid rgba(200, 210, 255, .22); background: linear-gradient(160deg, rgba(36, 40, 60, .85), rgba(14, 16, 26, .9));
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.5), 0 4px 14px rgba(0,0,0,.35); transition: border-color .15s, box-shadow .15s; }
@@ -107,7 +113,7 @@
 .gear-cell-slot .icon { border-radius: 6px; }
 .gear-cell-slot .hint { filter: grayscale(1) brightness(.85) contrast(.9); opacity: .55; }
 .gear-cell-slot.filled { border-color: color-mix(in srgb, var(--g) 70%, transparent); }
-.gear-cell-slot .plus { position: absolute; right: 3px; top: 2px; font-style: normal; font-size: 11px; font-weight: 700; color: #ffd48a; text-shadow: 0 1px 2px #000; }
+.gear-cell-slot .plus { position: absolute; right: 4px; bottom: 3px; font-style: normal; font-size: 11px; font-weight: 700; color: #ffd48a; text-shadow: 0 1px 2px #000; }
 .gear-cell-slot .dots { position: absolute; left: 4px; bottom: 3px; display: flex; gap: 2px; }
 .gear-cell-slot .dots b { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.25); }
 .gear-cell-slot .dots b.on { background: #7fd3ff; box-shadow: 0 0 4px #7fd3ff; }
