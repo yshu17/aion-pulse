@@ -112,8 +112,6 @@ time { color: var(--muted); font: 12px var(--mono); }
 .toast { position: relative; width: 340px; display: flex; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border-control);
   border-left: 3px solid var(--accent); border-radius: 0 12px 12px 0; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: arrive .25s ease-out; }
 /* the developer's test toasts: one button per kind, wrapped */
-/* the small credit under the content, on the right; the space above keeps it apart from the list */
-.credit { flex: none; padding-top: 10px; text-align: right; font-size: 10px; letter-spacing: .02em; color: var(--muted); opacity: .55; pointer-events: none; user-select: none; }
 /* how long the toast stays: the bar drains from full to empty, as the strip's progress does for an event */
 .toast-time { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; overflow: hidden; background: rgba(255, 255, 255, .08); }
 .toast-time i { position: absolute; inset: 0; background: var(--accent); transform-origin: left; animation: toast-drain linear both; }

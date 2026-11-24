@@ -23,7 +23,6 @@ import { TopTabs } from "./TopTabs";
 import { UpdateButton } from "./UpdateButton";
 import { MapsButton } from "./MapsButton";
 import { DbPackButton } from "./DbPackButton";
-import { Credit } from "./Credit";
 import { back, visit } from "../core/nav";
 import { LIVE_TABS, tabLabel } from "../core/tabs";
 import { Boot, useBoot } from "./useBoot";
@@ -325,7 +324,6 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
       <AnimatePresence>{settings && <SettingsPanel key="settings" boot={boot} onClose={() => setSettings(false)} onTrySound={watch.playSound} />}</AnimatePresence>
       {boot.platform === null && !overlay && !focused && <Toasts toasts={watch.toasts} remaining={watch.remaining} onAccept={watch.acceptToast} onRetry={watch.retryToast}
         onSnooze={watch.snoozeToast} onDismiss={watch.dismissToast} />}
-      <Credit />
     </div>
   );
 }
