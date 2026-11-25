@@ -49,11 +49,13 @@ describe("a skill's text by name", () => {
     db.exec(SCHEMA);
     db.exec(`INSERT INTO skill (id, internal_name, name, name_key, description, icon, stigma) VALUES
       (1, 'KN_StoneBody_G1', 'Каменное тело I', 'каменное тело i', 'Восстанавливает [%e1.Value] HP.', NULL, 0),
-      (2, 'P_Other_G1', 'Усиление I', 'усиление i', 'Увеличивает силу.', NULL, 0);
+      (2, 'P_Other_G1', 'Усиление I', 'усиление i', 'Увеличивает силу.', NULL, 0),
+      (3, 'P_Raw_G1', 'Гнев I', 'гнев i', 'Атака +[%e1.Value]  на  [%e1.Time] сек.', NULL, 0);
       INSERT INTO skill_damage (skill_id, text, dmg_min, dmg_max) VALUES (1, 'Восстанавливает 25% HP.', NULL, NULL);`);
     const all: All = async (sql, params = []) => db.prepare(sql).all(...(params as any[])) as Record<string, any>[];
     expect(await skillText(all, "Каменное тело I")).toBe("Восстанавливает 25% HP.");
     expect(await skillText(all, "Усиление I")).toBe("Увеличивает силу.");
+    expect(await skillText(all, "Гнев I")).toBe("Атака +… на … сек."); // the description cleaned as the «База данных» card does
     expect(await skillText(all, "Нет такого")).toBeNull();
   });
 });

@@ -175,3 +175,24 @@ export function StonePicker({ slots, optional, chosen, fits, onStone }: {
     </div>
   );
 }
+
+/** The stones of a slot as squares, read only (the doll's tooltip, in place of the card's empty squares): a stone with its stat, an empty square as it is. */
+export function StoneSquares({ worn, optional }: { worn: (Stone | null)[]; optional: number }) {
+  if (!worn.length) return null;
+  return (
+    <div className="gear-slots gear-slots-view">
+      {worn.map((s, i) => {
+        const extra = i >= worn.length - optional;
+        return (
+          <div key={i} className={`gear-slot${extra ? " optional" : ""}`}>
+            <span className="gear-slot-cell">{s ? <span className="gear-slot-fill"><Icon name={s.icon} size={32} /></span> : extra ? "?" : ""}</span>
+            <span className="gear-slot-text">
+              {s ? <><b className={`g-${s.grade}`}>{statName(s.stat)} +{s.value}</b><span>ур. {s.level}</span></>
+                : <b className="gear-slot-none">{extra ? "Доп. слот" : "Пусто"}</b>}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

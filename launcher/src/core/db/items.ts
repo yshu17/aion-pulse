@@ -8,6 +8,7 @@
 
 import { inflate } from "pako";
 
+import { cleanCard } from "../items/cardText";
 import type { WatchItem } from "../items/catalog";
 import type { Spec } from "../items/specs";
 import type { All } from "./npcPoints";
@@ -38,6 +39,6 @@ export function itemSpecs(all: All): (id: string) => Promise<Spec | null> {
     dictionary ??= all("SELECT value FROM meta WHERE key = 'spec_dict'").then(([row]) => (row ? bytes(row.value) : null));
     const [[row], dict] = await Promise.all([all("SELECT spec FROM item WHERE id = ?", [Number(id)]), dictionary]);
     if (!row?.spec || !dict) return null;
-    return JSON.parse(new TextDecoder().decode(inflate(bytes(row.spec), { dictionary: dict })));
+    return cleanCard(JSON.parse(new TextDecoder().decode(inflate(bytes(row.spec), { dictionary: dict }))) as Spec);
   };
 }

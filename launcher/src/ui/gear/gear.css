@@ -128,24 +128,10 @@
   cursor: pointer; opacity: .55; filter: grayscale(.6); transition: opacity .15s, filter .15s, border-color .15s; }
 .gear-buff.on { opacity: 1; filter: none; border-color: var(--accent); box-shadow: 0 0 10px rgba(255, 140, 26, .35); }
 .gear-buff .icon { border-radius: 6px; }
-.gear-buffs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.gear-buffrow { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2);
-  color: inherit; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; min-width: 0; }
-.gear-buffrow .icon { border-radius: 6px; flex: none; opacity: .6; filter: grayscale(.6); }
-.gear-buffrow span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.gear-buffrow b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gear-buffrow small { color: var(--muted); font-size: 11px; }
-.gear-buffrow .tick { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--border-control); flex: none; }
-.gear-buffrow.on { border-color: #a75b21; background: var(--accent-subtle); }
-.gear-buffrow.on .icon { opacity: 1; filter: none; }
-.gear-buffrow.on .tick { background: var(--accent); border-color: var(--accent); }
-.gear-title-on { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px 10px; border: 1px solid #a75b21; border-radius: 10px; background: var(--accent-subtle); font-size: 12.5px; }
-.gear-title-on b { color: #ffae65; } .gear-title-on span { flex: 1; color: var(--muted); }
 .gear-titles { list-style: none; margin: 8px 0 0; padding: 0; max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; scrollbar-width: thin; }
 .gear-titles button { width: 100%; display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--border);
   background: none; color: inherit; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
 .gear-titles button:hover { background: var(--surface-2); } .gear-titles button.on { background: var(--accent-subtle); }
-.gear-titles span { color: var(--muted); text-align: right; }
 @media (prefers-reduced-motion: reduce) { .gear-cell-slot, .gear-buff { transition: none; } }
 .gear-swap { justify-self: center; align-self: end; display: grid; place-items: center; width: 30px; height: 26px; padding: 0; border-radius: 999px; cursor: pointer;
   border: 1px solid rgba(200, 210, 255, .25); background: rgba(14, 16, 26, .75); color: #d9dcf2; font: inherit; font-size: 12px; white-space: nowrap;
@@ -200,38 +186,125 @@
 html.no-fade .gear-pick-wrap { transition: none; }
 @media (prefers-reduced-motion: reduce) { .gear-pick-wrap { transition: none; } }
 
-/* the stones inside the card: small squares as in the game's window; the card's own line already says what they are for */
+/* the stones inside the card, as the game's window has them: a row per stone («Атака +5») in two columns, the red cross in a
+   column of its own at the end of every row, so all crosses stand on one line; the card's own line says what the slots are for */
 .item-card .gear-stones { margin: 6px 0 2px; gap: 8px; }
 .item-card .gear-stones-head { display: none; }
-.item-card .gear-slots { display: flex; flex-wrap: wrap; gap: 6px; }
-.item-card .gear-slot { position: relative; flex: none; width: 40px; height: 40px; min-height: 0; padding: 2px; justify-content: center; }
-.item-card .gear-slot-text { display: none; }
-.item-card .gear-slot-x { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; margin: 0; border: 1px solid #5a2a2e; border-radius: 50%; background: #2a1517; color: #ff6b70; opacity: 0; }
+.item-card .gear-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
+.item-card .gear-slot { display: grid; grid-template-columns: 30px minmax(0, 1fr) 24px; align-items: center; column-gap: 8px; height: 36px; min-height: 0;
+  padding: 2px 3px 2px 2px; border: 1px solid transparent; background: none; }
+.item-card .gear-slot:hover { border-color: var(--border); background: var(--surface); }
+.item-card .gear-slot.open { border-color: var(--accent); background: var(--accent-subtle); }
+.item-card .gear-slot-cell { width: 30px; height: 30px; border-radius: 5px; }
+.item-card .gear-slot-fill .icon { width: 28px; height: 28px; }
+.item-card .gear-slot-text { display: flex; justify-content: center; }
+.item-card .gear-slot-text span { display: none; }
+.item-card .gear-slot-x { grid-column: 3; justify-self: end; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 6px;
+  background: none; color: var(--danger); opacity: .75; }
+.item-card .gear-slot-x svg { display: block; width: 12px; height: 12px; stroke-width: 2.4; }
 .item-card .gear-slot:hover .gear-slot-x, .item-card .gear-slot:focus-within .gear-slot-x { opacity: 1; }
-.item-card .gear-slot-cell { width: 34px; height: 34px; }
+.item-card .gear-slot-x:hover, .item-card .gear-slot-x:focus-visible { background: #2a1517; border-color: #5a2a2e; opacity: 1; }
+@media (max-width: 420px) { .item-card .gear-slots { grid-template-columns: minmax(0, 1fr); } }
 .item-card .gear-stones-sum { display: none; }
 /* a stat's number and its «(+N)» stay on one line; the card is wide enough for them */
 .gear-slotpanel .item-card .ic-grid dd, .gear-slotpanel .item-card .ic-pairs dd { white-space: nowrap; }
 
 /* the tooltip of a skill, scroll or buff (HoverTip.tsx) */
-.gear-tip { position: fixed; z-index: 60; width: 300px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border-control);
+.gear-tip { position: fixed; left: 0; top: 0; z-index: 80; width: 300px; animation: gear-tip-in .14s ease-out; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border-control);
   border-radius: 12px; background: color-mix(in srgb, var(--surface) 94%, black); box-shadow: var(--pop-shadow); pointer-events: none; font-size: 12.5px; }
+.gear-tip.card { width: auto; padding: 0; border: 0; background: none; box-shadow: none; }
+@keyframes gear-tip-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gear-tip { animation: none; } }
 .gear-tip header { display: flex; align-items: center; gap: 10px; }
 .gear-tip header .icon { border-radius: 7px; box-shadow: 0 0 0 1px var(--border-control); flex: none; }
-.gear-tip b { display: block; font-size: 14px; font-weight: 600; color: #f0c75e; }
+.gear-tip header b { display: block; font-size: 14px; font-weight: 600; color: #f0c75e; }
 .gear-tip small { color: var(--muted); font-size: 11.5px; }
 .gear-tip .txt { margin: 0; line-height: 1.5; }
-.gear-tip .dbt-dmg { color: #ffae65; font-weight: 600; white-space: nowrap; }
+.gear-tip .dbt-dmg { display: inline; color: #ffae65; font-weight: 600; white-space: nowrap; }
+.gear-slots-view .gear-slot { cursor: default; }
 .gear-tip ul { margin: 0; padding: 8px 10px; list-style: none; border-radius: 8px; background: var(--surface-2); display: grid; gap: 3px; }
 .gear-tip li { color: #6fd26a; font-variant-numeric: tabular-nums; }
 .gear-tip li:last-child:not(:only-child) { color: var(--muted); }
 
 /* a chosen skill or scroll: a bright rim and a glow with a slow shine, as on aiongear.fun; the others stay dim */
-.gear-buff, .gear-buffrow .icon { position: relative; }
+.gear-buff { position: relative; }
 .gear-buff:hover { opacity: .9; filter: none; border-color: var(--border-control); }
 .gear-buff.on { border-color: #ffd37a; box-shadow: 0 0 0 1px rgba(255, 211, 122, .55), 0 0 14px 1px rgba(255, 170, 60, .55), inset 0 0 10px rgba(255, 190, 90, .35); overflow: hidden; }
 .gear-buff.on::after { content: ""; position: absolute; inset: -40% -60%; background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .38) 50%, transparent 58%);
   transform: translateX(-60%); animation: gear-shine 2.8s ease-in-out infinite; pointer-events: none; }
-.gear-buffrow.on .icon { box-shadow: 0 0 0 1px rgba(255, 211, 122, .6), 0 0 12px 1px rgba(255, 170, 60, .5); }
 @keyframes gear-shine { 0%, 55% { transform: translateX(-60%); } 100% { transform: translateX(60%); } }
 @media (prefers-reduced-motion: reduce) { .gear-buff.on::after { animation: none; display: none; } }
+
+/* «Усиление» as grids of pictures; the title as «База данных» shows it (docs/concepts/tasks-tg, tasks 4 and 6) */
+.gear-amp-group + .gear-amp-group { padding-top: 12px; border-top: 1px solid var(--border); }
+.gear-amp { grid-template-columns: minmax(0, 1fr); }
+.gear-amp-group h5 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 30px; }
+.gear-amp-group h5 span { white-space: nowrap; }
+.gear-amp-group h5 span { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.gear-amp-group h5 .btn { height: 28px; padding: 0 10px; font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text); gap: 5px; }
+.gear-icons-sep { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--border); }
+.gear-amp .dbt-note { margin: 6px 0 0; white-space: normal; font-size: 11.5px; }
+.gear-buff em { position: absolute; left: 2px; bottom: 2px; z-index: 1; padding: 0 3px; border-radius: 3px; background: rgba(0, 0, 0, .78); color: #e0e2e8; font: 700 9px/13px var(--font); font-style: normal; }
+.gear-buff.passive { border-style: dashed; opacity: .85; filter: none; cursor: default; }
+.gear-title-card { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 10px 12px; border: 1px solid #3a3d48; border-radius: 10px; background: #0e0f13; }
+.gear-title-card b { display: block; font-size: 14px; } .gear-title-card > div > span { color: #e8c55a; font-size: 12px; }
+.gear-title-card dl { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 1px 16px; margin: 6px 0 0; font-size: 12.5px; }
+.gear-title-card dt { color: var(--muted); } .gear-title-card dd { margin: 0; font-weight: 700; color: #6fd26a; }
+.gear-title-acts { display: flex; flex-direction: column; gap: 6px; } .gear-title-acts .btn { height: 30px; padding: 0 12px; font-size: 12px; }
+.gear-titles button { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; text-align: left; }
+.gear-titles button span { min-width: 0; text-align: left; } .gear-titles b { display: block; }
+.gear-titles small { display: block; color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gear-titles li.dbt-note { padding: 8px 10px; }
+@media (max-width: 420px) { .gear-title-card { grid-template-columns: 40px minmax(0, 1fr); } .gear-title-acts { grid-column: 1 / -1; flex-direction: row; } }
+
+/* «Надеть комплект» (docs/concepts/tasks-tg, task 3) */
+.gear-set-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } .gear-set-head h5 { margin: 0 auto 0 0; }
+.gear-set-head .btn { height: 30px; padding: 0 12px; font-size: 12px; }
+.gear-set-items { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px; }
+.gear-set-piece { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: #0f1014; }
+.gear-set-piece .icon { border-radius: 5px; opacity: .35; filter: grayscale(1); } .gear-set-piece.on .icon { opacity: 1; filter: none; }
+.gear-set-piece.on { border-color: #a75b21; } .gear-set-piece:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gear-choices li { display: flex; align-items: center; } .gear-choices li > button:first-child { flex: 1; min-width: 0; }
+.gear-setchip { flex: none; height: 26px; margin: 0 8px; padding: 0 10px; border: 1px solid #5a4a2e; border-radius: 999px; background: var(--accent-subtle); color: var(--accent);
+  font: 600 11.5px var(--font); cursor: pointer; white-space: nowrap; }
+.gear-choices li > button.gear-setchip { width: auto; display: inline-flex; align-items: center; grid-template-columns: none; gap: 0; }
+.gear-choices li > button.gear-setchip:hover { background: var(--accent-subtle); }
+.gear-setchip:hover { border-color: var(--accent); } .gear-setchip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gear-confirm { width: min(460px, calc(100vw - 32px)); margin: auto; padding: 16px; display: grid; gap: 10px; border: 1px solid var(--border-control); border-radius: var(--r-pop); background: var(--surface); box-shadow: var(--pop-shadow); }
+.gear-confirm ul { margin: 0; padding-left: 18px; color: var(--muted); } .gear-confirm li span { color: var(--text); }
+.gear-confirm > div { display: flex; flex-wrap: wrap; gap: 8px; }
+/* «Расходники» */
+.gear-cons-slots, .gear-cons-list { list-style: none; margin: 0; padding: 0; }
+.gear-cons-slots { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.gear-cons-slots li { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 6px 8px; border: 1px dashed var(--border-control); border-radius: 10px; }
+.gear-cons-slots li.filled { border-style: solid; border-color: #a75b21; background: var(--accent-subtle); }
+.gear-cons-slots li.open { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gear-cons-slots li > span { flex: none; display: grid; } .gear-cons-slots .acts { gap: 4px; } .gear-cons-slots .icon { width: 36px; height: 36px; border-radius: 6px; background: #0f1014; }
+.gear-cons-slots li > div { flex: 1; min-width: 0; }
+.gear-cons-slots b { display: block; overflow-wrap: anywhere; line-height: 1.3; } .gear-cons-slots b.none { color: var(--muted); font-weight: 400; }
+.gear-cons-slots small { display: block; color: var(--muted); font-size: 11.5px; }
+.gear-cons-slots .btn { flex: none; height: 28px; padding: 0 10px; font-size: 12px; }
+.gear-cons-pick { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.gear-cons-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.gear-cons-chips button { height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+.gear-cons-chips b { margin-left: 4px; color: var(--muted); }
+.gear-cons-chips button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-subtle); } .gear-cons-chips button[aria-pressed="true"] b { color: var(--accent); }
+.gear-cons-checks { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; } .gear-cons-checks label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; } .gear-cons-checks input { accent-color: var(--accent); margin: 0; }
+.gear-cons-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; scrollbar-width: thin; }
+.gear-cons-list button { width: 100%; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 1px 10px; align-items: center; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--border);
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.gear-cons-list button:hover { background: var(--surface-2); } .gear-cons-list button.on { background: var(--accent-subtle); } .gear-cons-list button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.gear-cons-list .icon { grid-row: 1 / 3; border-radius: 5px; background: #0f1014; }
+.gear-cons-list .nm { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }.gear-cons-list .nm i { margin-left: 6px; color: var(--muted); font-style: normal; font-size: 11.5px; }
+.gear-cons-list .fx { grid-column: 2; color: var(--success, #6fd26a); font-size: 12px; } .gear-cons-list .fx em { color: var(--muted); font-style: normal; }
+.gear-cons-list .meta { grid-column: 3; grid-row: 1 / 3; text-align: right; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+.gear-cons-list .dbt-note { padding: 10px 12px; margin: 0; }
+.gear-cons-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; } .gear-cons-foot .btn { flex: none; height: 28px; }
+.gear-cons-sum { margin-top: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; }
+.gear-cons-sum h6 { margin: 0 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+/* two or three columns, never more: many stats must not stand in one column */
+.gear-cons-sum dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(150px, 30%), 1fr)); gap: 2px 18px; margin: 0; }
+.gear-cons-sum dl div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--border); padding: 1px 0; }
+.gear-cons-sum dt { color: var(--muted); } .gear-cons-sum dd { margin: 0; font-weight: 700; color: var(--success, #6fd26a); white-space: nowrap; }
+.gear-cons .g-common { color: var(--grade-common); } .gear-cons .g-rare { color: var(--grade-rare); } .gear-cons .g-legend { color: var(--grade-legend); }
+.gear-cons .g-unique { color: var(--grade-unique); } .gear-cons .g-epic { color: var(--grade-epic); } .gear-cons .g-mythic { color: var(--grade-mythic); }

@@ -6,7 +6,7 @@ import { AnimatePresence, m } from "motion/react";
 
 import { FADE } from "./fx";
 import { Presence } from "./motion";
-import { IconCheck, IconClose, IconExpand, IconSettings } from "./icons";
+import { IconCheck, IconClose, IconDown, IconExpand, IconSettings } from "./icons";
 import { TOAST_ENTER, TOAST_EXIT, TOAST_FROM, TOAST_LAYOUT, ToastTime } from "./Toasts";
 import { POPUP_SHOW_MS } from "./overlayWindow";
 
@@ -19,20 +19,19 @@ const RAISE_MS = 3000; // how often the window is put above other always-on-top 
 const SETTLE_MS = 250; // the strip stays this long after the last move before the side of the notifications is chosen
 const OWN_MOVE_MS = 400; // moves reported this soon after the page placed its window are its own, not the user's
 const NO_TOASTS: OverlayState["toasts"] = [];
-const WIDTH_CSS = 380; // the overlay window's width (overlayWindow.ts)
+const WIDTH_CSS = 320; // the overlay window's width (overlayWindow.ts)
 const SHRINK_MS = 900; // a toast gone: the window shrinks this long after, when the others have settled (TOAST_LAYOUT)
-const CARD_OUT_MS = 320; // the card fades out this long before the clip shrinks (kit.css)
-const HOVER_MS = 1500; // the mouse rests this long on the strip before the card with the full names opens
 const DRAG_PX = 4; // the mouse must move this far with the button down before the window is dragged; less is a click
 
-/** The page of the overlay window: one line over the game (status, the event now or next, the time left) and the notifications. */
+/**
+ * The page of the overlay window, over the game: one panel on a shared column grid (docs/concepts/tasks-tg, task 21) —
+ * collapsed, one line with the event now or next; expanded, the state and up to three events — and the notifications.
+ */
 export function Overlay() {
   const [state, setState] = useState<OverlayState | null>(null);
   const [look, setLookValue] = useState<OverlayLook>(loadLook);
   const [menu, setMenu] = useState(false);
   const [turn, setTurn] = useState(0); // which of several running events the line shows now
-  const [card, setCard] = useState(false); // the mouse rests on the strip: the card with the full names is open
-  const hover = useRef<ReturnType<typeof setTimeout>>(undefined);
   const press = useRef<{ x: number; y: number } | null>(null); // where the button went down, until it becomes a drag
   const dragged = useRef(false);
   const setLook = (next: OverlayLook) => { setLookValue(next); saveLook(next); };
@@ -57,25 +56,10 @@ export function Overlay() {
     return { left: 1, top: sideRef.current === "up" ? Math.max(1, height - 1) : 1 };
   };
 
-  const cardShown = useRef(false); // read by clip(): the hover card is part of what is shown
-  const cardEl = useRef<HTMLDivElement>(null);
-  const unclip = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  /**
-   * The window is always as tall as the page with the hover card in it, so the card never waits for a resize; the part
-   * of the window that is shown (and takes the mouse) is clipped to what is visible: the strip, the menu, notifications,
-   * and the card only while it is open.
-   */
+  /** The part of the window that is shown (and takes the mouse) is clipped to what is visible: the panel, the menu, notifications. */
   const clip = () => {
     const parts = [...(root.current?.querySelectorAll<HTMLElement>(".ov-line, .ov-menu, .toast") ?? [])];
     const boxes = parts.map((p) => p.getBoundingClientRect()).filter((r) => r.height > 0).map((r) => ({ top: r.top - 1, bottom: r.bottom + 1 }));
-    // the card by its place in the layout, not its rect: read during its small slide, the rect is a few pixels off and
-    // the clip would cut its border; a few pixels of room around it
-    const card = cardEl.current, page = root.current;
-    if (cardShown.current && card && page) {
-      const top = page.getBoundingClientRect().top + card.offsetTop - page.offsetTop;
-      boxes.push({ top: top - 8, bottom: top + card.offsetHeight + 8 });
-    }
     if (!boxes.length) return;
     clipWindow(Math.min(...boxes.map((r) => r.top)), Math.max(...boxes.map((r) => r.bottom)));
   };
@@ -105,7 +89,7 @@ export function Overlay() {
     // with the game running the strip can go anywhere; without it the work area keeps it above the taskbar
     placeWindow(origin.x, origin.y, height + 2, !gameRunning.current)
       .then((placed) => {
-        const alone = !el.querySelector(".ov-menu, .toast"); // only the strip shows (the hidden card does not count)
+        const alone = !el.querySelector(".ov-menu, .toast"); // only the panel shows
         if (alone && (placed.x !== origin.x || placed.y !== origin.y)) anchor.current = anchorOf(placed, offset, dpr);
       })
       .catch(() => {})
@@ -200,7 +184,7 @@ export function Overlay() {
     ...running.map((event) => ({ event, running: true })),
     ...(next ? [{ event: next, running: false }] : []),
   ];
-  const several = slides.length > 1;
+  const several = look.mini && slides.length > 1; // the collapsed line takes turns; the expanded panel shows all
   useEffect(() => { // events that overlap take turns on the line; a click on it (turn changes) starts the wait again
     if (!several) return;
     const timer = setTimeout(() => setTurn((t) => t + 1), look.turnSec * 1000);
@@ -223,60 +207,75 @@ export function Overlay() {
   // the strip shows the state only by the dot; the words are in its hint and in the card shown on hover
   const status = !state ? "Подключаюсь…" : !state.watching ? "Не слежу" : state.problem ? "Нет Chat.log" : "Слежу за чатом";
   const current = several ? turn % slides.length : 0; // the slide that is shown
-  // the card opens after a short rest on the strip (not while it is dragged or the menu is open), closes when the mouse leaves
-  const shown = card && !menu;
-  useEffect(() => { // open: the clip grows first, then the card fades in; closed: it fades out, then the clip shrinks
-    clearTimeout(unclip.current);
-    cardShown.current = shown;
-    if (shown) clip();
-    else unclip.current = setTimeout(clip, CARD_OUT_MS);
-    return () => clearTimeout(unclip.current);
-  }, [shown]); // eslint-disable-line react-hooks/exhaustive-deps -- clip reads refs
-  const rest = () => { clearTimeout(hover.current); hover.current = setTimeout(() => setCard(true), HOVER_MS); };
-  const leave = () => { clearTimeout(hover.current); setCard(false); };
-  useEffect(() => () => clearTimeout(hover.current), []);
+  const shownSlide = slides[current];
+  const toggleSize = () => { setMenu(false); setLook({ ...look, mini: !look.mini }); };
+  const dot = <span className="dot" role="img" aria-label={status} title={status} style={{ background: live ? "var(--success)" : "var(--warning)" }} />;
+  const tools = (
+    <span className="ovn-tools">
+      <button className={`ov-gear size${look.mini ? "" : " up"}`} aria-label={look.mini ? "Развернуть список" : "Свернуть в строку"} title={look.mini ? "Развернуть список" : "Свернуть в строку"} onClick={toggleSize}><IconDown /></button>
+      <button className="ov-gear" aria-label="Развернуть Pulse+" title="Вернуть основное окно" onClick={() => sendAction({ kind: "expand" })}><IconExpand /></button>
+      <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки: прозрачность и фокус" title="Меню накладки" aria-expanded={menu}
+        onClick={() => setMenu(!menu)}><IconSettings /></button>
+    </span>
+  );
+  const grip = <span className="ovn-grip" title="Потяни, чтобы передвинуть" aria-hidden><svg viewBox="0 0 10 16"><path d="M2 3h0M8 3h0M2 8h0M8 8h0M2 13h0M8 13h0" /></svg></span>;
   return (
-    <div className={`overlay ${side} edge-${edge}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }} onMouseLeave={leave}>
+    <div className={`overlay ${side} edge-${edge}`} ref={root} style={{ ["--ov-opacity" as string]: look.opacity }}>
       {!popup && (
       <>
-      <div className="ov-line" ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+" 
-        onMouseEnter={rest}
-        onPointerDown={(e) => { leave(); dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
+      <div className={`ov-line ovn${look.mini ? " mini" : ""}`} ref={pill} tabIndex={0} role="group" aria-label="Накладка Pulse+"
+        onPointerDown={(e) => { dragged.current = false; press.current = e.button === 0 && !(e.target as HTMLElement).closest("button") ? { x: e.clientX, y: e.clientY } : null; }}
         onPointerMove={(e) => {
           const from = press.current;
           if (!from || !(e.buttons & 1) || Math.hypot(e.clientX - from.x, e.clientY - from.y) < DRAG_PX) return;
           press.current = null; dragged.current = true; startDrag();
         }}
         onPointerUp={() => { press.current = null; }} onPointerLeave={() => { press.current = null; }}
+        onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button, .ovn-turn")) toggleSize(); }}
         onContextMenu={(e) => { e.preventDefault(); setMenu(!menu); }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).closest("button")) return; if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10") || e.key === "Enter") { e.preventDefault(); setMenu(!menu); } }}>
-        <span className="dot" role="img" aria-label={status} title={status} style={{ background: live ? "var(--success)" : "var(--warning)" }} />
-        <div className={`ov-body${several ? " turns" : ""}`} aria-live="polite" onClick={() => { if (several && !dragged.current) setTurn((t) => t + 1); }}>
-          <AnimatePresence initial={false} mode="popLayout">
-          {slides.length > 0 ? slides.filter((_, i) => i === current).map(({ event: e, running: now }) => (
-            <m.div key={(now ? "now " : "next ") + e.name + e.from} className="ov-slide on" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={FADE}>
-              <span className={`ov-sw t-${e.tone}`} aria-hidden />
-              <b className="name">{e.name}</b>
-              {several && <span className="muted num" title="Идёт несколько событий и показано, что дальше: строка меняет их по очереди и по щелчку">{current + 1}/{slides.length}</span>}
-              <span className="spacer" />
-              <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
-              {now && e.progress !== null && (
-                <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(e.progress * 100)}>
-                  <i className={`t-${e.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, e.progress))})` }} />
-                </span>
-              )}
-            </m.div>
-          )) : (
-            <div className="ov-slide on"><span className="spacer" /><span className="muted">событий нет</span></div>
-          )}
-          </AnimatePresence>
-        </div>
-        {/* the two icon buttons: no card and no tooltip over them (their names are for screen readers) */}
-        <div className="ov-tools" onMouseEnter={leave} onMouseLeave={rest}>
-          <button className="ov-gear" aria-label="Развернуть Pulse+" onClick={() => sendAction({ kind: "expand" })}><IconExpand /></button>
-          <button className={`ov-gear${menu ? " on" : ""}`} aria-label="Меню накладки: прозрачность и фокус" aria-expanded={menu}
-            onClick={() => setMenu(!menu)}><IconSettings /></button>
-        </div>
+        {look.mini ? (
+          <div className="ovn-row ovn-head">
+            {grip}{dot}
+            <span className={`ovn-turn${several ? " turns" : ""}`} aria-live="polite" title={several ? "Щелчок: следующее событие" : undefined}
+              onClick={() => { if (several && !dragged.current) setTurn((t) => t + 1); }}>
+              <AnimatePresence initial={false} mode="popLayout">
+                {shownSlide ? (
+                  <m.span key={(shownSlide.running ? "now " : "next ") + shownSlide.event.name + shownSlide.event.from} className="ovn-slide"
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={FADE}>
+                    <span className={`ov-sw t-${shownSlide.event.tone}`} aria-hidden />
+                    <b className="ovn-name">{shownSlide.event.name}</b>
+                    <span className="ovn-lab">{shownSlide.running ? "ещё" : "через"}</span>
+                    <b className={`ovn-time${shownSlide.running ? " now" : ""}`}>{shownSlide.event.left}</b>
+                  </m.span>
+                ) : <span className="ovn-slide"><span className="ovn-lab">событий нет</span></span>}
+              </AnimatePresence>
+            </span>
+            {tools}
+          </div>
+        ) : (
+          <>
+            <div className="ovn-row ovn-head">
+              {grip}{dot}
+              <span className="ovn-status">{!state ? status : state.problem || (state.watching ? `Слежу · найдено ${state.counters[0]}` : status)}</span>
+              {tools}
+            </div>
+            {slides.map(({ event: e, running: now }) => (
+              <div key={(now ? "now " : "next ") + e.name + e.from} className="ovn-row ovn-ev" title={`${e.name}: ${now ? `идёт до ${e.to}` : `начало в ${e.from}`}`}>
+                <span className={`ov-sw t-${e.tone}`} aria-hidden /><span />
+                <b className="ovn-name">{e.name}</b>
+                <span className="ovn-lab">{now ? "ещё" : "через"}</span>
+                <b className={`ovn-time${now ? " now" : ""}`}>{e.left}</b>
+                {now && e.progress !== null && (
+                  <span className="ov-prog" role="progressbar" aria-label="Прошло" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(e.progress * 100)}>
+                    <i className={`t-${e.tone}`} style={{ transform: `scaleX(${Math.min(1, Math.max(0, e.progress))})` }} />
+                  </span>
+                )}
+              </div>
+            ))}
+            {slides.length === 0 && <div className="ovn-row"><span /><span /><span className="ovn-status">Событий нет</span></div>}
+          </>
+        )}
       </div>
       <Presence show={menu}>
         <div className="ov-menu" role="menu">
@@ -291,6 +290,10 @@ export function Overlay() {
             <input type="range" min={2} max={20} step={1} value={look.turnSec} aria-valuetext={`каждые ${look.turnSec} с`}
               onChange={(e) => setLook({ ...look, turnSec: Number(e.target.value) })} />
             <b>{look.turnSec} с</b>
+          </label>
+          <label className="ov-check">
+            <input type="checkbox" checked={look.mini} onChange={(e) => setLook({ ...look, mini: e.target.checked })} />
+            <span>Показывать свёрнутой, в одну строку</span>
           </label>
           <label className="ov-check">
             <input type="checkbox" checked={look.keepGameFocus} onChange={(e) => setLook({ ...look, keepGameFocus: e.target.checked })} />
@@ -325,21 +328,6 @@ export function Overlay() {
         </m.div>
       ))}
       </AnimatePresence>
-      {/* the hover card: drawn in advance, hidden by the clip and its opacity until the mouse rests on the strip */}
-      {!popup && (
-        <div ref={cardEl} className={`ov-card${shown ? " shown" : ""}`} role="tooltip" aria-hidden={!shown}>
-          {slides.map(({ event: e, running: now }) => (
-            <div key={(now ? "now " : "next ") + e.name + e.from} className="ov-card-row">
-              <span className={`ov-sw t-${e.tone}`} aria-hidden />
-              <b>{e.name}</b>
-              <span className="ov-left num"><span className="muted">{now ? "ещё" : "через"}</span> <b>{e.left}</b></span>
-            </div>
-          ))}
-          {slides.length === 0 && <div className="muted">Событий нет</div>}
-          <div className="ov-card-status muted"><span className="dot" style={{ background: live ? "var(--success)" : "var(--warning)" }} />{state?.problem || status}</div>
-          <div className="ov-card-hint">{several ? "Щелчок: следующее событие. " : ""}Потяни, чтобы передвинуть. Правый клик: меню.</div>
-        </div>
-      )}
     </div>
   );
 }

@@ -59,8 +59,10 @@ export const DEFAULTS = {
   // the launcher only (not in Pulse): the sound of plain notifications, and whether the match sound repeats while it waits
   notify_sound_path: "",
   sound_loop: true,
+  // the launcher only: the developer mode (the map's editor of own NPCs and their points); off for everyone else
   // the launcher only: the map draws the decorative NPCs (no function, no quest) as small blue dots
   map_deco: false,
+  // the launcher only: the developer setting «плавность появления» (after the placeholders); on for everyone
 };
 
 export type Config = typeof DEFAULTS;

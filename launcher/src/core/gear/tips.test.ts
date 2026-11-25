@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { durationText, effectLines } from "./tips";
+import { durationText, effectLines, tipPlace } from "./tips";
 
 const stat = (name: string, value: number, relative = false, remain = 180000) =>
   ({ id: 1, type: "statup", remain_time: remain, stats: [{ name, value: { value, relative } }] });
@@ -32,5 +32,19 @@ describe("how long it lasts", () => {
 
   it("is the longest time among the effects", () => {
     expect(effectLines([stat("maxhp", 1, false, 60000), stat("maxmp", 1, false, 300000)], true).at(-1)).toBe("Длительность: 5 мин");
+  });
+});
+
+describe("where the tooltip stands (task 1: by the pointer, inside the window)", () => {
+  const view: [number, number] = [1000, 700];
+  it("stands below and to the right of the pointer", () => {
+    expect(tipPlace([100, 100], [300, 200], view)).toEqual({ x: 114, y: 114 });
+  });
+  it("turns to the left of the pointer near the right edge and above it near the bottom", () => {
+    expect(tipPlace([900, 650], [300, 200], view)).toEqual({ x: 586, y: 436 });
+  });
+  it("keeps a box taller than the room on either side inside the window", () => {
+    expect(tipPlace([500, 350], [300, 690], view)).toEqual({ x: 514, y: 8 });
+    expect(tipPlace([2, 2], [300, 200], [250, 700]).x).toBe(8);
   });
 });

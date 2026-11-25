@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Config } from "../core/settings/config";
 import { IconCheck, IconClose } from "./icons";
 import { UpdateRows } from "./UpdateNotice";
+import { DataSection } from "./DataSection";
 import type { Boot } from "./useBoot";
 import { MAX_TOASTS_LIMIT } from "./useWatch";
 
@@ -196,7 +197,7 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
               unit="мин" onChange={(v) => save({ chat_keep_min: v })} />
           </section>
 
-          <section className="sec last">
+          <section className="sec">
             <h3>Игра</h3>
             <Toggle on={cfg.game_check} label="Проверять, запущена ли игра" hint="нет процесса Aion — слежение останавливается и приходит уведомление"
               onChange={(on) => save({ game_check: on })} />
@@ -210,6 +211,8 @@ export function SettingsPanel({ boot, onClose, onTrySound }: { boot: Boot; onClo
                 ? `Не найден: ${boot.chatLog}. Проверь папку игры.` : logState === "checking" ? "Проверяю…" : "В браузере файлов нет: демо-чат"}
             </div>
           </section>
+
+          <DataSection />
 
         </div>
       </m.aside>

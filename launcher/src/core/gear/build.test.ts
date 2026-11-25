@@ -25,6 +25,16 @@ describe("a saved gear build", () => {
     expect(b.active).toBe(2);
     expect(removeSet(emptyBuild(), 0).sets.length).toBe(1);
   });
+
+  it("keeps the food and drinks of each set, copies them into a new set and drops what is no id", () => {
+    const b = withSet(emptyBuild(), 0, (s) => ({ ...s, consumables: { food: 160000001, drink: 5 } }));
+    expect(readBuild(writeBuild(b)).sets[0].consumables).toEqual({ food: 160000001, drink: 5 });
+    const two = addSet(b);
+    expect(two.sets[1].consumables).toEqual({ food: 160000001, drink: 5 });
+    expect(two.sets[1].consumables).not.toBe(two.sets[0].consumables);
+    const broken = JSON.stringify({ ...b, sets: [{ title: "x", slots: {}, consumables: { food: "1", candy: 7, other: 3 } }] });
+    expect(readBuild(broken).sets[0].consumables).toEqual({ candy: 7 });
+  });
 });
 
 const piece = (id: number, slot: string, grp: string) => ({ id, slot, grp } as GearItem);

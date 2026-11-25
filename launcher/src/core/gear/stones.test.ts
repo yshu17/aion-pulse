@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Stone } from "./engine";
-import { enchantAdds, placeBonus, stoneAdds, stoneRows, stoneSum, stoneTabs, withoutStones } from "./stones";
+import { enchantAdds, placeBonus, slotStones, stoneAdds, stoneRows, stoneSum, stoneTabs, withoutStones } from "./stones";
 
 const stone = (id: number, stat: string, grade: string, level: number, value: number): Stone => ({ id, name: `${stat}+${value}`, icon: "", grade, level, stat, value });
 const all = [stone(1, "critical", "common", 10, 4), stone(2, "critical", "rare", 60, 17), stone(3, "critical", "common", 50, 12), stone(4, "critical", "rare", 20, 9),
@@ -74,5 +74,25 @@ describe("the card of an item that takes no manastones", () => {
     expect(withoutStones(blocks).map((b) => b.kind)).toEqual(["grid", "hr", "text"]);
     expect(withoutStones(blocks.slice(0, 4)).map((b) => b.kind)).toEqual(["grid"]); // no rule left at the end
     expect(withoutStones([{ kind: "text", text: "Усиление 0/15" }] as any[]).length).toBe(1);
+  });
+});
+
+describe("a slot's stones and enchant as its card shows them (the doll's tooltip, task 1)", () => {
+  const sword = { grp: "sword", stones: 5, stonesBonus: 1, enchant: true };
+  const byId = new Map(all.map((x) => [x.id, x]));
+  it("gives the stones in their slots, an empty slot as null, and what they and the enchant add to the card", () => {
+    const got = slotStones(sword, { id: 1, enchant: 0, stones: [8, null, 6] }, byId);
+    expect(got.worn.map((x) => x?.id ?? null)).toEqual([8, null, 6, null, null]);
+    expect(got.optional).toBe(1);
+    expect(got.adds).toEqual(stoneAdds(stoneSum([all[7], all[5]])));
+  });
+  it("adds the enchant's numbers to a weapon that is enchanted", () => {
+    const got = slotStones(sword, { id: 1, enchant: 5, stones: [] }, byId);
+    expect(got.adds.some((a) => a.group === "enchant")).toBe(true);
+  });
+  it("has no squares for an item that takes no stones (wings)", () => {
+    const got = slotStones({ grp: "wing", stones: 5, stonesBonus: 0, enchant: false }, { id: 1, enchant: 0, stones: [8] }, byId);
+    expect(got.worn).toEqual([]);
+    expect(got.adds.filter((a) => a.group === "stone")).toEqual([]);
   });
 });

@@ -32,3 +32,16 @@ export function effectLines(effects: Effect[], withTime = false): string[] {
   const time = withTime ? durationText(longest) : "";
   return time ? [...out, `Длительность: ${time}`] : out;
 }
+
+/**
+ * The tooltip's corner by the pointer: `gap` below and to the right of it, turned to the left near the right edge and
+ * above near the bottom, and kept `margin` inside the window when the box is bigger than the room on either side.
+ */
+export function tipPlace(cursor: [number, number], size: [number, number], view: [number, number], gap = 14, margin = 8): { x: number; y: number } {
+  const along = (at: number, len: number, room: number) => {
+    let pos = at + gap;
+    if (pos + len > room - margin) pos = at - gap - len;
+    return Math.max(margin, Math.min(pos, room - margin - len));
+  };
+  return { x: along(cursor[0], size[0], view[0]), y: along(cursor[1], size[1], view[1]) };
+}

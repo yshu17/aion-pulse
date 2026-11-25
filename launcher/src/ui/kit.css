@@ -83,7 +83,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 .toast { animation: toast-in 480ms cubic-bezier(.22, 1, .36, 1) both; } /* a toast eases in slowly, as in Toasts.tsx */
 .toast.motion { animation: none; } /* Motion moves these itself (Toasts.tsx) */
 /* every tab comes in the same way: when it is opened and each time it is chosen again (the pane gets «on») */
-.pane.on > main, main.soon { animation: tab-in var(--t) var(--ease-out); }
+.pane.on > main, main.soon { animation: tab-in var(--fade-ms, var(--t)) var(--ease-out); }
 .panes { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
 .pane { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
 .pane:not(.on) { visibility: hidden; pointer-events: none; }
@@ -93,7 +93,9 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
    bestiary's emblems and goods, the zone and region maps), the bestiary's list and card after their placeholders */
 @keyframes appear { from { opacity: 0; } }
 .window:not(.loading), img.icon, img.bst-row-pic, img.bst-good-pic, img.bst-hp-pic, .bst-map .pic, .map-picture, .map-preview .pic, .world-region-map,
-.bst-rows:not([aria-busy]), .bst-card:not([aria-busy]) { animation: appear var(--t-slow) var(--ease-out) both; }
+.bst-rows:not([aria-busy]), .bst-card:not([aria-busy]) { animation: appear var(--fade-ms, var(--t-slow)) var(--ease-out) both; }
+/* the developer's setting «плавность появления» off: nothing fades in */
+html.no-fade .window, html.no-fade main, html.no-fade img, html.no-fade .bst-rows, html.no-fade .bst-card { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .window:not(.loading), img.icon, img.bst-row-pic, img.bst-good-pic, img.bst-hp-pic, .bst-map .pic, .map-picture, .map-preview .pic, .world-region-map,
   .bst-rows:not([aria-busy]), .bst-card:not([aria-busy]), main.bst, main.map-page { animation: none; }
@@ -123,7 +125,6 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 .tab-line { position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 10px rgba(255, 140, 26, .55); }
 /* the schedule cards are moved by Motion (its transform): CSS animates only their colours and shadow */
 .sch-card { transition: background-color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out); }
-.ov-slide { transition: none; }
 /* Motion moves these itself (SettingsPanel, Drawer, Feed): no CSS keyframes on top of it */
 .panel, .sch-drawer, .scrim, .msg.motion, .msg.loud.motion:not(.old) { animation: none; }
 /* the overlay on the left half of the screen: its notifications come from the left edge and go back to it */
@@ -131,14 +132,6 @@ button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97)
 @keyframes toast-out-left { to { opacity: 0; transform: translateX(-16px); } }
 .overlay.edge-left .toast { animation-name: toast-in-left; }
 .overlay.edge-left .toast.leaving { animation-name: toast-out-left; }
-/* the hover card of the overlay: always in the page and drawn in advance (its own layer); it fades in slowly (0.52 s,
-   soft start and end) and out (0.32 s, CARD_OUT_MS in Overlay.tsx). The window clip decides what can be seen and clicked. */
-.overlay > .ov-card { animation: none; will-change: opacity, transform; pointer-events: none; opacity: 0; transform: translateY(-4px);
-  transition: opacity 320ms cubic-bezier(.4, 0, .6, 1), transform 320ms cubic-bezier(.4, 0, .6, 1); }
-.overlay.up > .ov-card { transform: translateY(4px); }
-.overlay > .ov-card.shown { pointer-events: auto; opacity: var(--ov-opacity, .9); transform: none;
-  transition: opacity 520ms cubic-bezier(.4, 0, .2, 1), transform 520ms cubic-bezier(.4, 0, .2, 1); }
-.overlay:hover > .ov-card.shown { opacity: 1; }
 
 /* press feedback for every plain button and tab: a small give under the finger, a quick return */
 .btn, .tab, .chip { transition: background .12s, color .12s, border-color .12s, transform var(--t-fast) var(--ease-out), box-shadow var(--t) var(--ease-out); }

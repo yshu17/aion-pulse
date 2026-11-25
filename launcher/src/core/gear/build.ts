@@ -5,14 +5,16 @@
  *   writeBuild(saved) -> text
  */
 
+import { KINDS, type SavedConsumables } from "./consumables";
 import { isTwoHanded, stoneSlots, type GearItem, type SlotKey } from "./engine";
 
 export interface SavedSlot { id: number; enchant: number; stones: (number | null)[] }
 export interface SavedSet {
   title: string; slots: Partial<Record<SlotKey, SavedSlot>>;
-  buffs?: number[];          // active skills in use (ids)
+  buffs?: (string | number)[]; // skill buffs in use: «class:id» (core/gear/buffs.ts); bare ids in builds saved before
   scrolls?: string[];        // scroll types in use («SpeedRun» …)
   gearTitle?: number | null; // title.id
+  consumables?: SavedConsumables; // food, drink, candy in use (core/gear/consumables.ts)
 }
 export interface SavedBuild { cls: string; level: number; active: number; sets: SavedSet[] }
 
@@ -20,7 +22,7 @@ export const KEY = "pulse.gear.v1";
 export const MAX_SETS = 4;
 
 export function emptyBuild(): SavedBuild {
-  return { cls: "fighter", level: 55, active: 0, sets: [{ title: "Набор 1", slots: {}, buffs: [], scrolls: [], gearTitle: null }] };
+  return { cls: "fighter", level: 55, active: 0, sets: [{ title: "Набор 1", slots: {}, buffs: [], scrolls: [], gearTitle: null, consumables: {} }] };
 }
 
 export function readBuild(text: string | null): SavedBuild {
@@ -30,11 +32,21 @@ export function readBuild(text: string | null): SavedBuild {
     const level = Math.min(Math.max(Math.round(Number(b.level) || 55), 1), 55);
     return { cls: b.cls, level, active: Math.min(Math.max(Number(b.active) || 0, 0), b.sets.length - 1),
       sets: b.sets.slice(0, MAX_SETS).map((s, i) => ({ title: String(s?.title || `Набор ${i + 1}`), slots: s?.slots ?? {},
-        buffs: Array.isArray(s?.buffs) ? s.buffs.map(Number) : [], scrolls: Array.isArray(s?.scrolls) ? s.scrolls.map(String) : [],
-        gearTitle: typeof s?.gearTitle === "number" ? s.gearTitle : null })) };
+        buffs: Array.isArray(s?.buffs) ? s.buffs.filter((x) => typeof x === "number" || typeof x === "string") : [], scrolls: Array.isArray(s?.scrolls) ? s.scrolls.map(String) : [],
+        gearTitle: typeof s?.gearTitle === "number" ? s.gearTitle : null, consumables: readConsumables(s?.consumables) })) };
   } catch {
     return emptyBuild();
   }
+}
+
+/** Only the three kinds with a number for an id. */
+function readConsumables(saved: unknown): SavedConsumables {
+  const out: SavedConsumables = {};
+  for (const [kind] of KINDS) {
+    const id = (saved as SavedConsumables | undefined)?.[kind];
+    if (typeof id === "number") out[kind] = id;
+  }
+  return out;
 }
 
 export const writeBuild = (b: SavedBuild) => JSON.stringify(b);
@@ -49,7 +61,7 @@ export function addSet(b: SavedBuild): SavedBuild {
   if (b.sets.length >= MAX_SETS) return b;
   const from = b.sets[b.active];
   const copy: SavedSet = { title: `Набор ${b.sets.length + 1}`, slots: JSON.parse(JSON.stringify(from.slots)), buffs: [...(from.buffs ?? [])],
-    scrolls: [...(from.scrolls ?? [])], gearTitle: from.gearTitle ?? null };
+    scrolls: [...(from.scrolls ?? [])], gearTitle: from.gearTitle ?? null, consumables: { ...from.consumables } };
   return { ...b, sets: [...b.sets, copy], active: b.sets.length };
 }
 

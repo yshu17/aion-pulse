@@ -207,14 +207,14 @@ function Screen({ boot, itemsProblem }: { boot: Boot; itemsProblem: string }) {
         <TopTabs tab={tab} onPick={(id) => { if (id === "Карта" && tab === "Карта") setMapHome((n) => n + 1); go(id); }} />
         <span className="spacer" />
         <MapsButton />
-        <button className="btn" disabled={!boot.platform}
-          title={boot.platform ? "Спрятать окно: поверх игры останутся полоса и уведомления" : "Только в программе"}
-          aria-label="В накладку" onClick={() => { setOverlay(true); enterOverlay(); }}><IconOverlay /><span className="label">В накладку</span></button>
-        <button className="btn icon-only" aria-label="Сообщить о ошибке" title="Сообщить о ошибке: данные для отчёта копируются в буфер обмена"
+        <button className={`btn icon-only${overlay ? " active" : ""}`} disabled={!boot.platform} aria-pressed={overlay}
+          title={boot.platform ? (overlay ? "Overlay: вернуть основное окно" : "Overlay: основное окно сворачивается, поверх игры остаётся накладка") : "Overlay: только в программе"}
+          aria-label="Overlay" onClick={() => { if (overlay) { setOverlay(false); leaveOverlay(); } else { setOverlay(true); enterOverlay(); } }}><IconOverlay /></button>
+        <button className="btn icon-only" aria-label="Сообщить об ошибке" title="Сообщить об ошибке: данные для отчёта копируются в буфер обмена"
           onClick={() => { copyText(reportText({ tab, watching: watch.watching, chatLog: boot.chatLog })).then(() => { setReported(true); setTimeout(() => setReported(false), 2500); }); }}>
           {reported ? <IconCheck /> : <IconBug />}</button>
-        <button className={`btn${settings ? " active" : ""}`} aria-label="Настройки" title="Настройки" aria-expanded={settings}
-          onClick={() => setSettings(true)}><IconSettings /><span className="label">Настройки</span></button>
+        <button className={`btn icon-only${settings ? " active" : ""}`} aria-label="Настройки" title="Настройки" aria-expanded={settings}
+          onClick={() => setSettings(true)}><IconSettings /></button>
       </header>
 
       <div className="panes">

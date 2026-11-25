@@ -6,10 +6,13 @@
  *                                                   inside a group the highest level first. `best` keeps only the strongest stone(s) of the stat
  *                                                   (the highest number: «Атака +5», «Ф. крит. +17»), whatever its grade or level
  *   stoneSum(stones) -> [stat, value][]         what the chosen stones give together
+ *   slotStones(item, saved, stoneById) -> { worn, optional, adds }   a slot's stones in their squares (null = empty) and the numbers
+ *                                                   the stones and the enchant add to its card (the slot panel and the doll's tooltip)
  */
 
 import type { Block } from "../items/card";
-import type { Stone } from "./engine";
+import { canEnchant, canStone, enchantBonus, stoneSlots, type GearItem, type Stone } from "./engine";
+import type { SavedSlot } from "./build";
 
 /** The order of the stat tabs: the ones a player looks for first; a stat not named here follows alphabetically. */
 export const TAB_ORDER = ["phyattack", "magicalskillboost", "critical", "magicalhitaccuracy", "maxhp", "magicalresist", "block", "dodge", "parry",
@@ -122,4 +125,12 @@ export function placeBonus(blocks: Block[], adds: BonusAdd[]): BonusPlace {
     if (after < 0) after = Math.max(0, blocks.findIndex((b) => b.kind === "stones") - 1);
   }
   return { deltas, extra, after };
+}
+
+export function slotStones(item: Pick<GearItem, "grp" | "stones" | "stonesBonus" | "enchant">, saved: Pick<SavedSlot, "enchant" | "stones">, stoneById: Map<number, Stone>):
+  { worn: (Stone | null)[]; optional: number; adds: BonusAdd[] } {
+  const slots = canStone(item) ? stoneSlots(item) : 0;
+  const worn = Array.from({ length: slots }, (_, i) => { const id = saved.stones[i]; return id === null || id === undefined ? null : stoneById.get(id) ?? null; });
+  const enchant = canEnchant(item) && saved.enchant > 0 ? enchantBonus(item.grp, saved.enchant) : {};
+  return { worn, optional: slots > 0 ? item.stonesBonus ?? 0 : 0, adds: [...enchantAdds(enchant), ...stoneAdds(stoneSum(worn))] };
 }

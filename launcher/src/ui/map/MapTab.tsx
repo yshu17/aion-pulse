@@ -150,8 +150,8 @@ export function MapTab({ boot, target, home, onPlaceCleared }: {
   // NPCs and monsters (data/maps/spawns.json, read on the first search): one NPC's points in one zone at a time
   const [baseSpawns, setBaseSpawns] = useState<Spawns | null>(null);
   const needSpawns = () => { if (!baseSpawns) loadSpawns().then(setBaseSpawns); };
-  const spawns = baseSpawns;
   const poiStore = poi;
+  const spawns = baseSpawns;
   const decoOn = cfg.map_deco;
   useEffect(() => { if (decoOn && !baseSpawns) loadSpawns().then(setBaseSpawns); }, [decoOn]); // eslint-disable-line react-hooks/exhaustive-deps
   const decoDots = useMemo(() => (decoOn && spawns && zone ? spawns.decoPoints(zone.map_id) : []), [decoOn, spawns, zone]);

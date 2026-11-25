@@ -56,7 +56,7 @@ const WEAPON_ENCHANT: Record<string, Record<string, number>> = {
 };
 
 /** Only weapons, shields and the five armour pieces take an enchant in 2.0: not the head, the jewellery, the belt or the wings. */
-export function canEnchant(item: GearItem): boolean {
+export function canEnchant(item: Pick<GearItem, "grp" | "enchant">): boolean {
   return item.enchant && (item.grp === "shield" || item.grp in WEAPON_ENCHANT || item.grp in ARMOUR_ENCHANT);
 }
 
@@ -157,6 +157,7 @@ export interface CalcInput {
   skills: Skill[];          // the class's passive skills and the buffs in use
   scrolls?: ScrollUse[];
   title?: Line[];           // the title's bonus lines
+  consumables?: Line[];     // the food and drinks in use (core/gear/consumables.ts), counted as the title's lines are
 }
 
 export function calcStats(input: CalcInput): StatMap {
@@ -269,14 +270,15 @@ export function calcStats(input: CalcInput): StatMap {
 
   // 4. the skills (passive ones and the buffs): their stat effects on the basic numbers (aiongear's Lv / Jo)
   addBonus(skillBonus(skills, stats, main?.item, sub?.item));
-  // the scrolls (aiongear's Pv) and the title (Rv)
+  // the scrolls (aiongear's Pv), the title (Rv), the food and drinks
   for (const scroll of input.scrolls ?? []) {
     const b = skillBonus([{ id: 0, name: "scroll", effects: scroll.effects }], stats, main?.item, sub?.item);
     addBonus(Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v * scroll.times])));
   }
-  if (input.title?.length) {
+  for (const lines of [input.title, input.consumables]) {
+    if (!lines?.length) continue;
     const t: Record<string, number> = {};
-    for (const [stat, value] of input.title) if (!ignored(stat, main?.item)) for (const k of targets(stat, sub?.item)) add(t, k, value);
+    for (const [stat, value] of lines) if (!ignored(stat, main?.item)) for (const k of targets(stat, sub?.item)) add(t, k, value);
     addBonus(t);
   }
 

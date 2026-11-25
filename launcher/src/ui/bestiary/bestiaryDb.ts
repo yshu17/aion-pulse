@@ -1,6 +1,7 @@
 // The bestiary's data for the tab: the one game database pulse.db (core/db/bestiary.ts; the program reads it with Rust,
 // the dev page with sql.js, ui/db/pulseDb.ts) and the pictures of data/bestiary/icons.
 import { areas, detail, search } from "../../core/db/bestiary";
+import { npcQuests, type NpcQuest } from "../../core/db/npcQuests";
 import type { Row, SearchOptions } from "../../core/bestiary/store";
 import { pulseDb } from "../db/pulseDb";
 import { platform } from "../platform";
@@ -31,6 +32,7 @@ export interface BestiaryClient {
   search(options: SearchOptions): Promise<[Row[], number] | null>;
   detail(npc: string): Promise<Row | null>;
   areas(npc: string): Promise<Row[]>;
+  quests(npc: string): Promise<NpcQuest[]>;
 }
 
 let client: Promise<BestiaryClient | null> | null = null;
@@ -41,6 +43,7 @@ export function openBestiary(): Promise<BestiaryClient | null> {
     search: (options) => search(all, options),
     detail: (npc) => detail(all, npc),
     areas: (npc) => areas(all, npc),
+    quests: (npc) => npcQuests(all, npc),
   } satisfies BestiaryClient);
   return client;
 }

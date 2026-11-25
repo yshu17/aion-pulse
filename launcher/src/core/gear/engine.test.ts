@@ -75,6 +75,16 @@ describe("the gear calculator's arithmetic, against aiongear.fun eu20", () => {
     expect(value(titled, "maxhp") - value(plain, "maxhp")).toBe(20);
     expect(value(titled, "speed")).toBeCloseTo(6 * (1 + 0.35), 5); // the title's 5 % and the third-grade scroll's 3 × 10 %
   });
+
+  it("adds the food and drinks in use on top of the title, attack going to the weapon's hand", () => {
+    const input = { cls: "fighter", level: 55, base: classStats.fighter[54], slots: {}, sets: [], skills: passiveSkills("fighter", 55, passives),
+      title: titleLines(["maxHp 20"]) };
+    const plain = calcStats(input);
+    const fed = calcStats({ ...input, consumables: [["maxhp", 40, false], ["maxhp", 40, false], ["phyattack", 2, false], ["critical", 10, false]] });
+    expect(value(fed, "maxhp") - value(plain, "maxhp")).toBe(80);
+    expect(value(fed, "r_damage") - value(plain, "r_damage")).toBe(2);
+    expect(value(fed, "r_critical") - value(plain, "r_critical")).toBe(10);
+  });
 });
 
 describe("the items that take manastones and the hands", () => {

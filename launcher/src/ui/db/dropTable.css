@@ -1,0 +1,43 @@
+/* «Добыча» as a table (docs/concepts/tasks-tg, task 34). The card's side column is narrow: below 460 px the zone goes under the name. */
+.dbt-box.drops { container-type: inline-size; grid-template-columns: minmax(0, 1fr); }
+.drops-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } .dbt-box .drops-head h5 { margin: 0 auto 0 0; }
+.drops-all, .drops-pin { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #2f5a4a; background: rgba(79, 209, 197, .08); color: var(--place); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.drops-all { height: 28px; padding: 0 10px; border-radius: 8px; }
+.drops-pin { height: 24px; padding: 0 7px; border-radius: 7px; font-variant-numeric: tabular-nums; }
+.drops-all:hover, .drops-pin:hover { background: rgba(79, 209, 197, .18); }
+.drops-all:disabled, .drops-pin:disabled { border-color: var(--border); background: none; color: var(--muted); opacity: .6; cursor: default; }
+.drops-all svg, .drops-pin svg { width: 13px; height: 13px; }
+.drops .bst-search { margin: 0; }
+.drops-checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--text); }
+.drops-checks label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; } .drops-checks input { accent-color: var(--accent); margin: 0; }
+.drops-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.drops-chips button { height: 26px; padding: 0 9px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--text); font: inherit; font-size: 11.5px; cursor: pointer; white-space: nowrap; }
+.drops-chips b { margin-left: 4px; color: var(--muted); font-weight: 600; }
+.drops-chips button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-subtle); } .drops-chips button[aria-pressed="true"] b { color: var(--accent); }
+.drops-table { max-height: 420px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; scrollbar-width: thin; }
+.drops-table.short { max-height: none; }
+.drops-row { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, .8fr) 58px; gap: 8px; align-items: center; min-height: 34px; padding: 3px 8px; border-bottom: 1px solid var(--border); }
+.drops-row:last-child { border-bottom: 0; }
+.drops-th { position: sticky; top: 0; z-index: 1; min-height: 30px; background: var(--surface-3); }
+.drops-th button { border: 0; background: none; padding: 0; color: var(--muted); font: 700 11px var(--font); letter-spacing: .05em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.drops-th button[aria-pressed="true"], .drops-th button:hover { color: var(--text); } .drops-th .lv, .drops-th .pn { text-align: right; }
+.drops-row .lv { text-align: right; font-variant-numeric: tabular-nums; }
+.drops-row .zn { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .drops-row .zn.none { font-style: italic; }
+.drops-row .pn { justify-self: end; }
+.drops-row .nm { min-width: 0; display: flex; align-items: center; gap: 6px; }
+.drops-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 0; background: none; padding: 0; color: var(--nick); font: inherit; font-weight: 600; text-align: left; }
+button.drops-name { cursor: pointer; } button.drops-name:hover { text-decoration: underline; }
+.drops-row em { flex: none; padding: 0 6px; border-radius: 6px; background: var(--surface-3); color: var(--muted); font-size: 10.5px; font-style: normal; line-height: 17px; }
+.drops-many { flex: none; height: 20px; padding: 0 7px; border: 1px solid var(--border-control); border-radius: 999px; background: none; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+.drops-many:hover, .drops-many[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.drops-row.sub { background: var(--surface); } .drops-row.sub .nm { padding-left: 14px; } .drops-row.sub small { flex: none; color: var(--muted); font-size: 11px; }
+.drops button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.drops-none { padding: 10px; }
+.drops-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; color: var(--muted); font-size: 12px; }
+@container (max-width: 460px) {
+  .drops-row { grid-template-columns: minmax(0, 1fr) 40px 54px; row-gap: 0; }
+  .drops-row .nm { grid-column: 1; grid-row: 1; } .drops-row .lv { grid-column: 2; grid-row: 1 / 3; } .drops-row .pn { grid-column: 3; grid-row: 1 / 3; }
+  .drops-row .zn { grid-column: 1; grid-row: 2; font-size: 11px; }
+  .drops-th .zn { display: none; } .drops-th .lv, .drops-th .pn { grid-row: 1; }
+  .drops-row em { display: none; }
+}

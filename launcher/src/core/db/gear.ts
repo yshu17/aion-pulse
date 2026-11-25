@@ -9,6 +9,7 @@
 
 import type { GearItem, GearSet, SlotKey, Stone } from "../gear/engine";
 import type { All } from "./npcPoints";
+import { cleanSkillText } from "../items/statNames";
 
 /** A doll slot -> the item slots that fit it. */
 export const SLOT_FITS: Record<SlotKey, string[]> = {
@@ -84,9 +85,9 @@ export async function gearSets(all: All, ids: number[]): Promise<GearSet[]> {
 }
 
 /** The titles that give a bonus, by name: for the calculator's «Титул». */
-export async function gearTitles(all: All): Promise<{ id: number; name: string; race: string; bonus: string[] }[]> {
-  const rows = await all("SELECT id, name, race, stats FROM title WHERE name <> '' ORDER BY name_key").catch(() => []);
-  return rows.map((r) => ({ id: Number(r.id), name: String(r.name), race: String(r.race ?? ""), bonus: (JSON.parse(r.stats ?? "{}").bonus ?? []) as string[] }))
+export async function gearTitles(all: All): Promise<{ id: number; name: string; race: string; bonus: string[]; icon: string }[]> {
+  const rows = await all("SELECT id, name, race, stats, icon FROM title WHERE name <> '' ORDER BY name_key").catch(() => []);
+  return rows.map((r) => ({ id: Number(r.id), name: String(r.name), race: String(r.race ?? ""), icon: String(r.icon ?? ""), bonus: (JSON.parse(r.stats ?? "{}").bonus ?? []) as string[] }))
     .filter((t) => t.bonus.length > 0);
 }
 
@@ -95,6 +96,7 @@ export async function skillText(all: All, name: string): Promise<string | null> 
   const [row] = await all(
     `SELECT s.description, d.text AS damage FROM skill s LEFT JOIN skill_damage d ON d.skill_id = s.id WHERE s.name = ? ORDER BY s.stigma, s.id LIMIT 1`, [name]);
   if (!row) return null;
-  const text = row.damage || row.description || "";
-  return text ? String(text) : null;
+  // as the «База данных» card: the counted text as it is, else the game's description with its [%…] holes cleaned
+  const text = row.damage ? String(row.damage) : row.description ? cleanSkillText(String(row.description)) : "";
+  return text || null;
 }

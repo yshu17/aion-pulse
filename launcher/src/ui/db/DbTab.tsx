@@ -7,7 +7,8 @@ import { compareStats } from "../../core/items/compare";
 import { bonusLine, cleanSkillText } from "../../core/items/statNames";
 import { SkillText } from "../SkillText";
 import type { Block } from "../../core/items/card";
-import { entityCard, itemDrops, itemSkill, itemSources, linkParts, questCard, questKind, type ItemSkill, type ItemSources, type QuestCard, type QuestNpc } from "../../core/db/catalogCard";
+import { DropTable } from "./DropTable";
+import { entityCard, itemSkill, itemSources, linkParts, questCard, questKind, type ItemSkill, type ItemSources, type QuestCard, type QuestNpc } from "../../core/db/catalogCard";
 import { recipe as readRecipe, type Recipe } from "../../core/db/game";
 import { bandOptions, LEVEL_BANDS, levelBounds, SECTION_KEY, SKILL_CLASSES, sectionCounts, sectionGrades, sectionKinds, sectionPage, type LevelBand, type PageOptions, type SectionRow } from "../../core/db/sections";
 import { TOP } from "../../core/tabs";
@@ -285,21 +286,15 @@ function ItemDetail({ all, row, section, ticked, onTick }: {
   const [copied, setCopied] = useState(false);
   const [allRecipes, setAllRecipes] = useState(false); // the long lists are folded until asked for
   const [allVendors, setAllVendors] = useState(false);
-  const [allDrops, setAllDrops] = useState<{ id: string; name: string }[] | null>(null); // the full list, read when asked for (task 29)
-  const [dropsOpen, setDropsOpen] = useState(false);
   useEffect(() => {
     let alive = true;
-    setWhere(null); setSkill(null); setCopied(false); setAllRecipes(false); setAllVendors(false); setAllDrops(null); setDropsOpen(false);
+    setWhere(null); setSkill(null); setCopied(false); setAllRecipes(false); setAllVendors(false);
     itemSources(all, row.id).then((w) => alive && setWhere(w));
     if (section === "skill_books" || section === "stigmas" || section === "items") itemSkill(all, row.id).then((s) => alive && setSkill(s));
     return () => { alive = false; };
   }, [all, row.id, section]);
-  const toggleDrops = () => {
-    if (!dropsOpen && !allDrops) itemDrops(all, row.id).then(setAllDrops).catch(() => setAllDrops([]));
-    setDropsOpen((v) => !v);
-  };
   const classes = skill ? Object.keys(skill.classes).map((c) => CLASS_RU[c] ?? c) : [];
-  const absent = where ? [where.dropTotal ? "" : "С монстров не падает", where.recipes.length ? "" : "Не создаётся", where.vendors.length ? "" : "Не продаётся"].filter(Boolean) : [];
+  const absent = where ? [where.dropNamed ? "" : where.dropTotal ? "Кто роняет, в базе не названо" : "С монстров не падает", where.recipes.length ? "" : "Не создаётся", where.vendors.length ? "" : "Не продаётся"].filter(Boolean) : [];
   return (
     <div className="dbt-card dbt-in" key={row.id}>
       <Tooltip row={row} />
@@ -321,16 +316,7 @@ function ItemDetail({ all, row, section, ticked, onTick }: {
           </div>
         )}
         {!where ? <p className="dbt-note">Загружаю, откуда предмет…</p> : <>
-          {where.dropTotal > 0 && (
-            <div className="dbt-box">
-              <h5>Добыча<em>{where.dropTotal.toLocaleString("ru-RU")}</em></h5>
-              <div className={`dbt-drops${dropsOpen && allDrops ? " open" : ""}`}>
-                {(dropsOpen && allDrops ? allDrops : where.drops).map((n) => <div key={n.id} className="dbt-li"><RefLink kind="npc" id={n.id} name={n.name} className="dbt-b" /></div>)}
-              </div>
-              {where.dropNamed > where.drops.length && <button type="button" className="dbt-more-link" aria-expanded={dropsOpen} onClick={toggleDrops}>
-                {dropsOpen ? (allDrops ? "Свернуть" : "Загружаю…") : `Показать всех (${where.dropNamed.toLocaleString("ru-RU")})`}</button>}
-            </div>
-          )}
+          {where.dropNamed > 0 && <DropTable all={all} itemId={row.id} itemName={row.name} total={where.dropNamed} />}
           {(where.recipes.length > 0 || where.usedIn > 0) && (
             <div className="dbt-box">
               <h5>Рецепты{where.recipes.length > 0 && <em>{where.recipes.length}</em>}</h5>

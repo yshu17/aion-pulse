@@ -9,6 +9,7 @@ import { memo, startTransition, useEffect, useLayoutEffect, useMemo, useRef, use
 import { dropsNote, filterDrops, filterStock, overviewText, placeCounts, RARITY, SORTS, stockNote, type Detail } from "../../core/bestiary/card";
 import { FACTIONS, statText } from "../../core/bestiary/labels";
 import type { Row } from "../../core/bestiary/store";
+import { filterNpcQuests, type NpcQuest, type QuestRole } from "../../core/db/npcQuests";
 import { GROUP_CHIPS, hpFrame, iconPath, LEVELS, levelRange, mainPlace, placeAt, rankTier, RANK_CHIPS, rarityClass, ROLE_CHIPS, roleLabel, rowSubtitle, statGroups } from "../../core/bestiary/view";
 import { toImage, type Zone } from "../../core/map/zones";
 import { iconUrl, mapNames } from "../data";
@@ -192,7 +193,7 @@ function CardSkeleton() {
   );
 }
 
-type TabName = "drops" | "places" | "stock";
+type TabName = "drops" | "places" | "stock" | "quests";
 
 /** The colour of a number in the stats line: HP red, experience dark blue, DP dark orange. */
 const STAT_TONE: Record<string, string> = { "Макс. ХП": "hp", "Опыт": "xp", "DP": "dp" };
@@ -203,6 +204,16 @@ const Card = memo(function Card({ client, detail, ask = null }: { client: Bestia
   const sells = Array.isArray(detail.stock) && detail.stock.length > 0;
   const [tab, setTab] = useState<TabName>(sells ? "stock" : "drops");
   useEffect(() => { if (ask?.view === "stock" && sells) setTab("stock"); }, [ask?.n]); // eslint-disable-line react-hooks/exhaustive-deps
+  // «Задания»: the tab is there only for an NPC that gives or takes quests (as «Товары» only for a seller)
+  const [questList, setQuestList] = useState<{ npc: string; list: NpcQuest[] }>({ npc: "", list: [] });
+  useEffect(() => {
+    let alive = true;
+    const npc = String(detail.id);
+    client.quests(npc).then((list) => { if (alive) setQuestList({ npc, list }); }).catch(() => {});
+    return () => { alive = false; };
+  }, [client, detail.id]);
+  const quests = questList.npc === String(detail.id) ? questList.list : [];
+  useEffect(() => { if (tab === "quests" && questList.npc === String(detail.id) && !questList.list.length) setTab(sells ? "stock" : "drops"); }, [questList, tab]); // eslint-disable-line react-hooks/exhaustive-deps
   // The pill under the chosen tab slides along the bar by its own position and width. (A shared-layout pill, Glide, follows the
   // tab on the screen: when the shorter list of the other tab scrolls the card, the bar moves and the pill jumped up and down.)
   const bar = useRef<HTMLDivElement>(null);
@@ -210,7 +221,7 @@ const Card = memo(function Card({ client, detail, ask = null }: { client: Bestia
   useLayoutEffect(() => {
     const on = bar.current?.querySelector<HTMLElement>("button.on");
     if (on) setPill({ x: on.offsetLeft, w: on.offsetWidth });
-  }, [tab, sells]);
+  }, [tab, sells, quests.length]);
   const [chosen, setZone] = useState<string | null>(null); // the zone the user picked in «Локации»; else the one with the most points
   const zone = chosen ?? mainPlace(detail)?.map_id ?? null; // the zone the map and the button show
   const place = zone ? placeAt(detail, zone) : null;
@@ -271,16 +282,17 @@ const Card = memo(function Card({ client, detail, ask = null }: { client: Bestia
 
       <m.div className="bst-tabs" role="tablist" ref={bar} {...reveal(4)}>
         {pill && <m.span className="bst-glide" aria-hidden initial={false} animate={{ x: pill.x, width: pill.w }} transition={SPRING} />}
-        {([["drops", "Добыча", dropsCount], ["places", "Локации", placesCount], ...(sells ? [["stock", "Товары", detail.stock.length]] : [])] as [TabName, string, number][]).map(([name, label, count]) => (
+        {([["drops", "Добыча", dropsCount], ["places", "Локации", placesCount], ...(sells ? [["stock", "Товары", detail.stock.length]] : []), ...(quests.length ? [["quests", "Задания", quests.length]] : [])] as [TabName, string, number][]).map(([name, label, count]) => (
           <button key={name} role="tab" aria-selected={tab === name} className={tab === name ? "on" : ""} onClick={() => setTab(name)}>
             <span>{label}</span><i>{count}</i>
           </button>
         ))}
       </m.div>
-      {tab === "places" ? <Places client={client} detail={detail} zone={zone} onZone={setZone} /> : <Goods key={tab} detail={detail} kind={tab} />}
+      {tab === "places" ? <Places client={client} detail={detail} zone={zone} onZone={setZone} />
+        : tab === "quests" ? <Quests key={String(detail.id)} quests={quests} /> : <Goods key={tab} detail={detail} kind={tab} />}
 
       <m.div className="bst-foot" {...reveal(6)}>
-        <span className="bst-note">{detail.kb_status === "loaded" ? "Данные KB + файлы клиента" : "Данные клиента; подробный профиль KB не загружен"}</span>
+        <span className="bst-note">{detail.kb_status === "loaded" ? "Данные базы знаний и файлы клиента" : "Данные клиента; профиля из базы знаний нет"}</span>
       </m.div>
     </div>
   );
@@ -332,6 +344,45 @@ function Goods({ detail, kind }: { detail: Detail; kind: "drops" | "stock" }) {
         ))}
       </ul>
       <p className="bst-note">{note}</p>
+    </div>
+  );
+}
+
+/** «Задания»: what the NPC gives and takes back, by level; a quest opens in «База данных → Задания». */
+function Quests({ quests }: { quests: NpcQuest[] }) {
+  const open = useOpenRef();
+  const [q, setQ] = useState("");
+  const [role, setRole] = useState<QuestRole>("all");
+  const gives = quests.filter((x) => x.gives).length;
+  const takes = quests.filter((x) => x.takes).length;
+  const shown = filterNpcQuests(quests, role, q);
+  const roles: [QuestRole, string, number][] = [["all", "Все", quests.length], ["gives", "Выдаёт", gives], ["takes", "Принимает", takes]];
+  return (
+    <div className="bst-panel" role="tabpanel">
+      <div className="bst-quest-tools">
+        <div className="bst-search small">
+          <IconSearch />
+          <input className="field" placeholder="Поиск по заданиям…" aria-label="Поиск по заданиям" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        {gives > 0 && takes > 0 && <div className="bst-quest-roles" role="group" aria-label="Роль NPC">
+          {roles.map(([id, label, count]) => <button key={id} type="button" aria-pressed={role === id} onClick={() => setRole(id)}>{label} {count}</button>)}
+        </div>}
+      </div>
+      <ul className="bst-quests">
+        {shown.map((x) => (
+          <li key={x.id}>
+            <span className="lv">{x.level || "—"}</span>
+            {open ? <button type="button" className="name" title="Открыть в «База данных → Задания»" onClick={() => open({ kind: "quest", id: x.id, name: x.name })}>{x.name}</button>
+              : <span className="name">{x.name}</span>}
+            <span className="zone">{x.zone}</span>
+            {(x.repeat || x.takes) && <span className="sub">
+              {x.repeat && <em className="rep">повтор.</em>}
+              {x.takes && <><em className="take">принимает</em>{x.giver && `выдаёт: ${x.giver}`}</>}
+            </span>}
+          </li>
+        ))}
+      </ul>
+      {!shown.length && <p className="bst-note">Ничего не нашлось. Попробуй часть названия.</p>}
     </div>
   );
 }

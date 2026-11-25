@@ -207,3 +207,23 @@
 .bst-go:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
 .bst-go:active:not(:disabled) { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { .bst-tile, .bst-good, .bst-place, .bst-go { transition: none; } .bst-tile:hover, .bst-good:hover { transform: none; } }
+
+/* «Задания» of an NPC's card (docs/concepts/tasks-tg, task 33) */
+.bst-quest-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.bst-quest-tools .bst-search { flex: 1 1 200px; margin: 0; }
+.bst-quest-roles { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: 10px; }
+.bst-quest-roles button { border: 0; background: none; padding: 5px 10px; border-radius: 7px; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.bst-quest-roles button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+.bst-quests { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 10px; max-height: 380px; overflow-y: auto; scrollbar-width: thin; }
+.bst-quests:empty { display: none; }
+.bst-quests li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.bst-quests li:last-child { border-bottom: 0; } .bst-quests li:hover { background: var(--surface-2); }
+.bst-quests .lv { color: var(--muted); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.bst-quests .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-weight: 600; }
+.bst-quests button.name { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+.bst-quests button.name:hover { text-decoration: underline; } .bst-quests button.name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bst-quests .zone { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.bst-quests .sub { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+.bst-quests em { font-style: normal; padding: 0 7px; border-radius: 999px; font-size: 11px; line-height: 18px; }
+.bst-quests em.rep { background: rgba(111, 155, 255, .16); color: #9db8ff; } .bst-quests em.take { background: rgba(95, 211, 141, .14); color: var(--success); }
+

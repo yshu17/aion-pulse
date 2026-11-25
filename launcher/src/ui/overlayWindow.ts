@@ -11,7 +11,7 @@ import { platform } from "./platform";
 
 export const OVERLAY = "overlay";
 const MAIN = "main";
-const WIDTH = 380;
+const WIDTH = 320;
 const MARGIN = 16;
 const STRIP_H = 36; // CSS pixels: the height of the strip, for the «is it on a screen» check
 const PLACE = "pulse-overlay-place"; // where the user put the strip: its top-left corner on the screen, physical pixels (both windows share it)
@@ -205,10 +205,11 @@ export interface OverlayLook {
   keepGameFocus: boolean; // a click on the overlay leaves the keyboard with the game
   turnSec: number; // how long each of several running events stays on the line before the next one comes (2…20)
   returnWhenGameClosed: boolean; // the game is gone for a while: the overlay goes back to the main window
+  mini: boolean; // collapsed to one line
 }
 
 const LOOK = "pulse-overlay-look";
-const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true, turnSec: 5, returnWhenGameClosed: true };
+const DEFAULT_LOOK: OverlayLook = { opacity: 0.9, keepGameFocus: true, turnSec: 5, returnWhenGameClosed: true, mini: false };
 
 export function loadLook(): OverlayLook {
   try {
@@ -220,6 +221,7 @@ export function loadLook(): OverlayLook {
       keepGameFocus: typeof raw.keepGameFocus === "boolean" ? raw.keepGameFocus : DEFAULT_LOOK.keepGameFocus,
       turnSec,
       returnWhenGameClosed: typeof raw.returnWhenGameClosed === "boolean" ? raw.returnWhenGameClosed : DEFAULT_LOOK.returnWhenGameClosed,
+      mini: typeof raw.mini === "boolean" ? raw.mini : DEFAULT_LOOK.mini,
     };
   } catch {
     return DEFAULT_LOOK;
